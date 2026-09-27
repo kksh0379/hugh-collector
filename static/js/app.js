@@ -175,17 +175,27 @@ function toast(msg) {
 (function initFootnav() {
   const nav = document.getElementById("footnav");
   if (!nav) return;
-  const views = { collector: document.getElementById("view-collector"), food: document.getElementById("view-food") };
-  nav.addEventListener("click", (e) => {
-    const b = e.target.closest(".fnav");
-    if (!b) return;
-    const n = b.dataset.nav;
-    if (n === "report" || n === "scrap") return;  // 모달은 각 버튼의 기존 리스너가 처리(본문 전환 X)
-    nav.querySelectorAll(".fnav").forEach((x) => x.classList.toggle("active", x === b));
+  const views = {
+    collector: document.getElementById("view-collector"),
+    food: document.getElementById("view-food"),
+    report: document.getElementById("view-report"),
+    scrap: document.getElementById("view-scrap"),
+  };
+  function switchTo(n) {
+    // 스크랩은 로그인 필요 → 미로그인 시 전환하지 않고 로그인 유도
+    if (n === "scrap" && !isLoggedIn()) { toast("로그인하면 스크랩을 볼 수 있어요"); if (typeof openLogin === "function") openLogin(); return; }
+    nav.querySelectorAll(".fnav").forEach((x) => x.classList.toggle("active", x.dataset.nav === n));
     Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
     window.scrollTo(0, 0);
     document.body.classList.remove("chrome-hidden");
+    if (n === "report" && typeof window.onShowReport === "function") window.onShowReport();
+    if (n === "scrap" && typeof onShowScrap === "function") onShowScrap();
+  }
+  nav.addEventListener("click", (e) => {
+    const b = e.target.closest(".fnav");
+    if (b) switchTo(b.dataset.nav);
   });
+  window.gotoView = switchTo;  // 로그인 성공 후 스크랩으로 이동 등 외부 호출용
 })();
 // 위험 동작(삭제/초기화) 확인: 모바일에서 native confirm()이 막히는 경우가 있어
 // '한 번 더 눌러 확정'(두 번 탭) 방식으로 대체한다. 첫 탭=무장(빨간 확정 상태)·둘째 탭=실행.
@@ -235,7 +245,7 @@ function syncScrapUI(key) {
     if (b.dataset.key === key) b.classList.toggle("on", isScrapped(key));
   });
   updateScrapBadge();
-  const m = document.getElementById("scrap-modal");
+  const m = document.getElementById("view-scrap");
   if (m && !m.hidden) renderScraps();
 }
 
@@ -1371,8 +1381,8 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
   applyAuthUI(null, false);
   READ = new Set(); SCRAP = {};
   applyUserStateToDom(); updateScrapBadge();
-  const m = document.getElementById("scrap-modal");
-  if (m && !m.hidden) closeScraps();
+  const m = document.getElementById("view-scrap");
+  if (m && !m.hidden && typeof window.gotoView === "function") window.gotoView("collector");  // 스크랩 뷰였으면 뉴스로
   toast("로그아웃되었어요");
 });
 
@@ -1651,19 +1661,11 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   if (e.target && e.target.id === "scrap-search") { scrapQuery = e.target.value.trim(); renderScrapList(); }
 });
-function openScraps() {
-  if (!isLoggedIn()) { toast("로그인하면 스크랩을 볼 수 있어요"); openLogin(); return; }
+// 스크랩 본문 뷰가 열릴 때 데이터 렌더(footnav에서 호출). 로그인 필요.
+function onShowScrap() {
   scrapFilterGroup = "all"; scrapQuery = "";
   renderScraps();
-  document.getElementById("scrap-modal").hidden = false;
-  document.body.classList.add("modal-open");
 }
-function closeScraps() {
-  document.getElementById("scrap-modal").hidden = true;
-  document.body.classList.remove("modal-open");
-}
-document.getElementById("scrap-open-btn").addEventListener("click", openScraps);
-document.getElementById("scrap-close").addEventListener("click", closeScraps);
 updateScrapBadge();
 
 // ----------------------------- 로그(관리자): 수집 / 접속 -----------------------------
@@ -2003,16 +2005,15 @@ async function loadReport(id) {
   if (purgeBtn) purgeBtn.addEventListener("click", () =>
     armConfirm(purgeBtn, "전체삭제 확정", () => purgeReport({ all: true, kind: reportKind })));
 
-  // 상단 버튼 → 풀팝업 열기/닫기
-  const modal = document.getElementById("report-modal");
-  const openBtn = document.getElementById("report-open-btn");
-  const closeBtn = document.getElementById("report-close");
-  if (openBtn && modal) openBtn.addEventListener("click", () => {
-    modal.hidden = false; document.body.classList.add("modal-open"); loadReport();
-    // 진행 중 분석이 있으면 폴링 재개
-    if (!timer) fetch("/api/report/status").then((r) => r.json()).then((st) => { if (st.running && !timer) { timer = setInterval(poll, 2500); poll(); } }).catch(() => {});
-  });
-  if (closeBtn && modal) closeBtn.addEventListener("click", () => { modal.hidden = true; document.body.classList.remove("modal-open"); });
+  // 리포트 본문 뷰가 열릴 때(footnav에서 호출): 데이터 로드 + 진행 중 분석 폴링 재개
+  window.onShowReport = function () {
+    loadReport();
+    if (!timer) {
+      fetch("/api/report/status?kind=" + reportKind).then((r) => r.json())
+        .then((st) => { if (st.running && !timer) { timer = setInterval(poll, 2500); poll(); } })
+        .catch(() => {});
+    }
+  };
 })();
 
 // ----------------------------- 탭바 가로 스크롤 + 끝 블러(페이드) -----------------------------

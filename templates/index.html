@@ -297,12 +297,9 @@
   </main>
 
   <!-- AI 재단 동향 분석 리포트 (상단 버튼 → 풀팝업) -->
-  <div class="fullmodal" id="report-modal" hidden>
-    <div class="fullmodal-head">
-      <span class="fullmodal-title" id="report-title">🔍 AI 재단 동향 리포트</span>
-      <button class="fullmodal-close" id="report-close" aria-label="닫기">✕</button>
-    </div>
-    <div class="fullmodal-body">
+  <main class="view-body" id="view-report" hidden>
+    <div class="view-head"><span class="view-title" id="report-title">🔍 AI 재단 동향 리포트</span></div>
+    <div class="view-inner">
       <div class="seg rep-kind" id="rep-kind" role="group" aria-label="리포트 종류">
         <button type="button" data-kind="foundation" class="active">재단 동향</button>
         <button type="button" data-kind="security">🛡 보안(월간)</button>
@@ -324,7 +321,7 @@
       <div class="result-msg" id="msg-report"></div>
       <div id="report-body"></div>
     </div>
-  </div>
+  </main>
 
   <!-- 상태 확인 팝업 -->
   <div class="modal" id="status-modal" hidden>
@@ -396,17 +393,14 @@
     </div>
   </div>
 
-  <!-- 나의 스크랩 풀팝업 -->
-  <div class="fullmodal" id="scrap-modal" hidden>
-    <div class="fullmodal-head">
-      <span class="fullmodal-title">🔖 나의 스크랩 <span id="scrap-count-h"></span></span>
-      <button class="fullmodal-close" id="scrap-close" aria-label="닫기">✕</button>
-    </div>
+  <!-- 나의 스크랩(본문 뷰) -->
+  <main class="view-body" id="view-scrap" hidden>
+    <div class="view-head"><span class="view-title">🔖 나의 스크랩 <span id="scrap-count-h"></span></span></div>
     <div class="scrap-controls" id="scrap-controls"></div>
-    <div class="fullmodal-body">
+    <div class="view-inner">
       <ul class="list scrap-list" id="scrap-list"></ul>
     </div>
-  </div>
+  </main>
 
   <!-- 표시 설정(관리자): 각 탭·리포트·스크랩 온오프 -->
   <div class="modal" id="features-modal" hidden>
@@ -441,7 +435,7 @@
   <!-- 저작권/버전(정적, 스크롤 하단) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v1.85 · build 260927</span>
+    <span class="ver">v1.86 · build 260927</span>
     <span class="ver" id="storage-badge"></span>
   </div>
 

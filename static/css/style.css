@@ -1147,3 +1147,14 @@ body.tab-report .viewbar { display: none; }
   color: var(--primary); background: #eef2ff; border: 1px solid #dbe6ff;
   border-radius: 999px; padding: 6px 16px;
 }
+
+/* ============ 본문 뷰(리포트/스크랩 = 팝업 아닌 바디) ============ */
+/* hidden 처리가 뷰의 display(flex 등)에 덮이지 않도록 강제(대메뉴 전환 정상화) */
+main[hidden] { display: none !important; }
+.view-body { padding: 0 0 8px; }
+.view-head { padding: 14px 16px 8px; position: sticky; top: 0; background: var(--bg); z-index: 1; }
+body.chrome-hidden .view-head { position: static; }
+.view-title { font-size: 17px; font-weight: 800; color: var(--text); }
+.view-title #scrap-count-h { font-weight: 600; color: var(--muted); font-size: 14px; }
+.view-inner { padding: 0 16px 16px; }
+#view-report .view-inner, #view-scrap .view-inner { min-height: 40vh; }
