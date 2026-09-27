@@ -54,6 +54,7 @@
         <path d="M18.5 2 L19.3 4 L21.3 4.8 L19.3 5.6 L18.5 7.6 L17.7 5.6 L15.7 4.8 L17.7 4 Z" fill="currentColor"/>
       </svg>리포트</button>
     <button class="auth-btn scrap-open" id="scrap-open-btn" aria-label="나의 스크랩">🔖 스크랩<span class="scrap-badge" id="scrap-badge" hidden></span></button>
+    <button class="auth-btn admin-only" id="features-btn">⚙ 표시</button>
     <button class="auth-btn admin-only" id="notes-btn">📓 노트</button>
     <button class="auth-btn admin-only" id="runlog-btn">📋 로그</button>
     <button class="auth-btn admin-only" id="purge-db-btn">🗑 초기화</button>
@@ -387,10 +388,40 @@
     </div>
   </div>
 
+  <!-- 표시 설정(관리자): 각 탭·리포트·스크랩 온오프 -->
+  <div class="modal" id="features-modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <span>⚙ 표시 설정</span>
+        <button class="modal-close" id="features-close" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="feat-note">끈 항목은 <b>일반 사용자·방문자에게 숨겨져요</b>. 관리자는 항상 보입니다. (변경 즉시 저장)</p>
+        <div class="feat-group-title">탭</div>
+        <div class="feat-list">
+          <label><input type="checkbox" data-feat="cat"> 냥정보</label>
+          <label><input type="checkbox" data-feat="game"> 게임정보</label>
+          <label><input type="checkbox" data-feat="news"> NC뉴스</label>
+          <label><input type="checkbox" data-feat="biz"> 업계동향</label>
+          <label><input type="checkbox" data-feat="security"> 보안뉴스</label>
+          <label><input type="checkbox" data-feat="event"> 행사일정</label>
+          <label><input type="checkbox" data-feat="boards"> 재단게시판</label>
+          <label><input type="checkbox" data-feat="social"> 재단YT</label>
+        </div>
+        <div class="feat-group-title">기능</div>
+        <div class="feat-list">
+          <label><input type="checkbox" data-feat="report"> AI 리포트</label>
+          <label><input type="checkbox" data-feat="scrap"> 스크랩</label>
+        </div>
+        <div class="result-msg" id="msg-features"></div>
+      </div>
+    </div>
+  </div>
+
   <footer class="app-footer">
     <div class="foot-left">
       <span class="foot-copy">© 2026 김상화</span>
-      <span class="ver">v1.76 · build 260926</span>
+      <span class="ver">v1.77 · build 260927</span>
       <span class="ver" id="storage-badge"></span>
     </div>
     <div class="foot-right">

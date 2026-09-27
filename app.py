@@ -593,6 +593,43 @@ def meta():
     })
 
 
+# ---- 기능/탭 표시 설정(관리자 온오프) ----
+# 끈 항목은 일반/방문자에게 숨김(관리자는 항상 노출·미리보기). 기본 전체 ON.
+_FEATURE_KEYS = ["cat", "game", "news", "biz", "security", "event", "boards", "social", "report", "scrap"]
+
+
+def _load_features():
+    try:
+        raw = db.get_meta("feature_flags", "") if _ensure_db() else ""
+        saved = json.loads(raw) if raw else {}
+    except Exception:  # noqa: BLE001
+        saved = {}
+    # 기본값 True, 저장된 값만 덮어씀(명시적으로 False인 것만 off)
+    return {k: (False if saved.get(k) is False else True) for k in _FEATURE_KEYS}
+
+
+@app.get("/api/features")
+def features_get():
+    """현재 탭/기능 표시 설정(모든 클라이언트가 읽어 적용). 공개."""
+    return jsonify(_load_features())
+
+
+@app.post("/api/features")
+def features_set():
+    """표시 설정 저장(관리자). body: {키: bool, ...} 부분 갱신."""
+    if not _admin_ok():
+        return jsonify({"error": "unauthorized"}), 401
+    if not _ensure_db(force=True):
+        return jsonify({"ok": False, "error": "DB에 연결할 수 없어요."}), 503
+    data = request.get_json(silent=True) or {}
+    cur = _load_features()
+    for k in _FEATURE_KEYS:
+        if k in data:
+            cur[k] = bool(data[k])
+    db.set_meta("feature_flags", json.dumps(cur, ensure_ascii=False))
+    return jsonify({"ok": True, "features": cur})
+
+
 # 수집 구현 현황(화면 뱃지용). 완료 / 구현 중 / 구현 예정
 BOARD_STATUS = {"나의AAC": "완료", "프로젝토리": "완료", "FAIR AI": "완료", "대표 홈페이지": "완료"}
 SOCIAL_STATUS = {"유튜브": "완료"}

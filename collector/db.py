@@ -276,6 +276,12 @@ def get_all_meta():
         return {r["key"]: r["value"] for r in rows}
 
 
+def get_meta(key, default=None):
+    with get_conn() as conn:
+        r = conn.execute(_q("SELECT value FROM meta WHERE key=?"), (key,)).fetchone()
+        return r["value"] if r else default
+
+
 def _now():
     return datetime.now().isoformat(timespec="seconds")
 

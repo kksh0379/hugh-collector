@@ -9,6 +9,34 @@ function applyAuthUI(user, admin) {
   document.body.classList.toggle("is-loggedin", !!user);
   const fu = document.getElementById("foot-user");
   if (fu) fu.textContent = user ? (user === "admin" ? "관리자" : user) + " 님" : "";
+  applyFeatures();  // 로그인/로그아웃 시 표시 설정 재적용(관리자는 전체 노출)
+}
+
+// ===== 표시 설정(탭·리포트·스크랩 온오프) =====
+const FEATURE_TABS = ["cat", "game", "news", "biz", "security", "event", "boards", "social"];
+let FEATURES = {};  // {키:bool}. 저장 전이면 비어 있어 전체 표시.
+function applyFeatures() {
+  const admin = document.body.classList.contains("is-admin");
+  const hide = (k) => !admin && FEATURES[k] === false;  // 관리자는 항상 노출
+  FEATURE_TABS.forEach((t) => {
+    const btn = document.querySelector('.tab[data-tab="' + t + '"]');
+    if (btn) btn.hidden = hide(t);
+  });
+  const rep = document.getElementById("report-open-btn");
+  if (rep) rep.hidden = hide("report");
+  const scr = document.getElementById("scrap-open-btn");
+  if (scr) scr.hidden = hide("scrap");
+  document.body.classList.toggle("hide-scrap", hide("scrap"));
+  // 활성 탭이 숨겨졌으면 첫 노출 탭으로 전환
+  const active = document.querySelector(".tab.active");
+  if (active && active.hidden) {
+    const first = document.querySelector(".tab:not([hidden])");
+    if (first) first.click();
+  }
+}
+async function loadFeatures() {
+  try { FEATURES = await (await fetch("/api/features")).json(); } catch (e) { FEATURES = {}; }
+  applyFeatures();
 }
 // 세션 확인 → 로그인 상태면 개인 데이터(스크랩/읽음) 로드
 async function initAuth() {
@@ -1996,8 +2024,46 @@ async function loadReport(id) {
   }
 })();
 
+// ----------------------------- 표시 설정 모달(관리자) -----------------------------
+(function initFeaturesModal() {
+  const modal = document.getElementById("features-modal");
+  const openBtn = document.getElementById("features-btn");
+  const closeBtn = document.getElementById("features-close");
+  const msg = document.getElementById("msg-features");
+  if (!modal) return;
+  const syncChecks = () => modal.querySelectorAll("[data-feat]").forEach((cb) => {
+    cb.checked = FEATURES[cb.dataset.feat] !== false;
+  });
+  const close = () => { modal.hidden = true; document.body.classList.remove("modal-open"); };
+  if (openBtn) openBtn.addEventListener("click", async () => {
+    await loadFeatures(); syncChecks(); if (msg) msg.textContent = "";
+    modal.hidden = false; document.body.classList.add("modal-open");
+  });
+  if (closeBtn) closeBtn.addEventListener("click", close);
+  modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+  modal.addEventListener("change", async (e) => {
+    const cb = e.target.closest("[data-feat]");
+    if (!cb) return;
+    if (msg) { msg.style.color = ""; msg.textContent = "저장 중…"; }
+    try {
+      const r = await fetch("/api/features", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [cb.dataset.feat]: cb.checked }),
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || ("오류 " + r.status));
+      FEATURES = j.features; applyFeatures();
+      if (msg) { msg.style.color = "#16a34a"; msg.textContent = "저장됐어요 · 일반 사용자 화면에 반영돼요."; }
+    } catch (err) {
+      cb.checked = !cb.checked;
+      if (msg) { msg.style.color = "#dc2626"; msg.textContent = "저장 실패: " + err.message; }
+    }
+  });
+})();
+
 // ----------------------------- 초기 로드 -----------------------------
 initAuth();
+loadFeatures();
 loadMeta();
 loadCat();
 loadGame();
