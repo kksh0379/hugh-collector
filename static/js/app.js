@@ -732,7 +732,7 @@ async function loadSecurity() {
     // 중요도순인데 아직 AI 분석된 기사가 없으면 안내(=최신순과 동일하게 보임)
     if (secSort === "importance") {
       const items = (TAB_DATA.security && TAB_DATA.security.items) || [];
-      if (!items.some((it) => it.ai_importance)) toast("아직 AI 분석 전이에요 — 보안뉴스를 (재)수집하면 자동 분석돼 중요도순이 적용돼요");
+      if (!items.some((it) => it.ai_importance)) toast("재수집하면 자동 분석돼 중요도순 적용 (AI 크레딧 필요)");
     }
   });
 })();
