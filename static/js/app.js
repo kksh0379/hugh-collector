@@ -171,6 +171,22 @@ function toast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(_toastTimer); _toastTimer = setTimeout(() => t.classList.remove("show"), 1400);
 }
+// 하단 대메뉴(푸터 탭): 뉴스(콜렉터)/맛집 = 본문 전환, 리포트/스크랩 = 각자 모달(전환 아님).
+(function initFootnav() {
+  const nav = document.getElementById("footnav");
+  if (!nav) return;
+  const views = { collector: document.getElementById("view-collector"), food: document.getElementById("view-food") };
+  nav.addEventListener("click", (e) => {
+    const b = e.target.closest(".fnav");
+    if (!b) return;
+    const n = b.dataset.nav;
+    if (n === "report" || n === "scrap") return;  // 모달은 각 버튼의 기존 리스너가 처리(본문 전환 X)
+    nav.querySelectorAll(".fnav").forEach((x) => x.classList.toggle("active", x === b));
+    Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
+    window.scrollTo(0, 0);
+    document.body.classList.remove("chrome-hidden");
+  });
+})();
 // 위험 동작(삭제/초기화) 확인: 모바일에서 native confirm()이 막히는 경우가 있어
 // '한 번 더 눌러 확정'(두 번 탭) 방식으로 대체한다. 첫 탭=무장(빨간 확정 상태)·둘째 탭=실행.
 function armConfirm(btn, armedText, onConfirm) {

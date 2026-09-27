@@ -58,21 +58,18 @@
       <span class="brand-name">휴 <b>스코프</b></span>
     </a>
     <div class="header-actions" id="header-actions">
-    <button class="auth-btn report-open" id="report-open-btn" aria-label="AI 리포트">
-      <svg class="ai-ci" viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
-        <circle cx="10" cy="10.5" r="6.4" fill="none" stroke="currentColor" stroke-width="2"/>
-        <line x1="14.6" y1="15.1" x2="20" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-        <text x="10" y="13.1" text-anchor="middle" font-size="6.6" font-weight="800" fill="currentColor" font-family="Arial, Helvetica, sans-serif">AI</text>
-        <path d="M18.5 2 L19.3 4 L21.3 4.8 L19.3 5.6 L18.5 7.6 L17.7 5.6 L15.7 4.8 L17.7 4 Z" fill="currentColor"/>
-      </svg>리포트</button>
-    <button class="auth-btn scrap-open" id="scrap-open-btn" aria-label="나의 스크랩">🔖 스크랩<span class="scrap-badge" id="scrap-badge" hidden></span></button>
+    <span class="foot-user loggedin-only" id="foot-user"></span>
     <button class="auth-btn admin-only" id="features-btn">⚙ 표시</button>
     <button class="auth-btn admin-only" id="notes-btn">📓 노트</button>
     <button class="auth-btn admin-only" id="runlog-btn">📋 로그</button>
     <button class="auth-btn admin-only" id="purge-db-btn">🗑 초기화</button>
+    <button class="auth-btn loggedout-only" id="login-btn">로그인</button>
+    <button class="auth-btn loggedin-only" id="logout-btn">로그아웃</button>
     </div>
   </header>
 
+  <!-- 대메뉴 1: 콜렉터(뉴스) — 기존 탭 전체를 하나의 푸터 메뉴로 묶음 -->
+  <main id="view-collector">
   <div class="tabs-wrap" id="tabs-wrap">
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="cat" aria-label="냥정보">
@@ -287,6 +284,17 @@
     <div class="result-msg" id="msg-social"></div>
     <ul class="list" id="list-social"></ul>
   </section>
+  </main><!-- /view-collector -->
+
+  <!-- 대메뉴 2: 점심 맛집(회사 근처 음식점 검색) — 구현 예정, 버튼/구조만 -->
+  <main id="view-food" hidden>
+    <div class="foodwrap">
+      <div class="food-hero">🍽️</div>
+      <h2 class="food-title">점심 맛집 검색</h2>
+      <p class="food-desc">회사 근처 점심 음식점을 찾아주는 기능이에요.<br>곧 만나요 — <b>준비 중</b>입니다.</p>
+      <span class="food-soon">COMING SOON</span>
+    </div>
+  </main>
 
   <!-- AI 재단 동향 분석 리포트 (상단 버튼 → 풀팝업) -->
   <div class="fullmodal" id="report-modal" hidden>
@@ -430,18 +438,30 @@
     </div>
   </div>
 
-  <footer class="app-footer">
-    <div class="foot-left">
-      <span class="foot-copy">© 2026 김상화</span>
-      <span class="ver">v1.84 · build 260927</span>
-      <span class="ver" id="storage-badge"></span>
-    </div>
-    <div class="foot-right">
-      <span class="foot-user loggedin-only" id="foot-user"></span>
-      <button class="foot-auth loggedout-only" id="login-btn">로그인</button>
-      <button class="foot-auth loggedin-only" id="logout-btn">로그아웃</button>
-    </div>
-  </footer>
+  <!-- 저작권/버전(정적, 스크롤 하단) -->
+  <div class="app-credit">
+    <span class="foot-copy">© 2026 김상화</span>
+    <span class="ver">v1.85 · build 260927</span>
+    <span class="ver" id="storage-badge"></span>
+  </div>
+
+  <!-- 하단 대메뉴(탭 내비게이션) -->
+  <nav class="footnav" id="footnav" aria-label="주요 메뉴">
+    <button class="fnav active" data-nav="collector">
+      <span class="fnav-ic">📰</span><span class="fnav-t">뉴스</span></button>
+    <button class="fnav" data-nav="food">
+      <span class="fnav-ic">🍽️</span><span class="fnav-t">맛집</span></button>
+    <button class="fnav report-open" id="report-open-btn" data-nav="report">
+      <span class="fnav-ic">
+        <svg class="ai-ci" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <circle cx="10" cy="10.5" r="6.4" fill="none" stroke="currentColor" stroke-width="2"/>
+          <line x1="14.6" y1="15.1" x2="20" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          <text x="10" y="13.1" text-anchor="middle" font-size="6.6" font-weight="800" fill="currentColor" font-family="Arial, Helvetica, sans-serif">AI</text>
+          <path d="M18.5 2 L19.3 4 L21.3 4.8 L19.3 5.6 L18.5 7.6 L17.7 5.6 L15.7 4.8 L17.7 4 Z" fill="currentColor"/>
+        </svg></span><span class="fnav-t">리포트</span></button>
+    <button class="fnav scrap-open" id="scrap-open-btn" data-nav="scrap">
+      <span class="fnav-ic">🔖<span class="scrap-badge" id="scrap-badge" hidden></span></span><span class="fnav-t">스크랩</span></button>
+  </nav>
 
   <button id="to-top" aria-label="맨 위로" hidden>↑</button>
 
