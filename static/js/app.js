@@ -2024,6 +2024,33 @@ async function loadReport(id) {
   }
 })();
 
+// 스크롤 방향에 따라 상단(헤더)·푸터 자동 숨김/표시(유튜브식). 아래로=숨김, 위로=표시.
+(function initChromeAutoHide() {
+  let lastY = window.scrollY || 0;
+  let ticking = false;
+  const TH = 6;         // 방향 인식 최소 이동(px)
+  const TOP_KEEP = 60;  // 상단 근처에서는 항상 표시
+  const onFrame = () => {
+    ticking = false;
+    const y = window.scrollY || 0;
+    // 팝업이 열려 있으면 조작 안 함(모달 닫으면 원상)
+    if (document.body.classList.contains("modal-open")) { lastY = y; return; }
+    const dy = y - lastY;
+    if (Math.abs(dy) < TH) return;   // 미세 이동 무시(방향 확정 시에만 lastY 갱신)
+    if (y <= TOP_KEEP) {
+      document.body.classList.remove("chrome-hidden");
+    } else if (dy > 0) {
+      document.body.classList.add("chrome-hidden");     // 아래로 스크롤 → 숨김
+    } else {
+      document.body.classList.remove("chrome-hidden");  // 위로 스크롤 → 표시
+    }
+    lastY = y;
+  };
+  window.addEventListener("scroll", () => {
+    if (!ticking) { ticking = true; requestAnimationFrame(onFrame); }
+  }, { passive: true });
+})();
+
 // ----------------------------- 표시 설정 모달(관리자) -----------------------------
 (function initFeaturesModal() {
   const modal = document.getElementById("features-modal");

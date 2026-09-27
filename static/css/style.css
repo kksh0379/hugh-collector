@@ -30,7 +30,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: transform 0.25s ease;
 }
+/* 스크롤 다운 시 상단(헤더)·푸터 자동 숨김(유튜브식). 헤더가 숨으면 탭바를 최상단으로 올려 빈틈 방지 */
+body.chrome-hidden .app-header { transform: translateY(-100%); }
+body.chrome-hidden .tabs-wrap { top: 0; }
+body.chrome-hidden .app-footer { transform: translateY(100%); }
 .app-header h1 { margin: 0; font-size: 17px; font-weight: 700; flex: 1; }
 
 /* BI(브랜드): 로고 마크 + 워드마크. 클릭하면 홈(/)으로 이동 */
@@ -214,6 +219,7 @@ body.is-loggedin .loggedout-only { display: none !important; }
   z-index: 9;
   background: var(--card);
   border-bottom: 1px solid var(--border);
+  transition: top 0.25s ease;
 }
 .tabs {
   display: flex;
@@ -744,6 +750,7 @@ body.is-admin .legend.admin-only { display: flex !important; }
   position: fixed;
   left: 0; right: 0; bottom: 0;
   z-index: 20;
+  transition: transform 0.25s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
