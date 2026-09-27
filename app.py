@@ -915,6 +915,11 @@ def _lunch_score(cands, avoid_ids, all_visited, recent3, recent7, avoid_cats, mo
         if "light" in moods:
             b += 10 if cat in _LIGHT_CATS else 0
             if cat in {"고기", "돈까스"}: b -= 10
+        if "spicy" in moods and cat in {"중식", "한식", "면요리"}: b += 10   # 얼큰(짬뽕/찌개/국밥/칼국수)
+        if "rainy" in moods and cat in {"한식", "면요리"}: b += 10           # 비 오면 국물
+        if "solo" in moods and cat in {"분식", "면요리", "한식", "돈까스"}: b += 8  # 혼밥 편한
+        if "sweet" in moods and cat in {"카페/디저트"}: b += 14              # 단 거
+        if "no_oily" in moods and cat in {"양식", "돈까스", "패스트푸드", "중식"}: b -= 12  # 느끼한 거 회피
         scored.append((score + b, c))
     scored.sort(key=lambda x: x[0], reverse=True)
     return scored, relaxed

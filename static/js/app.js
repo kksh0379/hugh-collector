@@ -2223,7 +2223,19 @@ async function loadReport(id) {
     const full = Math.round(avg);
     return `<span class="lstar">${"★".repeat(full)}${"☆".repeat(5 - full)}</span>`;
   }
+  // 카카오 상징(말풍선) 아이콘 — '카카오맵'이란 일차원적 명칭 대신 아이콘으로 표시
+  function kakaoIcon() {
+    return `<svg class="kakao-ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
+      + `<path d="M12 3.2C6.7 3.2 2.4 6.6 2.4 10.8c0 2.7 1.8 5 4.6 6.4-.2.7-.7 2.5-.8 2.9-.1.5.2.5.4.4.3-.2 2.9-2 4-2.7.5.1 1 .1 1.4.1 5.3 0 9.6-3.4 9.6-7.6S17.3 3.2 12 3.2z" fill="#3A1D1D"/></svg>`;
+  }
   function lunchCard(r) {
+    // 스크랩/링크복사/랜딩을 뉴스 카드와 동일하게 — place_url을 기준 키로 등록
+    const link = r.place_url || "";
+    const key = registerItem({
+      url: link || ("lunch:" + r.id), title: r.name, category: r.cat_norm || "",
+      content: [r.sub_cat || r.cat_norm, r.road_address || r.address].filter(Boolean).join(" · "),
+    }, "food", link);
+
     const dist = r.dist_m != null ? `${r.dist_m}m` : "";
     const walk = r.walk_min != null ? `도보 ${r.walk_min}분` : "";
     const meta = [walk, dist].filter(Boolean).join(" · ");
@@ -2231,21 +2243,32 @@ async function loadReport(id) {
       ? `${stars(r.avg_rating)} <b>${r.avg_rating}</b> <span class="lrc">(${r.review_count})</span>`
       : `${stars(0)} <span class="lrc">평가 없음</span>`;
     const visit = r.visit_count ? `<span class="lvisit">🍽 ${r.visit_count}</span>` : "";
-    const kakao = r.place_url
-      ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">카카오맵 ↗</a>` : "";
+    const detail = r.place_url
+      ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>` : "";
+    const copy = copyBtnHtml(link);
     const exBtn = isAdmin()
       ? `<button type="button" class="lbtn ex${r.excluded ? " on" : ""}" data-ex="${r.id}">${r.excluded ? "숨김해제" : "숨기기"}</button>` : "";
     const sub = r.sub_cat || r.cat_norm || "";
-    return `<li class="lunch-card${r.excluded ? " is-ex" : ""}" data-id="${r.id}">
+    const addr = r.road_address || r.address || "";
+    // 원본 카테고리 경로(음식점 > 한식 > 국밥) 중 앞의 '음식점 >'는 생략
+    const catPath = (r.category || "").split(">").map((s) => s.trim()).filter((s) => s && s !== "음식점").join(" › ");
+    const phone = r.phone
+      ? `<a class="linfo-tel" href="tel:${escapeHtml(r.phone.replace(/[^0-9+]/g, ""))}">☎ ${escapeHtml(r.phone)}</a>` : "";
+    const checked = r.last_checked ? `수집 ${escapeHtml(String(r.last_checked).slice(5, 10))}` : "";
+    const info2 = [phone, checked].filter(Boolean).join(" · ");
+    return `<li class="lunch-card${r.excluded ? " is-ex" : ""}" data-id="${r.id}" data-key="${escapeHtml(key)}">
+      ${scrapBtnHtml(key)}
       <div class="lc-top">
         <div class="lname">${escapeHtml(r.name || "이름 미상")}</div>
         <span class="lcat">${escapeHtml(sub)}</span>
       </div>
+      ${catPath ? `<div class="lcatpath">${escapeHtml(catPath)}</div>` : ""}
       <div class="lrate">${rate} ${visit}</div>
-      ${meta ? `<div class="lmeta">📍 ${escapeHtml(meta)}${r.road_address ? " · " + escapeHtml(r.road_address) : ""}</div>` : (r.road_address ? `<div class="lmeta">📍 ${escapeHtml(r.road_address)}</div>` : "")}
+      ${meta || addr ? `<div class="lmeta">📍 ${escapeHtml([meta, addr].filter(Boolean).join(" · "))}</div>` : ""}
+      ${info2 ? `<div class="lmeta2">${info2}</div>` : ""}
       <div class="lacts">
         <button type="button" class="lbtn rev" data-rev="${r.id}">평점·후기 ${r.review_count ? `(${r.review_count})` : ""}</button>
-        ${kakao}${exBtn}
+        ${detail}${copy}${exBtn}
       </div>
     </li>`;
   }
@@ -2283,7 +2306,7 @@ async function loadReport(id) {
   function renderReviews(r, revs) {
     const body = $("lunch-rev-body"); if (!body) return;
     const avg = r.avg_rating ? `${stars(r.avg_rating)} <b>${r.avg_rating}</b> · 후기 ${revs.length}개` : "아직 평가가 없어요";
-    const kakao = r.place_url ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">카카오맵에서 상세보기 ↗</a>` : "";
+    const kakao = r.place_url ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>${copyBtnHtml(r.place_url)}` : "";
     const list = revs.length
       ? revs.map((v) => `<div class="lrev">
           <div class="lrev-t"><span class="lrev-u">${escapeHtml(v.username || "익명")}</span> ${stars(v.rating)}
@@ -2357,6 +2380,11 @@ async function loadReport(id) {
     { key: "mild", label: "😌 속 편한 걸로" },
     { key: "comfort", label: "🔥 스트레스 풀래" },
     { key: "light", label: "🥗 가볍게" },
+    { key: "spicy", label: "🌶️ 얼큰한 거" },
+    { key: "rainy", label: "🌧️ 비 와서 국물" },
+    { key: "solo", label: "🧍 혼밥이야" },
+    { key: "sweet", label: "🍰 단 거 당겨" },
+    { key: "no_oily", label: "🤢 느끼한 건 싫어" },
     { key: "explore", label: "✨ 안 가본 데" },
     { key: "trusted", label: "⭐ 검증된 데" },
   ];
@@ -2371,7 +2399,7 @@ async function loadReport(id) {
   }
   function renderPicker() {
     const body = $("lunch-ai-body"); if (!body) return;
-    const cats = Object.keys(catCounts()).sort();
+    const cats = Object.keys(catCounts()).filter((c) => c !== "기타").sort();  // '기타 말고'는 어색 → 제외
     const chip = (key, label) =>
       `<button type="button" class="mood-chip${LUNCH.aiSel[key] ? " on" : ""}" data-mood="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
     const pchip = (key, label) =>
@@ -2384,9 +2412,26 @@ async function loadReport(id) {
       <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🫠 지금 기분·상황</div><div class="mood-row">${moodChips}</div></div>
-      <button type="button" class="aipick-go" id="lunch-ai-go">🤖 오늘 점심 추천받기</button>
-      <div class="aipick-hint">아무것도 안 골라도 돼요 — 그럼 가까운·검증된 곳 위주로 골라줘요.</div>
+      <div class="aipick-btns">
+        <button type="button" class="aipick-go" id="lunch-ai-go">🤖 추천받기</button>
+        <button type="button" class="aipick-dice" id="lunch-ai-dice" title="랜덤 조건으로">🎲</button>
+      </div>
+      <div class="aipick-hint">🎲 를 누르면 조건을 <b>랜덤</b>으로 골라 바로 추천해요. 아무것도 안 골라도 OK.</div>
     </div>`;
+  }
+  // 🎲 랜덤 조건: 성향 1개 + 기분 1~2개를 무작위로 고르고 바로 추천(재미 요소)
+  function randomizeAndRecommend() {
+    const pk = PERSONA_CHIPS[Math.floor(Math.random() * PERSONA_CHIPS.length)].key;
+    LUNCH.aiPersona = pk;
+    LUNCH.aiSel = {};
+    const pool = MOOD_CHIPS.slice();
+    const n = 1 + Math.floor(Math.random() * 2);  // 1~2개
+    for (let i = 0; i < n && pool.length; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      LUNCH.aiSel[pool.splice(idx, 1)[0].key] = true;
+    }
+    toast("🎲 랜덤으로 골랐어요!");
+    runRecommend();
   }
   function gatherConditions() {
     const avoid_cats = [], moods = [];
@@ -2536,6 +2581,7 @@ async function loadReport(id) {
       }
       const chip = e.target.closest("[data-mood]");
       if (chip) { const k = chip.dataset.mood; LUNCH.aiSel[k] = !LUNCH.aiSel[k]; chip.classList.toggle("on", LUNCH.aiSel[k]); return; }
+      if (e.target.closest("#lunch-ai-dice")) { randomizeAndRecommend(); return; }
       if (e.target.closest("#lunch-ai-go")) { runRecommend(); return; }
       if (e.target.closest("#lunch-ai-retry")) { runRecommend(); return; }
       if (e.target.closest("#lunch-ai-edit")) { renderPicker(); return; }
