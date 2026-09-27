@@ -848,6 +848,17 @@ body.is-admin .legend.admin-only { display: flex !important; }
 .scrap-btn.on { color: var(--primary); }
 .scrap-btn:active { transform: scale(0.88); }
 
+/* 스크랩 담기 애니메이션(지니 효과) — 하단 스크랩 탭으로 빨려들어감 */
+.scrap-fly {
+  position: fixed; z-index: 9999; font-size: 28px; pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.72s cubic-bezier(.35, .9, .25, 1), opacity 0.72s ease;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+.fnav.scrap-pop .fnav-ic { animation: scrapPop 0.5s ease; }
+@keyframes scrapPop { 0% { transform: none; } 45% { transform: scale(1.4); } 100% { transform: none; } }
+
 /* 짧은 토스트 */
 .toast {
   position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%) translateY(10px);

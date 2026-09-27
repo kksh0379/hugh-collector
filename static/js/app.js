@@ -140,6 +140,37 @@ function copyBtnHtml(url) {
   if (!url) return "";
   return `<button type="button" class="copy-btn" data-url="${escapeHtml(url)}">🔗 링크 복사</button>`;
 }
+// 카카오 상징(말풍선) 아이콘 + '상세보기' 랜딩 버튼 — 맛집 카드/스크랩 공용
+function kakaoIcon() {
+  return `<svg class="kakao-ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
+    + `<path d="M12 3.2C6.7 3.2 2.4 6.6 2.4 10.8c0 2.7 1.8 5 4.6 6.4-.2.7-.7 2.5-.8 2.9-.1.5.2.5.4.4.3-.2 2.9-2 4-2.7.5.1 1 .1 1.4.1 5.3 0 9.6-3.4 9.6-7.6S17.3 3.2 12 3.2z" fill="#3A1D1D"/></svg>`;
+}
+function kakaoLinkHtml(url) {
+  if (!url) return "";
+  return `<a class="lbtn kakao" href="${escapeHtml(url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>`;
+}
+// 스크랩 담기 애니메이션(지니/알라딘 효과): 소스 요소 → 하단 '스크랩' 탭으로 빨려들어감
+function flyToScrap(fromEl) {
+  try {
+    const target = document.getElementById("scrap-open-btn");
+    if (!target || !fromEl) return;
+    const a = fromEl.getBoundingClientRect(), b = target.getBoundingClientRect();
+    const g = document.createElement("div");
+    g.className = "scrap-fly"; g.textContent = "🔖";
+    g.style.left = (a.left + a.width / 2) + "px";
+    g.style.top = (a.top + a.height / 2) + "px";
+    document.body.appendChild(g);
+    const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+    const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    requestAnimationFrame(() => {
+      g.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.25) rotate(20deg)`;
+      g.style.opacity = "0.15";
+    });
+    target.classList.add("scrap-pop");
+    setTimeout(() => target.classList.remove("scrap-pop"), 500);
+    setTimeout(() => g.remove(), 780);
+  } catch (e) { /* 무시 */ }
+}
 async function copyToClipboard(text) {
   try {
     if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
@@ -255,7 +286,14 @@ function syncScrapUI(key) {
 // 위임: 원문 링크 클릭 → 읽음 처리 / 스크랩 버튼 클릭 → 토글
 document.addEventListener("click", (e) => {
   const sb = e.target.closest(".scrap-btn");
-  if (sb) { e.preventDefault(); e.stopPropagation(); toggleScrap(sb.dataset.key); return; }
+  if (sb) {
+    e.preventDefault(); e.stopPropagation();
+    const key = sb.dataset.key;
+    const willAdd = isLoggedIn() && !isScrapped(key);
+    toggleScrap(key);
+    if (willAdd && isScrapped(key)) flyToScrap(sb);  // 담기 애니메이션(추가될 때만)
+    return;
+  }
   const a = e.target.closest('a[target="_blank"]');
   if (a) { const card = a.closest("[data-key]"); if (card) { markRead(card.dataset.key); card.classList.add("is-read"); } }
 });
@@ -1222,7 +1260,7 @@ document.getElementById("collect-social").addEventListener("click", (e) =>
   runCrawl(e.currentTarget, "social", document.getElementById("msg-social"), loadSocial)
 );
 // ----------------------------- DB 비우기(관리자, 현재 탭만) -----------------------------
-const TAB_KO = { cat: "냥정보", game: "게임정보", news: "NC뉴스", biz: "업계동향", security: "보안뉴스", event: "행사일정", boards: "재단게시판", social: "재단YT", report: "리포트" };
+const TAB_KO = { cat: "냥정보", game: "게임정보", news: "NC뉴스", biz: "업계동향", security: "보안뉴스", event: "행사일정", boards: "재단게시판", social: "재단YT", report: "리포트", food: "맛집" };
 function activeTab() {
   const t = document.querySelector(".tab.active");
   return (t && t.dataset.tab) || "cat";
@@ -1539,6 +1577,7 @@ function scrapCardNode(s) {
   if (s.date) meta.push(escapeHtml(fmtDate(s.date)));
   if (s.author) meta.push(escapeHtml(s.author));
   const link = s.link || s.url;
+  const isFood = s.tab === "food";
   const t = escapeHtml(s.title || "(제목 없음)");
   const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${t}</a>` : t;
   const checks = GROUPS.length
@@ -1552,7 +1591,7 @@ function scrapCardNode(s) {
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions">
-        ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">원문 보기 ↗</a>` : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">원문 보기 ↗</a>`) : ""}
         ${copyBtnHtml(link)}
         <button class="grp-assign" type="button">🏷 그룹 지정</button>
       </div>
@@ -2193,7 +2232,7 @@ async function loadReport(id) {
   async function loadRestaurants() {
     if (!LUNCH.curLoc) return;
     const list = $("lunch-list");
-    if (list) list.innerHTML = `<li class="lunch-loading">불러오는 중…</li>`;
+    if (list) list.innerHTML = `<li class="lunch-loading">${catSpin("주변 맛집 불러오는 중…")}</li>`;
     try {
       const d = await getJSON("/api/lunch/restaurants?loc=" + LUNCH.curLoc.id);
       LUNCH.rows = d.restaurants || [];
@@ -2239,11 +2278,6 @@ async function loadReport(id) {
     if (!avg) return `<span class="lstar off">☆☆☆☆☆</span>`;
     const full = Math.round(avg);
     return `<span class="lstar">${"★".repeat(full)}${"☆".repeat(5 - full)}</span>`;
-  }
-  // 카카오 상징(말풍선) 아이콘 — '카카오맵'이란 일차원적 명칭 대신 아이콘으로 표시
-  function kakaoIcon() {
-    return `<svg class="kakao-ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
-      + `<path d="M12 3.2C6.7 3.2 2.4 6.6 2.4 10.8c0 2.7 1.8 5 4.6 6.4-.2.7-.7 2.5-.8 2.9-.1.5.2.5.4.4.3-.2 2.9-2 4-2.7.5.1 1 .1 1.4.1 5.3 0 9.6-3.4 9.6-7.6S17.3 3.2 12 3.2z" fill="#3A1D1D"/></svg>`;
   }
   function lunchCard(r) {
     // 스크랩/링크복사/랜딩을 뉴스 카드와 동일하게 — place_url을 기준 키로 등록

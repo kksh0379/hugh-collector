@@ -762,29 +762,76 @@ def lunch_seed_locations(offices):
         return len(offices)
 
 
+def _lunch_merge_restaurants(conn, from_loc, to_loc):
+    """from_loc의 식당을 to_loc으로 이동(place_id 충돌 시 중복 삭제). 위치 병합용."""
+    rows = conn.execute(_q("SELECT id, place_id FROM lunch_restaurant WHERE loc_id=?"), (from_loc,)).fetchall()
+    for r in rows:
+        r = dict(r)
+        rid, pid = r["id"], r["place_id"]
+        dup = conn.execute(_q("SELECT id FROM lunch_restaurant WHERE loc_id=? AND place_id=?"),
+                           (to_loc, pid)).fetchone()
+        if dup:  # 이미 대상 위치에 같은 place_id → 이쪽(중복) 삭제
+            conn.execute(_q("DELETE FROM lunch_review WHERE restaurant_id=?"), (rid,))
+            conn.execute(_q("DELETE FROM lunch_visit WHERE restaurant_id=?"), (rid,))
+            conn.execute(_q("DELETE FROM lunch_restaurant WHERE id=?"), (rid,))
+        else:
+            conn.execute(_q("UPDATE lunch_restaurant SET loc_id=? WHERE id=?"), (to_loc, rid))
+
+
 def lunch_sync_locations(offices):
-    """순번(sort) 기준으로 위치를 최신값과 맞춘다(재배포 시 이름 변경·주소 교정·새 위치 추가 반영).
-    - 순번(i)에 해당하는 행이 있으면 이름을 갱신(이름 변경 대응, 중복 생성 방지).
-    - 주소가 바뀌면 좌표(lat/lng)를 비워 다음 조회 때 다시 지오코딩하게 한다.
-    - 주소가 동일하면 좌표는 건드리지 않는다(좋은 좌표 보존).
-    - 순번에 행이 없으면 새로 등록."""
+    """위치를 offices와 정확히 일치시킨다(재배포 시 이름 변경·주소 교정·중복 정리).
+    - 주소 기준으로 기존 행을 매칭(주소는 사업장 고유·안정 키). 주소 변경분은 순번(sort)으로 재사용.
+    - 같은 주소의 중복 위치는 식당을 하나로 병합 후 삭제(중복 명칭 버그 해결).
+    - offices에 없는 잔여 위치는 식당 0곳이면 삭제, 있으면 보존.
+    - 주소가 동일하면 좌표 보존, 바뀌면 좌표 리셋(재지오코딩)."""
     with get_conn() as conn:
+        rows = [dict(r) for r in conn.execute("SELECT * FROM lunch_location ORDER BY sort, id").fetchall()]
+        used = set()
+
+        def take(pred):  # 조건에 맞는 첫 미사용 행 선택
+            for r in rows:
+                if r["id"] not in used and pred(r):
+                    used.add(r["id"])
+                    return r
+            return None
+
         for i, o in enumerate(offices):
-            row = conn.execute(_q("SELECT id, address FROM lunch_location WHERE sort=?"), (i,)).fetchone()
             new_addr = o.get("address", "")
             rad = int(o.get("radius", 500))
-            if not row:
+            # 1) 같은 주소 행 → 2) 해당 순번 행 → 3) 임의 미사용 행 → 4) 신규
+            match = (take(lambda r, a=new_addr: (r.get("address") or "") == a)
+                     or take(lambda r, s=i: r.get("sort") == s)
+                     or take(lambda r: True))
+            if not match:
                 conn.execute(_q("INSERT INTO lunch_location (name, address, lat, lng, radius, sort, created_at) "
                                 "VALUES (?,?,?,?,?,?,?)"),
                              (o["name"], new_addr, o.get("lat"), o.get("lng"), rad, i, _now()))
                 continue
-            row = dict(row)
-            if (row.get("address") or "") != new_addr:   # 주소 변경 → 좌표 리셋해 재지오코딩
-                conn.execute(_q("UPDATE lunch_location SET name=?, address=?, lat=NULL, lng=NULL, radius=? WHERE id=?"),
-                             (o["name"], new_addr, rad, row["id"]))
-            else:                                          # 이름/반경만 갱신, 좌표 보존
-                conn.execute(_q("UPDATE lunch_location SET name=?, radius=? WHERE id=?"),
-                             (o["name"], rad, row["id"]))
+            if (match.get("address") or "") != new_addr:  # 주소 변경 → 좌표 리셋
+                conn.execute(_q("UPDATE lunch_location SET name=?, address=?, lat=NULL, lng=NULL, radius=?, sort=? WHERE id=?"),
+                             (o["name"], new_addr, rad, i, match["id"]))
+            else:                                          # 이름/반경/순번만 갱신, 좌표 보존
+                conn.execute(_q("UPDATE lunch_location SET name=?, radius=?, sort=? WHERE id=?"),
+                             (o["name"], rad, i, match["id"]))
+            match["address"] = new_addr  # 이후 중복 병합 판단용 최신화
+
+        # 잔여(미사용) 위치 정리: 같은 주소의 정식 위치가 있으면 식당 병합 후 삭제, 없고 비었으면 삭제
+        canon_by_addr = {}
+        for i, o in enumerate(offices):
+            row = conn.execute(_q("SELECT id FROM lunch_location WHERE sort=?"), (i,)).fetchone()
+            if row:
+                canon_by_addr[o.get("address", "")] = dict(row)["id"]
+        for r in rows:
+            if r["id"] in used:
+                continue
+            keep = canon_by_addr.get(r.get("address") or "")
+            if keep:
+                _lunch_merge_restaurants(conn, r["id"], keep)
+                conn.execute(_q("DELETE FROM lunch_location WHERE id=?"), (r["id"],))
+            else:
+                cnt = conn.execute(_q("SELECT COUNT(*) AS c FROM lunch_restaurant WHERE loc_id=?"), (r["id"],)).fetchone()
+                if (dict(cnt)["c"] if cnt else 0) == 0:
+                    conn.execute(_q("DELETE FROM lunch_location WHERE id=?"), (r["id"],))
 
 
 def lunch_list_locations():
