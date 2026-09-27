@@ -186,10 +186,13 @@ function toast(msg) {
     if (n === "scrap" && !isLoggedIn()) { toast("로그인하면 스크랩을 볼 수 있어요"); if (typeof openLogin === "function") openLogin(); return; }
     nav.querySelectorAll(".fnav").forEach((x) => x.classList.toggle("active", x.dataset.nav === n));
     Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
+    // 맛집 하위 뷰(후기/AI 추천)는 항상 닫고 대메뉴로 복귀
+    ["view-lunch-reviews", "view-lunch-ai"].forEach((id) => { const e = document.getElementById(id); if (e) e.hidden = true; });
     window.scrollTo(0, 0);
     document.body.classList.remove("chrome-hidden");
     if (n === "report" && typeof window.onShowReport === "function") window.onShowReport();
     if (n === "scrap" && typeof onShowScrap === "function") onShowScrap();
+    if (n === "food" && typeof window.onShowLunch === "function") window.onShowLunch();
   }
   nav.addEventListener("click", (e) => {
     const b = e.target.closest(".fnav");
@@ -2116,6 +2119,355 @@ async function loadReport(id) {
       if (msg) { msg.style.color = "#dc2626"; msg.textContent = "저장 실패: " + err.message; }
     }
   });
+})();
+
+// ----------------------------- 맛집(점심) -----------------------------
+// 카카오 로컬로 주변 식당을 수집(관리자) → 목록/검색/카테고리 필터 → 카드에서 카카오맵 링크랜딩.
+// 상세정보는 우리가 만들지 않고(원칙: 메뉴·가격·영업시간 지어내지 않음) 카카오맵으로 넘긴다.
+// 이용자 평점/후기는 우리 앱에 직접 누적, AI가 '오늘 뭐 먹지?'를 추천.
+(function initLunch() {
+  const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", poll: null };
+  const $ = (id) => document.getElementById(id);
+
+  function isAdmin() { return document.body.classList.contains("is-admin"); }
+  function msg(t, err) {
+    const m = $("lunch-msg"); if (!m) return;
+    m.textContent = t || ""; m.style.color = err ? "#dc2626" : "var(--muted)";
+  }
+
+  async function getJSON(url) {
+    const r = await fetch(url);
+    if (!r.ok) throw r;
+    return r.json();
+  }
+
+  // ---- 위치 전환 ----
+  async function loadLocations() {
+    try {
+      const d = await getJSON("/api/lunch/locations");
+      LUNCH.locs = d.locations || [];
+      LUNCH.kakao = !!d.kakao;
+    } catch (e) { LUNCH.locs = []; }
+    if (!LUNCH.curLoc && LUNCH.locs.length) LUNCH.curLoc = LUNCH.locs[0];
+    renderLocBar();
+    if (LUNCH.curLoc) loadRestaurants();
+    else msg("등록된 위치가 없어요");
+  }
+  function renderLocBar() {
+    const nameEl = $("lunch-loc-name"), radEl = $("lunch-loc-radius"), menu = $("lunch-loc-menu");
+    if (LUNCH.curLoc && nameEl) nameEl.textContent = LUNCH.curLoc.name || "위치";
+    if (LUNCH.curLoc && radEl) radEl.textContent = (LUNCH.curLoc.radius || 500) + "m";
+    if (!menu) return;
+    menu.innerHTML = LUNCH.locs.map((l) => {
+      const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;
+      return `<button type="button" class="lunch-loc-item${on ? " on" : ""}" data-id="${l.id}">`
+        + `📍 ${escapeHtml(l.name)}<span class="lli-sub">${escapeHtml(l.address || "")} · ${l.radius || 500}m</span></button>`;
+    }).join("");
+  }
+  function closeLocMenu() { const m = $("lunch-loc-menu"); if (m) m.hidden = true; }
+
+  // ---- 식당 목록 ----
+  async function loadRestaurants() {
+    if (!LUNCH.curLoc) return;
+    const list = $("lunch-list");
+    if (list) list.innerHTML = `<li class="lunch-loading">불러오는 중…</li>`;
+    try {
+      const d = await getJSON("/api/lunch/restaurants?loc=" + LUNCH.curLoc.id);
+      LUNCH.rows = d.restaurants || [];
+      if (d.location) { LUNCH.curLoc = Object.assign(LUNCH.curLoc, d.location); renderLocBar(); }
+    } catch (e) { LUNCH.rows = []; }
+    renderCats();
+    renderList();
+    if (!LUNCH.rows.length) {
+      msg(LUNCH.kakao ? "아직 수집된 식당이 없어요. (관리자) 주변 식당 수집을 눌러주세요." : "카카오 키 미설정 — 수동 등록만 가능해요");
+    } else { msg(""); }
+  }
+
+  function catCounts() {
+    const m = {};
+    LUNCH.rows.forEach((r) => { const c = r.cat_norm || "기타"; m[c] = (m[c] || 0) + 1; });
+    return m;
+  }
+  function renderCats() {
+    const bar = $("lunch-cats"); if (!bar) return;
+    const counts = catCounts();
+    const cats = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    if (!LUNCH.rows.length) { bar.innerHTML = ""; return; }
+    if (LUNCH.cat !== "전체" && !counts[LUNCH.cat]) LUNCH.cat = "전체";
+    const chip = (key, label, n) =>
+      `<label class="lcat-chip${LUNCH.cat === key ? " on" : ""}"><input type="radio" name="lcat" value="${escapeHtml(key)}"${LUNCH.cat === key ? " checked" : ""}>`
+      + `${escapeHtml(label)}${n != null ? ` <b>${n}</b>` : ""}</label>`;
+    bar.innerHTML = chip("전체", "전체", LUNCH.rows.length) + cats.map((c) => chip(c, c, counts[c])).join("");
+  }
+
+  function filtered() {
+    const q = (LUNCH.q || "").trim().toLowerCase();
+    return LUNCH.rows.filter((r) => {
+      if (LUNCH.cat !== "전체" && (r.cat_norm || "기타") !== LUNCH.cat) return false;
+      if (q) {
+        const hay = [r.name, r.category, r.cat_norm, r.sub_cat, r.road_address, r.address].join(" ").toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  function stars(avg) {
+    if (!avg) return `<span class="lstar off">☆☆☆☆☆</span>`;
+    const full = Math.round(avg);
+    return `<span class="lstar">${"★".repeat(full)}${"☆".repeat(5 - full)}</span>`;
+  }
+  function lunchCard(r) {
+    const dist = r.dist_m != null ? `${r.dist_m}m` : "";
+    const walk = r.walk_min != null ? `도보 ${r.walk_min}분` : "";
+    const meta = [walk, dist].filter(Boolean).join(" · ");
+    const rate = r.avg_rating
+      ? `${stars(r.avg_rating)} <b>${r.avg_rating}</b> <span class="lrc">(${r.review_count})</span>`
+      : `${stars(0)} <span class="lrc">평가 없음</span>`;
+    const visit = r.visit_count ? `<span class="lvisit">🍽 ${r.visit_count}</span>` : "";
+    const kakao = r.place_url
+      ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">카카오맵 ↗</a>` : "";
+    const exBtn = isAdmin()
+      ? `<button type="button" class="lbtn ex${r.excluded ? " on" : ""}" data-ex="${r.id}">${r.excluded ? "숨김해제" : "숨기기"}</button>` : "";
+    const sub = r.sub_cat || r.cat_norm || "";
+    return `<li class="lunch-card${r.excluded ? " is-ex" : ""}" data-id="${r.id}">
+      <div class="lc-top">
+        <div class="lname">${escapeHtml(r.name || "이름 미상")}</div>
+        <span class="lcat">${escapeHtml(sub)}</span>
+      </div>
+      <div class="lrate">${rate} ${visit}</div>
+      ${meta ? `<div class="lmeta">📍 ${escapeHtml(meta)}${r.road_address ? " · " + escapeHtml(r.road_address) : ""}</div>` : (r.road_address ? `<div class="lmeta">📍 ${escapeHtml(r.road_address)}</div>` : "")}
+      <div class="lacts">
+        <button type="button" class="lbtn rev" data-rev="${r.id}">평점·후기 ${r.review_count ? `(${r.review_count})` : ""}</button>
+        ${kakao}${exBtn}
+      </div>
+    </li>`;
+  }
+  function renderList() {
+    const list = $("lunch-list"), cnt = $("lunch-count"); if (!list) return;
+    const fs = filtered();
+    if (cnt) cnt.innerHTML = LUNCH.rows.length ? `총 <b>${fs.length}</b>곳` : "";
+    if (!LUNCH.rows.length) {
+      list.innerHTML = `<li class="lunch-loading">🍚 아직 등록된 식당이 없어요${isAdmin() ? "<br>“주변 식당 수집”을 눌러 채워주세요" : ""}</li>`;
+      return;
+    }
+    if (!fs.length) { list.innerHTML = `<li class="lunch-loading">조건에 맞는 식당이 없어요</li>`; return; }
+    list.innerHTML = fs.map(lunchCard).join("");
+  }
+
+  function rowById(id) { return LUNCH.rows.find((r) => String(r.id) === String(id)); }
+
+  // ---- 후기 뷰 ----
+  function showView(id) {
+    ["view-food", "view-lunch-reviews", "view-lunch-ai"].forEach((v) => {
+      const e = $(v); if (e) e.hidden = (v !== id);
+    });
+    window.scrollTo(0, 0);
+  }
+  async function openReviews(id) {
+    const r = rowById(id); if (!r) return;
+    const nameEl = $("lunch-rev-name"), body = $("lunch-rev-body");
+    if (nameEl) nameEl.textContent = r.name || "식당";
+    showView("view-lunch-reviews");
+    if (body) body.innerHTML = `<div class="lrev-head">불러오는 중…</div>`;
+    let revs = [];
+    try { revs = await getJSON("/api/lunch/reviews?rid=" + id); } catch (e) { revs = []; }
+    renderReviews(r, revs);
+  }
+  function renderReviews(r, revs) {
+    const body = $("lunch-rev-body"); if (!body) return;
+    const avg = r.avg_rating ? `${stars(r.avg_rating)} <b>${r.avg_rating}</b> · 후기 ${revs.length}개` : "아직 평가가 없어요";
+    const kakao = r.place_url ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">카카오맵에서 상세보기 ↗</a>` : "";
+    const list = revs.length
+      ? revs.map((v) => `<div class="lrev">
+          <div class="lrev-t"><span class="lrev-u">${escapeHtml(v.username || "익명")}</span> ${stars(v.rating)}
+            <span class="lrev-d">${escapeHtml(fmtDate(v.created_at))}</span></div>
+          ${v.comment ? `<div class="lrev-c">${escapeHtml(v.comment)}</div>` : ""}
+        </div>`).join("")
+      : `<div class="lrev-empty">첫 후기를 남겨보세요 🙌</div>`;
+    const writer = isLoggedIn() ? writerHtml() : `<div class="lrev-note">로그인하면 평점·후기를 남길 수 있어요</div>`;
+    body.innerHTML = `<div class="lrev-summary">${avg}</div>
+      <div class="lrev-links">${kakao}</div>
+      ${writer}
+      <div class="lrev-list">${list}</div>`;
+    if (isLoggedIn()) wireWriter(r.id);
+  }
+  function writerHtml() {
+    return `<form class="lwriter" id="lunch-writer">
+      <div class="lw-stars" id="lw-stars" data-val="0" role="radiogroup" aria-label="평점">
+        ${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="lw-star" data-v="${n}" aria-label="${n}점">☆</button>`).join("")}
+      </div>
+      <textarea id="lw-comment" maxlength="300" rows="2" placeholder="후기 (선택, 300자)"></textarea>
+      <label class="lw-visit"><input type="checkbox" id="lw-visit" checked> 오늘 방문</label>
+      <button type="submit" class="btn-collect lw-submit">평점 등록</button>
+    </form>`;
+  }
+  function wireWriter(rid) {
+    const wrap = $("lw-stars"), form = $("lunch-writer");
+    if (wrap) wrap.addEventListener("click", (e) => {
+      const b = e.target.closest(".lw-star"); if (!b) return;
+      const v = +b.dataset.v; wrap.dataset.val = v;
+      wrap.querySelectorAll(".lw-star").forEach((s) => { s.textContent = (+s.dataset.v <= v) ? "★" : "☆"; });
+    });
+    if (form) form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const rating = +($("lw-stars").dataset.val || 0);
+      if (!rating) { toast("별점을 선택해 주세요"); return; }
+      const btn = form.querySelector(".lw-submit"); if (btn) btn.disabled = true;
+      try {
+        await api("/api/lunch/review", {
+          rid, rating,
+          comment: ($("lw-comment").value || "").trim(),
+          visit: $("lw-visit").checked,
+        });
+        toast("등록했어요, 고마워요!");
+        await loadRestaurants();          // 집계 갱신
+        const fresh = rowById(rid);
+        let revs = []; try { revs = await getJSON("/api/lunch/reviews?rid=" + rid); } catch (e2) {}
+        if (fresh) renderReviews(fresh, revs);
+      } catch (err) {
+        toast("등록 실패 — 로그인 상태를 확인해 주세요");
+        if (btn) btn.disabled = false;
+      }
+    });
+  }
+
+  // ---- AI 추천 ----
+  async function runRecommend(craving) {
+    if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
+    showView("view-lunch-ai");
+    const body = $("lunch-ai-body");
+    if (body) body.innerHTML = `<div class="airec-load">🤖 오늘 점심 고르는 중…</div>`;
+    const ids = filtered().map((r) => r.id);   // 현재 필터 결과 안에서 추천
+    let res;
+    try {
+      res = await api("/api/lunch/recommend", { loc_id: LUNCH.curLoc.id, candidate_ids: ids, craving: craving || "" });
+    } catch (e) { res = { ok: false, error: "추천을 불러오지 못했어요" }; }
+    renderRecommend(res, craving);
+  }
+  function renderRecommend(res, craving) {
+    const body = $("lunch-ai-body"); if (!body) return;
+    if (!res || !res.ok) {
+      body.innerHTML = `<div class="airec-empty">${escapeHtml((res && res.error) || "추천 실패")}</div>
+        <button type="button" class="btn-collect retry" id="lunch-ai-retry">다시 추천</button>`;
+      return;
+    }
+    const p = res.pick;
+    const rate = p.avg_rating ? `${stars(p.avg_rating)} <b>${p.avg_rating}</b> (${p.review_count})` : "평가 없음";
+    const meta = [p.walk_min != null ? `도보 ${p.walk_min}분` : "", p.dist_m != null ? `${p.dist_m}m` : ""].filter(Boolean).join(" · ");
+    const kakao = p.place_url ? `<a class="lbtn kakao" href="${escapeHtml(p.place_url)}" target="_blank" rel="noopener">카카오맵 ↗</a>` : "";
+    const engine = res.engine === "ai" ? "AI 추천" : "랜덤 추천";
+    const alts = (res.alternatives || []).map((a) =>
+      `<button type="button" class="alt" data-rev="${a.id}">${escapeHtml(a.name)} <span class="alt-cat">${escapeHtml(a.cat_norm || "")}</span></button>`).join("");
+    body.innerHTML = `<div class="airec">
+      <div class="airec-badge">🤖 ${engine}${craving ? " · “" + escapeHtml(craving) + "”" : ""}</div>
+      <div class="airec-name">${escapeHtml(p.name)}</div>
+      <div class="airec-cat">${escapeHtml(p.sub_cat || p.cat_norm || "")}</div>
+      <div class="airec-rate">${rate}</div>
+      ${meta ? `<div class="airec-meta">📍 ${escapeHtml(meta)}</div>` : ""}
+      ${p.reason ? `<div class="airec-why"><b>왜 추천?</b> ${escapeHtml(p.reason)}</div>` : ""}
+      <div class="airec-acts">${kakao}
+        <button type="button" class="lbtn rev" data-rev="${p.id}">평점·후기</button>
+        <button type="button" class="btn-collect retry" id="lunch-ai-retry">🔄 다시 추천</button>
+      </div>
+      ${alts ? `<div class="altrow"><span class="alt-lb">다른 후보</span>${alts}</div>` : ""}
+    </div>`;
+  }
+
+  // ---- 관리자: 수집 ----
+  async function startCollect() {
+    if (!LUNCH.curLoc) return;
+    const btn = $("lunch-collect");
+    msg("수집 시작…"); if (btn) btn.disabled = true;
+    try {
+      const d = await api("/api/lunch/collect?loc=" + LUNCH.curLoc.id, {});
+      if (d.error) { msg(d.error, true); if (btn) btn.disabled = false; return; }
+      pollCollect();
+    } catch (e) { msg("수집 요청 실패(권한/키 확인)", true); if (btn) btn.disabled = false; }
+  }
+  function pollCollect() {
+    clearTimeout(LUNCH.poll);
+    LUNCH.poll = setTimeout(async () => {
+      let s; try { s = await getJSON("/api/lunch/collect/status"); } catch (e) { s = {}; }
+      if (s.progress) msg(s.progress);
+      if (s.running) { pollCollect(); return; }
+      const btn = $("lunch-collect"); if (btn) btn.disabled = false;
+      if (s.result && s.result.ok) { msg(`완료 · 신규 ${s.result.new} · 갱신 ${s.result.updated}`); loadRestaurants(); }
+      else if (s.result && s.result.error) msg(s.result.error, true);
+    }, 1500);
+  }
+
+  // ---- 관리자: 수동 추가 ----
+  async function manualAdd() {
+    if (!LUNCH.curLoc) return;
+    const name = prompt("식당 이름"); if (!name) return;
+    const category = prompt("카테고리(예: 한식 국밥 / 일식 / 카페 등)", "") || "";
+    const place_url = prompt("카카오맵/네이버 등 상세 링크(선택)", "") || "";
+    try {
+      await api("/api/lunch/restaurant", { loc_id: LUNCH.curLoc.id, name, category, place_url });
+      toast("추가했어요"); loadRestaurants();
+    } catch (e) { toast("추가 실패(권한 확인)"); }
+  }
+
+  // ---- 이벤트 바인딩 ----
+  function wire() {
+    const locBtn = $("lunch-loc-btn"), locMenu = $("lunch-loc-menu");
+    if (locBtn) locBtn.addEventListener("click", (e) => { e.stopPropagation(); if (locMenu) locMenu.hidden = !locMenu.hidden; });
+    if (locMenu) locMenu.addEventListener("click", (e) => {
+      const b = e.target.closest(".lunch-loc-item"); if (!b) return;
+      const l = LUNCH.locs.find((x) => String(x.id) === b.dataset.id);
+      if (l) { LUNCH.curLoc = l; LUNCH.cat = "전체"; LUNCH.q = ""; const s = $("lunch-search"); if (s) s.value = ""; renderLocBar(); loadRestaurants(); }
+      closeLocMenu();
+    });
+    document.addEventListener("click", () => closeLocMenu());
+
+    const search = $("lunch-search"), sBtn = $("lunch-search-btn");
+    const doSearch = () => { LUNCH.q = search ? search.value : ""; renderList(); };
+    if (search) search.addEventListener("input", doSearch);
+    if (sBtn) sBtn.addEventListener("click", doSearch);
+
+    const cats = $("lunch-cats");
+    if (cats) cats.addEventListener("change", (e) => {
+      const r = e.target.closest('input[name="lcat"]'); if (!r) return;
+      LUNCH.cat = r.value; renderCats(); renderList();
+    });
+
+    const list = $("lunch-list");
+    if (list) list.addEventListener("click", async (e) => {
+      const rev = e.target.closest("[data-rev]");
+      if (rev) { openReviews(rev.dataset.rev); return; }
+      const ex = e.target.closest("[data-ex]");
+      if (ex && isAdmin()) {
+        const id = ex.dataset.ex, r = rowById(id);
+        try { await api("/api/lunch/exclude", { id: +id, excluded: !(r && r.excluded) }); loadRestaurants(); }
+        catch (err) { toast("변경 실패"); }
+      }
+    });
+
+    const aiBtn = $("lunch-ai-btn");
+    if (aiBtn) aiBtn.addEventListener("click", () => runRecommend(LUNCH.q));
+
+    const revBack = $("lunch-rev-back"), aiBack = $("lunch-ai-back");
+    if (revBack) revBack.addEventListener("click", () => showView("view-food"));
+    if (aiBack) aiBack.addEventListener("click", () => showView("view-food"));
+
+    // AI 뷰 안의 위임: 다시 추천 / 다른 후보 / 후기
+    const aiBody = $("lunch-ai-body");
+    if (aiBody) aiBody.addEventListener("click", (e) => {
+      if (e.target.closest("#lunch-ai-retry")) { runRecommend(LUNCH.q); return; }
+      const rev = e.target.closest("[data-rev]");
+      if (rev) openReviews(rev.dataset.rev);
+    });
+
+    const collect = $("lunch-collect"), add = $("lunch-add");
+    if (collect) collect.addEventListener("click", startCollect);
+    if (add) add.addEventListener("click", manualAdd);
+  }
+
+  wire();
+  window.onShowLunch = function () {
+    if (!LUNCH.inited) { LUNCH.inited = true; loadLocations(); }
+  };
 })();
 
 // ----------------------------- 초기 로드 -----------------------------

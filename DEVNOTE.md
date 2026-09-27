@@ -91,11 +91,25 @@ flowchart TB
 
 ## 0.7 화면 구조(하단 대메뉴)
 
-- **하단 탭 내비게이션(대메뉴)**: `뉴스(콜렉터)` · `맛집(점심 음식점, 구현예정)` · `리포트` · `스크랩`.
+- **하단 탭 내비게이션(대메뉴)**: `뉴스(콜렉터)` · `맛집(점심 음식점)` · `리포트` · `스크랩`.
   - **뉴스(`#view-collector`)**: 기존 8개 탭(냥/게임/nc/업계/보안/행사/게시판/재단YT)을 하나로 묶은 대메뉴. 내부 상단 탭바로 전환.
-  - **맛집(`#view-food`)**: 회사 근처 점심 음식점 검색 — 자리표시자(준비 중), 버튼/구조만.
+  - **맛집(`#view-food`)**: 위치(사업장) 기준 주변 점심 식당 검색·평점·후기·AI 추천 → **§0.8** 참고. 하위 본문 뷰 2개: 평점·후기(`#view-lunch-reviews`), AI 추천(`#view-lunch-ai`).
   - **리포트·스크랩**: 각각 기존 풀팝업(모달)을 여는 푸터 탭(본문 전환 아님, 오버레이). 관리자 표시설정 off 시 일반 사용자에겐 숨김.
 - 로그인/로그아웃·관리자 버튼은 **상단 헤더**로 이동. 저작권/버전은 스크롤 하단 정적 표시.
+
+## 0.8 맛집(점심) 도메인 — Phase 1
+
+> "오늘 점심 뭐 먹지?" 개인 창작물. 특정 회사/사내 서비스가 아님(중립적 '이용자/방문자' 표현).
+
+- **모듈**: 수집 어댑터 `collector/lunch.py`(현재 **카카오 로컬** 어댑터), 저장/집계 `collector/db.py`의 `lunch_*` 헬퍼, API `app.py`의 `/api/lunch/*`, 프론트 `static/js/app.js`의 `initLunch()` IIFE.
+- **위치(사업장) 3곳**: 혜화 본사(종로구 이화장길 100) / 판교 R&D / 성남 프로젝토리. `lunch_location`에 시드, 주소→좌표 지오코딩(카카오 주소검색). 상단 칩으로 전환, 위치별 반경(m) 보유.
+- **수집(관리자)**: 카카오 키워드검색(`category_group_code=FD6`)을 여러 검색어로 좌표 반경 내 조회 → `place_id` 중복 제거. **확보 필드**: 상호·카테고리·주소·좌표·전화·`place_url`(카카오맵)만.
+- **원칙(데이터 신뢰)**: 메뉴·가격·영업시간·사진·외부평점은 **공식 API로 못 얻는다 → 지어내지 않는다.** 상세는 **카카오맵 링크 랜딩**(기사 원문 링크처럼)으로 대체.
+- **이용자 평점·후기(우리 앱 누적)**: `lunch_review`(별점 1~5 + 후기 300자), `lunch_visit`(오늘 방문). 목록/후기 뷰에서 평균 별점·후기수·방문수 집계. **로그인 사용자만 작성**.
+- **AI 추천(`/api/lunch/recommend`)**: 현재 필터 후보 id를 클라이언트가 전달 → 서버가 1곳 추천 + 근거 + 대안 2곳. `ANTHROPIC_API_KEY` 있으면 LLM(`analysis.py` 헬퍼 재사용), 없으면 거리·평점 기반 **랜덤 폴백**. 로그인 시 최근 14일 방문 회피.
+- **카테고리 정규화**: 카카오 `category_name` → 한식/고기/면요리/분식/중식/일식/돈까스/양식/아시아음식/생선·해산물/샐러드·건강식/패스트푸드/카페·디저트/기타. 도보시간 ≈ 거리/67m·분.
+- **관리자 도구**: 주변 식당 수집(백그라운드 스레드 + `/collect/status` 폴링), 직접 추가(`/restaurant`), 숨기기/해제(`/exclude`).
+- **어댑터 분리 이유**: 특정 서비스 종속 방지. 네이버/구글 등 다른 소스로 교체·추가 시 `lunch.py`만 바꾸면 됨(스키마·프론트 불변).
 
 ## 1. 탭 구성
 
@@ -138,7 +152,8 @@ flowchart TB
 - **`SECRET_KEY`** — 로그인 세션 서명 키(긴 무작위 문자열 권장).
 - **`CRON_TOKEN`** — 외부 크론 인증 토큰. cron-job.org URL의 `token=` 값과 동일해야 한다.
 - **`YOUTUBE_API_KEY`** — 재단YT(NC 채널 전 영상 + 주요 재단 유튜브 검색)에 필요. 없으면 재단은 RSS 최신만, 주요 재단은 건너뜀.
-- **`ANTHROPIC_API_KEY`** — 🧠 AI 리포트에 필요(Anthropic Console에서 발급, 유료). 없으면 리포트 생성 불가.
+- **`ANTHROPIC_API_KEY`** — 🧠 AI 리포트 + 🍚 맛집 AI 추천(LLM)에 필요(Anthropic Console에서 발급, 유료). 없으면 리포트 생성 불가, 맛집 추천은 랜덤 폴백으로 동작.
+- **`KAKAO_REST_KEY`** — 🍚 맛집 주변 식당 수집·지오코딩(카카오 로컬 API, REST 키). Kakao Developers에서 발급. 없으면 자동 수집 불가(관리자 직접 추가만 가능).
 - **`ANALYSIS_MODEL`** — 리포트에 쓸 모델. 기본 `claude-3-5-sonnet-latest`. (선택)
 - **`SEC_AI_LIMIT`** — 보안뉴스 🧠 AI 분석 1회 실행당 분석할 기사 수 상한. 기본 `60`. (선택)
 - **`SEC_AI_BATCH`** — AI 분석 1회 LLM 호출당 기사 수. 기본 `10`. (선택)
@@ -272,7 +287,8 @@ flowchart TB
 - `collector/security_ai.py` — 보안뉴스 AI 후처리(배치 태깅·중요도·시사점, analysis의 LLM 연결부 재사용).
 - `collector/security_report.py` — 월간 보안 리포트(정보보안·개인정보 담당자용, 지난달 종합·LLM 브리핑).
 - `collector/dedup.py` — 동일 기사 그룹화.
-- `collector/db.py` — 저장소(Postgres/SQLite, 직접 접속), news/boards/social/events/user_state/report_snapshot.
+- `collector/lunch.py` — 🍚 맛집 수집 어댑터(카카오 로컬: 지오코딩·키워드검색·카테고리 정규화·거리계산). 상세는 링크 랜딩, 데이터 조작 없음.
+- `collector/db.py` — 저장소(Postgres/SQLite, 직접 접속), news/boards/social/events/user_state/report_snapshot + lunch_location/restaurant/review/visit.
 - `collector/fetcher.py` / `collector/extractor.py` — HTTP 헬퍼 / 본문·이미지 추출.
 - `templates/index.html`, `static/js/app.js`, `static/css/style.css` — 앱 화면.
 - `templates/intro.html`, `static/intro/*.png` — 서비스 소개(랜딩) 페이지(`/intro`, 로그인·DB 없이 정적).

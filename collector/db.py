@@ -160,6 +160,29 @@ _DDL = [
         username TEXT, ukey TEXT, kind TEXT, snapshot TEXT, ts BIGINT,
         PRIMARY KEY (username, ukey, kind)
     )""",
+    # ---- 점심 맛집(lunch) ----
+    f"""CREATE TABLE IF NOT EXISTS lunch_location (
+        id {_AUTO_PK}, name TEXT, address TEXT, lat REAL, lng REAL,
+        radius INTEGER, sort INTEGER, created_at TEXT
+    )""",
+    f"""CREATE TABLE IF NOT EXISTS lunch_restaurant (
+        id {_AUTO_PK}, loc_id INTEGER, source TEXT, place_id TEXT,
+        name TEXT, category TEXT, cat_norm TEXT, sub_cat TEXT,
+        address TEXT, road_address TEXT, lat REAL, lng REAL,
+        phone TEXT, place_url TEXT, excluded INTEGER DEFAULT 0,
+        first_seen TEXT, last_checked TEXT,
+        UNIQUE(loc_id, place_id)
+    )""",
+    f"""CREATE TABLE IF NOT EXISTS lunch_review (
+        id {_AUTO_PK}, restaurant_id INTEGER, username TEXT,
+        rating INTEGER, comment TEXT, created_at TEXT
+    )""",
+    f"""CREATE TABLE IF NOT EXISTS lunch_visit (
+        id {_AUTO_PK}, restaurant_id INTEGER, username TEXT, visited_at TEXT
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_lunch_rest_loc ON lunch_restaurant(loc_id)",
+    "CREATE INDEX IF NOT EXISTS idx_lunch_review_rid ON lunch_review(restaurant_id)",
+    "CREATE INDEX IF NOT EXISTS idx_lunch_visit_rid ON lunch_visit(restaurant_id)",
     "CREATE INDEX IF NOT EXISTS idx_news_hash ON news(content_hash)",
     "CREATE INDEX IF NOT EXISTS idx_news_group ON news(group_key)",
     "CREATE INDEX IF NOT EXISTS idx_boards_title ON boards(service, title)",
@@ -721,3 +744,132 @@ def list_social(channel=None, limit=500):
                 _q("SELECT * FROM social ORDER BY published_at DESC, id DESC LIMIT ?"), (limit,)
             ).fetchall()
         return [dict(r) for r in rows]
+
+
+# ============ 점심 맛집(lunch) ============
+def lunch_seed_locations(offices):
+    """사업장이 하나도 없으면 초기 3개소 등록. offices: [{name,address,radius}] (좌표는 나중에 지오코딩)."""
+    with get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS c FROM lunch_location").fetchone()
+        if (dict(row)["c"] if row else 0) > 0:
+            return 0
+        cur = conn.cursor()
+        for i, o in enumerate(offices):
+            cur.execute(_q("INSERT INTO lunch_location (name, address, lat, lng, radius, sort, created_at) "
+                           "VALUES (?,?,?,?,?,?,?)"),
+                        (o["name"], o.get("address", ""), o.get("lat"), o.get("lng"),
+                         int(o.get("radius", 500)), i, _now()))
+        return len(offices)
+
+
+def lunch_list_locations():
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM lunch_location ORDER BY sort, id").fetchall()
+        return [dict(r) for r in rows]
+
+
+def lunch_get_location(loc_id):
+    with get_conn() as conn:
+        r = conn.execute(_q("SELECT * FROM lunch_location WHERE id=?"), (loc_id,)).fetchone()
+        return dict(r) if r else None
+
+
+def lunch_set_location_coords(loc_id, lat, lng):
+    with get_conn() as conn:
+        conn.execute(_q("UPDATE lunch_location SET lat=?, lng=? WHERE id=?"), (lat, lng, loc_id))
+
+
+def lunch_set_location_radius(loc_id, radius):
+    with get_conn() as conn:
+        conn.execute(_q("UPDATE lunch_location SET radius=? WHERE id=?"), (int(radius), loc_id))
+
+
+def lunch_upsert_restaurants(loc_id, items):
+    """카카오/수동 수집 결과 저장(loc_id+place_id 기준 중복 방지). 반환 (신규, 갱신)."""
+    new = upd = 0
+    with get_conn() as conn:
+        cur = conn.cursor()
+        for it in items:
+            pid = it.get("place_id")
+            if not pid:
+                continue
+            exist = conn.execute(_q("SELECT id FROM lunch_restaurant WHERE loc_id=? AND place_id=?"),
+                                 (loc_id, pid)).fetchone()
+            if exist:
+                cur.execute(_q("UPDATE lunch_restaurant SET name=?, category=?, cat_norm=?, sub_cat=?, "
+                               "address=?, road_address=?, lat=?, lng=?, phone=?, place_url=?, last_checked=? "
+                               "WHERE loc_id=? AND place_id=?"),
+                            (it.get("name"), it.get("category"), it.get("cat_norm"), it.get("sub_cat"),
+                             it.get("address"), it.get("road_address"), it.get("lat"), it.get("lng"),
+                             it.get("phone"), it.get("place_url"), _now(), loc_id, pid))
+                upd += 1
+            else:
+                cur.execute(_q("INSERT INTO lunch_restaurant (loc_id, source, place_id, name, category, "
+                               "cat_norm, sub_cat, address, road_address, lat, lng, phone, place_url, "
+                               "excluded, first_seen, last_checked) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)"),
+                            (loc_id, it.get("source", "kakao"), pid, it.get("name"), it.get("category"),
+                             it.get("cat_norm"), it.get("sub_cat"), it.get("address"), it.get("road_address"),
+                             it.get("lat"), it.get("lng"), it.get("phone"), it.get("place_url"), _now(), _now()))
+                new += 1
+    return new, upd
+
+
+def lunch_list_restaurants(loc_id, include_excluded=False):
+    """식당 목록 + 이용자 평점(avg)·후기수 집계. 거리는 앱/호출측에서 계산."""
+    cond = "" if include_excluded else "AND r.excluded=0"
+    with get_conn() as conn:
+        rows = conn.execute(_q(
+            f"SELECT r.*, "
+            f"(SELECT COUNT(*) FROM lunch_review v WHERE v.restaurant_id=r.id) AS review_count, "
+            f"(SELECT AVG(rating) FROM lunch_review v WHERE v.restaurant_id=r.id) AS avg_rating, "
+            f"(SELECT COUNT(*) FROM lunch_visit t WHERE t.restaurant_id=r.id) AS visit_count "
+            f"FROM lunch_restaurant r WHERE r.loc_id=? {cond} ORDER BY r.id DESC"),
+            (loc_id,)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def lunch_get_restaurant(rid):
+    with get_conn() as conn:
+        r = conn.execute(_q("SELECT * FROM lunch_restaurant WHERE id=?"), (rid,)).fetchone()
+        return dict(r) if r else None
+
+
+def lunch_manual_add(loc_id, data):
+    """관리자 수동 추가. place_id 없으면 manual:<name>로 생성."""
+    pid = data.get("place_id") or ("manual:" + (data.get("name") or ""))
+    data = dict(data); data["place_id"] = pid; data.setdefault("source", "manual")
+    return lunch_upsert_restaurants(loc_id, [data])
+
+
+def lunch_set_excluded(rid, excluded):
+    with get_conn() as conn:
+        conn.execute(_q("UPDATE lunch_restaurant SET excluded=? WHERE id=?"), (1 if excluded else 0, rid))
+
+
+def lunch_add_review(rid, username, rating, comment):
+    with get_conn() as conn:
+        conn.execute(_q("INSERT INTO lunch_review (restaurant_id, username, rating, comment, created_at) "
+                        "VALUES (?,?,?,?,?)"), (rid, username, int(rating), comment or "", _now()))
+
+
+def lunch_list_reviews(rid, limit=100):
+    with get_conn() as conn:
+        rows = conn.execute(_q("SELECT username, rating, comment, created_at FROM lunch_review "
+                               "WHERE restaurant_id=? ORDER BY id DESC LIMIT ?"), (rid, limit)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def lunch_add_visit(rid, username):
+    with get_conn() as conn:
+        conn.execute(_q("INSERT INTO lunch_visit (restaurant_id, username, visited_at) VALUES (?,?,?)"),
+                     (rid, username, _now()))
+
+
+def lunch_recent_visited_ids(username, days=14):
+    """최근 N일 내 이 사용자가 방문한 restaurant_id 집합(추천 회피용)."""
+    from datetime import datetime as _dt, timedelta as _td
+    cutoff = (_dt.now() - _td(days=days)).isoformat(timespec="seconds")
+    with get_conn() as conn:
+        rows = conn.execute(_q("SELECT DISTINCT restaurant_id FROM lunch_visit "
+                               "WHERE username=? AND visited_at>=?"), (username, cutoff)).fetchall()
+        return {dict(r)["restaurant_id"] for r in rows}

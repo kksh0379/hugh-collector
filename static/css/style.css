@@ -1143,16 +1143,121 @@ body.tab-report .viewbar { display: none; }
 .app-credit .ver { font-size: 10.5px; }
 
 /* 대메뉴 2: 맛집(준비 중) 자리표시자 */
-#view-food { min-height: 60vh; display: flex; align-items: center; justify-content: center; padding: 24px 20px; }
-.foodwrap { text-align: center; max-width: 340px; }
-.food-hero { font-size: 56px; line-height: 1; }
-.food-title { font-size: 22px; margin: 14px 0 6px; }
-.food-desc { font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0 0 16px; }
-.food-soon {
-  display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 1px;
-  color: var(--primary); background: #eef2ff; border: 1px solid #dbe6ff;
-  border-radius: 999px; padding: 6px 16px;
+#view-food { display: block; min-height: 60vh; }
+
+/* ============ 맛집(점심) ============ */
+/* 위치 전환 바 */
+.lunch-loc { position: relative; padding: 12px 16px 4px; }
+.lunch-loc-btn {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  background: var(--card); border: 1px solid var(--border); border-radius: 999px;
+  padding: 7px 14px; font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer;
 }
+.lunch-loc-btn b { color: var(--primary); font-weight: 800; }
+.lunch-loc-btn span { color: var(--muted); font-weight: 600; }
+.lunch-loc-menu {
+  position: absolute; left: 16px; top: 46px; z-index: 20; min-width: 240px; max-width: calc(100% - 32px);
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14); padding: 6px; overflow: hidden;
+}
+.lunch-loc-item {
+  display: block; width: 100%; text-align: left; background: none; border: 0;
+  border-radius: 10px; padding: 9px 11px; font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer;
+}
+.lunch-loc-item.on, .lunch-loc-item:active { background: #eef3ff; color: var(--primary); }
+.lli-sub { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+/* AI 추천 CTA */
+.lunch-ai-cta {
+  display: flex; align-items: center; gap: 8px; width: calc(100% - 32px); margin: 8px 16px 2px;
+  padding: 13px 16px; border: 0; border-radius: 16px; cursor: pointer; color: #fff;
+  background: linear-gradient(135deg, #4f7dff, #7a5cff); box-shadow: 0 6px 16px rgba(79, 92, 255, 0.28);
+}
+.lunch-ai-cta .ic { font-size: 20px; }
+.lunch-ai-cta .t { flex: 1; text-align: left; font-size: 15px; font-weight: 800; }
+.lunch-ai-cta .go { font-size: 13px; font-weight: 800; opacity: 0.95; }
+.lunch-ai-cta:active { transform: translateY(1px); }
+
+/* 카테고리 칩 */
+.lunch-cats { gap: 6px; padding: 8px 16px 4px; }
+.lcat-chip {
+  display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; white-space: nowrap;
+  background: var(--card); border: 1px solid var(--border); border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer;
+}
+.lcat-chip input { position: absolute; opacity: 0; width: 0; height: 0; }
+.lcat-chip b { color: var(--muted); font-weight: 700; }
+.lcat-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.lcat-chip.on b { color: rgba(255, 255, 255, 0.85); }
+
+/* 식당 카드 리스트 */
+#lunch-list { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.lunch-loading { list-style: none; color: var(--muted); font-size: 14px; text-align: center; padding: 24px 0; }
+.lunch-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 13px;
+}
+.lunch-card.is-ex { opacity: 0.55; }
+.lc-top { display: flex; align-items: baseline; gap: 8px; }
+.lname { font-size: 16px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; }
+.lcat { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--primary); background: #eef3ff; border-radius: 999px; padding: 2px 9px; }
+.lrate { margin-top: 5px; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lrate b { color: var(--text); font-weight: 800; }
+.lrc { color: var(--muted); font-size: 12px; }
+.lstar { color: #f5a623; letter-spacing: 1px; }
+.lstar.off { color: #d3d6db; }
+.lvisit { color: var(--muted); font-size: 12px; font-weight: 700; }
+.lmeta { margin-top: 5px; font-size: 12.5px; color: var(--muted); }
+.lacts { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px; }
+.lbtn {
+  display: inline-flex; align-items: center; font-size: 13px; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  border-radius: 9px; padding: 7px 12px; text-decoration: none;
+}
+.lbtn.rev { color: var(--primary); border-color: #cbd9ff; background: #f4f7ff; }
+.lbtn.kakao { color: #3a1d1d; background: #fee500; border-color: #f4d800; }
+.lbtn.ex { color: var(--muted); }
+.lbtn.ex.on { color: var(--primary); border-color: #cbd9ff; }
+.lbtn:active { transform: translateY(1px); }
+
+/* 후기 뷰 */
+.lrev-summary { font-size: 15px; font-weight: 700; margin: 6px 0 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lrev-summary .lstar { font-size: 17px; }
+.lrev-links { margin-bottom: 12px; }
+.lrev-note { font-size: 13px; color: var(--muted); background: var(--card); border: 1px dashed var(--border); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 12px; }
+.lwriter { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 9px; }
+.lw-stars { display: flex; gap: 2px; }
+.lw-star { background: none; border: 0; font-size: 28px; line-height: 1; color: #f5a623; cursor: pointer; padding: 0 2px; }
+.lwriter textarea { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 9px; font-family: var(--font); font-size: 14px; resize: vertical; box-sizing: border-box; }
+.lw-visit { font-size: 13px; font-weight: 600; color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+.lw-visit input { width: 16px; height: 16px; accent-color: var(--primary); }
+.lw-submit { width: 100%; }
+.lrev-list { display: flex; flex-direction: column; gap: 10px; }
+.lrev { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
+.lrev-t { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.lrev-u { font-weight: 800; color: var(--text); }
+.lrev-t .lstar { font-size: 14px; }
+.lrev-d { margin-left: auto; color: var(--muted); font-size: 11.5px; }
+.lrev-c { margin-top: 5px; font-size: 14px; color: var(--text); line-height: 1.5; }
+.lrev-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 18px 0; }
+
+/* AI 추천 뷰 */
+.airec-load, .airec-empty { text-align: center; color: var(--muted); font-size: 15px; padding: 32px 0; }
+.airec { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px 16px; text-align: center; }
+.airec-badge { display: inline-block; font-size: 12px; font-weight: 800; color: #6a4fff; background: #f0eeff; border-radius: 999px; padding: 5px 12px; margin-bottom: 12px; }
+.airec-name { font-size: 26px; font-weight: 900; color: var(--text); }
+.airec-cat { font-size: 13px; font-weight: 700; color: var(--primary); margin-top: 3px; }
+.airec-rate { margin-top: 8px; font-size: 15px; }
+.airec-rate .lstar { font-size: 18px; }
+.airec-meta { margin-top: 6px; font-size: 13px; color: var(--muted); }
+.airec-why { margin-top: 14px; font-size: 14px; color: var(--text); line-height: 1.6; text-align: left; background: #f7f9ff; border: 1px solid #e6ecff; border-radius: 12px; padding: 12px; }
+.airec-why b { color: var(--primary); }
+.airec-acts { margin-top: 16px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.airec-acts .retry { flex: 0 0 auto; }
+.altrow { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); text-align: left; }
+.alt-lb { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 7px; }
+.alt { display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; }
+.alt-cat { font-size: 11.5px; font-weight: 600; color: var(--muted); }
+.lunch-back { background: none; border: 0; font-size: 24px; line-height: 1; color: var(--text); cursor: pointer; padding: 0 4px 0 0; }
 
 /* ============ 본문 뷰(리포트/스크랩 = 팝업 아닌 바디) ============ */
 /* hidden 처리가 뷰의 display(flex 등)에 덮이지 않도록 강제(대메뉴 전환 정상화) */

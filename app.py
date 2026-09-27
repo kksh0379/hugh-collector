@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Flask, Response, jsonify, render_template, request, session
 
 from collector import (analysis, boards, db, dedup, events, fetcher, google_news,
-                       security_ai, security_report, social)
+                       lunch, security_ai, security_report, social)
 
 app = Flask(__name__)
 # 초안 단계: 브라우저가 옛 JS/CSS를 캐시해 혼란을 주지 않도록 정적파일 캐시를 끈다.
@@ -630,6 +630,260 @@ def features_set():
             cur[k] = bool(data[k])
     db.set_meta("feature_flags", json.dumps(cur, ensure_ascii=False))
     return jsonify({"ok": True, "features": cur})
+
+
+# ---------------------------- 점심 맛집(lunch) ----------------------------
+# 초기 사업장 3개소(좌표는 카카오 지오코딩으로 최초 조회 시 자동 채움 · 관리자 수정 가능)
+LUNCH_OFFICES = [
+    {"name": "혜화 본사", "address": "서울 종로구 이화장길 100", "radius": 500},
+    {"name": "판교 R&D", "address": "경기 성남시 분당구 판교 엔씨소프트", "radius": 500},
+    {"name": "성남 프로젝토리", "address": "성남문화예술교육센터", "radius": 700},
+]
+_LUNCH_JOB = {"running": False, "progress": "", "result": None, "started_ts": 0, "loc": None}
+
+
+def _cur_user():
+    return session.get("user")
+
+
+def _lunch_geocode_if_needed(loc):
+    if loc and (loc.get("lat") is None or loc.get("lng") is None) and lunch.has_key():
+        co = lunch.geocode(loc.get("address") or loc.get("name"))
+        if co:
+            db.lunch_set_location_coords(loc["id"], co[0], co[1])
+            loc["lat"], loc["lng"] = co[0], co[1]
+    return loc
+
+
+def _lunch_decorate(loc, rows):
+    """식당 rows에 거리/도보시간/평점 정리 필드 추가."""
+    out = []
+    for r in rows:
+        d = dict(r)
+        dist = None
+        if loc and loc.get("lat") and r.get("lat"):
+            dist = lunch.haversine_m(loc["lat"], loc["lng"], r["lat"], r["lng"])
+        d["dist_m"] = round(dist) if dist is not None else None
+        d["walk_min"] = lunch.walk_minutes(dist)
+        d["avg_rating"] = round(r["avg_rating"], 1) if r.get("avg_rating") is not None else None
+        out.append(d)
+    out.sort(key=lambda x: (x["dist_m"] is None, x["dist_m"] or 0))  # 가까운 순 기본
+    return out
+
+
+@app.get("/api/lunch/locations")
+def lunch_locations():
+    if not _ensure_db():
+        return jsonify({"locations": [], "kakao": lunch.has_key()})
+    db.lunch_seed_locations(LUNCH_OFFICES)  # 최초 1회 시드
+    locs = [_lunch_geocode_if_needed(x) for x in db.lunch_list_locations()]
+    return jsonify({"locations": locs, "kakao": lunch.has_key()})
+
+
+@app.get("/api/lunch/restaurants")
+def lunch_restaurants():
+    if not _ensure_db():
+        return jsonify({"restaurants": []})
+    loc_id = request.args.get("loc", type=int)
+    loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id)) if loc_id else None
+    if not loc:
+        return jsonify({"restaurants": [], "error": "위치 없음"})
+    rows = db.lunch_list_restaurants(loc_id, include_excluded=_admin_ok())
+    return jsonify({"location": loc, "restaurants": _lunch_decorate(loc, rows)})
+
+
+def _lunch_collect_run(loc_id):
+    st = _LUNCH_JOB
+    try:
+        _ensure_db(force=True)
+        loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id))
+        if not loc or not loc.get("lat"):
+            st["result"] = {"ok": False, "error": "위치 좌표를 확인할 수 없어요(주소/지오코딩 실패)."}
+            st["progress"] = "오류: 좌표 없음"
+            return
+        items = lunch.collect(loc["lat"], loc["lng"], loc.get("radius", 500),
+                              progress=lambda m: st.update(progress=m))
+        for it in items:
+            it["source"] = "kakao"
+        new, upd = db.lunch_upsert_restaurants(loc_id, items)
+        st["result"] = {"ok": True, "new": new, "updated": upd, "total": len(items)}
+        st["progress"] = f"완료 · 신규 {new} · 갱신 {upd}"
+    except Exception as e:  # noqa: BLE001
+        st["result"] = {"ok": False, "error": str(e)}
+        st["progress"] = f"오류: {e}"
+    finally:
+        st["running"] = False
+
+
+@app.post("/api/lunch/collect")
+def lunch_collect():
+    if not _admin_ok():
+        return jsonify({"error": "unauthorized"}), 401
+    if not lunch.has_key():
+        return jsonify({"ok": False, "error": "KAKAO_REST_KEY 미설정 — 수동 등록만 가능"}), 400
+    if _LUNCH_JOB.get("running") and (time.time() - _LUNCH_JOB.get("started_ts", 0) < 1800):
+        return jsonify({"running": True, "already": True})
+    loc_id = request.args.get("loc", type=int)
+    _LUNCH_JOB.update(running=True, progress="수집 준비…", result=None, started_ts=time.time(), loc=loc_id)
+    threading.Thread(target=_lunch_collect_run, args=(loc_id,), daemon=True).start()
+    return jsonify({"running": True})
+
+
+@app.get("/api/lunch/collect/status")
+def lunch_collect_status():
+    st = dict(_LUNCH_JOB)
+    if st.get("running") and (time.time() - st.get("started_ts", 0) > 1800):
+        _LUNCH_JOB["running"] = False
+        st["running"] = False
+    return jsonify({"running": st.get("running"), "progress": st.get("progress"),
+                    "result": st.get("result"), "loc": st.get("loc")})
+
+
+@app.post("/api/lunch/restaurant")
+def lunch_add_restaurant():
+    if not _admin_ok():
+        return jsonify({"error": "unauthorized"}), 401
+    if not _ensure_db(force=True):
+        return jsonify({"ok": False, "error": "DB 연결 실패"}), 503
+    d = request.get_json(silent=True) or {}
+    loc_id = d.get("loc_id")
+    if not loc_id or not d.get("name"):
+        return jsonify({"ok": False, "error": "loc_id·name 필요"}), 400
+    d["cat_norm"] = lunch.normalize_category(d.get("category") or d.get("cat_norm") or "")
+    new, upd = db.lunch_manual_add(loc_id, d)
+    return jsonify({"ok": True, "new": new, "updated": upd})
+
+
+@app.post("/api/lunch/exclude")
+def lunch_exclude():
+    if not _admin_ok():
+        return jsonify({"error": "unauthorized"}), 401
+    d = request.get_json(silent=True) or {}
+    db.lunch_set_excluded(d.get("id"), bool(d.get("excluded", True)))
+    return jsonify({"ok": True})
+
+
+@app.get("/api/lunch/reviews")
+def lunch_reviews():
+    if not _ensure_db():
+        return jsonify([])
+    rid = request.args.get("rid", type=int)
+    return jsonify(db.lunch_list_reviews(rid))
+
+
+@app.post("/api/lunch/review")
+def lunch_review():
+    user = _cur_user()
+    if not user:
+        return jsonify({"ok": False, "error": "로그인이 필요해요"}), 401
+    if not _ensure_db(force=True):
+        return jsonify({"ok": False, "error": "DB 연결 실패"}), 503
+    d = request.get_json(silent=True) or {}
+    rid = d.get("rid")
+    rating = d.get("rating")
+    if not rid or not rating:
+        return jsonify({"ok": False, "error": "rid·rating 필요"}), 400
+    rating = max(1, min(5, int(rating)))
+    db.lunch_add_review(rid, user, rating, (d.get("comment") or "").strip()[:300])
+    if d.get("visit"):
+        db.lunch_add_visit(rid, user)
+    return jsonify({"ok": True})
+
+
+@app.post("/api/lunch/visit")
+def lunch_visit():
+    user = _cur_user()
+    if not user:
+        return jsonify({"ok": False, "error": "로그인이 필요해요"}), 401
+    if not _ensure_db(force=True):
+        return jsonify({"ok": False, "error": "DB 연결 실패"}), 503
+    d = request.get_json(silent=True) or {}
+    if not d.get("rid"):
+        return jsonify({"ok": False, "error": "rid 필요"}), 400
+    db.lunch_add_visit(d["rid"], user)
+    return jsonify({"ok": True})
+
+
+def _lunch_llm_pick(key, pool, craving, loc):
+    """LLM으로 후보 중 1곳 추천 + 이유 + 대안. 실패/파싱불가 시 None."""
+    lines = []
+    for c in pool[:40]:
+        rt = f"평점{c['avg_rating']}({c['review_count']})" if c.get("avg_rating") else "평가없음"
+        lines.append(f"{c['id']}. {c['name']} · {c.get('cat_norm') or c.get('category') or ''} · "
+                     f"{c.get('walk_min') or '?'}분·{c.get('dist_m') or '?'}m · {rt}")
+    sys = ("너는 회사 점심 추천 도우미다. 아래 후보 식당 목록에서 딱 1곳을 추천한다. "
+           "메뉴·가격·영업시간 같은 목록에 없는 사실은 지어내지 말고, 거리·카테고리·이용자 평점·"
+           "요청(craving)만 근거로 삼는다. 출력은 JSON 하나만: "
+           '{"pick": <식당번호>, "reason": "추천 이유 1~2문장(왜 이 집인지)", "alt": [<번호>, <번호>]}')
+    user = "[후보]\n" + "\n".join(lines)
+    if craving:
+        user += f"\n\n[요청] {craving} — 이 느낌에 맞는 카테고리를 우선 고려."
+    try:
+        import requests
+        r = requests.post(analysis.API_URL, timeout=60, headers={
+            "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json",
+        }, data=json.dumps({"model": analysis.resolve_model(key), "max_tokens": 500,
+                            "system": sys, "messages": [{"role": "user", "content": user}],
+                            "thinking": {"type": "disabled"}}))
+        if r.status_code >= 400:
+            return None
+        data = analysis._extract_json(analysis._text_from_response(r.json()))
+        if not isinstance(data, dict) or "pick" not in data:
+            return None
+        by_id = {c["id"]: c for c in pool}
+        pick = by_id.get(int(data["pick"]))
+        if not pick:
+            return None
+        alts = [by_id[int(i)] for i in (data.get("alt") or []) if int(i) in by_id and int(i) != pick["id"]][:2]
+        return {"ok": True, "pick": {**pick, "reason": (data.get("reason") or "").strip()},
+                "alternatives": alts, "engine": "ai"}
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _lunch_ai_pick(cands, avoid, craving, loc):
+    pool = [c for c in cands if c["id"] not in avoid] or cands
+    if not pool:
+        return {"ok": False, "error": "조건에 맞는 식당이 없어요. 필터를 넓혀보세요."}
+    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if key:
+        picked = _lunch_llm_pick(key, pool, craving, loc)
+        if picked:
+            return picked
+    # 폴백: 랜덤 1곳 + 간단 근거(거리·평점). 키 없어도 '오늘 뭐 먹지?' 동작.
+    import random
+    c = random.choice(pool)
+    bits = []
+    if c.get("walk_min"):
+        bits.append(f"도보 {c['walk_min']}분")
+    if c.get("avg_rating"):
+        bits.append(f"이용자 평점 {c['avg_rating']}")
+    reason = "가까운 후보 중에서 골라봤어요" if not bits else (" · ".join(bits) + " — 오늘 여기 어때요?")
+    alts = [x for x in pool if x["id"] != c["id"]]
+    random.shuffle(alts)
+    return {"ok": True, "pick": {**c, "reason": reason}, "alternatives": alts[:2], "engine": "random"}
+
+
+@app.post("/api/lunch/recommend")
+def lunch_recommend():
+    if not _ensure_db():
+        return jsonify({"ok": False, "error": "db"}), 503
+    d = request.get_json(silent=True) or {}
+    loc_id = d.get("loc_id")
+    loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id)) if loc_id else None
+    if not loc:
+        return jsonify({"ok": False, "error": "위치 없음"}), 400
+    cands = _lunch_decorate(loc, db.lunch_list_restaurants(loc_id))
+    # 클라이언트가 보낸 후보 id(현재 필터 결과)로 좁힘
+    ids = d.get("candidate_ids")
+    if ids:
+        idset = set(ids)
+        cands = [c for c in cands if c["id"] in idset]
+    # 최근 방문 회피(로그인 시)
+    user = _cur_user()
+    avoid = db.lunch_recent_visited_ids(user) if user else set()
+    result = _lunch_ai_pick(cands, avoid, d.get("craving", ""), loc)
+    return jsonify(result)
 
 
 # 수집 구현 현황(화면 뱃지용). 완료 / 구현 중 / 구현 예정

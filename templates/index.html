@@ -286,14 +286,39 @@
   </section>
   </main><!-- /view-collector -->
 
-  <!-- 대메뉴 2: 점심 맛집(회사 근처 음식점 검색) — 구현 예정, 버튼/구조만 -->
+  <!-- 대메뉴 2: 점심 맛집 -->
   <main id="view-food" hidden>
-    <div class="foodwrap">
-      <div class="food-hero">🍽️</div>
-      <h2 class="food-title">점심 맛집 검색</h2>
-      <p class="food-desc">회사 근처 점심 음식점을 찾아주는 기능이에요.<br>곧 만나요 — <b>준비 중</b>입니다.</p>
-      <span class="food-soon">COMING SOON</span>
+    <div class="vh"><div class="vt">오늘 점심 <span style="color:var(--accent)">뭐 먹지?</span></div><div class="lunch-sub">회사 근처 점심, 지금 바로 찾아보세요</div></div>
+    <div class="lunch-loc" id="lunch-loc"><button class="lunch-loc-btn" id="lunch-loc-btn">📍 <b id="lunch-loc-name">위치</b> · <span id="lunch-loc-radius">500m</span> ▾</button>
+      <div class="lunch-loc-menu" id="lunch-loc-menu" hidden></div>
     </div>
+    <div class="viewbar" style="border:0;padding-top:6px">
+      <div class="search-box">
+        <input type="search" id="lunch-search" class="search-input" placeholder="식당·카테고리 검색…" enterkeyhint="search" autocomplete="off" />
+        <button type="button" class="search-btn" id="lunch-search-btn" aria-label="검색">🔍</button>
+      </div>
+      <span class="result-count" id="lunch-count"></span>
+    </div>
+    <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="ic">🤖</span><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
+    <div class="checkbar lunch-cats" id="lunch-cats" role="group" aria-label="카테고리"></div>
+    <div class="toolbar admin-only" style="margin:8px 16px 0">
+      <button class="btn-collect" id="lunch-collect">🔄 주변 식당 수집</button>
+      <button class="btn-status" id="lunch-add">＋ 직접 추가</button>
+    </div>
+    <div class="result-msg admin-only" id="lunch-msg" style="margin:6px 16px 0"></div>
+    <ul class="list" id="lunch-list" style="padding:12px 16px 16px"></ul>
+  </main>
+
+  <!-- 맛집: 이용자 평가/후기 (본문 뷰) -->
+  <main class="view-body" id="view-lunch-reviews" hidden>
+    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-rev-back" aria-label="뒤로">‹</button><span class="view-title" id="lunch-rev-name">식당</span></div>
+    <div class="view-inner" id="lunch-rev-body"></div>
+  </main>
+
+  <!-- 맛집: AI 추천 (본문 뷰) -->
+  <main class="view-body" id="view-lunch-ai" hidden>
+    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-ai-back" aria-label="뒤로">‹</button><span class="view-title">🤖 AI 점심 추천</span></div>
+    <div class="view-inner" id="lunch-ai-body"></div>
   </main>
 
   <!-- AI 재단 동향 분석 리포트 (상단 버튼 → 풀팝업) -->
@@ -454,7 +479,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v1.89 · build 260927</span>
+    <span class="ver">v1.90 · build 260927</span>
     <span class="ver" id="storage-badge"></span>
   </div>
   </div><!-- /bottombar -->
