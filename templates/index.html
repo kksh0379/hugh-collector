@@ -432,13 +432,8 @@
     </div>
   </div>
 
-  <!-- 저작권/버전(정적, 스크롤 하단) -->
-  <div class="app-credit">
-    <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v1.86 · build 260927</span>
-    <span class="ver" id="storage-badge"></span>
-  </div>
-
+  <!-- 하단 고정바: 탭 내비(위) + 저작권(아래) -->
+  <div class="bottombar" id="bottombar">
   <!-- 하단 대메뉴(탭 내비게이션) -->
   <nav class="footnav" id="footnav" aria-label="주요 메뉴">
     <button class="fnav active" data-nav="collector">
@@ -456,6 +451,13 @@
     <button class="fnav scrap-open" id="scrap-open-btn" data-nav="scrap">
       <span class="fnav-ic">🔖<span class="scrap-badge" id="scrap-badge" hidden></span></span><span class="fnav-t">스크랩</span></button>
   </nav>
+  <!-- 저작권/버전(탭메뉴 아래) -->
+  <div class="app-credit">
+    <span class="foot-copy">© 2026 김상화</span>
+    <span class="ver">v1.87 · build 260927</span>
+    <span class="ver" id="storage-badge"></span>
+  </div>
+  </div><!-- /bottombar -->
 
   <button id="to-top" aria-label="맨 위로" hidden>↑</button>
 
