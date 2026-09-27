@@ -1259,6 +1259,11 @@ async function purgeDb() {
 }
 document.getElementById("purge-db-btn").addEventListener("click", () => {
   const btn = document.getElementById("purge-db-btn");
+  // 맛집 대메뉴가 열려 있으면 맛집 초기화로 분기(각 메뉴별 초기화)
+  if (window.lunchPurgeCtx && window.lunchPurgeCtx.active()) {
+    armConfirm(btn, `[${window.lunchPurgeCtx.label()}] 초기화 확정`, window.lunchPurgeCtx.run);
+    return;
+  }
   const label = TAB_KO[activeTab()] || activeTab();
   armConfirm(btn, `[${label}] 초기화 확정`, purgeDb);
 });
@@ -2158,10 +2163,11 @@ async function loadReport(id) {
     if (LUNCH.curLoc && nameEl) nameEl.textContent = LUNCH.curLoc.name || "위치";
     if (LUNCH.curLoc && radEl) radEl.textContent = (LUNCH.curLoc.radius || 500) + "m";
     if (!menu) return;
+    // 실제 주소는 노출하지 않음(개인정보). 이름 + 반경만 표시.
     menu.innerHTML = LUNCH.locs.map((l) => {
       const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;
       return `<button type="button" class="lunch-loc-item${on ? " on" : ""}" data-id="${l.id}">`
-        + `📍 ${escapeHtml(l.name)}<span class="lli-sub">${escapeHtml(l.address || "")} · ${l.radius || 500}m</span></button>`;
+        + `📍 ${escapeHtml(l.name)}<span class="lli-sub">반경 ${l.radius || 500}m${on ? " · 선택됨" : ""}</span></button>`;
     }).join("");
   }
   function closeLocMenu() { const m = $("lunch-loc-menu"); if (m) m.hidden = true; }
@@ -2332,43 +2338,106 @@ async function loadReport(id) {
     });
   }
 
-  // ---- AI 추천 ----
-  async function runRecommend(craving) {
+  // ---- AI 추천 (기분/회피 키워드 기반) ----
+  // 이용자가 '지금 느끼는 대로' 부정·상황 키워드를 고르면 그걸 근거로 추천.
+  const PERSONA_CHIPS = [
+    { key: "safe", label: "🎯 안전빵" },
+    { key: "adventure", label: "🎲 모험" },
+    { key: "cheap", label: "💸 월급루팡" },
+    { key: "premium", label: "👑 제대로" },
+    { key: "fast", label: "🏃 빨리 먹자" },
+    { key: "world", label: "🌏 세계여행" },
+    { key: "hidden", label: "🕵️ 숨은 맛집" },
+    { key: "comeback", label: "🔄 오랜만이야" },
+  ];
+  const MOOD_CHIPS = [
+    { key: "near", label: "🚶 걷기 귀찮아" },
+    { key: "quick", label: "⚡ 빨리 먹고파" },
+    { key: "hearty", label: "🍲 든든하게" },
+    { key: "mild", label: "😌 속 편한 걸로" },
+    { key: "comfort", label: "🔥 스트레스 풀래" },
+    { key: "light", label: "🥗 가볍게" },
+    { key: "explore", label: "✨ 안 가본 데" },
+    { key: "trusted", label: "⭐ 검증된 데" },
+  ];
+  LUNCH.aiSel = LUNCH.aiSel || {};       // 회피/기분 다중선택 상태 유지
+  LUNCH.aiPersona = LUNCH.aiPersona || "";  // AI 성향(단일선택)
+
+  function openAiPicker() {
+    if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
+    if (!LUNCH.rows.length) { toast("먼저 식당을 수집하거나 추가해 주세요"); return; }
+    showView("view-lunch-ai");
+    renderPicker();
+  }
+  function renderPicker() {
+    const body = $("lunch-ai-body"); if (!body) return;
+    const cats = Object.keys(catCounts()).sort();
+    const chip = (key, label) =>
+      `<button type="button" class="mood-chip${LUNCH.aiSel[key] ? " on" : ""}" data-mood="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
+    const pchip = (key, label) =>
+      `<button type="button" class="mood-chip persona${LUNCH.aiPersona === key ? " on" : ""}" data-persona="${escapeHtml(key)}">${escapeHtml(label)}</button>`;
+    const personaChips = PERSONA_CHIPS.map((p) => pchip(p.key, p.label)).join("");
+    const avoidChips = cats.map((c) => chip("avoid:" + c, c + " 말고")).join("");
+    const moodChips = MOOD_CHIPS.map((m) => chip(m.key, m.label)).join("");
+    body.innerHTML = `<div class="aipick">
+      <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요 🤖<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).</div>
+      <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
+      <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
+      <div class="aipick-grp"><div class="aipick-h">🫠 지금 기분·상황</div><div class="mood-row">${moodChips}</div></div>
+      <button type="button" class="aipick-go" id="lunch-ai-go">🤖 오늘 점심 추천받기</button>
+      <div class="aipick-hint">아무것도 안 골라도 돼요 — 그럼 가까운·검증된 곳 위주로 골라줘요.</div>
+    </div>`;
+  }
+  function gatherConditions() {
+    const avoid_cats = [], moods = [];
+    Object.keys(LUNCH.aiSel).forEach((k) => {
+      if (!LUNCH.aiSel[k]) return;
+      if (k.indexOf("avoid:") === 0) avoid_cats.push(k.slice(6));
+      else moods.push(k);
+    });
+    return { avoid_cats, moods };
+  }
+  async function runRecommend() {
     if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
     showView("view-lunch-ai");
     const body = $("lunch-ai-body");
     if (body) body.innerHTML = `<div class="airec-load">🤖 오늘 점심 고르는 중…</div>`;
-    const ids = filtered().map((r) => r.id);   // 현재 필터 결과 안에서 추천
+    const cond = gatherConditions();
+    const ids = LUNCH.rows.map((r) => r.id);   // 위치 내 전체에서 조건 적용
     let res;
     try {
-      res = await api("/api/lunch/recommend", { loc_id: LUNCH.curLoc.id, candidate_ids: ids, craving: craving || "" });
+      res = await api("/api/lunch/recommend", {
+        loc_id: LUNCH.curLoc.id, candidate_ids: ids,
+        avoid_cats: cond.avoid_cats, moods: cond.moods, persona: LUNCH.aiPersona || "",
+      });
     } catch (e) { res = { ok: false, error: "추천을 불러오지 못했어요" }; }
-    renderRecommend(res, craving);
+    renderRecommend(res);
   }
-  function renderRecommend(res, craving) {
+  function renderRecommend(res) {
     const body = $("lunch-ai-body"); if (!body) return;
+    const backBtn = `<button type="button" class="airec-edit" id="lunch-ai-edit">‹ 조건 바꾸기</button>`;
     if (!res || !res.ok) {
-      body.innerHTML = `<div class="airec-empty">${escapeHtml((res && res.error) || "추천 실패")}</div>
-        <button type="button" class="btn-collect retry" id="lunch-ai-retry">다시 추천</button>`;
+      body.innerHTML = `${backBtn}<div class="airec-empty">${escapeHtml((res && res.error) || "추천 실패")}</div>`;
       return;
     }
     const p = res.pick;
     const rate = p.avg_rating ? `${stars(p.avg_rating)} <b>${p.avg_rating}</b> (${p.review_count})` : "평가 없음";
     const meta = [p.walk_min != null ? `도보 ${p.walk_min}분` : "", p.dist_m != null ? `${p.dist_m}m` : ""].filter(Boolean).join(" · ");
     const kakao = p.place_url ? `<a class="lbtn kakao" href="${escapeHtml(p.place_url)}" target="_blank" rel="noopener">카카오맵 ↗</a>` : "";
-    const engine = res.engine === "ai" ? "AI 추천" : "랜덤 추천";
+    const tags = (res.tags || []).map((t) => `<span class="airec-tag">${escapeHtml(t)}</span>`).join("");
     const alts = (res.alternatives || []).map((a) =>
       `<button type="button" class="alt" data-rev="${a.id}">${escapeHtml(a.name)} <span class="alt-cat">${escapeHtml(a.cat_norm || "")}</span></button>`).join("");
-    body.innerHTML = `<div class="airec">
-      <div class="airec-badge">🤖 ${engine}${craving ? " · “" + escapeHtml(craving) + "”" : ""}</div>
+    body.innerHTML = `${backBtn}<div class="airec">
+      <div class="airec-badge">🤖 오늘의 추천</div>
+      ${tags ? `<div class="airec-tags">${tags}</div>` : ""}
       <div class="airec-name">${escapeHtml(p.name)}</div>
       <div class="airec-cat">${escapeHtml(p.sub_cat || p.cat_norm || "")}</div>
       <div class="airec-rate">${rate}</div>
       ${meta ? `<div class="airec-meta">📍 ${escapeHtml(meta)}</div>` : ""}
-      ${p.reason ? `<div class="airec-why"><b>왜 추천?</b> ${escapeHtml(p.reason)}</div>` : ""}
+      ${p.reason ? `<div class="airec-why"><b>왜 여기?</b> ${escapeHtml(p.reason)}</div>` : ""}
       <div class="airec-acts">${kakao}
         <button type="button" class="lbtn rev" data-rev="${p.id}">평점·후기</button>
-        <button type="button" class="btn-collect retry" id="lunch-ai-retry">🔄 다시 추천</button>
+        <button type="button" class="btn-collect retry" id="lunch-ai-retry">🔄 다시</button>
       </div>
       ${alts ? `<div class="altrow"><span class="alt-lb">다른 후보</span>${alts}</div>` : ""}
     </div>`;
@@ -2412,14 +2481,18 @@ async function loadReport(id) {
   // ---- 이벤트 바인딩 ----
   function wire() {
     const locBtn = $("lunch-loc-btn"), locMenu = $("lunch-loc-menu");
-    if (locBtn) locBtn.addEventListener("click", (e) => { e.stopPropagation(); if (locMenu) locMenu.hidden = !locMenu.hidden; });
+    if (locBtn) locBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (locMenu) locMenu.hidden = !locMenu.hidden;   // 토글(열림/닫힘)
+    });
     if (locMenu) locMenu.addEventListener("click", (e) => {
       const b = e.target.closest(".lunch-loc-item"); if (!b) return;
       const l = LUNCH.locs.find((x) => String(x.id) === b.dataset.id);
       if (l) { LUNCH.curLoc = l; LUNCH.cat = "전체"; LUNCH.q = ""; const s = $("lunch-search"); if (s) s.value = ""; renderLocBar(); loadRestaurants(); }
       closeLocMenu();
     });
-    document.addEventListener("click", () => closeLocMenu());
+    // #lunch-loc(버튼+메뉴) 바깥을 누를 때만 닫음 → stopPropagation 의존 제거(가끔 안 펴지던 문제 해결)
+    document.addEventListener("click", (e) => { if (!e.target.closest("#lunch-loc")) closeLocMenu(); });
 
     const search = $("lunch-search"), sBtn = $("lunch-search-btn");
     const doSearch = () => { LUNCH.q = search ? search.value : ""; renderList(); };
@@ -2445,16 +2518,27 @@ async function loadReport(id) {
     });
 
     const aiBtn = $("lunch-ai-btn");
-    if (aiBtn) aiBtn.addEventListener("click", () => runRecommend(LUNCH.q));
+    if (aiBtn) aiBtn.addEventListener("click", openAiPicker);
 
     const revBack = $("lunch-rev-back"), aiBack = $("lunch-ai-back");
     if (revBack) revBack.addEventListener("click", () => showView("view-food"));
     if (aiBack) aiBack.addEventListener("click", () => showView("view-food"));
 
-    // AI 뷰 안의 위임: 다시 추천 / 다른 후보 / 후기
+    // AI 뷰 안의 위임: 키워드 칩 토글 / 추천받기 / 다시 / 조건 바꾸기 / 후보·후기
     const aiBody = $("lunch-ai-body");
     if (aiBody) aiBody.addEventListener("click", (e) => {
-      if (e.target.closest("#lunch-ai-retry")) { runRecommend(LUNCH.q); return; }
+      const pc = e.target.closest("[data-persona]");
+      if (pc) {   // 성향: 단일선택(다시 누르면 해제)
+        const k = pc.dataset.persona;
+        LUNCH.aiPersona = (LUNCH.aiPersona === k) ? "" : k;
+        aiBody.querySelectorAll("[data-persona]").forEach((x) => x.classList.toggle("on", x.dataset.persona === LUNCH.aiPersona));
+        return;
+      }
+      const chip = e.target.closest("[data-mood]");
+      if (chip) { const k = chip.dataset.mood; LUNCH.aiSel[k] = !LUNCH.aiSel[k]; chip.classList.toggle("on", LUNCH.aiSel[k]); return; }
+      if (e.target.closest("#lunch-ai-go")) { runRecommend(); return; }
+      if (e.target.closest("#lunch-ai-retry")) { runRecommend(); return; }
+      if (e.target.closest("#lunch-ai-edit")) { renderPicker(); return; }
       const rev = e.target.closest("[data-rev]");
       if (rev) openReviews(rev.dataset.rev);
     });
@@ -2475,9 +2559,26 @@ async function loadReport(id) {
     });
   }
 
+  // 맛집 메뉴 초기화(헤더 🗑 버튼이 현재 대메뉴에 맞춰 호출) — 현재 위치의 식당/후기/방문 삭제
+  async function lunchPurge() {
+    if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
+    msg(`[${LUNCH.curLoc.name}] 맛집 데이터 초기화 중…`);
+    try {
+      const d = await api("/api/lunch/purge", { loc_id: LUNCH.curLoc.id });
+      msg(`🗑 [${LUNCH.curLoc.name}] 식당 ${d.deleted || 0}곳 삭제 완료`);
+      loadRestaurants();
+    } catch (e) { msg("초기화 실패(권한 확인)", true); }
+  }
+
   wire();
   window.onShowLunch = function () {
     if (!LUNCH.inited) { LUNCH.inited = true; loadLocations(); }
+  };
+  // 헤더 🗑 초기화 버튼의 대메뉴별 분기용(맛집 화면일 때 이 컨텍스트로 동작)
+  window.lunchPurgeCtx = {
+    active: function () { const v = document.getElementById("view-food"); return !!(v && !v.hidden); },
+    label: function () { return LUNCH.curLoc ? ("맛집: " + LUNCH.curLoc.name) : "맛집"; },
+    run: lunchPurge,
   };
 })();
 

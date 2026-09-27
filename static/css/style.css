@@ -1110,16 +1110,27 @@ body.tab-report .viewbar { display: none; }
   display: flex; align-items: stretch;
 }
 .fnav {
+  position: relative;
   flex: 1 1 0; min-width: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   border: none; background: none; cursor: pointer;
   padding: 7px 4px 6px; color: var(--muted);
   font-family: inherit; font-size: 11px; font-weight: 700;
 }
-.fnav .fnav-ic { font-size: 20px; line-height: 1; position: relative; display: inline-flex; }
+.fnav .fnav-ic {
+  font-size: 20px; line-height: 1; position: relative; display: inline-flex;
+  align-items: center; justify-content: center; padding: 4px 14px; border-radius: 999px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
 .fnav .ai-ci { color: currentColor; }
 .fnav .fnav-t { white-space: nowrap; }
-.fnav.active { color: var(--primary); }
+/* 선택된 대메뉴: 상단 인디케이터 바 + 아이콘 뒤 알약 하이라이트 + 진한 색/굵기 */
+.fnav.active { color: var(--primary); font-weight: 800; }
+.fnav.active .fnav-ic { background: rgba(45, 108, 223, 0.14); transform: scale(1.06); }
+.fnav.active::before {
+  content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 34px; height: 3px; border-radius: 0 0 4px 4px; background: var(--primary);
+}
 .fnav:active { background: rgba(0,0,0,0.04); }
 .footnav .fnav[hidden] { display: none !important; }
 /* 스크랩 배지(하단 탭) */
@@ -1262,6 +1273,34 @@ body.tab-report .viewbar { display: none; }
 .alt { display: inline-flex; align-items: center; gap: 6px; margin: 0 6px 6px 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer; }
 .alt-cat { font-size: 11.5px; font-weight: 600; color: var(--muted); }
 .lunch-back { background: none; border: 0; font-size: 24px; line-height: 1; color: var(--text); cursor: pointer; padding: 0 4px 0 0; }
+
+/* AI 추천 — 기분/회피 키워드 피커 */
+.aipick { padding: 4px 0 8px; }
+.aipick-lead { font-size: 14px; color: var(--text); line-height: 1.55; margin-bottom: 16px; }
+.aipick-lead b { color: var(--primary); }
+.aipick-grp { margin-bottom: 16px; }
+.aipick-h { font-size: 13px; font-weight: 800; color: var(--muted); margin-bottom: 9px; }
+.aipick-sub { font-weight: 600; color: var(--muted); font-size: 11px; }
+.mood-chip.persona.on { background: linear-gradient(135deg, #4f7dff, #7a5cff); border-color: transparent; }
+.mood-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mood-none { font-size: 13px; color: var(--muted); }
+.mood-chip {
+  font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer;
+  background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 9px 14px;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.05s ease;
+}
+.mood-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.mood-chip:active { transform: scale(0.96); }
+.aipick-go {
+  width: 100%; margin-top: 4px; padding: 15px; border: 0; border-radius: 16px; cursor: pointer;
+  color: #fff; font-size: 16px; font-weight: 800;
+  background: linear-gradient(135deg, #4f7dff, #7a5cff); box-shadow: 0 6px 16px rgba(79, 92, 255, 0.28);
+}
+.aipick-go:active { transform: translateY(1px); }
+.aipick-hint { margin-top: 10px; font-size: 12px; color: var(--muted); text-align: center; }
+.airec-edit { background: none; border: 0; color: var(--primary); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 0; margin-bottom: 8px; }
+.airec-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 8px; }
+.airec-tag { font-size: 12px; font-weight: 700; color: #6a4fff; background: #f0eeff; border-radius: 999px; padding: 4px 10px; }
 
 /* ============ 본문 뷰(리포트/스크랩 = 팝업 아닌 바디) ============ */
 /* hidden 처리가 뷰의 display(flex 등)에 덮이지 않도록 강제(대메뉴 전환 정상화) */

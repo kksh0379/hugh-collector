@@ -774,6 +774,20 @@ def lunch_add_restaurant():
     return jsonify({"ok": True, "new": new, "updated": upd})
 
 
+@app.post("/api/lunch/purge")
+def lunch_purge():
+    if not _admin_ok():
+        return jsonify({"error": "unauthorized"}), 401
+    if not _ensure_db(force=True):
+        return jsonify({"ok": False, "error": "DB 연결 실패"}), 503
+    d = request.get_json(silent=True) or {}
+    loc_id = d.get("loc_id")
+    if not loc_id:
+        return jsonify({"ok": False, "error": "loc_id 필요"}), 400
+    n = db.lunch_purge_location(loc_id)
+    return jsonify({"ok": True, "deleted": n})
+
+
 @app.post("/api/lunch/exclude")
 def lunch_exclude():
     if not _admin_ok():
@@ -824,64 +838,142 @@ def lunch_visit():
     return jsonify({"ok": True})
 
 
-def _lunch_llm_pick(key, pool, craving, loc):
-    """LLM으로 후보 중 1곳 추천 + 이유 + 대안. 실패/파싱불가 시 None."""
-    lines = []
-    for c in pool[:40]:
-        rt = f"평점{c['avg_rating']}({c['review_count']})" if c.get("avg_rating") else "평가없음"
-        lines.append(f"{c['id']}. {c['name']} · {c.get('cat_norm') or c.get('category') or ''} · "
-                     f"{c.get('walk_min') or '?'}분·{c.get('dist_m') or '?'}m · {rt}")
-    sys = ("너는 회사 점심 추천 도우미다. 아래 후보 식당 목록에서 딱 1곳을 추천한다. "
-           "메뉴·가격·영업시간 같은 목록에 없는 사실은 지어내지 말고, 거리·카테고리·이용자 평점·"
-           "요청(craving)만 근거로 삼는다. 출력은 JSON 하나만: "
-           '{"pick": <식당번호>, "reason": "추천 이유 1~2문장(왜 이 집인지)", "alt": [<번호>, <번호>]}')
-    user = "[후보]\n" + "\n".join(lines)
-    if craving:
-        user += f"\n\n[요청] {craving} — 이 느낌에 맞는 카테고리를 우선 고려."
-    try:
-        import requests
-        r = requests.post(analysis.API_URL, timeout=60, headers={
-            "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json",
-        }, data=json.dumps({"model": analysis.resolve_model(key), "max_tokens": 500,
-                            "system": sys, "messages": [{"role": "user", "content": user}],
-                            "thinking": {"type": "disabled"}}))
-        if r.status_code >= 400:
-            return None
-        data = analysis._extract_json(analysis._text_from_response(r.json()))
-        if not isinstance(data, dict) or "pick" not in data:
-            return None
-        by_id = {c["id"]: c for c in pool}
-        pick = by_id.get(int(data["pick"]))
-        if not pick:
-            return None
-        alts = [by_id[int(i)] for i in (data.get("alt") or []) if int(i) in by_id and int(i) != pick["id"]][:2]
-        return {"ok": True, "pick": {**pick, "reason": (data.get("reason") or "").strip()},
-                "alternatives": alts, "engine": "ai"}
-    except Exception:  # noqa: BLE001
-        return None
+# ── 맛집 AI 추천 엔진: 가중 점수 + 상위5 가중랜덤(같은 집만 나오는 것 방지) ──
+# 사용 가능한 실제 데이터만 사용(메뉴/가격/영업시간/날씨는 미보유 → 지어내지 않음).
+LUNCH_PERSONAS = {
+    "safe":     {"label": "🎯 안전빵"},
+    "adventure": {"label": "🎲 모험"},
+    "cheap":    {"label": "💸 월급루팡"},
+    "premium":  {"label": "👑 오늘은 제대로"},
+    "fast":     {"label": "🏃 빨리 먹자"},
+    "world":    {"label": "🌏 세계여행"},
+    "hidden":   {"label": "🕵️ 숨은 맛집"},
+    "comeback": {"label": "🔄 오랜만이야"},
+}
+_CHEAP_CATS = {"분식", "면요리", "한식"}
+_FAST_CATS = {"분식", "면요리", "돈까스", "한식"}
+_HEARTY_CATS = {"고기", "한식", "돈까스"}
+_MILD_CATS = {"한식", "면요리", "샐러드/건강식"}
+_LIGHT_CATS = {"샐러드/건강식", "카페/디저트", "분식"}
+_COMFORT_CATS = {"고기", "중식", "분식"}
+_WORLD_CATS = {"중식", "일식", "아시아음식", "양식", "생선/해산물"}
 
 
-def _lunch_ai_pick(cands, avoid, craving, loc):
-    pool = [c for c in cands if c["id"] not in avoid] or cands
-    if not pool:
-        return {"ok": False, "error": "조건에 맞는 식당이 없어요. 필터를 넓혀보세요."}
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if key:
-        picked = _lunch_llm_pick(key, pool, craving, loc)
-        if picked:
-            return picked
-    # 폴백: 랜덤 1곳 + 간단 근거(거리·평점). 키 없어도 '오늘 뭐 먹지?' 동작.
+def _lunch_score(cands, avoid_ids, all_visited, recent3, recent7, avoid_cats, moods, persona, ctx):
+    """후보별 추천점수 계산 → (정렬된 [(score, cand)], relaxed?) 반환."""
     import random
-    c = random.choice(pool)
+    moods, avoid_cats = set(moods or []), set(avoid_cats or [])
+    pool = [c for c in cands if c["id"] not in avoid_ids and (c.get("cat_norm") not in avoid_cats)]
+    relaxed = False
+    if not pool:  # 조건이 너무 좁으면 회피카테고리만 유지하고 완화
+        pool = [c for c in cands if c.get("cat_norm") not in avoid_cats] or list(cands)
+        relaxed = True
+    # 기본 가중치(합 100) — 기분/페르소나로 조정
+    W = {"trust": 25.0, "dist": 15.0, "situ": 15.0, "variety": 15.0, "explore": 10.0, "team": 10.0, "rand": 10.0}
+    if "near" in moods: W["dist"] *= 1.8
+    if "trusted" in moods: W["trust"] *= 1.6
+    if "explore" in moods: W["explore"] *= 2.0
+    if persona == "safe": W["trust"] *= 1.9; W["explore"] *= 0.4; W["rand"] *= 0.6
+    elif persona == "adventure": W["explore"] *= 2.4; W["trust"] *= 0.5; W["team"] *= 0.6
+    elif persona == "premium": W["trust"] *= 1.7; W["dist"] *= 0.4; W["rand"] *= 0.6
+    elif persona == "fast": W["dist"] *= 2.2
+    elif persona == "hidden": W["trust"] *= 0.6
+    scored = []
+    for c in pool:
+        cat = c.get("cat_norm") or "기타"
+        rating = c.get("avg_rating") or 0
+        rc = c.get("review_count") or 0
+        vc = c.get("visit_count") or 0
+        walk = c.get("walk_min")
+        trust = ((rating / 5.0) if rating else 0.4) * (0.5 + 0.5 * min(rc, 8) / 8.0)
+        dist = 1.0 - min(walk if walk is not None else 12, 20) / 20.0
+        situ = 0.5
+        if ctx["weekday"] == 0 and rating: situ += 0.2 * (rating / 5.0)          # 월: 검증된 곳
+        if ctx["weekday"] == 4 and cat in {"고기", "양식", "일식", "생선/해산물"}: situ += 0.2  # 금: 특별
+        if ctx["hour"] >= 13 and walk is not None: situ += 0.15 * (1 - min(walk, 15) / 15.0)  # 늦은 점심 가까이
+        situ = max(0.0, min(1.0, situ))
+        variety = 0.1 if cat in recent3 else (0.5 if cat in recent7 else 1.0)
+        explore = (1.0 / (1.0 + vc)) if vc else (1.0 if rc == 0 else 0.7)
+        team = min(vc, 10) / 10.0
+        score = (W["trust"] * trust + W["dist"] * dist + W["situ"] * situ + W["variety"] * variety
+                 + W["explore"] * explore + W["team"] * team + W["rand"] * random.random())
+        # 페르소나/기분 카테고리 보너스(가감점)
+        b = 0.0
+        if persona == "cheap" and cat in _CHEAP_CATS: b += 18
+        if persona == "fast" and cat in _FAST_CATS: b += 15
+        if persona == "world":
+            if cat in _WORLD_CATS: b += 25 if cat not in recent7 else 10
+            else: b -= 12  # 한식/분식/패스트푸드 등 비(非)세계요리 감점
+        if persona == "hidden" and rating: b += 45 * ((rating / 5.0) * (1.0 / (1.0 + rc)))
+        if persona == "comeback" and (c["id"] in all_visited) and (c["id"] not in avoid_ids): b += 22
+        if "quick" in moods and cat in _FAST_CATS: b += 10
+        if "hearty" in moods and cat in _HEARTY_CATS: b += 10
+        if "mild" in moods:
+            b += 10 if cat in _MILD_CATS else 0
+            if cat in {"고기", "중식", "양식", "패스트푸드"}: b -= 10
+        if "comfort" in moods and cat in _COMFORT_CATS: b += 10
+        if "light" in moods:
+            b += 10 if cat in _LIGHT_CATS else 0
+            if cat in {"고기", "돈까스"}: b -= 10
+        scored.append((score + b, c))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return scored, relaxed
+
+
+def _lunch_reason(c, persona, moods, recent3, recent7):
+    """추천 태그 + 한 줄 이유(있는 사실만: 거리·평점·방문·카테고리)."""
+    moods = set(moods or [])
+    tags = []
+    pm = LUNCH_PERSONAS.get(persona)
+    if pm: tags.append(pm["label"])
+    if c.get("walk_min") is not None and c["walk_min"] <= 3: tags.append(f"🚶 도보 {c['walk_min']}분")
+    if c.get("avg_rating"): tags.append(f"⭐ {c['avg_rating']}")
+    if not c.get("review_count") and not c.get("visit_count"): tags.append("✨ 안 가본 곳")
+    cat = c.get("cat_norm") or ""
+    persona_line = {
+        "safe": "실패 없는 선택 — 평점·방문이 검증된 곳이에요.",
+        "adventure": "오늘은 모험! 안 가본 곳으로 질러봐요.",
+        "cheap": "월급루팡 모드 — 부담 없이 가볍게 한 끼.",
+        "premium": "오늘은 제대로 — 가격보다 만족도로 골랐어요.",
+        "fast": "빨리 먹고 들어오기 좋게 가까운 곳으로.",
+        "world": "입맛 여행 — 요즘 안 먹은 스타일이에요.",
+        "hidden": "리뷰는 적지만 평이 좋은 숨은 집.",
+        "comeback": "요즘 뜸했던 곳, 오랜만에 어때요?",
+    }.get(persona, "")
     bits = []
-    if c.get("walk_min"):
-        bits.append(f"도보 {c['walk_min']}분")
-    if c.get("avg_rating"):
-        bits.append(f"이용자 평점 {c['avg_rating']}")
-    reason = "가까운 후보 중에서 골라봤어요" if not bits else (" · ".join(bits) + " — 오늘 여기 어때요?")
-    alts = [x for x in pool if x["id"] != c["id"]]
-    random.shuffle(alts)
-    return {"ok": True, "pick": {**c, "reason": reason}, "alternatives": alts[:2], "engine": "random"}
+    if cat: bits.append(cat)
+    if c.get("walk_min") is not None: bits.append(f"도보 {c['walk_min']}분")
+    if c.get("avg_rating"): bits.append(f"평점 {c['avg_rating']}({c.get('review_count', 0)})")
+    if "near" in moods: bits.append("가까운 데")
+    if "hearty" in moods: bits.append("든든")
+    if "mild" in moods: bits.append("속 편한")
+    if "light" in moods: bits.append("가볍게")
+    if cat and cat not in recent7: bits.append("최근 안 먹은 메뉴")
+    tail = " · ".join(bits)
+    reason = (persona_line + (" " if persona_line else "") + (f"({tail})" if tail else "")).strip()
+    return tags, (reason or "오늘 여기 어때요?")
+
+
+def _lunch_ai_pick(cands, avoid_ids, all_visited, recent3, recent7, avoid_cats, moods, persona):
+    import random
+    if not cands:
+        return {"ok": False, "error": "추천할 식당이 없어요. 먼저 수집하거나 추가해 주세요."}
+    ctx = _lunch_now_ctx()
+    scored, relaxed = _lunch_score(cands, avoid_ids, all_visited, recent3, recent7,
+                                   avoid_cats, moods, persona, ctx)
+    if not scored:
+        return {"ok": False, "error": "조건에 맞는 식당이 없어요. 조건을 줄여보세요."}
+    top = scored[:5]
+    pick = random.choices([c for _, c in top], weights=[max(0.1, s) for s, _ in top], k=1)[0]
+    alts = [c for _, c in top if c["id"] != pick["id"]][:2]
+    tags, reason = _lunch_reason(pick, persona, moods, recent3, recent7)
+    return {"ok": True, "engine": (persona or "mix"),
+            "pick": {**pick, "reason": reason}, "alternatives": alts, "tags": tags, "relaxed": relaxed}
+
+
+def _lunch_now_ctx():
+    now = datetime.now(KST)
+    return {"weekday": now.weekday(), "hour": now.hour}  # 월=0 … 일=6
 
 
 @app.post("/api/lunch/recommend")
@@ -894,15 +986,20 @@ def lunch_recommend():
     if not loc:
         return jsonify({"ok": False, "error": "위치 없음"}), 400
     cands = _lunch_decorate(loc, db.lunch_list_restaurants(loc_id))
-    # 클라이언트가 보낸 후보 id(현재 필터 결과)로 좁힘
     ids = d.get("candidate_ids")
     if ids:
         idset = set(ids)
         cands = [c for c in cands if c["id"] in idset]
-    # 최근 방문 회피(로그인 시)
     user = _cur_user()
-    avoid = db.lunch_recent_visited_ids(user) if user else set()
-    result = _lunch_ai_pick(cands, avoid, d.get("craving", ""), loc)
+    avoid_ids = db.lunch_recent_visited_ids(user, days=3) if user else set()   # 최근 3일 방문은 제외
+    recent3 = db.lunch_recent_visited_cats(user, days=3) if user else set()
+    recent7 = db.lunch_recent_visited_cats(user, days=7) if user else set()
+    all_visited = db.lunch_all_visited_ids(user) if user else set()
+    persona = (d.get("persona") or "").strip()
+    if persona not in LUNCH_PERSONAS:
+        persona = ""
+    result = _lunch_ai_pick(cands, avoid_ids, all_visited, recent3, recent7,
+                            d.get("avoid_cats"), d.get("moods"), persona)
     return jsonify(result)
 
 

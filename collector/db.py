@@ -856,6 +856,18 @@ def lunch_list_restaurants(loc_id, include_excluded=False):
         return [dict(r) for r in rows]
 
 
+def lunch_purge_location(loc_id):
+    """해당 위치의 식당/후기/방문 데이터 전부 삭제(맛집 메뉴 초기화). 반환: 삭제된 식당 수."""
+    with get_conn() as conn:
+        rids = [dict(r)["id"] for r in conn.execute(
+            _q("SELECT id FROM lunch_restaurant WHERE loc_id=?"), (loc_id,)).fetchall()]
+        for rid in rids:
+            conn.execute(_q("DELETE FROM lunch_review WHERE restaurant_id=?"), (rid,))
+            conn.execute(_q("DELETE FROM lunch_visit WHERE restaurant_id=?"), (rid,))
+        conn.execute(_q("DELETE FROM lunch_restaurant WHERE loc_id=?"), (loc_id,))
+        return len(rids)
+
+
 def lunch_get_restaurant(rid):
     with get_conn() as conn:
         r = conn.execute(_q("SELECT * FROM lunch_restaurant WHERE id=?"), (rid,)).fetchone()
@@ -900,4 +912,24 @@ def lunch_recent_visited_ids(username, days=14):
     with get_conn() as conn:
         rows = conn.execute(_q("SELECT DISTINCT restaurant_id FROM lunch_visit "
                                "WHERE username=? AND visited_at>=?"), (username, cutoff)).fetchall()
+        return {dict(r)["restaurant_id"] for r in rows}
+
+
+def lunch_recent_visited_cats(username, days=7):
+    """최근 N일 내 이 사용자가 방문한 식당의 카테고리(cat_norm) 집합(메뉴 다양성용)."""
+    from datetime import datetime as _dt, timedelta as _td
+    cutoff = (_dt.now() - _td(days=days)).isoformat(timespec="seconds")
+    with get_conn() as conn:
+        rows = conn.execute(_q(
+            "SELECT DISTINCT r.cat_norm AS c FROM lunch_visit v "
+            "JOIN lunch_restaurant r ON r.id = v.restaurant_id "
+            "WHERE v.username=? AND v.visited_at>=?"), (username, cutoff)).fetchall()
+        return {dict(r)["c"] for r in rows if dict(r).get("c")}
+
+
+def lunch_all_visited_ids(username):
+    """이 사용자가 (기간 무관) 한 번이라도 방문한 restaurant_id 집합('오랜만이야' 페르소나용)."""
+    with get_conn() as conn:
+        rows = conn.execute(_q("SELECT DISTINCT restaurant_id FROM lunch_visit WHERE username=?"),
+                            (username,)).fetchall()
         return {dict(r)["restaurant_id"] for r in rows}
