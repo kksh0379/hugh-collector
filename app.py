@@ -605,7 +605,9 @@ def _load_features():
     except Exception:  # noqa: BLE001
         saved = {}
     # 기본값 True, 저장된 값만 덮어씀(명시적으로 False인 것만 off)
-    return {k: (False if saved.get(k) is False else True) for k in _FEATURE_KEYS}
+    flags = {k: (False if saved.get(k) is False else True) for k in _FEATURE_KEYS}
+    flags["cat"] = True  # 냥정보는 기본 탭 → 항상 노출(끌 수 없음). 전부 꺼도 최소 1개 유지.
+    return flags
 
 
 @app.get("/api/features")
