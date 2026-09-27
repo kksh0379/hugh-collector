@@ -698,9 +698,17 @@ def lunch_locations():
     if not _ensure_db():
         _db_wake_async()  # Neon이 자고 있으면 백그라운드로 깨우고, 클라이언트는 잠시 후 재시도
         return jsonify({"locations": [], "kakao": lunch.has_key(), "db_waking": True})
-    db.lunch_seed_locations(LUNCH_OFFICES)  # 최초 1회 시드
-    db.lunch_sync_locations(LUNCH_OFFICES)  # 주소/반경 최신화(바뀌면 좌표 리셋 → 재지오코딩)
-    locs = [_lunch_geocode_if_needed(x) for x in db.lunch_list_locations()]
+    # 시드/동기화가 어떤 이유로 실패해도 기존 위치는 반드시 반환(무한 로딩 방지)
+    try:
+        db.lunch_seed_locations(LUNCH_OFFICES)  # 최초 1회 시드
+        db.lunch_sync_locations(LUNCH_OFFICES)  # 이름/주소 최신화·중복 정리
+    except Exception as e:  # noqa: BLE001
+        print(f"[lunch] seed/sync 오류(무시하고 기존 위치 반환): {e}", flush=True)
+    try:
+        locs = [_lunch_geocode_if_needed(x) for x in db.lunch_list_locations()]
+    except Exception as e:  # noqa: BLE001
+        print(f"[lunch] locations 조회 오류: {e}", flush=True)
+        locs = []
     return jsonify({"locations": locs, "kakao": lunch.has_key()})
 
 
