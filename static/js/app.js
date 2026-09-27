@@ -14,9 +14,15 @@ function applyAuthUI(user, admin) {
 
 // ===== 표시 설정(탭·리포트·스크랩 온오프) =====
 const FEATURE_TABS = ["cat", "game", "news", "biz", "security", "event", "boards", "social"];
+const FEATURE_ALL = FEATURE_TABS.concat(["report", "scrap"]);
 let FEATURES = {};  // {키:bool}. 저장 전이면 비어 있어 전체 표시.
 function applyFeatures() {
   const admin = document.body.classList.contains("is-admin");
+  const loaded = Object.keys(FEATURES).length > 0;
+  const root = document.documentElement;
+  // FEATURES가 실제 로드된 뒤에만 프리하이드(첫 페인트 전 숨김) 클래스를 해제 → 앱이 [hidden]으로 제어.
+  // 로드 전에는 프리하이드가 유지돼 깜빡임(FOUC) 없음.
+  if (loaded) FEATURE_ALL.forEach((k) => root.classList.remove("pre-hide-" + k));
   const hide = (k) => !admin && FEATURES[k] === false;  // 관리자는 항상 노출
   FEATURE_TABS.forEach((t) => {
     const btn = document.querySelector('.tab[data-tab="' + t + '"]');
@@ -32,6 +38,13 @@ function applyFeatures() {
   if (active && active.hidden) {
     const first = document.querySelector(".tab:not([hidden])");
     if (first) first.click();
+  }
+  // 다음 로드 FOUC 방지용 캐시(실제 로드된 뒤에만 저장)
+  if (loaded) {
+    try {
+      localStorage.setItem("hue_feat", JSON.stringify(FEATURES));
+      localStorage.setItem("hue_admin", admin ? "1" : "0");
+    } catch (e) { /* 무시 */ }
   }
 }
 async function loadFeatures() {

@@ -31,6 +31,18 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver) }}" />
+  <!-- 표시 설정(온오프) 첫 페인트 전 적용 → 새로고침 시 숨긴 항목이 깜빡이지 않게(FOUC 방지).
+       직전 방문 상태를 캐시해 사용. 관리자면 전부 표시. 실제 상태는 로드 후 app.js가 재확정. -->
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem("hue_admin") === "1") return;
+        var f = JSON.parse(localStorage.getItem("hue_feat") || "{}"), el = document.documentElement;
+        ["cat", "game", "news", "biz", "security", "event", "boards", "social", "report", "scrap"]
+          .forEach(function (k) { if (f[k] === false) el.classList.add("pre-hide-" + k); });
+      } catch (e) { /* 무시 */ }
+    })();
+  </script>
 </head>
 <body>
   <header class="app-header">
@@ -421,7 +433,7 @@
   <footer class="app-footer">
     <div class="foot-left">
       <span class="foot-copy">© 2026 김상화</span>
-      <span class="ver">v1.82 · build 260927</span>
+      <span class="ver">v1.83 · build 260927</span>
       <span class="ver" id="storage-badge"></span>
     </div>
     <div class="foot-right">
