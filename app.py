@@ -1716,11 +1716,62 @@ def _batch_all():
             except Exception as e:  # noqa: BLE001
                 print(f"[batch] {group} 오류: {e}", flush=True)
         _auto_security_report()  # 월초에 지난달 보안 리포트 자동 생성(이미 있으면 skip)
+        _lunch_refresh_all()      # 맛집 주변 식당 주 1회 자동 재수집(주기 안 지났으면 skip)
         _batch_state["running"] = False
         print("[batch] 순차 수집 배치 완료", flush=True)
 
     threading.Thread(target=_run, daemon=True).start()
     return list(_BATCH_GROUPS)
+
+
+# 맛집(점심) 자동 재수집: 뉴스와 달리 식당은 잘 안 바뀌므로 주 1회만.
+# 배치/크론이 4시간마다 돌아도 아래 주기(meta 타임스탬프)로 실제 수집은 주 1회로 억제.
+LUNCH_REFRESH_DAYS = int(os.environ.get("LUNCH_REFRESH_DAYS", "7"))  # 0이면 자동 재수집 끔
+_lunch_refresh_state = {"running": False}
+
+
+def _lunch_should_refresh():
+    if LUNCH_REFRESH_DAYS <= 0:
+        return False
+    last = db.get_meta("lunch_last_refresh")
+    if not last:
+        return True
+    try:
+        return (datetime.now() - datetime.fromisoformat(last)).total_seconds() >= LUNCH_REFRESH_DAYS * 86400
+    except Exception:  # noqa: BLE001
+        return True
+
+
+def _lunch_refresh_all(force=False):
+    """모든 위치의 주변 식당을 순차 재수집(기본 주 1회). 카카오 키 없으면 skip.
+    폐업 자동 삭제는 하지 않고(원칙: 데이터 조작 없음) upsert만 — last_checked로 최신 확인 시각 갱신."""
+    if not lunch.has_key() or _lunch_refresh_state["running"]:
+        return
+    if not force and not _lunch_should_refresh():
+        return
+    if not _ensure_db():
+        return
+    _lunch_refresh_state["running"] = True
+    try:
+        tot_new = tot_upd = 0
+        for loc in db.lunch_list_locations():
+            loc = _lunch_geocode_if_needed(loc)
+            if not loc or not loc.get("lat"):
+                print(f"[lunch] {(loc or {}).get('name', '?')} 좌표 없음 → skip", flush=True)
+                continue
+            items = lunch.collect(loc["lat"], loc["lng"], loc.get("radius", 500), progress=lambda m: None)
+            for it in items:
+                it["source"] = "kakao"
+            new, upd = db.lunch_upsert_restaurants(loc["id"], items)
+            tot_new += new
+            tot_upd += upd
+            print(f"[lunch] {loc['name']} 재수집 · 신규 {new} · 갱신 {upd}", flush=True)
+        db.set_meta("lunch_last_refresh", datetime.now().isoformat(timespec="seconds"))
+        print(f"[lunch] 주간 재수집 완료 · 신규 {tot_new} · 갱신 {tot_upd}", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"[lunch] 주간 재수집 오류: {e}", flush=True)
+    finally:
+        _lunch_refresh_state["running"] = False
 
 
 def _start_scheduler():
