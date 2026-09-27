@@ -1,6 +1,9 @@
 # 📅 변경 이력
 
 ## 2026-09-27 (추가)
+### v1.82 · 260927 — 표시 설정: 탭·리포트 숨김 동작 수정
+- 표시 설정에서 탭/리포트 버튼이 `hidden` 처리돼도 클래스의 `display:inline-flex`에 덮여 안 숨던 문제 → `.tab[hidden]`·`.auth-btn[hidden]`에 `display:none !important` 규칙 추가. 이제 스크랩뿐 아니라 모든 탭·리포트 온오프가 정상 동작.
+
 ### v1.81 · 260927 — 유니버설 디자인 서체 'KoddiUD 온고딕' 적용
 - 한국장애인개발원 유니버설 디자인 서체 **KoddiUD 온고딕**(CC BY-SA)을 앱 전체 기본 서체로 적용(가독성·접근성). Regular/Bold/ExtraBold 3종.
 - 외부 CDN 의존 없이 **앱에 직접 호스팅**(`static/fonts/`, `@font-face` + `font-display:swap`). 폼 컨트롤도 서체 상속. 소개 페이지에도 적용 + 하단 출처 표기.

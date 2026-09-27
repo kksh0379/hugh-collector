@@ -1012,6 +1012,8 @@ body.tab-event #view-toggle { display: none; }
 #msg-features { margin-top: 10px; font-size: 12.5px; }
 /* 스크랩 기능 off → 카드의 스크랩(북마크) 버튼 숨김 */
 body.hide-scrap .scrap-btn { display: none !important; }
+/* 표시 설정 off 시 hidden 처리가 클래스의 display(inline-flex 등)에 덮이지 않도록 강제 */
+.tab[hidden], .auth-btn[hidden] { display: none !important; }
 
 /* 카드 링크 복사 버튼 */
 .copy-btn {
