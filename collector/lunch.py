@@ -78,30 +78,45 @@ def _headers():
     return {"Authorization": "KakaoAK " + _key()}
 
 
+# 마지막 지오코딩 진단(관리자 오류 메시지·로그용). reason: ok|no_key|unauthorized|no_result|error
+LAST_GEO = {}
+
+
 def geocode(query):
-    """주소/장소명 → (lat, lng). 주소검색 우선, 실패 시 키워드검색(장소명 대응). 실패 시 None."""
+    """주소/장소명 → (lat, lng). 주소검색 → 키워드검색 순. 실패 시 None.
+    실패 원인은 LAST_GEO에 기록(키 거부 401/403 vs 결과 없음 구분)."""
+    LAST_GEO.clear()
     if not has_key() or not query:
+        LAST_GEO.update(reason="no_key")
         return None
-    # 1) 주소 검색
-    try:
-        r = fetcher.get(KAKAO_ADDRESS_URL, params={"query": query}, headers=_headers(),
-                        retries=1, timeout=8, raise_status=False)
-        docs = (r.json() or {}).get("documents") or []
-        if docs:
-            d = docs[0]
-            return (float(d["y"]), float(d["x"]))  # y=lat, x=lng
-    except Exception:  # noqa: BLE001
-        pass
-    # 2) 키워드(장소명) 검색 폴백
-    try:
-        r = fetcher.get(KAKAO_KEYWORD_URL, params={"query": query, "size": 1}, headers=_headers(),
-                        retries=1, timeout=8, raise_status=False)
-        docs = (r.json() or {}).get("documents") or []
-        if docs:
-            d = docs[0]
-            return (float(d["y"]), float(d["x"]))
-    except Exception:  # noqa: BLE001
-        pass
+    attempts = []
+    # 주소검색 → 키워드검색 순으로 시도(주소가 아니어도 장소명으로 잡히게)
+    for label, url, params in (
+        ("address", KAKAO_ADDRESS_URL, {"query": query}),
+        ("keyword", KAKAO_KEYWORD_URL, {"query": query, "size": 1}),
+    ):
+        try:
+            r = fetcher.get(url, params=params, headers=_headers(),
+                            retries=1, timeout=8, raise_status=False)
+            code = r.status_code
+            try:
+                j = r.json() or {}
+            except Exception:  # noqa: BLE001
+                j = {}
+            docs = j.get("documents") or []
+            attempts.append(f"{label}={code}/{len(docs)}")
+            if code in (401, 403):  # 키가 거부됨 → 더 시도해도 동일
+                LAST_GEO.update(reason="unauthorized", status=code, attempts=attempts)
+                return None
+            if docs:
+                d = docs[0]
+                LAST_GEO.update(reason="ok", via=label, attempts=attempts)
+                return (float(d["y"]), float(d["x"]))  # y=lat, x=lng
+        except Exception as e:  # noqa: BLE001
+            attempts.append(f"{label}=err")
+            LAST_GEO.update(error=str(e)[:120])
+    LAST_GEO.setdefault("reason", "no_result")
+    LAST_GEO["attempts"] = attempts
     return None
 
 

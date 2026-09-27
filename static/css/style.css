@@ -68,7 +68,7 @@ body.chrome-hidden #to-top { transform: translateY(180%); opacity: 0; pointer-ev
   display: flex;
   align-items: center;
   gap: 9px;
-  flex: 1 1 auto;   /* 확장해 헤더 액션(로그인 등)을 오른쪽 끝으로 밀어냄 */
+  flex: 0 0 auto;   /* 자연 너비 유지(브랜드명 안 잘리게). 액션은 아래 flex-end로 우측 정렬 */
   min-width: 0;
   color: #fff;
   text-decoration: none;
@@ -76,7 +76,7 @@ body.chrome-hidden #to-top { transform: translateY(180%); opacity: 0; pointer-ev
 .brand-mark { flex: 0 0 auto; color: #fff; }
 /* 헤더 버튼이 많아져도 안 깨지게 가로 스크롤 */
 .header-actions {
-  flex: 0 1 auto; min-width: 0;   /* 자연 너비, 넘치면 축소·스크롤 → 항상 우측에 위치 */
+  flex: 0 1 auto; min-width: 0; margin-left: auto;  /* 우측 정렬(margin-left:auto), 넘치면 좌→우 스크롤(모든 항목 도달 가능) */
   display: flex; align-items: center; gap: 8px;
   overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
@@ -895,7 +895,7 @@ body.modal-open { overflow: hidden; }
 #login-id-wrap[hidden] { display: none; }
 .login-hint { margin-top: 14px; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.6; }
 .login-hint b { color: var(--text); }
-.foot-user { color: rgba(255, 255, 255, 0.95); font-weight: 700; margin-right: 4px; font-size: 13px; }
+.foot-user { color: rgba(255, 255, 255, 0.95); font-weight: 700; margin-right: 4px; font-size: 13px; white-space: nowrap; flex: 0 0 auto; }
 
 /* ===== 나의 스크랩: 검색 + 커스텀 그룹 ===== */
 .scrap-controls { background: #fff; border-bottom: 1px solid var(--border); padding: 10px 12px; }
@@ -1146,6 +1146,10 @@ body.tab-report .viewbar { display: none; }
 #view-food { display: block; min-height: 60vh; }
 
 /* ============ 맛집(점심) ============ */
+/* 뷰 헤더(제목/부제) — 좌우 16px 거터 */
+.vh { padding: 16px 16px 6px; }
+.vt { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.25; }
+.lunch-sub { margin-top: 4px; font-size: 13px; color: var(--muted); }
 /* 위치 전환 바 */
 .lunch-loc { position: relative; padding: 12px 16px 4px; }
 .lunch-loc-btn {

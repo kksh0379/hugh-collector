@@ -762,6 +762,26 @@ def lunch_seed_locations(offices):
         return len(offices)
 
 
+def lunch_sync_locations(offices):
+    """이름 기준으로 주소/반경을 최신값으로 맞춘다(재배포 시 개선된 주소 반영).
+    - 주소가 바뀌면 좌표(lat/lng)를 비워 다음 조회 때 다시 지오코딩하게 한다.
+    - 좋은 좌표를 임의로 지우지 않도록, 주소가 동일하면 좌표는 건드리지 않는다."""
+    with get_conn() as conn:
+        for o in offices:
+            row = conn.execute(_q("SELECT id, address FROM lunch_location WHERE name=?"),
+                               (o["name"],)).fetchone()
+            if not row:
+                continue
+            row = dict(row)
+            new_addr = o.get("address", "")
+            if (row.get("address") or "") != new_addr:
+                conn.execute(_q("UPDATE lunch_location SET address=?, lat=NULL, lng=NULL, radius=? WHERE id=?"),
+                             (new_addr, int(o.get("radius", 500)), row["id"]))
+            else:
+                conn.execute(_q("UPDATE lunch_location SET radius=? WHERE id=?"),
+                             (int(o.get("radius", 500)), row["id"]))
+
+
 def lunch_list_locations():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM lunch_location ORDER BY sort, id").fetchall()

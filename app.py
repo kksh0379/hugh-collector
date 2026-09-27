@@ -636,7 +636,7 @@ def features_set():
 # 초기 사업장 3개소(좌표는 카카오 지오코딩으로 최초 조회 시 자동 채움 · 관리자 수정 가능)
 LUNCH_OFFICES = [
     {"name": "혜화 본사", "address": "서울 종로구 이화장길 100", "radius": 500},
-    {"name": "판교 R&D", "address": "경기 성남시 분당구 판교 엔씨소프트", "radius": 500},
+    {"name": "판교 R&D", "address": "경기 성남시 분당구 대왕판교로644번길 12", "radius": 500},
     {"name": "성남 프로젝토리", "address": "성남문화예술교육센터", "radius": 700},
 ]
 _LUNCH_JOB = {"running": False, "progress": "", "result": None, "started_ts": 0, "loc": None}
@@ -676,6 +676,7 @@ def lunch_locations():
     if not _ensure_db():
         return jsonify({"locations": [], "kakao": lunch.has_key()})
     db.lunch_seed_locations(LUNCH_OFFICES)  # 최초 1회 시드
+    db.lunch_sync_locations(LUNCH_OFFICES)  # 주소/반경 최신화(바뀌면 좌표 리셋 → 재지오코딩)
     locs = [_lunch_geocode_if_needed(x) for x in db.lunch_list_locations()]
     return jsonify({"locations": locs, "kakao": lunch.has_key()})
 
@@ -698,8 +699,16 @@ def _lunch_collect_run(loc_id):
         _ensure_db(force=True)
         loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id))
         if not loc or not loc.get("lat"):
-            st["result"] = {"ok": False, "error": "위치 좌표를 확인할 수 없어요(주소/지오코딩 실패)."}
-            st["progress"] = "오류: 좌표 없음"
+            reason = (lunch.LAST_GEO or {}).get("reason")
+            if reason == "unauthorized":
+                err = "카카오 키가 거부됐어요(401/403). Render의 KAKAO_REST_KEY가 카카오 '**REST API 키**'가 맞는지 확인하세요(JavaScript 키 아님)."
+            elif reason == "no_result":
+                err = f"주소를 좌표로 못 바꿨어요(지오코딩 결과 없음). 주소 확인 또는 '＋ 직접 추가'로 등록하세요. [{loc.get('address') if loc else ''}]"
+            else:
+                err = "위치 좌표를 확인할 수 없어요(카카오 응답 오류). 잠시 후 다시 시도하세요."
+            st["result"] = {"ok": False, "error": err}
+            st["progress"] = f"오류: 좌표 없음({reason})"
+            print(f"[lunch] geocode 실패 loc={loc_id} {lunch.LAST_GEO}", flush=True)
             return
         items = lunch.collect(loc["lat"], loc["lng"], loc.get("radius", 500),
                               progress=lambda m: st.update(progress=m))
