@@ -2089,8 +2089,8 @@ async function loadReport(id) {
 })();
 
 // ----------------------------- 초기 로드 -----------------------------
-initAuth();
-loadFeatures();
+// 표시 설정은 로그인 상태 확인(initAuth) 후 적용 → 관리자 판정 전 잠깐 숨는 깜빡임 방지.
+initAuth().then(loadFeatures).catch(loadFeatures);
 loadMeta();
 loadCat();
 loadGame();

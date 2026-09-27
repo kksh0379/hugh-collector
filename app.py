@@ -642,6 +642,18 @@ def favicon():
     return redirect(_url_for("static", filename="favicon.svg"), code=302)
 
 
+def _asset_ver():
+    """정적 파일(app.js/style.css) 수정 시각 기반 캐시 버스터. 파일이 바뀌면 자동으로 값이 달라져
+    브라우저가 새 파일을 받아온다(옛 v=고정값으로 인한 스테일 캐시 방지)."""
+    base = os.path.dirname(os.path.abspath(__file__))
+    try:
+        mt = max(os.path.getmtime(os.path.join(base, "static", "js", "app.js")),
+                 os.path.getmtime(os.path.join(base, "static", "css", "style.css")))
+        return str(int(mt))
+    except Exception:  # noqa: BLE001
+        return "1"
+
+
 @app.route("/intro")
 def intro():
     # 주변 테스터에게 공유하는 서비스 소개(랜딩) 페이지. 로그인·DB 없이 정적으로 뜬다.
@@ -662,7 +674,7 @@ def index():
         "index.html", services=services, channels=channels,
         board_status=board_status, social_status=social_status,
         news_categories=news_categories, cat_categories=cat_categories,
-        game_categories=game_categories,
+        game_categories=game_categories, asset_ver=_asset_ver(),
     )
 
 
