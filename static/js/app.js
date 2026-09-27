@@ -314,6 +314,36 @@ document.querySelectorAll(".tab").forEach((tab) => {
   });
 });
 
+// ----------------------------- 상단 탭 좌우 스와이프 -----------------------------
+// 뉴스 본문에서 좌/우로 밀면 인접한(노출된) 탭으로 전환. 세로 스크롤·가로스크롤 요소는 방해 안 함.
+(function initTabSwipe() {
+  const host = document.getElementById("view-collector");
+  if (!host) return;
+  let x0 = null, y0 = null, t0 = 0, ignore = false;
+  host.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { ignore = true; return; }
+    // 가로 스크롤/입력 요소에서 시작한 제스처는 스와이프로 보지 않음
+    if (e.target.closest(".tabs, .checkbar, input, textarea, select, .lunch-loc-menu")) { ignore = true; return; }
+    ignore = false;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
+  }, { passive: true });
+  host.addEventListener("touchend", (e) => {
+    if (ignore || x0 == null) { x0 = null; return; }
+    const dx = e.changedTouches[0].clientX - x0;
+    const dy = e.changedTouches[0].clientY - y0;
+    const dt = Date.now() - t0;
+    x0 = null;
+    if (dt > 800 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;  // 세로 스크롤 우선
+    const tabs = Array.from(document.querySelectorAll(".tab:not([hidden])"));
+    const cur = document.querySelector(".tab.active");
+    const i = tabs.indexOf(cur);
+    if (i < 0) return;
+    const ni = dx < 0 ? i + 1 : i - 1;   // 왼쪽으로 밀면 다음, 오른쪽으로 밀면 이전
+    if (ni < 0 || ni >= tabs.length) return;
+    tabs[ni].click();
+  }, { passive: true });
+})();
+
 // ----------------------------- 보기 방식(리스트/카드) -----------------------------
 function setView(mode) {
   mode = mode === "list" ? "list" : "card";  // 기본 card
