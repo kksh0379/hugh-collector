@@ -1588,8 +1588,9 @@ def _report_run(window_days):
         _ensure_db(force=True)
         data, err = analysis.run(window_days=window_days, progress=lambda m: st.update(progress=m))
         if err:
-            st["result"] = {"error": err}
-            st["progress"] = f"오류: {err}"
+            fe = analysis.friendly_llm_error(err)
+            st["result"] = {"error": fe}
+            st["progress"] = f"오류: {fe}"
         else:
             label = _now_kst()
             period = data.get("period_label") or f"최근 {window_days}일"
@@ -1615,8 +1616,9 @@ def _security_report_run(ym):
         _ensure_db(force=True)
         data, err = security_report.run(ym=ym, progress=lambda m: st.update(progress=m))
         if err:
-            st["result"] = {"error": err}
-            st["progress"] = f"오류: {err}"
+            fe = analysis.friendly_llm_error(err)
+            st["result"] = {"error": fe}
+            st["progress"] = f"오류: {fe}"
         else:
             m = data.get("_meta", {})
             label = _now_kst()

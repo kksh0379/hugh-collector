@@ -41,7 +41,15 @@ body {
   background: var(--bg);
   color: var(--text);
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); /* 하단바(탭 내비+저작권) 공간 */
+  overflow-x: clip; /* 탭 전환 슬라이드 시 가로 스크롤 방지(sticky는 안 깨지는 clip 사용) */
 }
+
+/* 탭 전환 좌우 슬라이드 인터랙션(스와이프·클릭 공통) */
+@keyframes panelSlideR { from { transform: translateX(24px); opacity: 0.35; } to { transform: none; opacity: 1; } }
+@keyframes panelSlideL { from { transform: translateX(-24px); opacity: 0.35; } to { transform: none; opacity: 1; } }
+.panel.slide-r { animation: panelSlideR 0.24s cubic-bezier(.22, .61, .36, 1); }
+.panel.slide-l { animation: panelSlideL 0.24s cubic-bezier(.22, .61, .36, 1); }
+@media (prefers-reduced-motion: reduce) { .panel.slide-r, .panel.slide-l { animation: none; } }
 
 .app-header {
   position: sticky;

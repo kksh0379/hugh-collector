@@ -32,11 +32,19 @@ CATEGORY_RULES = [
 
 
 def normalize_category(kakao_category_name):
-    """카카오 category_name에서 내부 카테고리 1개를 뽑는다. 못 찾으면 '기타'."""
-    c = (kakao_category_name or "").replace(" ", "")
-    for name, kws in CATEGORY_RULES:
-        if any(kw.replace(" ", "") in c for kw in kws):
-            return name
+    """카카오 category_name에서 내부 카테고리 1개를 뽑는다. 못 찾으면 '기타'.
+    ⚠️ '음식점>한식>국수'처럼 상위에 '한식'이 있으면 국수(면요리)가 한식으로 잘못 잡히던 문제 →
+    가장 구체적인 '마지막 토큰'을 먼저 판정하고, 없으면 전체 문자열로 폴백한다."""
+    raw = kakao_category_name or ""
+    parts = [p.strip() for p in raw.split(">") if p.strip()]
+    last = parts[-1] if parts else ""
+    for target in (last, raw):          # 구체적(마지막) → 전체 순
+        c = target.replace(" ", "")
+        if not c:
+            continue
+        for name, kws in CATEGORY_RULES:
+            if any(kw.replace(" ", "") in c for kw in kws):
+                return name
     return "기타"
 
 

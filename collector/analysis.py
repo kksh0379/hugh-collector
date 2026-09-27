@@ -324,6 +324,23 @@ def _extract_json(txt):
     return None
 
 
+def friendly_llm_error(raw):
+    """LLM 원문 에러(길고 지저분한 JSON/모델목록)를 사용자용 한 줄 안내로 변환."""
+    r = str(raw or "")
+    low = r.lower()
+    if "credit balance is too low" in low or "purchase credits" in low:
+        return "AI 크레딧이 부족해요 💳 — Anthropic(console.anthropic.com → Billing)에서 크레딧을 충전하면 바로 됩니다."
+    if "환경변수가 없습니다" in r or "api_key" in low and "없" in r:
+        return "AI 키가 설정되지 않았어요 — 관리자가 Render에 ANTHROPIC_API_KEY를 넣어야 해요."
+    if "401" in r or "invalid x-api-key" in low or "authentication" in low:
+        return "AI 키가 유효하지 않아요 — 키를 확인하거나 재발급해 주세요."
+    if "429" in r or "rate limit" in low or "overloaded" in low:
+        return "요청이 잠깐 몰렸어요 — 1~2분 뒤 다시 시도해 주세요."
+    if "timed out" in low or "timeout" in low:
+        return "AI 응답이 지연됐어요 — 잠시 후 다시 시도해 주세요."
+    return "AI 분석 실패 — " + r.split(" · 가용 모델")[0].split(": {")[0][:140]
+
+
 def run(window_days=90, progress=None):
     """분석 1회 실행. 반환 (data, error). data엔 meta(입력 규모) 포함."""
     progress = progress or (lambda m: None)

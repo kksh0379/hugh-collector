@@ -301,10 +301,16 @@ document.addEventListener("click", (e) => {
 // ----------------------------- 탭 전환 -----------------------------
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
+    // 전환 방향 계산(오른쪽 탭=+1 → 오른쪽에서 슬라이드 인)
+    const all = Array.from(document.querySelectorAll(".tab"));
+    const prev = document.querySelector(".tab.active");
+    const dir = (prev && prev !== tab) ? (all.indexOf(tab) > all.indexOf(prev) ? 1 : -1) : 0;
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active", "slide-l", "slide-r"));
     tab.classList.add("active");
-    document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+    const panel = document.getElementById("panel-" + tab.dataset.tab);
+    panel.classList.add("active");
+    if (dir) { void panel.offsetWidth; panel.classList.add(dir > 0 ? "slide-r" : "slide-l"); }  // 리플로우 후 애니메이션
     document.body.classList.toggle("tab-event", tab.dataset.tab === "event");
     document.body.classList.toggle("tab-report", tab.dataset.tab === "report");
     try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); } catch (e) { /* 무시 */ }
