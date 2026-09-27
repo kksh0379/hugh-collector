@@ -170,7 +170,7 @@ flowchart TB
 - **`BATCH_DAYS`** — 정기 배치의 뉴스 수집 창(일). 기본 `30`.
 - **`AUTO_BACKFILL`** — 부팅 시 DB 비면 자동 수집할지. 기본 꺼짐(`0`).
 - **`ENABLE_SCHEDULER`** — 앱 내부 스케줄러 사용 여부. 기본 켜짐(`1`).
-- **`DB_KEEPALIVE_SEC`** — DB keep-alive 주기(초). 기본 `240`, `0`이면 끔.
+- **`DB_KEEPALIVE_SEC`** — DB keep-alive 주기(초). **기본 `0`(꺼짐)**. ⚠️ Neon 무료는 compute 사용시간 한도가 있어, 켜두면 DB가 상시 가동돼 한도 소진→`quota exceeded`로 정지될 수 있음(실제 발생). 무료 플랜은 끄고(콜드스타트는 자동 재시도로 처리) 상시 켜짐 유료 DB에서만 값을 준다.
 - **`IMG_ENRICH_MAX`** — 수집 1회당 대표 이미지 보강 개수 상한. 기본 `200`.
 - **`EVENT_BODY_MAX`** — 행사일정에서 날짜 추출용으로 본문을 여는 후보 상한. 기본 `400`.
 

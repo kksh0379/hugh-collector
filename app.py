@@ -1987,11 +1987,12 @@ def _auto_backfill():
     threading.Thread(target=_run, daemon=True).start()
 
 
-# DB keep-alive: Neon 무료는 5분 놀면 잠든다. 앱이 상시 가동(Render Starter)이면,
-# 주기적으로 DB에 가벼운 쿼리를 날려 잠들지 않게 유지 → 방문자가 잠든 DB를 안 만난다.
-# DB_KEEPALIVE_SEC=0 이면 끔. (Neon 무료는 compute 사용시간 한도가 있으니, 한도가 걱정되면
-# 끄거나 Supabase처럼 상시 켜짐 DB로 바꾸면 된다.)
-DB_KEEPALIVE_SEC = int(os.environ.get("DB_KEEPALIVE_SEC", "240"))  # 기본 4분
+# DB keep-alive: 주기적으로 DB에 가벼운 쿼리를 날려 잠들지 않게 유지.
+# ⚠️ 기본 꺼짐(0). Neon 무료는 compute 사용시간 한도가 있는데, keepalive를 켜면 DB가 상시
+# 가동돼 한도를 빠르게 소진 → 'quota exceeded'로 DB가 정지될 수 있다(실제 발생). 콜드스타트는
+# get_conn 재시도 + 프론트 자동 재시도로 처리하므로 무료 플랜에선 끄는 게 안전.
+# 상시 켜짐 유료 DB를 쓸 때만 값을 크게(예: 240) 주면 방문자가 잠든 DB를 덜 만난다.
+DB_KEEPALIVE_SEC = int(os.environ.get("DB_KEEPALIVE_SEC", "0"))  # 기본 꺼짐
 
 
 def _db_keepalive():
