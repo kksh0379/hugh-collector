@@ -83,6 +83,27 @@ def _ensure_db(force=False):
         _db_lock.release()
 
 
+_db_waking = False
+
+
+def _db_wake_async():
+    """DB가 자고 있을 때(read 요청이 빈 결과를 받을 때) 백그라운드로 Neon을 깨운다.
+    스레드 1개만 깨우기 시도(중복 방지). 요청 자체는 막지 않음 → 클라이언트가 잠시 후 재시도."""
+    global _db_waking
+    if _db_ready or _db_waking:
+        return
+    _db_waking = True
+
+    def _w():
+        global _db_waking
+        try:
+            _ensure_db(force=True)
+        finally:
+            _db_waking = False
+
+    threading.Thread(target=_w, daemon=True).start()
+
+
 @app.get("/healthz")
 def healthz():
     """킵얼라이브용 초경량 엔드포인트(DB 접속 안 함). 외부 크론이 이걸 주기적으로
@@ -635,10 +656,10 @@ def features_set():
 # ---------------------------- 점심 맛집(lunch) ----------------------------
 # 초기 사업장 3개소(좌표는 카카오 지오코딩으로 최초 조회 시 자동 채움 · 관리자 수정 가능)
 LUNCH_OFFICES = [
-    {"name": "혜화 본사", "address": "서울 종로구 이화장길 100", "radius": 500},
-    {"name": "판교 R&D", "address": "경기 성남시 분당구 대왕판교로644번길 12", "radius": 500},
-    {"name": "성남 프로젝토리", "address": "성남문화예술교육센터", "radius": 700},
-    {"name": "우리집", "address": "서울 강동구 양재대로110길 37-10", "radius": 500},
+    {"name": "NC문화재단 사옥", "address": "서울 종로구 이화장길 100", "radius": 500},
+    {"name": "NC 판교R&D센터", "address": "경기 성남시 분당구 대왕판교로644번길 12", "radius": 500},
+    {"name": "프로젝토리 성남지점", "address": "성남문화예술교육센터", "radius": 700},
+    {"name": "개발자 동네", "address": "서울 강동구 양재대로110길 37-10", "radius": 500},
 ]
 _LUNCH_JOB = {"running": False, "progress": "", "result": None, "started_ts": 0, "loc": None}
 
@@ -675,7 +696,8 @@ def _lunch_decorate(loc, rows):
 @app.get("/api/lunch/locations")
 def lunch_locations():
     if not _ensure_db():
-        return jsonify({"locations": [], "kakao": lunch.has_key()})
+        _db_wake_async()  # Neon이 자고 있으면 백그라운드로 깨우고, 클라이언트는 잠시 후 재시도
+        return jsonify({"locations": [], "kakao": lunch.has_key(), "db_waking": True})
     db.lunch_seed_locations(LUNCH_OFFICES)  # 최초 1회 시드
     db.lunch_sync_locations(LUNCH_OFFICES)  # 주소/반경 최신화(바뀌면 좌표 리셋 → 재지오코딩)
     locs = [_lunch_geocode_if_needed(x) for x in db.lunch_list_locations()]

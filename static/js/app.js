@@ -2147,22 +2147,39 @@ async function loadReport(id) {
   }
 
   // ---- 위치 전환 ----
-  async function loadLocations() {
+  async function loadLocations(attempt) {
+    attempt = attempt || 0;
+    let waking = false;
     try {
       const d = await getJSON("/api/lunch/locations");
       LUNCH.locs = d.locations || [];
       LUNCH.kakao = !!d.kakao;
+      waking = !!d.db_waking;
     } catch (e) { LUNCH.locs = []; }
+    // 위치가 비면(대개 Neon DB가 자는 중) 안내 + 최대 5회 자동 재시도(깨어나면 자동 반영)
+    if (!LUNCH.locs.length && (waking || attempt < 5)) {
+      LUNCH.locLoading = true;
+      renderLocBar();
+      msg("데이터 연결(DB) 깨우는 중… 잠시만요 ⏳");
+      clearTimeout(LUNCH._locTimer);
+      LUNCH._locTimer = setTimeout(() => loadLocations(attempt + 1), 3000);
+      return;
+    }
+    LUNCH.locLoading = false;
     if (!LUNCH.curLoc && LUNCH.locs.length) LUNCH.curLoc = LUNCH.locs[0];
     renderLocBar();
     if (LUNCH.curLoc) loadRestaurants();
-    else msg("등록된 위치가 없어요");
+    else msg("위치를 불러오지 못했어요 — 페이지를 새로고침 해주세요", true);
   }
   function renderLocBar() {
     const nameEl = $("lunch-loc-name"), radEl = $("lunch-loc-radius"), menu = $("lunch-loc-menu");
-    if (LUNCH.curLoc && nameEl) nameEl.textContent = LUNCH.curLoc.name || "위치";
-    if (LUNCH.curLoc && radEl) radEl.textContent = (LUNCH.curLoc.radius || 500) + "m";
+    if (nameEl) nameEl.textContent = LUNCH.curLoc ? (LUNCH.curLoc.name || "위치") : (LUNCH.locLoading ? "불러오는 중…" : "위치");
+    if (radEl) radEl.textContent = LUNCH.curLoc ? ((LUNCH.curLoc.radius || 500) + "m") : "";
     if (!menu) return;
+    if (!LUNCH.locs.length) {   // 빈 메뉴가 '펴지다 마는' 것처럼 보이지 않게 안내 표시
+      menu.innerHTML = `<div class="lunch-loc-empty">${LUNCH.locLoading ? "위치 불러오는 중… (DB 연결 확인)" : "위치가 없어요 — 새로고침 해주세요"}</div>`;
+      return;
+    }
     // 실제 주소는 노출하지 않음(개인정보). 이름 + 반경만 표시.
     menu.innerHTML = LUNCH.locs.map((l) => {
       const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;

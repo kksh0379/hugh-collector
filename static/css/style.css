@@ -1181,6 +1181,7 @@ body.tab-report .viewbar { display: none; }
 }
 .lunch-loc-item.on, .lunch-loc-item:active { background: #eef3ff; color: var(--primary); }
 .lli-sub { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.lunch-loc-empty { padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
 
 /* AI 추천 CTA */
 .lunch-ai-cta {
