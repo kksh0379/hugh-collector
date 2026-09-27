@@ -70,7 +70,11 @@ def diagnose():
         except Exception as e:  # noqa: BLE001
             info["error"] = f"{type(e).__name__}: {e}"
         return info
-    info["host"] = urlsplit(_CONNINFO).hostname
+    _u = urlsplit(_CONNINFO)
+    info["host"] = _u.hostname
+    info["port"] = _u.port
+    info["user"] = _u.username                    # 아이디는 확인용으로 노출(비밀 아님)
+    info["pw_len"] = len(_u.password or "")        # 비번은 '길이'만(값은 안 보여줌)
     try:
         # 풀/재시도 없이 딱 한 번, 짧은 타임아웃으로 직접 접속 → 진짜 에러가 그대로 나옴
         conn = psycopg.connect(_CONNINFO, connect_timeout=8)
