@@ -12,13 +12,20 @@
   <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}" />
   <meta property="og:type" content="website" />
   <style>
+    /* 유니버설 디자인 서체 'KoddiUD 온고딕'(한국장애인개발원, CC BY-SA) */
+    @font-face{font-family:"KoddiUD OnGothic";font-weight:400;font-display:swap;
+      src:url("{{ url_for('static', filename='fonts/KoddiUDOnGothic-Regular.woff2') }}") format("woff2")}
+    @font-face{font-family:"KoddiUD OnGothic";font-weight:700;font-display:swap;
+      src:url("{{ url_for('static', filename='fonts/KoddiUDOnGothic-Bold.woff2') }}") format("woff2")}
+    @font-face{font-family:"KoddiUD OnGothic";font-weight:800;font-display:swap;
+      src:url("{{ url_for('static', filename='fonts/KoddiUDOnGothic-ExtraBold.woff2') }}") format("woff2")}
     :root{
       --primary:#2d6cdf; --primary-dark:#1f54b3; --bg:#f4f5f7; --card:#fff;
       --text:#1c1e21; --muted:#6b7280; --border:#e4e6eb;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html{scroll-behavior:smooth}
-    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    body{margin:0;font-family:"KoddiUD OnGothic",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
       background:var(--bg);color:var(--text);line-height:1.6;
       padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
     .wrap{max-width:560px;margin:0 auto;padding:0 20px}
@@ -218,6 +225,7 @@
   <footer>
     휴 스코프 · 재단 뉴스·행사·동향 콜렉터
     <div class="disc">※ 뉴스·행사·리포트는 공개 데이터를 자동 수집·요약한 것으로 실제와 다를 수 있어요. 베타 테스트용입니다.</div>
+    <div class="disc">서체: KoddiUD 온고딕 (한국장애인개발원, CC BY-SA)</div>
   </footer>
 </body>
 </html>

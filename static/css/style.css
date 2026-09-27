@@ -1,3 +1,23 @@
+/* 유니버설 디자인 서체 'KoddiUD 온고딕'(한국장애인개발원, CC BY-SA). 앱에 직접 호스팅. */
+@font-face {
+  font-family: "KoddiUD OnGothic";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/KoddiUDOnGothic-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "KoddiUD OnGothic";
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/KoddiUDOnGothic-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "KoddiUD OnGothic";
+  font-weight: 800;
+  font-display: swap;
+  src: url("../fonts/KoddiUDOnGothic-ExtraBold.woff2") format("woff2");
+}
+
 :root {
   --bg: #f4f5f7;
   --card: #ffffff;
@@ -7,13 +27,17 @@
   --muted: #6b7280;
   --border: #e4e6eb;
   --accent: #16a34a;
+  /* 공통 폰트 스택(유니버설 디자인 서체 우선) */
+  --font: "KoddiUD OnGothic", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* 폼 컨트롤도 본문 서체를 물려받게(브라우저 기본 시스템폰트 방지) */
+input, button, select, textarea { font-family: inherit; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   padding-bottom: calc(46px + env(safe-area-inset-bottom, 0px));
