@@ -2459,9 +2459,20 @@ async function loadReport(id) {
       if (rev) openReviews(rev.dataset.rev);
     });
 
-    const collect = $("lunch-collect"), add = $("lunch-add");
+    const collect = $("lunch-collect"), add = $("lunch-add"), diag = $("lunch-diag");
     if (collect) collect.addEventListener("click", startCollect);
     if (add) add.addEventListener("click", manualAdd);
+    if (diag) diag.addEventListener("click", async () => {
+      msg("카카오 키 진단 중…");
+      try {
+        const d = await getJSON("/api/lunch/diag");
+        if (!d.has_key) { msg("KAKAO_REST_KEY 없음 — Render 환경변수 확인", true); return; }
+        const head = `키 ${d.key_len}자(${d.key_head})${d.key_has_space ? " ⚠공백포함" : ""}`;
+        const line = `${head} · 상태 ${d.status} · ${d.result || ""}`;
+        msg(line, d.status !== 200);
+        if (d.body) console.log("[lunch diag] kakao body:", d.body);
+      } catch (e) { msg("진단 실패(권한 확인)", true); }
+    });
   }
 
   wire();

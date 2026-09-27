@@ -700,9 +700,12 @@ def _lunch_collect_run(loc_id):
         _ensure_db(force=True)
         loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id))
         if not loc or not loc.get("lat"):
-            reason = (lunch.LAST_GEO or {}).get("reason")
+            geo = lunch.LAST_GEO or {}
+            reason = geo.get("reason")
             if reason == "unauthorized":
-                err = "카카오 키가 거부됐어요(401/403). Render의 KAKAO_REST_KEY가 카카오 '**REST API 키**'가 맞는지 확인하세요(JavaScript 키 아님)."
+                body = (geo.get("body") or "").strip()
+                err = ("카카오 키가 거부됐어요(%s). ① REST API 키가 맞는지 ② 카카오 앱 '보안 → 허용 IP 주소'가 설정돼 있으면 삭제(서버 IP가 막힘) ③ 값에 공백/따옴표 없는지 확인. 카카오 응답: %s"
+                       % (geo.get("status", "401/403"), body[:160] or "(본문 없음)"))
             elif reason == "no_result":
                 err = f"주소를 좌표로 못 바꿨어요(지오코딩 결과 없음). 주소 확인 또는 '＋ 직접 추가'로 등록하세요. [{loc.get('address') if loc else ''}]"
             else:
@@ -737,6 +740,13 @@ def lunch_collect():
     _LUNCH_JOB.update(running=True, progress="수집 준비…", result=None, started_ts=time.time(), loc=loc_id)
     threading.Thread(target=_lunch_collect_run, args=(loc_id,), daemon=True).start()
     return jsonify({"running": True})
+
+
+@app.get("/api/lunch/diag")
+def lunch_diag():
+    if not _admin_ok():
+        return jsonify({"error": "unauthorized"}), 401
+    return jsonify(lunch.diag())
 
 
 @app.get("/api/lunch/collect/status")

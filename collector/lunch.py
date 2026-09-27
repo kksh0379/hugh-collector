@@ -106,7 +106,12 @@ def geocode(query):
             docs = j.get("documents") or []
             attempts.append(f"{label}={code}/{len(docs)}")
             if code in (401, 403):  # 키가 거부됨 → 더 시도해도 동일
-                LAST_GEO.update(reason="unauthorized", status=code, attempts=attempts)
+                body = ""
+                try:
+                    body = (r.text or "")[:200]
+                except Exception:  # noqa: BLE001
+                    pass
+                LAST_GEO.update(reason="unauthorized", status=code, attempts=attempts, body=body)
                 return None
             if docs:
                 d = docs[0]
@@ -118,6 +123,40 @@ def geocode(query):
     LAST_GEO.setdefault("reason", "no_result")
     LAST_GEO["attempts"] = attempts
     return None
+
+
+def diag():
+    """관리자 진단용: 카카오 키 상태 + 라이브 테스트 호출 1회 결과. 키 값은 마스킹."""
+    raw = os.environ.get("KAKAO_REST_KEY", "")
+    key = _key()
+    # 원본 값에 공백/따옴표/줄바꿈이 섞였는지(흔한 실수) 감지
+    dirty = (raw != raw.strip()) or (" " in raw.strip()) or any(c in raw for c in '"\'\n\r\t')
+    out = {"has_key": bool(key), "key_len": len(key),
+           "key_head": (key[:4] + "…") if key else "", "key_has_space": bool(dirty)}
+    if not key:
+        out["hint"] = "KAKAO_REST_KEY가 비어 있어요(Render 환경변수 확인)."
+        return out
+    try:
+        r = fetcher.get(KAKAO_KEYWORD_URL, headers=_headers(), retries=0, timeout=8,
+                        raise_status=False, params={"query": "김밥", "x": 127.0, "y": 37.5,
+                                                    "radius": 500, "size": 1})
+        out["status"] = r.status_code
+        try:
+            out["body"] = (r.text or "")[:300]
+        except Exception:  # noqa: BLE001
+            out["body"] = ""
+        if r.status_code == 200:
+            out["result"] = "성공 — 키 정상"
+        elif r.status_code in (401, 403):
+            out["result"] = "거부(401/403) — 키/권한/허용IP 문제"
+        elif r.status_code == 429:
+            out["result"] = "한도초과(429) — 쿼터 소진"
+        else:
+            out["result"] = f"기타 오류({r.status_code})"
+    except Exception as e:  # noqa: BLE001
+        out["status"] = "conn_error"
+        out["result"] = f"연결 실패: {str(e)[:150]}"
+    return out
 
 
 # 점심 식당 수집용 검색어(카테고리 다양성 확보). 각 검색어를 좌표 반경으로 조회.
