@@ -638,6 +638,7 @@ LUNCH_OFFICES = [
     {"name": "혜화 본사", "address": "서울 종로구 이화장길 100", "radius": 500},
     {"name": "판교 R&D", "address": "경기 성남시 분당구 대왕판교로644번길 12", "radius": 500},
     {"name": "성남 프로젝토리", "address": "성남문화예술교육센터", "radius": 700},
+    {"name": "우리집", "address": "서울 강동구 양재대로110길 37-10", "radius": 500},
 ]
 _LUNCH_JOB = {"running": False, "progress": "", "result": None, "started_ts": 0, "loc": None}
 

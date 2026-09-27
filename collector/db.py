@@ -763,14 +763,22 @@ def lunch_seed_locations(offices):
 
 
 def lunch_sync_locations(offices):
-    """이름 기준으로 주소/반경을 최신값으로 맞춘다(재배포 시 개선된 주소 반영).
+    """이름 기준으로 위치를 최신값과 맞춘다(재배포 시 주소 교정·새 위치 추가 반영).
+    - 없는 이름이면 새로 등록(맨 뒤 sort).
     - 주소가 바뀌면 좌표(lat/lng)를 비워 다음 조회 때 다시 지오코딩하게 한다.
     - 좋은 좌표를 임의로 지우지 않도록, 주소가 동일하면 좌표는 건드리지 않는다."""
     with get_conn() as conn:
+        mrow = conn.execute("SELECT COALESCE(MAX(sort), -1) AS m FROM lunch_location").fetchone()
+        next_sort = (dict(mrow)["m"] if mrow else -1) + 1
         for o in offices:
             row = conn.execute(_q("SELECT id, address FROM lunch_location WHERE name=?"),
                                (o["name"],)).fetchone()
             if not row:
+                conn.execute(_q("INSERT INTO lunch_location (name, address, lat, lng, radius, sort, created_at) "
+                                "VALUES (?,?,?,?,?,?,?)"),
+                             (o["name"], o.get("address", ""), o.get("lat"), o.get("lng"),
+                              int(o.get("radius", 500)), next_sort, _now()))
+                next_sort += 1
                 continue
             row = dict(row)
             new_addr = o.get("address", "")
