@@ -694,22 +694,55 @@ def _lunch_decorate(loc, rows):
     return out
 
 
+_lunch_synced = False           # 시드/동기화는 프로세스당 1회만(매 요청 X)
+_lunch_geo_lock = threading.Lock()
+_lunch_geo_tried = {}           # loc_id -> 마지막 지오코딩 시도 ts(실패 재시도 억제)
+
+
+def _lunch_geocode_bg(locs):
+    """좌표 없는 위치를 '백그라운드'로 지오코딩(읽기 응답을 막지 않음). 실패는 10분간 재시도 안 함."""
+    if not lunch.has_key():
+        return
+    need = [l for l in locs if l.get("lat") is None
+            and time.time() - _lunch_geo_tried.get(l["id"], 0) > 600]
+    if not need or not _lunch_geo_lock.acquire(blocking=False):
+        return
+
+    def _w():
+        try:
+            for l in need:
+                _lunch_geo_tried[l["id"]] = time.time()
+                try:
+                    co = lunch.geocode(l.get("address") or l.get("name"))
+                    if co:
+                        db.lunch_set_location_coords(l["id"], co[0], co[1])
+                except Exception as e:  # noqa: BLE001
+                    print(f"[lunch] bg 지오코딩 실패({l.get('name')}): {e}", flush=True)
+        finally:
+            _lunch_geo_lock.release()
+
+    threading.Thread(target=_w, daemon=True).start()
+
+
 @app.get("/api/lunch/locations")
 def lunch_locations():
+    global _lunch_synced
     if not _ensure_db():
         _db_wake_async()  # Neon이 자고 있으면 백그라운드로 깨우고, 클라이언트는 잠시 후 재시도
         return jsonify({"locations": [], "kakao": lunch.has_key(), "db_waking": True})
-    # 시드/동기화가 어떤 이유로 실패해도 기존 위치는 반드시 반환(무한 로딩 방지)
+    if not _lunch_synced:  # 시드/동기화는 최초 1회만(매 요청마다 dedup 쓰기 X → 빠름)
+        try:
+            db.lunch_seed_locations(LUNCH_OFFICES)
+            db.lunch_sync_locations(LUNCH_OFFICES)
+            _lunch_synced = True
+        except Exception as e:  # noqa: BLE001
+            print(f"[lunch] seed/sync 오류(무시): {e}", flush=True)
     try:
-        db.lunch_seed_locations(LUNCH_OFFICES)  # 최초 1회 시드
-        db.lunch_sync_locations(LUNCH_OFFICES)  # 이름/주소 최신화·중복 정리
-    except Exception as e:  # noqa: BLE001
-        print(f"[lunch] seed/sync 오류(무시하고 기존 위치 반환): {e}", flush=True)
-    try:
-        locs = [_lunch_geocode_if_needed(x) for x in db.lunch_list_locations()]
+        locs = db.lunch_list_locations()   # 지오코딩은 하지 않고 즉시 반환(느림 원인 제거)
     except Exception as e:  # noqa: BLE001
         print(f"[lunch] locations 조회 오류: {e}", flush=True)
         locs = []
+    _lunch_geocode_bg(locs)  # 좌표 없는 위치는 백그라운드에서 채움(다음 조회에 반영)
     return jsonify({"locations": locs, "kakao": lunch.has_key()})
 
 
@@ -718,9 +751,11 @@ def lunch_restaurants():
     if not _ensure_db():
         return jsonify({"restaurants": []})
     loc_id = request.args.get("loc", type=int)
-    loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id)) if loc_id else None
+    loc = db.lunch_get_location(loc_id) if loc_id else None   # 여기서도 동기 지오코딩 안 함
     if not loc:
         return jsonify({"restaurants": [], "error": "위치 없음"})
+    if loc.get("lat") is None:
+        _lunch_geocode_bg([loc])   # 좌표 없으면 백그라운드로(거리 표시는 다음 조회부터)
     rows = db.lunch_list_restaurants(loc_id, include_excluded=_admin_ok())
     return jsonify({"location": loc, "restaurants": _lunch_decorate(loc, rows)})
 
