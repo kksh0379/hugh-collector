@@ -50,7 +50,7 @@ def _now_kst():
 _db_ready = False
 _db_lock = threading.Lock()
 _db_last_try = 0.0
-_DB_RETRY_COOLDOWN = 30  # 초: DB 연결 실패 시 이 시간 동안은 재시도 안 함(요청을 매번 막지 않게)
+_DB_RETRY_COOLDOWN = 6  # 초: DB 연결 실패 후 재시도 억제(짧게 → '다시 불러오기'가 빨리 회복)
 
 
 def _ensure_db(force=False):
@@ -335,6 +335,7 @@ def admin_purge():
     except Exception as e:  # noqa: BLE001
         print(f"[purge] 삭제 실패: {e}", flush=True)
         return jsonify({"ok": False, "error": f"삭제 실패: {e}"}), 500
+    _invalidate_read_cache()  # 비웠으니 조회 캐시도 비움
     started = []
     if data.get("recollect"):
         days = data.get("days")
@@ -1087,16 +1088,35 @@ def index():
 
 
 # ---------------------------- 조회 API ----------------------------
-# DB가 죽어 있으면(_ensure_db 실패) 빈 목록을 '즉시' 반환한다. 그래야 화면이 45초씩
-# 멈추거나 502가 나지 않고, 목록만 비어 보인다(Neon 복구되면 자동으로 채워짐).
-def _safe_list(fetch):
+# 조회 결과 인메모리 캐시(경로+쿼리 기준, 짧은 TTL). 이미 수집된 데이터는 자주 안 바뀌므로
+# 반복 호출/재불러오기를 즉시 응답해 속도↑·DB부하↓. DB가 잠깐 죽어도 '마지막 캐시'를 내줘서
+# 화면이 비지 않고, '다시 불러오기'를 연타할 필요가 없다. 수집/초기화 시 캐시를 비운다.
+_READ_CACHE = {}   # key -> (ts, data)
+_READ_TTL = 45     # 초
+
+
+def _invalidate_read_cache():
+    _READ_CACHE.clear()
+
+
+def _safe_list(fetch, ttl=_READ_TTL):
+    key = request.full_path
+    now = time.time()
+    hit = _READ_CACHE.get(key)
+    if hit and (now - hit[0] < ttl):
+        return jsonify(hit[1])                 # 신선한 캐시 → 즉시(무DB)
     if not _ensure_db():
+        _db_wake_async()                        # DB 자는 중이면 백그라운드로 깨우고
+        if hit:
+            return jsonify(hit[1])              # 오래됐어도 마지막 캐시 제공(빈 화면 방지)
         return jsonify([])
     try:
-        return jsonify(fetch())
+        data = fetch()
+        _READ_CACHE[key] = (now, data)          # 신선화
+        return jsonify(data)
     except Exception as e:  # noqa: BLE001
         print(f"[api] 조회 실패(DB): {e}", flush=True)
-        return jsonify([])
+        return jsonify(hit[1] if hit else [])   # 실패해도 마지막 캐시로 버팀
 
 
 @app.get("/api/news")
@@ -1466,6 +1486,7 @@ def _do_crawl(group, progress=None, days=None):
             _enrich_news_images(progress)  # 이미지 없는 최근 기사에 대표 이미지(og:image) 보강
         if group == "security":
             _run_security_ai(progress)  # 보안뉴스는 수집 직후 AI 분석(태깅·중요도·시사점) 자동 실행
+        _invalidate_read_cache()  # 새로 수집됐으니 조회 캐시 갱신(다음 조회에 즉시 반영)
         progress(f"완료 · 신규 {result.get('new', 0)}건 · 갱신 {result.get('updated', 0)}건")
     except Exception as e:  # noqa: BLE001
         print(f"[crawl] {group} 오류: {e}", flush=True)
