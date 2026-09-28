@@ -44,12 +44,20 @@ body {
   overflow-x: clip; /* 탭 전환 슬라이드 시 가로 스크롤 방지(sticky는 안 깨지는 clip 사용) */
 }
 
-/* 탭 전환 좌우 슬라이드 인터랙션(스와이프·클릭 공통) */
-@keyframes panelSlideR { from { transform: translateX(24px); opacity: 0.35; } to { transform: none; opacity: 1; } }
-@keyframes panelSlideL { from { transform: translateX(-24px); opacity: 0.35; } to { transform: none; opacity: 1; } }
-.panel.slide-r { animation: panelSlideR 0.24s cubic-bezier(.22, .61, .36, 1); }
-.panel.slide-l { animation: panelSlideL 0.24s cubic-bezier(.22, .61, .36, 1); }
-@media (prefers-reduced-motion: reduce) { .panel.slide-r, .panel.slide-l { animation: none; } }
+/* 탭 전환 크로스 슬라이드(스와이프·클릭 공통) — 이전 패널이 반대로 빠지고 새 패널이 들어옴 */
+#view-collector { position: relative; }
+.panel.sliding { position: absolute; left: 0; right: 0; z-index: 1; }  /* 빠져나가는 패널 오버레이 */
+@keyframes panelInR  { from { transform: translateX(100%); }  to { transform: none; } }
+@keyframes panelInL  { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes panelOutL { from { transform: none; } to { transform: translateX(-100%); } }
+@keyframes panelOutR { from { transform: none; } to { transform: translateX(100%); } }
+.panel.slide-r { animation: panelInR  0.32s cubic-bezier(.25, .8, .35, 1); }
+.panel.slide-l { animation: panelInL  0.32s cubic-bezier(.25, .8, .35, 1); }
+.panel.slide-out-l { animation: panelOutL 0.32s cubic-bezier(.4, 0, .6, 1) forwards; }
+.panel.slide-out-r { animation: panelOutR 0.32s cubic-bezier(.4, 0, .6, 1) forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .panel.slide-r, .panel.slide-l, .panel.slide-out-l, .panel.slide-out-r { animation: none; }
+}
 
 .app-header {
   position: sticky;

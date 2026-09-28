@@ -299,18 +299,42 @@ document.addEventListener("click", (e) => {
 });
 
 // ----------------------------- 탭 전환 -----------------------------
+let _swapTimer = null;
+function animateSwap(oldP, newP, dir) {
+  // 진행 중이던 슬라이드 정리
+  clearTimeout(_swapTimer);
+  document.querySelectorAll(".panel.sliding").forEach((p) => {
+    p.classList.remove("sliding", "slide-out-l", "slide-out-r", "active"); p.style.top = "";
+  });
+  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("slide-l", "slide-r"));
+  if (!oldP || oldP === newP || !dir) {           // 애니메이션 없이 전환
+    if (oldP) oldP.classList.remove("active");
+    newP.classList.add("active");
+    return;
+  }
+  // 새 패널: 반대편에서 슬라이드 인 (오른쪽 탭이면 오른쪽에서)
+  newP.classList.add("active");
+  void newP.offsetWidth;
+  newP.classList.add(dir > 0 ? "slide-r" : "slide-l");
+  // 이전 패널: 오버레이로 두고 반대로 빠져나감
+  oldP.style.top = oldP.offsetTop + "px";
+  oldP.classList.add("sliding", dir > 0 ? "slide-out-l" : "slide-out-r");
+  _swapTimer = setTimeout(() => {
+    oldP.classList.remove("active", "sliding", "slide-out-l", "slide-out-r");
+    oldP.style.top = "";
+  }, 330);
+}
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
     // 전환 방향 계산(오른쪽 탭=+1 → 오른쪽에서 슬라이드 인)
     const all = Array.from(document.querySelectorAll(".tab"));
-    const prev = document.querySelector(".tab.active");
-    const dir = (prev && prev !== tab) ? (all.indexOf(tab) > all.indexOf(prev) ? 1 : -1) : 0;
+    const prevTab = document.querySelector(".tab.active");
+    const dir = (prevTab && prevTab !== tab) ? (all.indexOf(tab) > all.indexOf(prevTab) ? 1 : -1) : 0;
+    const prevPanel = document.querySelector(".panel.active");
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active", "slide-l", "slide-r"));
     tab.classList.add("active");
     const panel = document.getElementById("panel-" + tab.dataset.tab);
-    panel.classList.add("active");
-    if (dir) { void panel.offsetWidth; panel.classList.add(dir > 0 ? "slide-r" : "slide-l"); }  // 리플로우 후 애니메이션
+    animateSwap(prevPanel, panel, dir);
     document.body.classList.toggle("tab-event", tab.dataset.tab === "event");
     document.body.classList.toggle("tab-report", tab.dataset.tab === "report");
     try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); } catch (e) { /* 무시 */ }
