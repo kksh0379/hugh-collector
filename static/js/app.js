@@ -116,8 +116,8 @@ let scrapFilterGroup = "all";  // 활성 그룹 필터(all 또는 group id)
 function keyOf(it) { return String(it.url || it.source_url || it.title || "").trim(); }
 function isRead(k) { return READ.has(k); }
 function isScrapped(k) { return !!SCRAP[k]; }
-async function api(path, body) {
-  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+async function api(path, body, options = {}) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: options.signal });
   return r.ok ? r.json() : Promise.reject(r);
 }
 // 로그인 시 개인 데이터 로드 → 화면 반영
@@ -400,6 +400,57 @@ async function settleFoodSlot(body, category) {
     return track.animate([{transform:from}, {transform:to}], {duration:500 + i * 100, easing:'cubic-bezier(.12,.7,.18,1)', fill:'forwards'}).finished.catch(() => {});
   });
   await Promise.all(stops);
+}
+
+// Recommendation remains available from the current region's loaded restaurants.
+function lunchCandidates(rows, conditions) {
+  const avoid = new Set((conditions.avoid_cats || []).map(String));
+  return rows.filter(r => r && r.id != null && typeof r.name === 'string' && r.name.trim() && !r.excluded && !avoid.has(String(r.cat_norm || '기타')));
+}
+function usableLunchRecommendation(res, rows, conditions) {
+  if (!res || !res.ok || !res.pick || !lunchCandidates(rows, conditions).some(r => String(r.id) === String(res.pick.id))) return null;
+  const original = rows.find(r => String(r.id) === String(res.pick.id));
+  return {...res, pick:{...original, reason:typeof res.pick.reason === 'string' ? res.pick.reason : ''}, tags:Array.isArray(res.tags) ? res.tags.filter(t => typeof t === 'string') : [], alternatives:Array.isArray(res.alternatives) ? res.alternatives.filter(a => a && lunchCandidates(rows, conditions).some(r => String(r.id) === String(a.id)) && String(a.id) !== String(res.pick.id)).map(a => rows.find(r => String(r.id) === String(a.id))) : []};
+}
+function fallbackLunchRecommendation(rows, conditions, persona, previousId) {
+  let candidates = lunchCandidates(rows, conditions);
+  if (!candidates.length) return {ok:false, empty:true, error:rows.some(r => r && !r.excluded) ? '선택한 제외 항목에 맞는 식당이 없어요. 제외 항목을 줄여주세요.' : '이 지역에 추천할 식당이 아직 없어요. 지역을 바꾸거나 식당을 추가해 주세요.'};
+  if (candidates.length > 1) candidates = candidates.filter(r => String(r.id) !== String(previousId));
+  const moods = new Set(conditions.moods || []);
+  const finite = v => v != null && v !== '' && Number.isFinite(Number(v));
+  const scored = candidates.map(r => {
+    const rating = finite(r.avg_rating) ? Math.max(0, Math.min(5, Number(r.avg_rating))) : 0;
+    const count = finite(r.review_count) ? Math.max(0, Number(r.review_count)) : 0;
+    const distance = finite(r.dist_m) ? Math.max(0, Number(r.dist_m)) : null;
+    let score = 4 + rating * (moods.has('trusted') || persona === 'safe' ? 2 : 1) + Math.min(3, Math.log1p(count));
+    if (distance != null) score += (moods.has('near') || moods.has('quick') || persona === 'fast' ? 5 : 2) / (1 + distance / 400);
+    if (moods.has('explore') || persona === 'adventure' || persona === 'hidden') score += 2 / (1 + Math.max(0, Number(r.visit_count) || 0));
+    const category = [r.cat_norm, r.sub_cat, r.category].filter(Boolean).join(' ');
+    if ((moods.has('hearty') || moods.has('rainy')) && /한식|국밥|탕|찌개|국수/.test(category)) score += 2;
+    if (moods.has('light') && /샐러드|샌드위치|일식/.test(category)) score += 2;
+    if (moods.has('sweet') && /카페|디저트|베이커리/.test(category)) score += 2;
+    if (persona === 'world' && /중식|일식|양식|아시아/.test(category)) score += 2;
+    return {r, score};
+  }).sort((a,b) => b.score - a.score);
+  const pool = scored.slice(0,5);
+  let ticket = Math.random() * pool.reduce((s,x) => s+x.score,0);
+  const picked = pool.find(x => (ticket -= x.score) <= 0) || pool[pool.length-1];
+  const pick = picked.r;
+  const facts = [];
+  if (finite(pick.walk_min)) facts.push(`도보 ${pick.walk_min}분`);
+  if (finite(pick.avg_rating) && Number(pick.avg_rating) > 0) facts.push(`평점 ${pick.avg_rating}점`);
+  const reason = '선택한 제외 항목을 빼고, 현재 지역에 등록된 식당 중에서 골랐어요.' + (facts.length ? ` ${facts.join(' · ')} 정보를 참고했어요.` : '');
+  return {ok:true, engine:'local', pick:{...pick,reason}, alternatives:scored.filter(x => String(x.r.id) !== String(pick.id)).slice(0,2).map(x=>x.r), tags:['지역 맛집 추천'], relaxed:false};
+}
+async function requestLunchRecommendation(payload, timeoutMs = 5000) {
+  const controller = new AbortController();
+  let timer;
+  try {
+    return await Promise.race([
+      api('/api/lunch/recommend', payload, {signal:controller.signal}),
+      new Promise((_, reject) => { timer = setTimeout(() => {controller.abort();reject(new Error('recommendation timeout'));}, timeoutMs); }),
+    ]);
+  } finally { clearTimeout(timer); }
 }
 
 function showLoading(el) {
@@ -2239,6 +2290,7 @@ async function loadReport(id) {
 // 이용자 평점/후기는 우리 앱에 직접 누적, AI가 '오늘 뭐 먹지?'를 추천.
 (function initLunch() {
   let recommendationRequest = 0;
+  let previousRecommendationId = null;
   const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", poll: null };
   const $ = (id) => document.getElementById(id);
 
@@ -2617,17 +2669,24 @@ async function loadReport(id) {
     const requestId = ++recommendationRequest;
     if (body) body.innerHTML = foodSlotHtml();
     const cond = gatherConditions();
-    const ids = LUNCH.rows.map((r) => r.id);   // 위치 내 전체에서 조건 적용
+    const rows = LUNCH.rows.map(r => ({...r}));
+    const persona = LUNCH.aiPersona || "";
+    const ids = rows.map(r => r.id);
     let res;
     try {
-      res = await api("/api/lunch/recommend", {
+      res = await requestLunchRecommendation({
         loc_id: LUNCH.curLoc.id, candidate_ids: ids,
-        avoid_cats: cond.avoid_cats, moods: cond.moods, persona: LUNCH.aiPersona || "",
+        avoid_cats: cond.avoid_cats, moods: cond.moods, persona,
       });
-    } catch (e) { res = { ok: false, error: "추천을 불러오지 못했어요" }; }
+    } catch (e) { res = null; }
     if (requestId !== recommendationRequest) return;
-    if (res && res.ok && res.pick) await settleFoodSlot(body, res.pick.cat_norm || "");
+    res = usableLunchRecommendation(res, rows, cond) || fallbackLunchRecommendation(rows, cond, persona, previousRecommendationId);
     if (requestId !== recommendationRequest) return;
+    if (res && res.ok && res.pick) {
+      try { await settleFoodSlot(body, res.pick.cat_norm || ""); } catch (e) { /* A visual effect must never block the recommendation. */ }
+    }
+    if (requestId !== recommendationRequest) return;
+    if (res && res.ok) previousRecommendationId = res.pick.id;
     renderRecommend(res);
   }
   function renderRecommend(res) {
