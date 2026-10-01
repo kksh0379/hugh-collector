@@ -138,7 +138,7 @@ function applyUserStateToDom() {
     c.classList.toggle("is-read", isRead(c.dataset.key));
   });
   document.querySelectorAll(".scrap-btn[data-key]").forEach((b) => {
-    b.classList.toggle("on", isScrapped(b.dataset.key));
+    updateScrapButton(b);
   });
 }
 // 읽음 처리(로그인 사용자만, 서버 저장)
@@ -163,9 +163,21 @@ function registerItem(it, tab, link) {
   return k;
 }
 // 카드 우상단 스크랩 버튼 + 오늘글 N딱지 HTML
+function updateScrapButton(button) {
+  const saved = isScrapped(button.dataset.key);
+  const label = saved ? "✓ 스크랩됨" : "스크랩";
+  button.classList.toggle("on", saved);
+  button.setAttribute("aria-pressed", String(saved));
+  button.setAttribute("aria-label", saved ? "스크랩됨 — 누르면 취소" : "스크랩하기");
+  button.title = saved ? "스크랩됨 — 누르면 취소" : "스크랩하기";
+  const text = button.querySelector(".scrap-btn-label");
+  if (text) text.textContent = label;
+}
 function scrapBtnHtml(key) {
-  return `<button class="scrap-btn${isScrapped(key) ? " on" : ""}" type="button" data-key="${escapeHtml(key)}" aria-label="스크랩" title="스크랩">`
-    + `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 3h12c.55 0 1 .45 1 1v17l-7-3.9L5 21V4c0-.55.45-1 1-1z"/></svg></button>`;
+  const saved = isScrapped(key);
+  const action = saved ? "스크랩됨 — 누르면 취소" : "스크랩하기";
+  return `<button class="scrap-btn${saved ? " on" : ""}" type="button" data-key="${escapeHtml(key)}" aria-pressed="${saved}" aria-label="${action}" title="${action}">`
+    + `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6 3h12c.55 0 1 .45 1 1v17l-7-3.9L5 21V4c0-.55.45-1 1-1z"/></svg><span class="scrap-btn-label">${saved ? "✓ 스크랩됨" : "스크랩"}</span></button>`;
 }
 function newBadgeHtml(iso) { return isToday(iso) ? `<span class="badge-new" title="오늘 등록">N</span>` : ""; }
 function readClass(key) { return isRead(key) ? " is-read" : ""; }
@@ -310,7 +322,7 @@ function toggleScrap(key) {
 }
 function syncScrapUI(key) {
   document.querySelectorAll('.scrap-btn[data-key]').forEach((b) => {
-    if (b.dataset.key === key) b.classList.toggle("on", isScrapped(key));
+    if (b.dataset.key === key) updateScrapButton(b);
   });
   updateScrapBadge();
   const m = document.getElementById("view-scrap");
@@ -1744,7 +1756,7 @@ function renderScrapList() {
   if (!items.length) {
     const msg = Object.keys(SCRAP).length ? "조건에 맞는 스크랩이 없어요." : "아직 스크랩한 글이 없어요.";
     el.innerHTML = `<li class="empty"><div class="empty-msg">${msg}</div>`
-      + `<div class="empty-hint">글 카드의 🔖 아이콘을 눌러 스크랩하세요.</div></li>`;
+      + `<div class="empty-hint">글 카드의 스크랩 버튼을 눌러 저장하세요.</div></li>`;
     return;
   }
   el.innerHTML = "";
