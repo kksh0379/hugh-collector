@@ -1477,3 +1477,7 @@ body.chrome-hidden .view-head { position: static; }
 @media(prefers-reduced-motion:reduce) { .slot-track,.slot-dots i,.airec { animation:none; } }
 @media(max-width:400px) { .slot-stage { padding:0 5px; grid-template-columns:minmax(0,1fr) minmax(0,2.3fr); } .slot-stage .slot-machine { padding:9px; gap:5px; border-radius:17px; } .slot-host { width:145%; margin-left:-22%; } }
 @media(prefers-reduced-motion:reduce) { .slot-host,.host-pose,.slot-stage .slot-spoon { animation:none; transition:none; } .host-pose-3 { opacity:1; } .food-slot.is-stopping .host-pose-3 { opacity:0; } }
+
+/* Scrap cancellation: show intent before fading and collapsing the card. */
+#scrap-list .scrap-removing { position: relative; overflow: hidden; pointer-events: none; box-sizing: border-box; min-height: 0; }
+.scrap-removing-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(246,248,252,.88); color: #425779; font-size: 14px; font-weight: 800; border-radius: inherit; }

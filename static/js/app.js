@@ -299,9 +299,72 @@ function armConfirm(btn, armedText, onConfirm) {
     btn.classList.remove("armed");
   }, 4000);
 }
+// Pending exits keep the scrap list stable until every leaving card finishes.
+const SCRAP_REMOVALS = new Map();
+function animateScrapRemoval(key) {
+  const view = document.getElementById("view-scrap");
+  const list = document.getElementById("scrap-list");
+  if (!view || view.hidden || !list || SCRAP_REMOVALS.has(key)) return false;
+  const cards = Array.from(list.querySelectorAll(".card[data-key]"));
+  const card = cards.find(item => item.dataset.key === key);
+  if (!card) return false;
+  const position = cards.indexOf(card);
+  const nextKey = cards[position + 1]?.dataset.key || cards[position - 1]?.dataset.key;
+  const hadFocus = card.contains(document.activeElement);
+  const token = {animations: [], cancelled: false};
+  SCRAP_REMOVALS.set(key, token);
+  card.classList.add("scrap-removing");
+  card.inert = true;
+  card.setAttribute("aria-busy", "true");
+  const status = document.createElement("span");
+  status.className = "scrap-removing-label";
+  status.textContent = "스크랩 취소";
+  card.appendChild(status);
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const play = async (frames, options) => {
+    if (token.cancelled || !card.isConnected) return;
+    if (typeof card.animate !== "function") {
+      await new Promise(resolve => setTimeout(resolve, options.duration));
+      return;
+    }
+    const animation = card.animate(frames, {...options, fill: "forwards"});
+    token.animations.push(animation);
+    await animation.finished;
+  };
+  (async () => {
+    try {
+      // Briefly keep the cancellation label readable, then leave and close the gap.
+      await play([{opacity: 1}, {opacity: 1}], {duration: 140});
+      if (reduced) {
+        await play([{opacity: 1}, {opacity: 0}], {duration: 100});
+      } else {
+        await play([{opacity: 1, transform: "translateX(0)"}, {opacity: 0, transform: "translateX(24px)"}], {duration: 210, easing: "ease-out"});
+        const height = card.getBoundingClientRect().height;
+        await play([{height: height + "px", marginBottom: getComputedStyle(card).marginBottom, paddingTop: getComputedStyle(card).paddingTop, paddingBottom: getComputedStyle(card).paddingBottom}, {height: "0px", marginBottom: "0px", paddingTop: "0px", paddingBottom: "0px", borderWidth: "0px"}], {duration: 200, easing: "cubic-bezier(.4,0,.2,1)"});
+      }
+    } catch (error) { /* Cancellation on rollback is expected. */ }
+    finally {
+      if (SCRAP_REMOVALS.get(key) === token) SCRAP_REMOVALS.delete(key);
+      if (!token.cancelled) renderScraps();
+      if (hadFocus && !token.cancelled && !view.hidden && !SCRAP_REMOVALS.size) {
+        const next = Array.from(list.querySelectorAll(".scrap-btn[data-key]")).find(button => button.dataset.key === nextKey);
+        (next || document.getElementById("scrap-search"))?.focus({preventScroll: true});
+      }
+    }
+  })();
+  return true;
+}
+function cancelScrapRemoval(key) {
+  const token = SCRAP_REMOVALS.get(key);
+  if (!token) return;
+  token.cancelled = true;
+  token.animations.forEach(animation => animation.cancel());
+  SCRAP_REMOVALS.delete(key);
+}
+
 // 스크랩 토글(로그인 필요, 서버 저장, +토스트)
 function toggleScrap(key) {
-  if (!key) return;
+  if (!key || SCRAP_REMOVALS.has(key)) return;
   if (!isLoggedIn()) {            // 미로그인 → 로그인 유도(로그인 후 이어서 스크랩)
     pendingScrapKey = key;
     toast("로그인하면 스크랩할 수 있어요");
@@ -312,7 +375,7 @@ function toggleScrap(key) {
   if (wasOn) {
     const backup = SCRAP[key];
     delete SCRAP[key];
-    syncScrapUI(key); toast("스크랩을 취소했어요");
+    syncScrapUI(key, true); toast("스크랩을 취소했어요");
     api("/api/scrap", { op: "del", key }).catch(() => { SCRAP[key] = backup; syncScrapUI(key); toast("저장 실패 — 다시 시도해 주세요"); });
   } else {
     const snap = ITEM_INDEX[key];
@@ -322,13 +385,14 @@ function toggleScrap(key) {
     api("/api/scrap", { op: "add", key, item: snap }).catch(() => { delete SCRAP[key]; syncScrapUI(key); toast("저장 실패 — 다시 시도해 주세요"); });
   }
 }
-function syncScrapUI(key) {
+function syncScrapUI(key, animateRemoval = false) {
+  if (isScrapped(key)) cancelScrapRemoval(key);
   document.querySelectorAll('.scrap-btn[data-key]').forEach((b) => {
     if (b.dataset.key === key) updateScrapButton(b);
   });
   updateScrapBadge();
   const m = document.getElementById("view-scrap");
-  if (m && !m.hidden) renderScraps();
+  if (m && !m.hidden && !(animateRemoval && animateScrapRemoval(key))) renderScraps();
 }
 
 // 위임: 원문 링크 클릭 → 읽음 처리 / 스크랩 버튼 클릭 → 토글
@@ -1751,6 +1815,7 @@ function renderScrapControls() {
     ${manage}`;
 }
 function renderScrapList() {
+  if (SCRAP_REMOVALS.size) return;
   const el = document.getElementById("scrap-list");
   let items = Object.values(SCRAP);
   if (scrapFilterGroup !== "all") items = items.filter((s) => (s.groups || []).includes(scrapFilterGroup));
@@ -1769,7 +1834,10 @@ function renderScrapList() {
   items.forEach((s) => frag.appendChild(scrapCardNode(s)));
   el.appendChild(frag);
 }
-function renderScraps() { renderScrapControls(); renderScrapList(); }
+function renderScraps() {
+  if (SCRAP_REMOVALS.size) return;
+  renderScrapControls(); renderScrapList();
+}
 function updateCardGroupChips(key) {
   document.querySelectorAll("#scrap-list .card").forEach((li) => {
     if (li.dataset.key !== key) return;
