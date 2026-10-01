@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.44") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.45") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -46,7 +46,7 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.44") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.45") }}">
 </head>
 <body>
   <header class="app-header">
@@ -471,25 +471,19 @@
   <div class="bottombar" id="bottombar">
   <!-- 하단 대메뉴(탭 내비게이션) -->
   <nav class="footnav" id="footnav" aria-label="주요 메뉴">
-    <button class="fnav active" data-nav="collector">
-      <span class="fnav-ic">📰</span><span class="fnav-t">뉴스</span></button>
-    <button class="fnav" data-nav="food">
-      <span class="fnav-ic">🍽️</span><span class="fnav-t">맛집</span></button>
-    <button class="fnav report-open" id="report-open-btn" data-nav="report">
-      <span class="fnav-ic">
-        <svg class="ai-ci" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <circle cx="10" cy="10.5" r="6.4" fill="none" stroke="currentColor" stroke-width="2"/>
-          <line x1="14.6" y1="15.1" x2="20" y2="20.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-          <text x="10" y="13.1" text-anchor="middle" font-size="6.6" font-weight="800" fill="currentColor" font-family="Arial, Helvetica, sans-serif">AI</text>
-          <path d="M18.5 2 L19.3 4 L21.3 4.8 L19.3 5.6 L18.5 7.6 L17.7 5.6 L15.7 4.8 L17.7 4 Z" fill="currentColor"/>
-        </svg></span><span class="fnav-t">리포트</span></button>
-    <button class="fnav scrap-open" id="scrap-open-btn" data-nav="scrap">
-      <span class="fnav-ic">🔖<span class="scrap-badge" id="scrap-badge" hidden></span></span><span class="fnav-t">스크랩</span></button>
+    <button type="button" class="fnav active" data-nav="collector" aria-current="page">
+      <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="nav-fill" x="3" y="4" width="18" height="16" rx="3"/><path d="M7 8h4v4H7zM14 8h3M14 12h3M7 16h10"/></svg></span><span class="fnav-t">뉴스</span></button>
+    <button type="button" class="fnav" data-nav="food">
+      <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3v5a3 3 0 0 0 6 0V3M8 3v18M17 3v18M17 3c-2 2-3 5-3 8h3"/></svg></span><span class="fnav-t">맛집</span></button>
+    <button type="button" class="fnav report-open" id="report-open-btn" data-nav="report">
+      <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="nav-fill" d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 17v-3M12 17v-6M16 17v-4"/></svg></span><span class="fnav-t">리포트</span></button>
+    <button type="button" class="fnav scrap-open" id="scrap-open-btn" data-nav="scrap">
+      <span class="fnav-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="nav-fill" d="M6 3h12v18l-6-4-6 4z"/></svg><span class="scrap-badge" id="scrap-badge" hidden></span></span><span class="fnav-t">스크랩</span></button>
   </nav>
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v2.44 · build 261002</span>
+    <span class="ver">v2.45 · build 261002</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -517,8 +511,8 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.44") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.44") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.45") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.45") }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>

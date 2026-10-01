@@ -258,7 +258,12 @@ function toast(msg) {
   function switchTo(n) {
     // 스크랩은 로그인 필요 → 미로그인 시 전환하지 않고 로그인 유도
     if (n === "scrap" && !isLoggedIn()) { toast("로그인하면 스크랩을 볼 수 있어요"); if (typeof openLogin === "function") openLogin(); return; }
-    nav.querySelectorAll(".fnav").forEach((x) => x.classList.toggle("active", x.dataset.nav === n));
+    nav.querySelectorAll(".fnav").forEach((x) => {
+      const active = x.dataset.nav === n;
+      x.classList.toggle("active", active);
+      if (active) x.setAttribute("aria-current", "page");
+      else x.removeAttribute("aria-current");
+    });
     Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
     // 맛집 하위 뷰(후기/AI 추천)는 항상 닫고 대메뉴로 복귀
     ["view-lunch-reviews", "view-lunch-ai"].forEach((id) => { const e = document.getElementById(id); if (e) e.hidden = true; });
@@ -522,17 +527,20 @@ function renderInfinite(el, units, makeNode, emptyMsg) {
 }
 
 // ----------------------------- 카드 렌더링 -----------------------------
+// Foundation posts and videos open directly at their original source.
+function opensOriginalSource(tab) { return tab === "boards" || tab === "social"; }
 function renderCard(item, opts) {
   const tab = opts.tab || "";
-  const key = registerItem(item, tab, item.url);
+  const link = tab === "boards" ? (item.source_url || item.url) : item.url;
+  const key = registerItem(item, tab, link);
   const meta = [];
   if (opts.badge) meta.push(`<span class="badge">${escapeHtml(opts.badge)}</span>`);
   meta.push(escapeHtml(fmtDate(item.published_at)));
   if (item.author) meta.push(escapeHtml(item.author));
 
   const t = escapeHtml(item.title || "(제목 없음)");
-  const titleHtml = item.url
-    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" ${tab === "social" ? "" : "data-reader"}>${t}</a>` : t;
+  const titleHtml = link
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : "data-reader"}>${t}</a>` : t;
   // 요약이 있으면 표시, 없고 이미지도 없으면 '요약 없음', 이미지만 있으면 요약 줄 생략
   const summaryHtml = item.content
     ? `<p class="card-summary">${escapeHtml(item.content)}</p>`
@@ -549,8 +557,8 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${item.url ? `<a class="read-action" href="${escapeHtml(item.url)}" target="_blank" rel="noopener" ${tab === "social" ? "" : "data-reader"}>${tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
-          ${copyBtnHtml(item.url)}
+          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : "data-reader"}>${opensOriginalSource(tab) ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
+          ${copyBtnHtml(link)}
         </div>
       </div>
     </div>`;
@@ -1699,7 +1707,7 @@ function scrapCardNode(s) {
   const link = s.link || s.url;
   const isFood = s.tab === "food";
   const t = escapeHtml(s.title || "(제목 없음)");
-  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${isFood || s.tab === "social" ? "" : "data-reader"}>${t}</a>` : t;
+  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${isFood || opensOriginalSource(s.tab) ? "" : "data-reader"}>${t}</a>` : t;
   const checks = GROUPS.length
     ? GROUPS.map((g) => `<label class="grp-check-item"><input type="checkbox" class="grp-check" data-key="${escapeHtml(s.key)}" data-gid="${g.id}"${(s.groups || []).includes(g.id) ? " checked" : ""}> ${escapeHtml(g.name)}</label>`).join("")
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
@@ -1711,7 +1719,7 @@ function scrapCardNode(s) {
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
-        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${s.tab === "social" ? "" : "data-reader"}>${s.tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) ? "" : "data-reader"}>${opensOriginalSource(s.tab) ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
         ${copyBtnHtml(link)}
         <button class="grp-assign" type="button">🏷 그룹 지정</button>
       </div>

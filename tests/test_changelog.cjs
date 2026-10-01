@@ -10,7 +10,7 @@ test('all version headings become accordion rows with their own detail',()=>{
  const html=ctx.renderChangelog(markdown);
  const headings=markdown.split('\n').filter(line=>line.startsWith('### '));
  assert.equal((html.match(/<details class="cl-item">/g)||[]).length,headings.length);
- for(let v=10;v<=44;v++){
+ for(let v=10;v<=45;v++){
   const version=`v2.${String(v).padStart(2,'0')}`;
   const row=html.match(new RegExp(`<details class="cl-item"><summary>${version.replace('.','\\.')} · [\\s\\S]*?</details>`));
   assert.ok(row,version);assert.match(row[0],/<div class="cl-body"><ul><li>/);

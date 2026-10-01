@@ -1161,40 +1161,38 @@ body.tab-report .viewbar { display: none; }
   transition: transform 0.25s ease;
   box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
 }
-.footnav {
-  display: flex; align-items: stretch;
-}
+.footnav { display: flex; align-items: stretch; max-width: 760px; margin: 0 auto; padding: 4px 10px 3px; gap: 4px; }
 .fnav {
-  position: relative;
-  flex: 1 1 0; min-width: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  border: none; background: none; cursor: pointer;
-  padding: 7px 4px 6px; color: var(--muted);
-  font-family: inherit; font-size: 11px; font-weight: 700;
+  position: relative; flex: 1 1 0; min-width: 0; min-height: 62px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: none; border-radius: 14px; background: transparent; cursor: pointer;
+  padding: 5px 4px; color: #687386; font-family: inherit; font-size: 11px; font-weight: 600;
+  transition: color .18s ease, background .18s ease;
 }
 .fnav .fnav-ic {
-  font-size: 20px; line-height: 1; position: relative; display: inline-flex;
-  align-items: center; justify-content: center; padding: 4px 14px; border-radius: 999px;
-  transition: background 0.15s ease, transform 0.15s ease;
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 52px; height: 32px; border-radius: 12px; line-height: 1;
+  transition: background .18s ease;
 }
-.fnav .ai-ci { color: currentColor; }
-.fnav .fnav-t { white-space: nowrap; }
-/* 선택된 대메뉴: 상단 인디케이터 바 + 아이콘 뒤 알약 하이라이트 + 진한 색/굵기 */
-.fnav.active { color: var(--primary); font-weight: 800; }
-.fnav.active .fnav-ic { background: rgba(45, 108, 223, 0.14); transform: scale(1.06); }
-.fnav.active::before {
-  content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 34px; height: 3px; border-radius: 0 0 4px 4px; background: var(--primary);
-}
-.fnav:active { background: rgba(0,0,0,0.04); }
+.fnav svg { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.fnav .nav-fill { fill: transparent; }
+.fnav .fnav-t { white-space: nowrap; line-height: 1.25; letter-spacing: -.02em; }
+.fnav.active { color: #215bbd; font-weight: 800; }
+.fnav.active .fnav-ic { background: #e9f0ff; }
+.fnav.active svg { stroke-width: 2; }
+.fnav.active .nav-fill { fill: #cadcff; }
+.fnav:active { background: #f1f5fc; }
+.fnav:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+@media (hover: hover) { .fnav:hover { background: #f5f7fb; } }
+@media (prefers-reduced-motion: reduce) { .fnav, .fnav .fnav-ic { transition: none; } }
 .footnav .fnav[hidden] { display: none !important; }
-/* 스크랩 배지(하단 탭) */
 .footnav .scrap-badge {
-  position: absolute; top: -5px; right: -9px;
-  min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px;
-  background: #dc2626; color: #fff; font-size: 9px; font-weight: 800;
+  position: absolute; top: -2px; right: 2px;
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9px;
+  background: #d93043; color: #fff; font-size: 9px; font-weight: 800; border: 2px solid #fff;
   display: inline-flex; align-items: center; justify-content: center; line-height: 1;
 }
+.footnav .scrap-badge[hidden] { display: none; }
 
 /* 저작권/버전(정적 하단) */
 .app-credit {
