@@ -41,7 +41,7 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
-  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); /* 하단바(탭 내비+저작권) 공간 */
+  padding-bottom: calc(var(--bottom-bar-height, 84px) + 12px); /* 하단바 실제 높이(줄바꿈·안전 영역 포함) */
   overflow-x: clip; /* 탭 전환 슬라이드 시 가로 스크롤 방지(sticky는 안 깨지는 clip 사용) */
 }
 
@@ -1184,11 +1184,14 @@ body.tab-report .viewbar { display: none; }
   min-height: 24px; line-height: 24px;
   padding: 2px 12px; color: var(--muted); font-size: 10.5px;
   border-top: 1px solid var(--border); background: #fafbfc;
-  white-space: nowrap; overflow: hidden;
+  flex-wrap: wrap; white-space: nowrap; overflow: visible; column-gap: 10px; row-gap: 0;
 }
 .app-credit > span { display: inline-flex; align-items: center; line-height: 1; }
 .app-credit .foot-copy { font-weight: 600; color: var(--text); }
 .app-credit .ver { font-size: 10.5px; }
+.credit-intro { display:inline-flex; align-items:center; min-height:28px; padding:2px 3px; color:var(--primary-dark); font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+.credit-intro:focus-visible { outline:2px solid var(--primary); outline-offset:2px; border-radius:3px; }
+.storage-status::before { content:''; width:6px; height:6px; border-radius:50%; margin-right:4px; background:currentColor; flex:none; }
 
 /* 대메뉴 2: 맛집(준비 중) 자리표시자 */
 #view-food { display: block; min-height: 60vh; }

@@ -1434,6 +1434,26 @@ function toAmPm(ts) {
 function fmtLast(ts) {
   return ts ? `마지막 수집: ${toAmPm(ts)} (서버 기준)` : "아직 수집 기록 없음";
 }
+function updateStorageBadge(meta) {
+  const badge = document.getElementById('storage-badge');
+  if (!badge) return;
+  let state = 'unknown', text = 'DB 상태 확인 불가', color = '#6b7280';
+  let title = '연결 상태를 확인하지 못했어요. 잠시 후 새로고침해 주세요.';
+  if (meta && meta.db_down) {
+    state = 'down'; text = 'DB 연결 끊김'; color = '#dc2626';
+    title = '데이터 저장소에 연결되지 않아 조회·저장이 제한될 수 있어요.';
+  } else if (meta && meta.storage === 'postgres') {
+    state = 'connected'; text = 'DB 연결됨'; color = '#15803d';
+    title = '데이터 저장소에 정상적으로 연결되어 있어요.';
+  } else if (meta && meta.storage === 'sqlite') {
+    state = 'temporary'; text = '임시 저장 모드'; color = '#b25e00';
+    title = '임시 저장소를 사용하고 있어요. 서버 재시작 시 데이터가 유지되지 않을 수 있어요.';
+  }
+  badge.textContent = text;
+  badge.dataset.state = state;
+  badge.style.color = color;
+  badge.title = title;
+}
 async function loadMeta() {
   try {
     const r = await fetchData("/api/meta");
@@ -1446,21 +1466,19 @@ async function loadMeta() {
     document.getElementById("last-event").textContent = fmtLast(m.event);
     document.getElementById("last-boards").textContent = fmtLast(m.boards);
     document.getElementById("last-social").textContent = fmtLast(m.social);
-    const badge = document.getElementById("storage-badge");
-    if (badge) {
-      if (m.db_down) {
-        badge.textContent = "⛔ DB 연결 안 됨";
-        badge.style.color = "#dc2626";
-      } else if (m.storage === "postgres") {
-        badge.textContent = "";
-        badge.style.color = "#16a34a";
-      } else {
-        badge.textContent = "⚠ 임시저장";
-        badge.style.color = "#b25e00";
-      }
-    }
-  } catch (e) {}
+    updateStorageBadge(m);
+  } catch (e) { updateStorageBadge(null); }
 }
+
+// Keep the last content clear of the fixed footer, including wrapped status text.
+(function syncFooterSpace() {
+  const bar = document.querySelector('.bottombar');
+  if (!bar) return;
+  const resize = () => document.documentElement.style.setProperty('--bottom-bar-height', `${bar.offsetHeight}px`);
+  resize();
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resize).observe(bar);
+  else window.addEventListener('resize', resize);
+})();
 
 // ----------------------------- 관리자 로그인 -----------------------------
 const loginModal = document.getElementById("login-modal");

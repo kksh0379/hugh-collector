@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>휴 스코프 — 뉴스·행사·동향 + 오늘 점심 맛집</title>
-  <meta name="description" content="뉴스·행사·유튜브를 자동으로 모으고, AI가 자동 분류·중요도 평가·요약·월간 보안 리포트까지. 내 주변 점심 맛집 검색·이용자 평점·AI 점심 추천도 함께." />
+  <meta name="description" content="뉴스·행사·재단 게시판·유튜브를 모아 보고, 재단동향(분기)·보안(월간) 리포트와 주변 맛집 추천까지. 친칠라 슬롯 추천·리더뷰·계정별 스크랩을 만나보세요." />
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
   <meta property="og:title" content="휴 스코프 — 뉴스 콜렉터 + 오늘 점심 맛집" />
-  <meta property="og:description" content="뉴스·행사·유튜브를 자동으로 모으고 AI가 분류·중요도·요약·월간 보안 리포트까지. 내 주변 점심 맛집·AI 점심 추천도 함께." />
+  <meta property="og:description" content="재단 소식·국내 행사·유튜브·보안 동향과 오늘 점심을 한곳에서. 분기·월간 리포트, 친칠라 슬롯 추천, 스크랩·그룹 정리." />
   <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}" />
   <meta property="og:type" content="website" />
   <style>
@@ -125,8 +125,8 @@
     <div class="hero-in">
       <h1 class="logo">휴 <b>스코프</b></h1>
       <p class="tagline">뉴스·행사·동향, 그리고 오늘 점심까지 한 손에서.</p>
-      <p class="sub">뉴스·행사·유튜브를 자동으로 모으고 <b>AI가 분류·중요도·요약·리포트</b>까지. 여기에 <b>내 주변 맛집·AI 점심 추천</b>도 함께.</p>
-      <p class="hero-note">설치 없이 브라우저에서 바로 · 스마트폰 최적화</p>
+      <p class="sub">뉴스·행사·재단 게시판·유튜브와 <b>분기·월간 리포트</b>를 한곳에서. 오늘 점심은 <b>친칠라 집사의 슬롯 추천</b>으로 골라보세요.</p>
+      <p class="hero-note">설치 없이 브라우저에서 바로 · 모바일·태블릿·PC 지원</p>
     </div>
   </div>
 
@@ -136,15 +136,27 @@
       <h2>이런 걸 모아드려요</h2>
       <p class="lead">흩어져 있는 소식을 탭 하나로. 검색·스크랩·자동 수집까지 한 번에.</p>
       <div class="feats">
-        <div class="feat"><div class="ic">🍽️</div><h3>맛집 · 오늘 점심</h3><p>내 주변 점심을 위치별로 찾고, 이용자 평점·후기 + AI 성향 추천까지</p></div>
+        <div class="feat"><div class="ic">🍽️</div><h3>맛집 · 오늘 점심</h3><p>지역별 맛집·도보 거리·평점·후기를 보고, 기분과 제외 조건에 맞춰 추천받기</p></div>
         <div class="feat"><div class="ic">🐱</div><h3>냥정보 · 게임정보</h3><p>반려묘·게임 뉴스를 취향대로 모아보기</p></div>
         <div class="feat"><div class="ic">📰</div><h3>NC 뉴스 · 업계동향</h3><p>재단·본사·자회사와 동종 재단 소식</p></div>
         <div class="feat"><div class="ic">🛡️</div><h3>보안뉴스</h3><p>개인정보·해킹·취약점·개보위 처분 + AI 자동 중요도</p></div>
-        <div class="feat"><div class="ic">🔐</div><h3>월간 보안 리포트</h3><p>정보보안·개인정보 담당자용 지난달 브리핑(자동)</p></div>
-        <div class="feat"><div class="ic">📅</div><h3>행사일정</h3><p>국내 문화행사를 앨범·캘린더로</p></div>
+        <div class="feat"><div class="ic">🔐</div><h3>보안(월간) 리포트</h3><p>정보보안·개인정보 담당자용 지난달 브리핑(자동)</p></div>
+        <div class="feat"><div class="ic">📅</div><h3>행사일정 · 재단 게시판</h3><p>국내 행사와 재단별 공지를 모아 보고, 행사 날짜는 캘린더로 확인</p></div>
         <div class="feat"><div class="ic">▶️</div><h3>재단 YT</h3><p>재단·주요 재단 유튜브 최신 영상</p></div>
         <div class="feat"><div class="ic">🔖</div><h3>스크랩 · 그룹</h3><p>관심 글을 계정에 저장하고 그룹으로 정리</p></div>
-        <div class="feat"><div class="ic">🔍</div><h3>AI 동향 리포트</h3><p>재단 동향을 AI가 제3자 관점으로 요약·비교</p></div>
+        <div class="feat"><div class="ic">🔍</div><h3>재단동향(분기) 리포트</h3><p>재단 동향을 AI가 제3자 관점으로 요약·비교</p></div>
+        <div class="feat"><div class="ic">📖</div><h3>리더뷰 · 원문 보기</h3><p>지원되는 기사는 앱 안에서 읽고, 원문 링크도 바로 확인</p></div>
+      </div>
+    </section>
+
+    <section id="updates">
+      <p class="kicker">최근 업데이트</p>
+      <h2>읽고, 저장하고, 고르는 경험을 더 편하게</h2>
+      <div class="feats">
+        <div class="feat"><img src="{{ url_for('static', filename='slot-chinchilla-5-v2.35.webp') }}" width="120" height="120" alt="슬롯 추천 결과를 소개하는 페르시안 친칠라" loading="lazy" style="display:block;margin:0 auto;max-width:100%;height:auto" /><h3>친칠라 집사의 점심 추천</h3><p>레버 당기기부터 음식 릴의 감속·정지, 결과 소개까지 이어지는 애니메이션.</p></div>
+        <div class="feat"><div class="ic">💻</div><h3>넓은 화면에서도 가지런하게</h3><p>PC·태블릿에서는 행사·재단 게시판·유튜브의 이미지와 글을 나란히 배치. 이미지가 없는 글도 같은 위치에 정렬돼요.</p></div>
+        <div class="feat"><div class="ic">🔖</div><h3>잘 보이는 스크랩 버튼</h3><p>관심 글과 맛집을 계정에 저장하고 그룹으로 정리. 맛집의 상세보기·링크 복사·그룹 지정도 버튼으로 모았어요.</p></div>
+        <div class="feat"><div class="ic">🐾</div><h3>기다림도 즐겁게</h3><p>소식을 불러올 때는 두 고양이, 점심을 고를 때는 친칠라 슬롯머신. 움직임 감소 설정도 지원해요.</p></div>
       </div>
     </section>
 
@@ -155,8 +167,8 @@
           <h2>AI가 대신 읽고, 분류하고, 요약해요</h2>
           <p class="lead">쏟아지는 뉴스를 사람이 다 볼 수 없죠. 수집과 동시에 AI가 자동으로 처리합니다.</p>
           <div class="ai-stats">
-            <div class="ai-stat"><b>사람 개입 0</b><span>수집→분류→요약 전자동</span></div>
-            <div class="ai-stat"><b>24시간</b><span>정기 배치로 자동 수집·분석</span></div>
+            <div class="ai-stat"><b>자동 수집</b><span>소식 수집·분류·요약</span></div>
+            <div class="ai-stat"><b>분기 동향</b><span>재단 변화와 지난 리포트 비교</span></div>
             <div class="ai-stat"><b>매월 자동</b><span>지난달 보안 리포트 생성</span></div>
           </div>
           <div class="ai-list">
@@ -173,8 +185,8 @@
 
     <section id="screens">
       <p class="kicker">Screens</p>
-      <h2>실제 화면 미리보기</h2>
-      <p class="lead">아래는 앱의 실제 화면이에요.</p>
+      <h2>기능별 화면 미리보기</h2>
+      <p class="lead">아래는 기능을 살펴보기 위한 화면 예시예요. 최신 화면의 배치·아이콘·버튼은 업데이트에 따라 달라질 수 있어요.</p>
       <div class="shots">
         <div class="shot">
           <div class="cap"><span class="n">01</span><h3>탭별 피드 + 스마트 검색</h3></div>
@@ -187,8 +199,8 @@
           <div class="frame"><img src="{{ url_for('static', filename='intro/shot-lunch.png') }}" alt="맛집 목록 화면" loading="lazy" /></div>
         </div>
         <div class="shot">
-          <div class="cap"><span class="n">03</span><h3>맛집 — AI 점심 추천 <span style="font-size:12px;color:var(--muted);font-weight:600">NEW</span></h3></div>
-          <p>오늘 <b>AI 성향</b>(안전빵·모험·월급루팡·숨은맛집…) 하나 고르고 “걷기 귀찮아” 같은 기분을 누르면, 그걸 피하고·맞춰 딱 한 곳을 추천. 🎲 랜덤도 있어요.</p>
+          <div class="cap"><span class="n">03</span><h3>맛집 — 친칠라 슬롯 추천 <span style="font-size:12px;color:var(--muted);font-weight:600">NEW</span></h3></div>
+          <p>성향과 오늘 기분을 골라도, 바로 추천받아도 좋아요. <b>숨긴 식당·제외 분류는 빼고</b> 후보를 고릅니다. 친칠라가 레버를 당기면 음식 릴이 돌고, 차례로 멈추며 추천 결과를 소개해요. 서버 응답에 문제가 생겨도 이미 불러온 지역 맛집이 있으면 대체 추천으로 이어집니다.</p>
           <div class="frame"><img src="{{ url_for('static', filename='intro/shot-lunch-ai.png') }}" alt="맛집 AI 추천 화면" loading="lazy" /></div>
         </div>
         <div class="shot">
@@ -202,12 +214,12 @@
           <div class="frame"><img src="{{ url_for('static', filename='intro/shot-scraps.png') }}" alt="스크랩·그룹 화면" loading="lazy" /></div>
         </div>
         <div class="shot">
-          <div class="cap"><span class="n">06</span><h3>AI 재단 동향 리포트</h3></div>
+          <div class="cap"><span class="n">06</span><h3>재단동향(분기)</h3></div>
           <p>뉴스·유튜브 데이터로 NC문화재단과 동종 재단의 변화·추세·신규 신호를 AI가 요약. 로그인 없이도 열람 가능해요.</p>
           <div class="frame"><img src="{{ url_for('static', filename='intro/shot-report.png') }}" alt="AI 동향 리포트 화면" loading="lazy" /></div>
         </div>
         <div class="shot">
-          <div class="cap"><span class="n">07</span><h3>월간 보안 리포트 <span style="font-size:12px;color:var(--muted);font-weight:600">담당자용</span></h3></div>
+          <div class="cap"><span class="n">07</span><h3>보안(월간) <span style="font-size:12px;color:var(--muted);font-weight:600">담당자용</span></h3></div>
           <p>정보보안·개인정보보호 담당자를 위한 지난달 보안 브리핑. 주요 사고·취약점(CVE)·<b>개보위·공정위 처분</b>·트렌드와 담당자 점검 권고까지, 매월 자동으로 만들어져요.</p>
           <div class="frame"><img src="{{ url_for('static', filename='intro/shot-secreport.png') }}" alt="월간 보안 리포트 화면" loading="lazy" /></div>
         </div>
@@ -221,7 +233,7 @@
         <p class="lead">아래 계정으로 로그인하면 스크랩·그룹 기능까지 모두 써볼 수 있어요. (열람·검색은 로그인 없이도 가능)</p>
         <ol class="steps">
           <li>아래 <b>지금 열기</b> 버튼으로 앱에 접속</li>
-          <li>우측 하단(푸터)의 <b>로그인</b> → <b>일반</b> 선택</li>
+          <li>화면 상단의 <b>로그인</b> → <b>일반</b> 선택</li>
           <li>테스터 계정으로 로그인 후 마음껏 스크랩·그룹핑</li>
         </ol>
         <div class="creds">
@@ -234,9 +246,10 @@
   </div>
 
   <footer>
-    휴 스코프 · 재단 뉴스·행사·동향 콜렉터
+    휴 스코프 · 소식과 오늘 점심을 한곳에서 · v2.36
     <div class="disc">※ 뉴스·행사·리포트는 공개 데이터를 자동 수집·요약한 것으로 실제와 다를 수 있어요. 베타 테스트용입니다.</div>
     <div class="disc">서체: KoddiUD 온고딕 (한국장애인개발원, CC BY-SA)</div>
   </footer>
 </body>
 </html>
+
