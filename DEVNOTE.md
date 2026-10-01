@@ -296,8 +296,16 @@ flowchart TB
 - `collector/db.py` — 저장소(Postgres/SQLite, 직접 접속), news/boards/social/events/user_state/report_snapshot + lunch_location/restaurant/review/visit.
 - `collector/fetcher.py` / `collector/extractor.py` — HTTP 헬퍼 / 본문·이미지 추출.
 - `templates/index.html`, `static/js/app.js`, `static/css/style.css` — 앱 화면.
+- `collector/reader.py`(+`static/js/reader.js`, `static/css/reader.css`) — 인라인 리더(디테일뷰): 원문으로 나가지 않고 앱 안에서 기사 본문을 읽는 기능.
 - `templates/intro.html`, `static/intro/*.png` — 서비스 소개(랜딩) 페이지(`/intro`, 로그인·DB 없이 정적).
 - `DEVNOTE.md`(이 문서), `CHANGELOG.md`(변경 이력).
+
+
+## 인라인 리더 / 디테일뷰 (2026-10-01)
+
+- 카드에서 **원문 사이트로 이탈하지 않고** 앱 안에서 기사 본문을 읽는 뷰. Blueprint `collector/reader.py`(`app.register_blueprint`), 엔드포인트 **`/api/reader`**, 프론트 `static/js/reader.js`·`static/css/reader.css`.
+- 동작: 원문 URL의 HTML을 서버가 받아(`fetch_html`) 본문 문단만 추출(`extract_paragraphs`), 실패 시 폴백(`fallback`). 구글뉴스 링크는 **실제 기사 URL로 먼저 해석**한 뒤 추출. 응답 크기 상한 `MAX_BYTES`.
+- 리더는 수집/스케줄러와 무관한 **조회 기능**(배치에 영향 없음).
 
 
 ## DB 조회 최적화 (2026-10-01)
