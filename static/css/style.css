@@ -35,6 +35,7 @@
 /* 폼 컨트롤도 본문 서체를 물려받게(브라우저 기본 시스템폰트 방지) */
 input, button, select, textarea { font-family: inherit; }
 
+html { touch-action: pan-x pan-y; }   /* 핀치 줌 차단(스크롤은 허용) */
 body {
   margin: 0;
   font-family: var(--font);

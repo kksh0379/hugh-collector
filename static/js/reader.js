@@ -90,4 +90,14 @@
     document.querySelector('[data-reader-size="-2"]').disabled = fontSize === 16;
     document.querySelector('[data-reader-size="2"]').disabled = fontSize === 24;
   }));
+
+  // 다크(블랙) 테마 토글 — 선택은 브라우저에 기억
+  const themeBtn = document.getElementById("reader-theme");
+  function applyReaderTheme(dark) {
+    dialog.classList.toggle("dark", dark);
+    if (themeBtn) { themeBtn.textContent = dark ? "☀️" : "🌙"; themeBtn.setAttribute("aria-label", dark ? "라이트 테마 전환" : "다크 테마 전환"); }
+    try { localStorage.setItem("readerDark", dark ? "1" : "0"); } catch (_) {}
+  }
+  if (themeBtn) themeBtn.addEventListener("click", () => applyReaderTheme(!dialog.classList.contains("dark")));
+  try { if (localStorage.getItem("readerDark") === "1") applyReaderTheme(true); } catch (_) {}
 })();

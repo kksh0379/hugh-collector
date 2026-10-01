@@ -1,5 +1,11 @@
 "use strict";
 
+// 핀치 줌 잠금(확대/축소 방지). iOS Safari는 viewport 메타를 무시하므로 제스처를 직접 막는다.
+// 세로/가로 스크롤은 그대로 동작, 확대(핀치·더블탭 줌)만 차단.
+["gesturestart", "gesturechange", "gestureend"].forEach((ev) =>
+  document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+
 // A cold background read is pending, not an empty collection. Coalesce page requests.
 const DATA_REQUESTS = new Map();
 async function fetchData(url) {

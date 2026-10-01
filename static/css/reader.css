@@ -20,3 +20,13 @@
   .reader-content { padding:26px 22px max(40px, env(safe-area-inset-bottom)); }
   .reader-brand { font-size:13px; }
 }
+
+/* 리더 다크(블랙) 테마 */
+.reader-view.dark { background:#15171a; color:#e7e8ea; border-color:#2a2d31; }
+.reader-view.dark .reader-toolbar { background:#15171a; border-bottom-color:#2a2d31; }
+.reader-view.dark .reader-brand { color:#8fcaa0; }
+.reader-view.dark .reader-toolbar button, .reader-view.dark .reader-retry { background:#23262b; color:#e7e8ea; border-color:#33373d; }
+.reader-view.dark .reader-meta { color:#a6adb5; }
+.reader-view.dark .reader-status { background:#22252a; color:#b9c0c8; }
+.reader-view.dark .reader-source { color:#8ab4ff; }
+.reader-view.dark .reader-body { color:#e7e8ea; }
