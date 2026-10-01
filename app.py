@@ -1988,16 +1988,24 @@ def _batch_all():
 
     def _run():
         print(f"[batch] 순차 수집 배치 시작 (뉴스류 최근 {BATCH_DAYS}일)", flush=True)
-        for group in _BATCH_GROUPS:
+        try:
+            for group in _BATCH_GROUPS:
+                try:
+                    days = BATCH_DAYS if group in ("cat", "game", "news", "biz", "security", "event") else None
+                    _do_crawl(group, days=days)
+                except Exception as e:  # noqa: BLE001
+                    print(f"[batch] {group} 오류: {e}", flush=True)
             try:
-                days = BATCH_DAYS if group in ("cat", "game", "news", "biz", "security", "event") else None
-                _do_crawl(group, days=days)
+                _auto_security_report()  # 월초에 지난달 보안 리포트 자동 생성(이미 있으면 skip)
             except Exception as e:  # noqa: BLE001
-                print(f"[batch] {group} 오류: {e}", flush=True)
-        _auto_security_report()  # 월초에 지난달 보안 리포트 자동 생성(이미 있으면 skip)
-        _lunch_refresh_all()      # 맛집 주변 식당 주 1회 자동 재수집(주기 안 지났으면 skip)
-        _batch_state["running"] = False
-        print("[batch] 순차 수집 배치 완료", flush=True)
+                print(f"[batch] secreport 오류: {e}", flush=True)
+            try:
+                _lunch_refresh_all()      # 맛집 주변 식당 주 1회 자동 재수집(주기 안 지났으면 skip)
+            except Exception as e:  # noqa: BLE001
+                print(f"[batch] lunch refresh 오류: {e}", flush=True)
+        finally:
+            _batch_state["running"] = False   # 어떤 경우에도 플래그 해제(다음 배치 안 막히게)
+            print("[batch] 순차 수집 배치 완료", flush=True)
 
     threading.Thread(target=_run, daemon=True).start()
     return list(_BATCH_GROUPS)
