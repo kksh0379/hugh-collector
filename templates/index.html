@@ -43,6 +43,7 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver) }}">
 </head>
 <body>
   <header class="app-header">
@@ -487,6 +488,26 @@
 
   <button id="to-top" aria-label="맨 위로" hidden>↑</button>
 
+  <dialog id="reader-view" class="reader-view" aria-labelledby="reader-title">
+    <div class="reader-toolbar">
+      <span class="reader-brand">휴 스코프 · Reader</span>
+      <div class="reader-tools" aria-label="글자 크기">
+        <button type="button" data-reader-size="-2" aria-label="글자 작게">가−</button>
+        <button type="button" data-reader-size="2" aria-label="글자 크게">가+</button>
+      </div>
+      <button type="button" id="reader-close" autofocus>닫기 ×</button>
+    </div>
+    <article class="reader-content">
+      <h2 id="reader-title">본문 읽기</h2>
+      <div id="reader-meta" class="reader-meta"></div>
+      <p id="reader-status" class="reader-status" role="status" aria-live="polite"></p>
+      <button type="button" id="reader-retry" class="reader-retry" hidden>다시 시도</button>
+      <div id="reader-body" class="reader-body" aria-busy="false"></div>
+      <a id="reader-source" class="reader-source" target="_blank" rel="noopener noreferrer">원문 사이트에서 보기 ↗</a>
+    </article>
+  </dialog>
+
   <script src="{{ url_for('static', filename='js/app.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver) }}"></script>
 </body>
 </html>

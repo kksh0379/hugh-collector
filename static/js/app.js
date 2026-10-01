@@ -501,7 +501,7 @@ function renderCard(item, opts) {
 
   const t = escapeHtml(item.title || "(제목 없음)");
   const titleHtml = item.url
-    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${t}</a>` : t;
+    ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" ${tab === "social" ? "" : "data-reader"}>${t}</a>` : t;
   // 요약이 있으면 표시, 없고 이미지도 없으면 '요약 없음', 이미지만 있으면 요약 줄 생략
   const summaryHtml = item.content
     ? `<p class="card-summary">${escapeHtml(item.content)}</p>`
@@ -518,7 +518,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener">원문 보기 ↗</a>` : ""}
+          ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" ${tab === "social" ? "" : "data-reader"}>${tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
           ${copyBtnHtml(item.url)}
         </div>
       </div>
@@ -885,7 +885,7 @@ function newsGroupNode(arr, tab) {
 
   const t = escapeHtml(rep.title || "(제목 없음)");
   const titleHtml = repLink
-    ? `<a href="${escapeHtml(repLink)}" target="_blank" rel="noopener">${t}</a>` : t;
+    ? `<a href="${escapeHtml(repLink)}" target="_blank" rel="noopener" data-reader>${t}</a>` : t;
   const li = document.createElement("li");
   li.className = "card card-news" + readClass(key);
   li.dataset.key = key;
@@ -899,7 +899,7 @@ function newsGroupNode(arr, tab) {
         <p class="card-summary">${escapeHtml(rep.content || "요약 없음")}</p>
         ${secAiHtml(rep)}
         <div class="card-actions">
-          ${repLink ? `<a href="${escapeHtml(repLink)}" target="_blank" rel="noopener">원문 보기 ↗</a>` : ""}
+          ${repLink ? `<a href="${escapeHtml(repLink)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}
           ${copyBtnHtml(repLink)}
         </div>
       </div>
@@ -911,7 +911,7 @@ function newsGroupNode(arr, tab) {
         const link = a.source_url || a.url;
         return `<li>
           <span class="src-name">${escapeHtml(a.author || "매체 미상")}</span>
-          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${escapeHtml(a.title || "원문")} ↗</a>` : escapeHtml(a.title || "")}
+          ${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>${escapeHtml(a.title || "원문")} ↗</a>` : escapeHtml(a.title || "")}
           <span class="src-date">${escapeHtml(fmtDate(a.published_at))}</span>
         </li>`;
       }).join("") +
@@ -1025,7 +1025,7 @@ function eventAlbumCard(s) {
   const key = registerItem({ url: s.url, source_url: s.source_url, title: s.title, published_at: s.published_at, author: s.author, content: s.content }, "event", s.source_url || s.url);
   const link = s.source_url || s.url;
   const t = escapeHtml(s.title || "(제목 없음)");
-  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${t}</a>` : t;
+  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>${t}</a>` : t;
   const place = eventPlace(s);
   const li = document.createElement("li");
   li.className = "card event-card" + readClass(key);
@@ -1038,7 +1038,7 @@ function eventAlbumCard(s) {
       <h3 class="card-title">${newBadgeHtml(s.published_at)}${titleHtml}</h3>
       ${place ? `<div class="event-place">📍 ${escapeHtml(place)}</div>` : ""}
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
-      <div class="card-actions">${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">원문 보기 ↗</a>` : ""}${copyBtnHtml(link)}</div>
+      <div class="card-actions">${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${copyBtnHtml(link)}</div>
     </div>`;
   return li;
 }
@@ -1639,7 +1639,7 @@ function scrapCardNode(s) {
   const link = s.link || s.url;
   const isFood = s.tab === "food";
   const t = escapeHtml(s.title || "(제목 없음)");
-  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${t}</a>` : t;
+  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${isFood || s.tab === "social" ? "" : "data-reader"}>${t}</a>` : t;
   const checks = GROUPS.length
     ? GROUPS.map((g) => `<label class="grp-check-item"><input type="checkbox" class="grp-check" data-key="${escapeHtml(s.key)}" data-gid="${g.id}"${(s.groups || []).includes(g.id) ? " checked" : ""}> ${escapeHtml(g.name)}</label>`).join("")
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
@@ -1651,7 +1651,7 @@ function scrapCardNode(s) {
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions">
-        ${link ? (isFood ? kakaoLinkHtml(link) : `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">원문 보기 ↗</a>`) : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${s.tab === "social" ? "" : "data-reader"}>${s.tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
         ${copyBtnHtml(link)}
         <button class="grp-assign" type="button">🏷 그룹 지정</button>
       </div>

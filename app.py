@@ -18,7 +18,10 @@ from flask import Flask, Response, jsonify, render_template, request, session
 from collector import (analysis, boards, db, dedup, events, fetcher, google_news,
                        lunch, security_ai, security_report, social)
 
+from collector.reader import bp as reader_bp
+
 app = Flask(__name__)
+app.register_blueprint(reader_bp)
 # 초안 단계: 브라우저가 옛 JS/CSS를 캐시해 혼란을 주지 않도록 정적파일 캐시를 끈다.
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.secret_key = os.environ.get("SECRET_KEY", "ncfoundation-collector-secret-key")
@@ -1091,8 +1094,8 @@ def _asset_ver():
     브라우저가 새 파일을 받아온다(옛 v=고정값으로 인한 스테일 캐시 방지)."""
     base = os.path.dirname(os.path.abspath(__file__))
     try:
-        mt = max(os.path.getmtime(os.path.join(base, "static", "js", "app.js")),
-                 os.path.getmtime(os.path.join(base, "static", "css", "style.css")))
+        mt = max(os.path.getmtime(os.path.join(base, "static", path))
+                 for path in ("js/app.js", "css/style.css", "js/reader.js", "css/reader.css"))
         return str(int(mt))
     except Exception:  # noqa: BLE001
         return "1"

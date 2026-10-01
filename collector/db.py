@@ -561,6 +561,18 @@ def delete_news_by_urls(urls):
     return len(urls)
 
 
+def reader_item(url):
+    """Only already collected news, boards and events can be fetched by Reader."""
+    with get_conn() as conn:
+        for table in ("news", "boards", "events"):
+            condition = "url = ?" if table == "boards" else "(url = ? OR source_url = ?)"
+            params = (url,) if table == "boards" else (url, url)
+            row = conn.execute(_q(f"SELECT * FROM {table} WHERE {condition} LIMIT 1"), params).fetchone()
+            if row:
+                return dict(row)
+    return None
+
+
 def news_count():
     with get_conn() as conn:
         row = conn.execute("SELECT COUNT(*) AS n FROM news").fetchone()
