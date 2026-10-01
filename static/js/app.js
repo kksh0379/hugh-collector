@@ -1596,12 +1596,12 @@ function mdToHtml(md) {
   return html;
 }
 
-// 패치내역: 버전별 아코디언(한 줄 요약 → 펼치면 상세). '### v… — 요약' + 다음 줄들=상세, '## 날짜'=구분.
+// 패치내역: 버전별 아코디언(한 줄 요약 → 펼치면 상세). 상세 마크다운은 안전하게 렌더. '### v… — 요약' + 다음 줄들=상세, '## 날짜'=구분.
 function renderChangelog(md) {
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   let html = "", body = [], open = false;
   const flush = () => {
-    if (open) { html += `<div class="cl-body">${esc(body.join(" ")).trim() || "(상세 없음)"}</div></details>`; open = false; body = []; }
+    if (open) { html += `<div class="cl-body">${mdToHtml(body.join("\n")) || "(상세 없음)"}</div></details>`; open = false; body = []; }
   };
   (md || "").split(/\r?\n/).forEach((raw) => {
     const t = raw.trim();
