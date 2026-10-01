@@ -957,6 +957,26 @@ body.tab-event #view-toggle { display: none; }
 .event-place { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
 .event-card .card-title { padding-right: 30px; }
 
+/* Wide collector cards: bounded media beside content, mobile stays stacked. */
+@media (min-width:768px) {
+  body:not(.view-list) #list-boards .card-main,
+  body:not(.view-list) #list-social .card-main { flex-direction:row; align-items:flex-start; gap:16px; }
+  body:not(.view-list) #list-boards .card-body,
+  body:not(.view-list) #list-social .card-body { flex:1 1 auto; }
+  body:not(.view-list) #list-boards .card-thumb,
+  body:not(.view-list) #list-social .card-thumb,
+  body:not(.view-list) #list-event .event-card .card-thumb {
+    flex:0 0 clamp(220px,26vw,280px); width:clamp(220px,26vw,280px);
+    height:auto; aspect-ratio:4 / 3;
+  }
+  body:not(.view-list) #list-social .card-thumb { aspect-ratio:16 / 9; }
+  body:not(.view-list) #list-boards .card-thumb img,
+  body:not(.view-list) #list-event .card-thumb img { object-fit:contain; }
+  body:not(.view-list) #list-event .event-card { flex-direction:row; align-items:flex-start; }
+  body:not(.view-list) #list-event .event-card .card-body { flex:1 1 auto; min-width:0; padding:16px; }
+  #list-boards .empty, #list-social .empty, #list-event .empty { width:100%; }
+}
+
 /* 캘린더 */
 .calendar { padding: 4px 0 8px; }
 .cal-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 6px 0 12px; }
