@@ -298,3 +298,14 @@ flowchart TB
 - `templates/index.html`, `static/js/app.js`, `static/css/style.css` — 앱 화면.
 - `templates/intro.html`, `static/intro/*.png` — 서비스 소개(랜딩) 페이지(`/intro`, 로그인·DB 없이 정적).
 - `DEVNOTE.md`(이 문서), `CHANGELOG.md`(변경 이력).
+
+
+## DB 조회 최적화 (2026-10-01)
+
+- `collector/read_cache.py`: 프로세스별 캐시 최대 32키, 갱신 동시 실행 3개, 실패 후 5초 대기. 오래된 정상 결과는 갱신 중에도 제공. 캐시 무효화 중 실행되던 쿼리는 이전 결과를 다시 저장하지 않는다.
+- 위치 목록은 별도 1키/1작업 캐시(TTL 300초)로 다른 뉴스 조회와 경쟁하지 않는다. `ENABLE_DB_PREWARM=0`으로 시작 시 준비를 끌 수 있다. 기존 DB keepalive 정책은 유지한다.
+- 식당 목록 TTL 30초, 공개 목록·메타·리포트 TTL 45초. 사용자별 스크랩·읽음·그룹은 공용 캐시에 넣지 않는다. 여러 프로세스로 늘리면 캐시는 프로세스별이며 변경 전파는 TTL에 따른다(현재 Render는 worker 1개).
+- 최초 요청에서 아직 데이터가 없으면 `X-Data-Pending: 1`로 표시한다. 브라우저는 최대 8회 재조회한다. 위치 API는 `db_waking` 필드를 사용한다.
+- `Server-Timing: app;dur=...`는 네트워크를 제외한 요청 처리 시간(ms). DB 쿼리 시간만을 뜻하지 않는다.
+- 검증: `python -m unittest discover -s tests -v`, `node --test tests/test_frontend_data.cjs`.
+- 재배포 후 첫 DB 초기화에서 조회 인덱스를 만든다. 추가 인덱스는 기존 데이터/스키마와 호환되므로 코드 롤백 시 제거할 필요가 없다.

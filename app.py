@@ -13,15 +13,32 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, Response, jsonify, render_template, request, session
+from flask import Flask, Response, g, jsonify, render_template, request, session
 
 from collector import (analysis, boards, db, dedup, events, fetcher, google_news,
                        lunch, security_ai, security_report, social)
 
 from collector.reader import bp as reader_bp
+from collector.read_cache import ReadCache
+
+_PUBLIC_READS = ReadCache()
+_LOCATION_READS = ReadCache(max_entries=1, workers=1)
 
 app = Flask(__name__)
 app.register_blueprint(reader_bp)
+
+
+@app.before_request
+def _start_request_timer():
+    g.request_started = time.perf_counter()
+
+
+@app.after_request
+def _record_request_timing(response):
+    elapsed = (time.perf_counter() - g.request_started) * 1000
+    response.headers.add("Server-Timing", f"app;dur={elapsed:.2f}")
+    return response
+
 # 초안 단계: 브라우저가 옛 JS/CSS를 캐시해 혼란을 주지 않도록 정적파일 캐시를 끈다.
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.secret_key = os.environ.get("SECRET_KEY", "ncfoundation-collector-secret-key")
@@ -67,9 +84,10 @@ def _ensure_db(force=False):
     global _db_ready, _db_last_try
     if _db_ready:
         return True
-    if not force and time.time() - _db_last_try < _DB_RETRY_COOLDOWN:
-        return False  # 최근에 실패 → 지금은 시도 안 함(빠르게 반환)
-    # force면 락을 '기다려서라도' 잡는다(진짜 깨워야 하므로). 아니면 안 막고 넘어감.
+    if not force:
+        _db_wake_async()
+        return False  # HTTP 조회에서는 테이블 준비/DB 연결을 기다리지 않는다.
+    # 실제 초기화는 백그라운드 작업/명시적 쓰기에서만 직렬 실행한다.
     if not _db_lock.acquire(blocking=force):
         return False
     try:
@@ -87,22 +105,25 @@ def _ensure_db(force=False):
 
 
 _db_waking = False
+_db_wake_lock = threading.Lock()
 
 
 def _db_wake_async():
     """DB가 자고 있을 때(read 요청이 빈 결과를 받을 때) 백그라운드로 Neon을 깨운다.
     스레드 1개만 깨우기 시도(중복 방지). 요청 자체는 막지 않음 → 클라이언트가 잠시 후 재시도."""
     global _db_waking
-    if _db_ready or _db_waking:
-        return
-    _db_waking = True
+    with _db_wake_lock:
+        if _db_ready or _db_waking or time.time() - _db_last_try < _DB_RETRY_COOLDOWN:
+            return
+        _db_waking = True
 
     def _w():
         global _db_waking
         try:
             _ensure_db(force=True)
         finally:
-            _db_waking = False
+            with _db_wake_lock:
+                _db_waking = False
 
     threading.Thread(target=_w, daemon=True).start()
 
@@ -187,9 +208,12 @@ def mydata():
     if not u:
         return jsonify({"error": "unauthorized"}), 401
     if not _ensure_db():
-        return jsonify({"scraps": [], "reads": [], "groups": []})
+        response = jsonify({"scraps": [], "reads": [], "groups": []})
+        response.headers["X-Data-Pending"] = "1"
+        return response
+    state = db.user_state_bundle(u)
     scraps = []
-    for r in db.user_state_list(u, "scrap"):
+    for r in state["scrap"]:
         try:
             snap = json.loads(r["snapshot"] or "{}")
         except Exception:  # noqa: BLE001
@@ -198,8 +222,12 @@ def mydata():
         if not isinstance(snap.get("groups"), list):
             snap["groups"] = []
         scraps.append(snap)
-    reads = [r["ukey"] for r in db.user_state_list(u, "read")]
-    return jsonify({"scraps": scraps, "reads": reads, "groups": _get_groups(u)})
+    reads = [r["ukey"] for r in state["read"]]
+    try:
+        groups = json.loads(state["grouplist"][0]["snapshot"] or "[]") if state["grouplist"] else []
+    except (ValueError, TypeError):
+        groups = []
+    return jsonify({"scraps": scraps, "reads": reads, "groups": groups})
 
 
 @app.post("/api/groups")
@@ -595,17 +623,22 @@ def _log_visit():
     threading.Thread(target=_w, daemon=True).start()
 
 
+def _read_metadata():
+    def load():
+        if not _ensure_db(force=True):
+            raise RuntimeError("DB unavailable")
+        return db.get_all_meta()
+    return _PUBLIC_READS.get("meta", load, ttl=45, wait=.15)
+
+
 @app.get("/api/meta")
 def meta():
-    if not _ensure_db():
-        return jsonify({"news": None, "boards": None, "social": None,
-                        "storage": db.BACKEND, "db_down": True})
-    try:
-        m = db.get_all_meta()
-    except Exception:  # noqa: BLE001
-        return jsonify({"news": None, "boards": None, "social": None,
-                        "storage": db.BACKEND, "db_down": True})
-    return jsonify({
+    m = _read_metadata()
+    if m is None:
+        response = jsonify({"storage": db.BACKEND, "db_down": True})
+        response.headers["X-Data-Pending"] = "1"
+        return response
+    response = jsonify({
         "cat": m.get("last_crawl_cat"),
         "game": m.get("last_crawl_game"),
         "news": m.get("last_crawl_news"),
@@ -617,15 +650,17 @@ def meta():
         "storage": db.BACKEND,  # postgres(영구) / sqlite(임시)
     })
 
+    return response
+
 
 # ---- 기능/탭 표시 설정(관리자 온오프) ----
 # 끈 항목은 일반/방문자에게 숨김(관리자는 항상 노출·미리보기). 기본 전체 ON.
 _FEATURE_KEYS = ["cat", "game", "news", "biz", "security", "event", "boards", "social", "report", "scrap"]
 
 
-def _load_features():
+def _load_features(fresh=False, metadata=None):
     try:
-        raw = db.get_meta("feature_flags", "") if _ensure_db() else ""
+        raw = (db.get_meta("feature_flags", "") if fresh else (metadata or {}).get("feature_flags", ""))
         saved = json.loads(raw) if raw else {}
     except Exception:  # noqa: BLE001
         saved = {}
@@ -638,7 +673,11 @@ def _load_features():
 @app.get("/api/features")
 def features_get():
     """현재 탭/기능 표시 설정(모든 클라이언트가 읽어 적용). 공개."""
-    return jsonify(_load_features())
+    metadata = _read_metadata()
+    response = jsonify(_load_features(metadata=metadata))
+    if metadata is None:
+        response.headers["X-Data-Pending"] = "1"
+    return response
 
 
 @app.post("/api/features")
@@ -649,11 +688,12 @@ def features_set():
     if not _ensure_db(force=True):
         return jsonify({"ok": False, "error": "DB에 연결할 수 없어요."}), 503
     data = request.get_json(silent=True) or {}
-    cur = _load_features()
+    cur = _load_features(fresh=True)
     for k in _FEATURE_KEYS:
         if k in data:
             cur[k] = bool(data[k])
     db.set_meta("feature_flags", json.dumps(cur, ensure_ascii=False))
+    _PUBLIC_READS.invalidate("meta")
     return jsonify({"ok": True, "features": cur})
 
 
@@ -677,6 +717,8 @@ def _lunch_geocode_if_needed(loc):
         co = lunch.geocode(loc.get("address") or loc.get("name"))
         if co:
             db.lunch_set_location_coords(loc["id"], co[0], co[1])
+            _LOCATION_READS.invalidate()
+            _invalidate_lunch_cache()
             loc["lat"], loc["lng"] = co[0], co[1]
     return loc
 
@@ -719,6 +761,8 @@ def _lunch_geocode_bg(locs):
                     co = lunch.geocode(l.get("address") or l.get("name"))
                     if co:
                         db.lunch_set_location_coords(l["id"], co[0], co[1])
+                        _LOCATION_READS.invalidate()
+                        _invalidate_lunch_cache()
                 except Exception as e:  # noqa: BLE001
                     print(f"[lunch] bg 지오코딩 실패({l.get('name')}): {e}", flush=True)
         finally:
@@ -727,40 +771,55 @@ def _lunch_geocode_bg(locs):
     threading.Thread(target=_w, daemon=True).start()
 
 
+def _load_lunch_locations():
+    global _lunch_synced
+    if not _ensure_db(force=True):
+        raise RuntimeError("DB unavailable")
+    if not _lunch_synced:
+        # sync inserts missing locations itself; a separate seed pass is redundant.
+        db.lunch_sync_locations(LUNCH_OFFICES)
+        _lunch_synced = True
+    return db.lunch_list_locations()
+
+
+def _invalidate_lunch_cache():
+    _PUBLIC_READS.invalidate("lunch:")
+    _PUBLIC_READS.invalidate("/api/lunch/reviews")
+
+
 @app.get("/api/lunch/locations")
 def lunch_locations():
-    global _lunch_synced
-    if not _ensure_db():
-        _db_wake_async()  # Neon이 자고 있으면 백그라운드로 깨우고, 클라이언트는 잠시 후 재시도
-        return jsonify({"locations": [], "kakao": lunch.has_key(), "db_waking": True})
-    if not _lunch_synced:  # 시드/동기화는 최초 1회만(매 요청마다 dedup 쓰기 X → 빠름)
-        try:
-            db.lunch_seed_locations(LUNCH_OFFICES)
-            db.lunch_sync_locations(LUNCH_OFFICES)
-            _lunch_synced = True
-        except Exception as e:  # noqa: BLE001
-            print(f"[lunch] seed/sync 오류(무시): {e}", flush=True)
-    try:
-        locs = db.lunch_list_locations()   # 지오코딩은 하지 않고 즉시 반환(느림 원인 제거)
-    except Exception as e:  # noqa: BLE001
-        print(f"[lunch] locations 조회 오류: {e}", flush=True)
-        locs = []
-    _lunch_geocode_bg(locs)  # 좌표 없는 위치는 백그라운드에서 채움(다음 조회에 반영)
-    return jsonify({"locations": locs, "kakao": lunch.has_key()})
+    locs = _LOCATION_READS.get("locations", _load_lunch_locations, ttl=300, wait=0)
+    if locs is not None:
+        _lunch_geocode_bg(locs)
+    response = jsonify({"locations": locs or [], "kakao": lunch.has_key(),
+                        "db_waking": locs is None})
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/api/lunch/restaurants")
 def lunch_restaurants():
-    if not _ensure_db():
-        return jsonify({"restaurants": []})
     loc_id = request.args.get("loc", type=int)
-    loc = db.lunch_get_location(loc_id) if loc_id else None   # 여기서도 동기 지오코딩 안 함
-    if not loc:
-        return jsonify({"restaurants": [], "error": "위치 없음"})
-    if loc.get("lat") is None:
-        _lunch_geocode_bg([loc])   # 좌표 없으면 백그라운드로(거리 표시는 다음 조회부터)
-    rows = db.lunch_list_restaurants(loc_id, include_excluded=_admin_ok())
-    return jsonify({"location": loc, "restaurants": _lunch_decorate(loc, rows)})
+    if not loc_id:
+        return jsonify({"restaurants": [], "error": "위치 없음"}), 400
+    admin = _admin_ok()  # capture before the cache worker leaves request context
+
+    def load():
+        if not _ensure_db(force=True):
+            raise RuntimeError("DB unavailable")
+        loc, rows = db.lunch_restaurant_data(loc_id, include_excluded=admin)
+        if not loc:
+            return {"restaurants": [], "error": "위치 없음"}
+        _lunch_geocode_bg([loc])
+        return {"location": loc, "restaurants": _lunch_decorate(loc, rows)}
+
+    data = _PUBLIC_READS.get(f"lunch:restaurants:{loc_id}:{int(admin)}", load, ttl=30, wait=.15)
+    response = jsonify(data if data is not None else {"restaurants": [], "db_waking": True})
+    response.headers["Cache-Control"] = "private, no-store"
+    if data is None:
+        response.headers["X-Data-Pending"] = "1"
+    return response
 
 
 def _lunch_collect_run(loc_id):
@@ -794,6 +853,7 @@ def _lunch_collect_run(loc_id):
         st["result"] = {"ok": False, "error": str(e)}
         st["progress"] = f"오류: {e}"
     finally:
+        _invalidate_lunch_cache()
         st["running"] = False
 
 
@@ -840,6 +900,7 @@ def lunch_add_restaurant():
         return jsonify({"ok": False, "error": "loc_id·name 필요"}), 400
     d["cat_norm"] = lunch.normalize_category(d.get("category") or d.get("cat_norm") or "")
     new, upd = db.lunch_manual_add(loc_id, d)
+    _invalidate_lunch_cache()
     return jsonify({"ok": True, "new": new, "updated": upd})
 
 
@@ -854,6 +915,7 @@ def lunch_purge():
     if not loc_id:
         return jsonify({"ok": False, "error": "loc_id 필요"}), 400
     n = db.lunch_purge_location(loc_id)
+    _invalidate_lunch_cache()
     return jsonify({"ok": True, "deleted": n})
 
 
@@ -863,15 +925,14 @@ def lunch_exclude():
         return jsonify({"error": "unauthorized"}), 401
     d = request.get_json(silent=True) or {}
     db.lunch_set_excluded(d.get("id"), bool(d.get("excluded", True)))
+    _invalidate_lunch_cache()
     return jsonify({"ok": True})
 
 
 @app.get("/api/lunch/reviews")
 def lunch_reviews():
-    if not _ensure_db():
-        return jsonify([])
     rid = request.args.get("rid", type=int)
-    return jsonify(db.lunch_list_reviews(rid))
+    return _safe_list(lambda: db.lunch_list_reviews(rid), ttl=30)
 
 
 @app.post("/api/lunch/review")
@@ -890,6 +951,7 @@ def lunch_review():
     db.lunch_add_review(rid, user, rating, (d.get("comment") or "").strip()[:300])
     if d.get("visit"):
         db.lunch_add_visit(rid, user)
+    _invalidate_lunch_cache()
     return jsonify({"ok": True})
 
 
@@ -904,6 +966,7 @@ def lunch_visit():
     if not d.get("rid"):
         return jsonify({"ok": False, "error": "rid 필요"}), 400
     db.lunch_add_visit(d["rid"], user)
+    _invalidate_lunch_cache()
     return jsonify({"ok": True})
 
 
@@ -1065,10 +1128,8 @@ def lunch_recommend():
         idset = set(ids)
         cands = [c for c in cands if c["id"] in idset]
     user = _cur_user()
-    avoid_ids = db.lunch_recent_visited_ids(user, days=3) if user else set()   # 최근 3일 방문은 제외
-    recent3 = db.lunch_recent_visited_cats(user, days=3) if user else set()
-    recent7 = db.lunch_recent_visited_cats(user, days=7) if user else set()
-    all_visited = db.lunch_all_visited_ids(user) if user else set()
+    avoid_ids, recent3, recent7, all_visited = (db.lunch_visit_context(user) if user
+                                                else (set(), set(), set(), set()))
     persona = (d.get("persona") or "").strip()
     if persona not in LUNCH_PERSONAS:
         persona = ""
@@ -1129,32 +1190,33 @@ def index():
 # 조회 결과 인메모리 캐시(경로+쿼리 기준, 짧은 TTL). 이미 수집된 데이터는 자주 안 바뀌므로
 # 반복 호출/재불러오기를 즉시 응답해 속도↑·DB부하↓. DB가 잠깐 죽어도 '마지막 캐시'를 내줘서
 # 화면이 비지 않고, '다시 불러오기'를 연타할 필요가 없다. 수집/초기화 시 캐시를 비운다.
-_READ_CACHE = {}   # key -> (ts, data)
-_READ_TTL = 45     # 초
+_READ_TTL = 45
 
 
 def _invalidate_read_cache():
-    _READ_CACHE.clear()
+    _PUBLIC_READS.invalidate()
 
 
 def _safe_list(fetch, ttl=_READ_TTL):
-    key = request.full_path
-    now = time.time()
-    hit = _READ_CACHE.get(key)
-    if hit and (now - hit[0] < ttl):
-        return jsonify(hit[1])                 # 신선한 캐시 → 즉시(무DB)
-    if not _ensure_db():
-        _db_wake_async()                        # DB 자는 중이면 백그라운드로 깨우고
-        if hit:
-            return jsonify(hit[1])              # 오래됐어도 마지막 캐시 제공(빈 화면 방지)
-        return jsonify([])
-    try:
-        data = fetch()
-        _READ_CACHE[key] = (now, data)          # 신선화
-        return jsonify(data)
-    except Exception as e:  # noqa: BLE001
-        print(f"[api] 조회 실패(DB): {e}", flush=True)
-        return jsonify(hit[1] if hit else [])   # 실패해도 마지막 캐시로 버팀
+    # Ignore cache-busting/unknown parameters; only actual query filters form keys.
+    names = (("kind", "id") if request.path.startswith("/api/report/") else
+             ("rid",) if request.path == "/api/lunch/reviews" else
+             ("service",) if request.path == "/api/boards" else
+             ("channel",) if request.path == "/api/social" else ("category",))
+    filters = tuple((key, request.args.get(key, "all")) for key in names)
+    key = request.path + repr(filters)
+
+    def load():
+        if not _ensure_db(force=True):
+            raise RuntimeError("DB unavailable")
+        return fetch()
+
+    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=.15)
+    response = jsonify(data if data is not None else [])
+    response.headers["Cache-Control"] = "no-store"
+    if data is None:
+        response.headers["X-Data-Pending"] = "1"
+    return response
 
 
 @app.get("/api/news")
@@ -1657,6 +1719,7 @@ def _report_run(window_days):
                                           data.get("_meta", {}).get("model", ""),
                                           json.dumps(data, ensure_ascii=False),
                                           pkey=data.get("_meta", {}).get("pkey"))
+            _PUBLIC_READS.invalidate("/api/report/")
             st["result"] = {"ok": True, "id": sid}
             st["progress"] = "완료"
     except Exception as e:  # noqa: BLE001
@@ -1685,6 +1748,7 @@ def _security_report_run(ym):
             sid = db.save_report_snapshot(label, label, f"{month} 월간", m.get("model", ""),
                                           json.dumps(data, ensure_ascii=False),
                                           pkey=f"secmonth:{month}", kind="security")
+            _PUBLIC_READS.invalidate("/api/report/")
             st["result"] = {"ok": True, "id": sid, "month": month}
             st["progress"] = "완료"
     except Exception as e:  # noqa: BLE001
@@ -1736,10 +1800,8 @@ def report_models():
 
 @app.get("/api/report/list")
 def report_list():
-    if not _ensure_db():
-        return jsonify([])
-    kind = request.args.get("kind")  # None=전체, 'foundation'|'security'
-    return jsonify(db.list_report_snapshots(30, kind=kind))
+    kind = request.args.get("kind")  # None=전체
+    return _safe_list(lambda: db.list_report_snapshots(30, kind=kind))
 
 
 @app.post("/api/report/purge")
@@ -1753,11 +1815,13 @@ def report_purge():
     try:
         if data.get("all"):
             n = db.clear_report_snapshots(kind=data.get("kind"))  # kind 지정 시 해당 종류만
+            _PUBLIC_READS.invalidate("/api/report/")
             return jsonify({"ok": True, "deleted": n, "scope": "all"})
         sid = data.get("id")
         if sid is None:
             return jsonify({"ok": False, "error": "삭제할 스냅샷 id가 없어요."}), 400
         n = db.delete_report_snapshot(int(sid))
+        _PUBLIC_READS.invalidate("/api/report/")
         return jsonify({"ok": True, "deleted": n, "scope": "one"})
     except Exception as e:  # noqa: BLE001
         return jsonify({"ok": False, "error": f"삭제 실패: {e}"}), 500
@@ -1765,26 +1829,26 @@ def report_purge():
 
 @app.get("/api/report/get")
 def report_get():
-    if not _ensure_db():
-        return jsonify({"error": "db"}), 503
     sid = request.args.get("id", type=int)
     kind = request.args.get("kind")  # id 없이 최신 요청 시 종류 지정
-    row = db.get_report_snapshot(sid) if sid else db.latest_report_snapshot(0, kind=kind)
-    if not row:
-        return jsonify({"error": "없음", "empty": True})
-    try:
-        data = json.loads(row["data"] or "{}")
-    except Exception:  # noqa: BLE001
-        data = {}
-    # 직전 스냅샷 id(비교용) 함께 전달
-    prev = None
-    lst = db.list_report_snapshots(30, kind=(row.get("kind") or kind))
-    ids = [r["id"] for r in lst]
-    if row["id"] in ids:
-        i = ids.index(row["id"])
-        prev = ids[i + 1] if i + 1 < len(ids) else None
-    return jsonify({"id": row["id"], "created_at": row["created_at"], "period": row["period"],
-                    "model": row["model"], "prev_id": prev, "data": data})
+    def load():
+        row = db.get_report_snapshot(sid) if sid else db.latest_report_snapshot(0, kind=kind)
+        if not row:
+            return {"error": "없음", "empty": True}
+        try:
+            data = json.loads(row["data"] or "{}")
+        except Exception:  # noqa: BLE001
+            data = {}
+        # 직전 스냅샷 id(비교용) 함께 전달
+        prev = None
+        lst = db.list_report_snapshots(30, kind=(row.get("kind") or kind))
+        ids = [r["id"] for r in lst]
+        if row["id"] in ids:
+            i = ids.index(row["id"])
+            prev = ids[i + 1] if i + 1 < len(ids) else None
+        return {"id": row["id"], "created_at": row["created_at"], "period": row["period"],
+                        "model": row["model"], "prev_id": prev, "data": data}
+    return _safe_list(load)
 
 
 # ---------------------------- 보안뉴스 AI 후처리(태깅·중요도·시사점) ----------------------------
@@ -1907,6 +1971,7 @@ def _auto_security_report():
         db.save_report_snapshot(label, label, f"{ym} 월간", m.get("model", ""),
                                 json.dumps(data, ensure_ascii=False),
                                 pkey=f"secmonth:{ym}", kind="security")
+        _PUBLIC_READS.invalidate("/api/report/")
         print(f"[secreport] {ym} 월간 보안 리포트 자동 생성 완료", flush=True)
     except Exception as e:  # noqa: BLE001
         print(f"[secreport] 자동 생성 실패: {e}", flush=True)
@@ -1976,6 +2041,7 @@ def _lunch_refresh_all(force=False):
             for it in items:
                 it["source"] = "kakao"
             new, upd = db.lunch_upsert_restaurants(loc["id"], items)
+            _invalidate_lunch_cache()
             tot_new += new
             tot_upd += upd
             print(f"[lunch] {loc['name']} 재수집 · 신규 {new} · 갱신 {upd}", flush=True)
@@ -2069,6 +2135,14 @@ def _db_keepalive():
         except Exception as e:  # noqa: BLE001
             print(f"[keepalive] 실패(무시): {e}", flush=True)
 
+
+def _prewarm_reads():
+    _LOCATION_READS.get("locations", _load_lunch_locations, ttl=300, wait=0)
+    _read_metadata()
+
+
+if os.environ.get("ENABLE_DB_PREWARM", "1") == "1":
+    threading.Thread(target=_prewarm_reads, daemon=True).start()
 
 _start_scheduler()
 # 백필은 DB를 건드리므로(cold start로 느릴 수 있음) 백그라운드 스레드에서 돌려

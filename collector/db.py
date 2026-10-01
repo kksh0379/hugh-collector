@@ -13,7 +13,7 @@
 import os
 import sqlite3
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "collector.db")
@@ -53,7 +53,7 @@ def _section_cond(section):
     """섹션(nc/cat/biz…) WHERE 조건과 인자. 레거시(NULL)는 nc로 취급."""
     if section == "nc":
         return "COALESCE(section,'nc') = 'nc'", ()
-    return "section = ?", (section,)
+    return "COALESCE(section,'nc') = ?", (section,)
 
 
 def diagnose():
@@ -192,13 +192,23 @@ _DDL = [
     "CREATE INDEX IF NOT EXISTS idx_boards_title ON boards(service, title)",
     "CREATE INDEX IF NOT EXISTS idx_social_url ON social(url)",
     "CREATE INDEX IF NOT EXISTS idx_userstate ON user_state(username, kind)",
+    "CREATE INDEX IF NOT EXISTS idx_news_section_date ON news(COALESCE(section,'nc'), published_at DESC, id DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_news_section_category_date ON news(COALESCE(section,'nc'), category, published_at DESC, id DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_boards_service_date ON boards(service, published_at DESC, id DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_social_channel_date ON social(channel, published_at DESC, id DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_events_date ON events(published_at DESC, id DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_lunch_visit_user_date ON lunch_visit(username, visited_at)",
+    "CREATE INDEX IF NOT EXISTS idx_news_source_url ON news(source_url)",
+    "CREATE INDEX IF NOT EXISTS idx_events_source_url ON events(source_url)",
 ]
 
 
 def init_db():
     with get_conn() as conn:
+        perf_indexes = [stmt for stmt in _DDL if stmt.startswith("CREATE INDEX") and any(name in stmt for name in ("idx_news_section", "idx_boards_service_date", "idx_social_channel_date", "idx_events_date", "idx_lunch_visit_user_date", "idx_news_source_url", "idx_events_source_url"))]
         for stmt in _DDL:
-            conn.execute(stmt)
+            if stmt not in perf_indexes:
+                conn.execute(stmt)
         # 구버전 DB 마이그레이션: news에 없는 컬럼 추가
         if _PG:
             conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS group_key TEXT")
@@ -242,6 +252,8 @@ def init_db():
             if "image_url" not in scols:
                 conn.execute("ALTER TABLE social ADD COLUMN image_url TEXT")
 
+        for stmt in perf_indexes:
+            conn.execute(stmt)
 
 def set_meta(key, value):
     with get_conn() as conn:
@@ -626,6 +638,17 @@ def user_state_delete(username, ukey, kind):
                      (username, ukey, kind))
 
 
+def user_state_bundle(username):
+    with get_conn() as conn:
+        rows = conn.execute(_q("SELECT * FROM user_state WHERE username=? ORDER BY ts DESC"), (username,)).fetchall()
+        result = {"scrap": [], "read": [], "grouplist": []}
+        for row in rows:
+            item = dict(row)
+            if item["kind"] in result:
+                result[item["kind"]].append(item)
+        return result
+
+
 def user_state_list(username, kind):
     """해당 아이디의 kind(스크랩/읽음) 목록을 최신순으로."""
     with get_conn() as conn:
@@ -803,6 +826,7 @@ def lunch_sync_locations(offices):
     with get_conn() as conn:
         rows = [dict(r) for r in conn.execute("SELECT * FROM lunch_location ORDER BY sort, id").fetchall()]
         used = set()
+        canon_by_addr = {}
 
         def take(pred):  # 조건에 맞는 첫 미사용 행 선택
             for r in rows:
@@ -819,24 +843,21 @@ def lunch_sync_locations(offices):
                      or take(lambda r, s=i: r.get("sort") == s)
                      or take(lambda r: True))
             if not match:
-                conn.execute(_q("INSERT INTO lunch_location (name, address, lat, lng, radius, sort, created_at) "
-                                "VALUES (?,?,?,?,?,?,?)"),
-                             (o["name"], new_addr, o.get("lat"), o.get("lng"), rad, i, _now()))
+                inserted = conn.execute(_q("INSERT INTO lunch_location (name, address, lat, lng, radius, sort, created_at) "
+                                "VALUES (?,?,?,?,?,?,?) RETURNING id"),
+                             (o["name"], new_addr, o.get("lat"), o.get("lng"), rad, i, _now())).fetchone()
+                canon_by_addr[new_addr] = inserted["id"]
                 continue
             if (match.get("address") or "") != new_addr:  # 주소 변경 → 좌표 리셋
                 conn.execute(_q("UPDATE lunch_location SET name=?, address=?, lat=NULL, lng=NULL, radius=?, sort=? WHERE id=?"),
                              (o["name"], new_addr, rad, i, match["id"]))
-            else:                                          # 이름/반경/순번만 갱신, 좌표 보존
+            elif (match.get("name"), match.get("radius"), match.get("sort")) != (o["name"], rad, i):
                 conn.execute(_q("UPDATE lunch_location SET name=?, radius=?, sort=? WHERE id=?"),
                              (o["name"], rad, i, match["id"]))
-            match["address"] = new_addr  # 이후 중복 병합 판단용 최신화
+            match["address"] = new_addr
+            canon_by_addr[new_addr] = match["id"]
 
         # 잔여(미사용) 위치 정리: 같은 주소의 정식 위치가 있으면 식당 병합 후 삭제, 없고 비었으면 삭제
-        canon_by_addr = {}
-        for i, o in enumerate(offices):
-            row = conn.execute(_q("SELECT id FROM lunch_location WHERE sort=?"), (i,)).fetchone()
-            if row:
-                canon_by_addr[o.get("address", "")] = dict(row)["id"]
         for r in rows:
             if r["id"] in used:
                 continue
@@ -856,8 +877,8 @@ def lunch_list_locations():
         return [dict(r) for r in rows]
 
 
-def lunch_get_location(loc_id):
-    with get_conn() as conn:
+def lunch_get_location(loc_id, conn=None):
+    with (get_conn() if conn is None else nullcontext(conn)) as conn:
         r = conn.execute(_q("SELECT * FROM lunch_location WHERE id=?"), (loc_id,)).fetchone()
         return dict(r) if r else None
 
@@ -876,14 +897,13 @@ def lunch_upsert_restaurants(loc_id, items):
     """카카오/수동 수집 결과 저장(loc_id+place_id 기준 중복 방지). 반환 (신규, 갱신)."""
     new = upd = 0
     with get_conn() as conn:
+        known = {row["place_id"] for row in conn.execute(_q("SELECT place_id FROM lunch_restaurant WHERE loc_id=?"), (loc_id,)).fetchall()}
         cur = conn.cursor()
         for it in items:
             pid = it.get("place_id")
             if not pid:
                 continue
-            exist = conn.execute(_q("SELECT id FROM lunch_restaurant WHERE loc_id=? AND place_id=?"),
-                                 (loc_id, pid)).fetchone()
-            if exist:
+            if pid in known:
                 cur.execute(_q("UPDATE lunch_restaurant SET name=?, category=?, cat_norm=?, sub_cat=?, "
                                "address=?, road_address=?, lat=?, lng=?, phone=?, place_url=?, last_checked=? "
                                "WHERE loc_id=? AND place_id=?"),
@@ -898,22 +918,55 @@ def lunch_upsert_restaurants(loc_id, items):
                             (loc_id, it.get("source", "kakao"), pid, it.get("name"), it.get("category"),
                              it.get("cat_norm"), it.get("sub_cat"), it.get("address"), it.get("road_address"),
                              it.get("lat"), it.get("lng"), it.get("phone"), it.get("place_url"), _now(), _now()))
+                known.add(pid)
                 new += 1
     return new, upd
 
 
-def lunch_list_restaurants(loc_id, include_excluded=False):
-    """식당 목록 + 이용자 평점(avg)·후기수 집계. 거리는 앱/호출측에서 계산."""
+def lunch_list_restaurants(loc_id, include_excluded=False, conn=None):
+    """Aggregate only this location's reviews/visits, with no row multiplication."""
     cond = "" if include_excluded else "AND r.excluded=0"
+    with (get_conn() if conn is None else nullcontext(conn)) as conn:
+        rows = conn.execute(_q(
+            "SELECT r.*, COALESCE(v.review_count,0) AS review_count, v.avg_rating, "
+            "COALESCE(t.visit_count,0) AS visit_count FROM lunch_restaurant r "
+            "LEFT JOIN (SELECT v.restaurant_id, COUNT(*) AS review_count, AVG(v.rating) AS avg_rating "
+            "FROM lunch_review v JOIN lunch_restaurant lr ON lr.id=v.restaurant_id "
+            "WHERE lr.loc_id=? GROUP BY v.restaurant_id) v ON v.restaurant_id=r.id "
+            "LEFT JOIN (SELECT t.restaurant_id, COUNT(*) AS visit_count FROM lunch_visit t "
+            "JOIN lunch_restaurant lr ON lr.id=t.restaurant_id WHERE lr.loc_id=? "
+            "GROUP BY t.restaurant_id) t ON t.restaurant_id=r.id "
+            f"WHERE r.loc_id=? {cond} ORDER BY r.id DESC"),
+            (loc_id, loc_id, loc_id)).fetchall()
+        return [dict(r) for r in rows]
+
+
+def lunch_restaurant_data(loc_id, include_excluded=False):
+    with get_conn() as conn:
+        loc = lunch_get_location(loc_id, conn=conn)
+        return loc, lunch_list_restaurants(loc_id, include_excluded, conn=conn) if loc else []
+
+
+def lunch_visit_context(username):
+    """Recommendation history: four per-user lookups become one grouped query."""
+    from datetime import timedelta
+    cutoff3 = (datetime.now() - timedelta(days=3)).isoformat(timespec="seconds")
+    cutoff7 = (datetime.now() - timedelta(days=7)).isoformat(timespec="seconds")
     with get_conn() as conn:
         rows = conn.execute(_q(
-            f"SELECT r.*, "
-            f"(SELECT COUNT(*) FROM lunch_review v WHERE v.restaurant_id=r.id) AS review_count, "
-            f"(SELECT AVG(rating) FROM lunch_review v WHERE v.restaurant_id=r.id) AS avg_rating, "
-            f"(SELECT COUNT(*) FROM lunch_visit t WHERE t.restaurant_id=r.id) AS visit_count "
-            f"FROM lunch_restaurant r WHERE r.loc_id=? {cond} ORDER BY r.id DESC"),
-            (loc_id,)).fetchall()
-        return [dict(r) for r in rows]
+            "SELECT v.restaurant_id, r.cat_norm, MAX(v.visited_at) AS last_visit "
+            "FROM lunch_visit v LEFT JOIN lunch_restaurant r ON r.id=v.restaurant_id "
+            "WHERE v.username=? GROUP BY v.restaurant_id, r.cat_norm"), (username,)).fetchall()
+    recent_ids, cats3, cats7, all_ids = set(), set(), set(), set()
+    for row in rows:
+        all_ids.add(row["restaurant_id"])
+        if row["last_visit"] >= cutoff3:
+            recent_ids.add(row["restaurant_id"])
+            if row["cat_norm"]:
+                cats3.add(row["cat_norm"])
+        if row["last_visit"] >= cutoff7 and row["cat_norm"]:
+            cats7.add(row["cat_norm"])
+    return recent_ids, cats3, cats7, all_ids
 
 
 def lunch_purge_location(loc_id):

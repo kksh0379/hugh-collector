@@ -1,5 +1,33 @@
 "use strict";
 
+// A cold background read is pending, not an empty collection. Coalesce page requests.
+const DATA_REQUESTS = new Map();
+async function fetchData(url) {
+  if (!DATA_REQUESTS.has(url)) {
+    const request = (async () => {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10000);
+        let response;
+        try {
+          response = await fetch(url, { signal: controller.signal });
+          // Consume now: clones are returned to each caller below.
+          await response.clone().arrayBuffer();
+        } finally { clearTimeout(timer); }
+        if (!response.ok) throw new Error("데이터를 불러오지 못했어요.");
+        if (response.headers.get("X-Data-Pending") !== "1") return response;
+        await new Promise((resolve) => setTimeout(resolve, Math.min(400 * (attempt + 1), 2000)));
+      }
+      throw new Error("데이터 연결이 지연되고 있어요. 잠시 후 다시 시도해 주세요.");
+    })();
+    DATA_REQUESTS.set(url, request);
+  }
+  const pending = DATA_REQUESTS.get(url);
+  try { return (await pending).clone(); }
+  finally { if (DATA_REQUESTS.get(url) === pending) DATA_REQUESTS.delete(url); }
+}
+
+
 // ===== 인증 상태(아이디 기반) =====
 let CURRENT_USER = null;      // null=미로그인, "admin" 또는 "tester1"…
 function isLoggedIn() { return !!CURRENT_USER; }
@@ -48,7 +76,7 @@ function applyFeatures() {
   }
 }
 async function loadFeatures() {
-  try { FEATURES = await (await fetch("/api/features")).json(); } catch (e) { FEATURES = {}; }
+  try { FEATURES = await (await fetchData("/api/features")).json(); } catch (e) { FEATURES = {}; }
   applyFeatures();
 }
 // 세션 확인 → 로그인 상태면 개인 데이터(스크랩/읽음) 로드
@@ -89,7 +117,7 @@ async function api(path, body) {
 // 로그인 시 개인 데이터 로드 → 화면 반영
 async function loadMyData() {
   try {
-    const d = await (await fetch("/api/mydata")).json();
+    const d = await (await fetchData("/api/mydata")).json();
     READ = new Set(d.reads || []);
     SCRAP = {};
     (d.scraps || []).forEach((s) => { if (s.key) { s.groups = s.groups || []; SCRAP[s.key] = s; } });
@@ -661,7 +689,7 @@ async function loadNews() {
   const el = document.getElementById("list-news");
   showLoading(el);
   try {
-    const res = await fetch("/api/news?category=all");   // 전체를 받아 분류는 클라이언트에서
+    const res = await fetchData("/api/news?category=all");   // 전체를 받아 분류는 클라이언트에서
     setTabData("news", el, await res.json(), (list) => renderNewsGroups(el, list));
     TAB_DATA.news.prefilter = filterNewsByCat;
     renderTab("news");
@@ -724,7 +752,7 @@ async function loadSecurity() {
   const el = document.getElementById("list-security");
   showLoading(el);
   try {
-    const res = await fetch("/api/secnews?category=all");   // 전체를 받아 분류는 클라이언트에서
+    const res = await fetchData("/api/secnews?category=all");   // 전체를 받아 분류는 클라이언트에서
     setTabData("security", el, await res.json(), (list) => renderNewsGroups(el, list));
     TAB_DATA.security.prefilter = filterSecByCat;
     renderTab("security");
@@ -804,7 +832,7 @@ async function loadCat() {
   const el = document.getElementById("list-cat");
   showLoading(el);
   try {
-    const res = await fetch("/api/catnews?category=all");   // 전체 받아 분류는 클라이언트에서
+    const res = await fetchData("/api/catnews?category=all");   // 전체 받아 분류는 클라이언트에서
     setTabData("cat", el, await res.json(), (list) => renderNewsGroups(el, list));
     TAB_DATA.cat.prefilter = filterCatByCat;
     renderTab("cat");
@@ -815,7 +843,7 @@ async function loadGame() {
   const el = document.getElementById("list-game");
   showLoading(el);
   try {
-    const res = await fetch("/api/gamenews?category=all");
+    const res = await fetchData("/api/gamenews?category=all");
     setTabData("game", el, await res.json(), (list) => renderNewsGroups(el, list));
     TAB_DATA.game.prefilter = filterGameByCat;
     renderTab("game");
@@ -826,7 +854,7 @@ async function loadBiz() {
   const el = document.getElementById("list-biz");
   showLoading(el);
   try {
-    const res = await fetch("/api/biznews");
+    const res = await fetchData("/api/biznews");
     setTabData("biz", el, await res.json(), (list) => renderNewsGroups(el, list));
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
@@ -951,7 +979,7 @@ async function loadBoards() {
   const el = document.getElementById("list-boards");
   showLoading(el);
   try {
-    const res = await fetch("/api/boards?service=all");   // 전체 받아 분류는 클라이언트에서
+    const res = await fetchData("/api/boards?service=all");   // 전체 받아 분류는 클라이언트에서
     setTabData("boards", el, await res.json(),
       (list) => renderList(el, list, { badgeFn: (it) => `${it.service} · ${it.category}` }));
     TAB_DATA.boards.prefilter = filterBoardsBySvc;
@@ -971,7 +999,7 @@ async function loadSocial() {
   const el = document.getElementById("list-social");
   showLoading(el);
   try {
-    const res = await fetch("/api/social?channel=all");   // 전체 받아 분류는 클라이언트에서
+    const res = await fetchData("/api/social?channel=all");   // 전체 받아 분류는 클라이언트에서
     setTabData("social", el, await res.json(),
       (list) => renderList(el, list, { badgeFn: (it) => `${socialBucket(it) === "재단" ? "재단" : "주요재단"} · ${it.account}` }));
     TAB_DATA.social.prefilter = filterSocialByCat;
@@ -1008,7 +1036,7 @@ async function loadEvent() {
   const el = document.getElementById("list-event");
   showLoading(el);
   try {
-    const res = await fetch("/api/events");
+    const res = await fetchData("/api/events");
     setTabData("event", el, await res.json(), renderEvents);
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
@@ -1404,7 +1432,7 @@ function fmtLast(ts) {
 }
 async function loadMeta() {
   try {
-    const r = await fetch("/api/meta");
+    const r = await fetchData("/api/meta");
     const m = await r.json();
     document.getElementById("last-cat").textContent = fmtLast(m.cat);
     document.getElementById("last-game").textContent = fmtLast(m.game);
@@ -2027,8 +2055,8 @@ async function loadReport(id) {
   try {
     const getUrl = id ? ("/api/report/get?id=" + id) : ("/api/report/get?kind=" + reportKind);
     const [snaps, rep] = await Promise.all([
-      fetch("/api/report/list?kind=" + reportKind).then((r) => r.json()),
-      fetch(getUrl).then((r) => r.json()),
+      fetchData("/api/report/list?kind=" + reportKind).then((r) => r.json()),
+      fetchData(getUrl).then((r) => r.json()),
     ]);
     const sel = document.getElementById("report-snap");
     if (sel) {
@@ -2240,45 +2268,64 @@ async function loadReport(id) {
   }
 
   async function getJSON(url) {
-    const r = await fetch(url);
-    if (!r.ok) throw r;
-    return r.json();
+    return (await fetchData(url)).json();
+  }
+
+  // Persist only public picker labels/IDs, never addresses, coordinates or user data.
+  const LOC_STORAGE = "huscope-locations-v1";
+  let locPending = null, restaurantSequence = 0;
+  const restaurantCache = new Map();
+  try {
+    const saved = JSON.parse(localStorage.getItem(LOC_STORAGE) || "null");
+    if (saved && Date.now() - saved.at < 86400000 && Array.isArray(saved.locations)) {
+      LUNCH.locs = saved.locations.filter((l) => Number.isInteger(l.id) && typeof l.name === "string");
+      LUNCH.curLoc = LUNCH.locs.find((l) => l.id === saved.selected) || LUNCH.locs[0] || null;
+    }
+  } catch (_) {}
+  function rememberLocations() {
+    try {
+      localStorage.setItem(LOC_STORAGE, JSON.stringify({at: Date.now(), selected: LUNCH.curLoc?.id,
+        locations: LUNCH.locs.map(({id, name, radius}) => ({id, name, radius}))}));
+    } catch (_) {}
   }
 
   // ---- 위치 전환 ----
-  async function loadLocations(attempt) {
-    attempt = attempt || 0;
-    let waking = false;
+  function loadLocations(attempt = 0) {
+    if (locPending) return locPending;
+    clearTimeout(LUNCH._locTimer);
+    locPending = refreshLocations(attempt).finally(() => { locPending = null; });
+    return locPending;
+  }
+  async function refreshLocations(attempt) {
+    const previous = LUNCH.curLoc?.id;
+    let waiting = false;
     try {
       const d = await getJSON("/api/lunch/locations");
-      LUNCH.locs = d.locations || [];
       LUNCH.kakao = !!d.kakao;
-      waking = !!d.db_waking;
-    } catch (e) { LUNCH.locs = []; waking = false; }
-    // 위치가 비면(대개 Neon DB가 자는 중) 안내 + 자동 재시도. 단 '횟수 상한'으로 무한로딩 방지.
-    const MAX = 4;
-    if (!LUNCH.locs.length && attempt < MAX) {
-      LUNCH.locLoading = true; LUNCH.locFailed = false;
-      renderLocBar();
-      msg("데이터 연결(DB) 깨우는 중… 잠시만요 ⏳");
-      clearTimeout(LUNCH._locTimer);
-      LUNCH._locTimer = setTimeout(() => loadLocations(attempt + 1), 2500);
+      waiting = !!d.db_waking;
+      if (!waiting && Array.isArray(d.locations)) {
+        LUNCH.locs = d.locations;
+        LUNCH.curLoc = LUNCH.locs.find((l) => l.id === previous) || LUNCH.locs[0] || null;
+        rememberLocations();
+      }
+    } catch (_) { waiting = true; }
+    LUNCH.locLoading = waiting && !LUNCH.locs.length;
+    LUNCH.locFailed = !waiting && !LUNCH.locs.length;
+    renderLocBar();
+    if (waiting && attempt < 6) {
+      LUNCH._locTimer = setTimeout(() => loadLocations(attempt + 1), Math.min(400 * (attempt + 1), 2000));
       return;
     }
-    LUNCH.locLoading = false;
-    if (!LUNCH.curLoc && LUNCH.locs.length) LUNCH.curLoc = LUNCH.locs[0];
-    if (LUNCH.curLoc) {                     // 정상: 위치 확보
-      LUNCH.locFailed = false;
+    if (waiting) {
+      LUNCH.locLoading = false;
+      LUNCH.locFailed = !LUNCH.locs.length;
       renderLocBar();
-      loadRestaurants();
-    } else {                                // 재시도해도 실패 → 무한로딩 대신 '다시 시도' 안내
-      LUNCH.locFailed = true;
-      renderLocBar();
+    }
+    if (LUNCH.inited && LUNCH.curLoc && (!LUNCH.rows.length || previous !== LUNCH.curLoc.id)) {
+      loadRestaurants(true);
+    } else if (LUNCH.inited && !LUNCH.curLoc) {
       const list = $("lunch-list");
-      if (list) list.innerHTML = `<li class="lunch-loading">데이터를 불러오지 못했어요 😢<br>`
-        + `<span style="font-size:12px">서버 DB 연결을 확인 중이에요</span><br>`
-        + `<button class="btn-collect" id="lunch-retry" style="margin-top:12px">🔄 다시 시도</button></li>`;
-      msg("데이터를 불러오지 못했어요 — 다시 시도를 눌러주세요", true);
+      if (list) list.innerHTML = `<li class="lunch-loading">위치 목록을 불러오지 못했어요.<br><button class="btn-collect" id="lunch-retry">다시 시도</button></li>`;
     }
   }
   function renderLocBar() {
@@ -2302,20 +2349,35 @@ async function loadReport(id) {
   function closeLocMenu() { const m = $("lunch-loc-menu"); if (m) m.hidden = true; }
 
   // ---- 식당 목록 ----
-  async function loadRestaurants() {
+  async function loadRestaurants(useCache = false) {
     if (!LUNCH.curLoc) return;
+    const locId = LUNCH.curLoc.id;
+    const sequence = ++restaurantSequence;
+    const key = locId + ":" + isAdmin();
+    const cached = restaurantCache.get(key);
     const list = $("lunch-list");
-    if (list) list.innerHTML = `<li class="lunch-loading">${catSpin("주변 맛집 불러오는 중…")}</li>`;
+    LUNCH.rows = useCache && cached ? cached.rows : [];
+    if (useCache && cached) {
+      renderCats(); renderList(); msg("");
+      if (Date.now() - cached.at < 30000) return;
+    } else if (list) {
+      list.innerHTML = `<li class="lunch-loading">${catSpin("주변 맛집 불러오는 중…")}</li>`;
+    }
     try {
-      const d = await getJSON("/api/lunch/restaurants?loc=" + LUNCH.curLoc.id);
+      const d = await getJSON("/api/lunch/restaurants?loc=" + locId);
+      if (sequence !== restaurantSequence || LUNCH.curLoc?.id !== locId) return;
+      if (d.error) throw new Error(d.error);
       LUNCH.rows = d.restaurants || [];
-      if (d.location) { LUNCH.curLoc = Object.assign(LUNCH.curLoc, d.location); renderLocBar(); }
-    } catch (e) { LUNCH.rows = []; }
-    renderCats();
-    renderList();
-    if (!LUNCH.rows.length) {
-      msg(LUNCH.kakao ? "아직 수집된 식당이 없어요. (관리자) 주변 식당 수집을 눌러주세요." : "카카오 키 미설정 — 수동 등록만 가능해요");
-    } else { msg(""); }
+      restaurantCache.set(key, {rows: LUNCH.rows, at: Date.now()});
+      if (d.location) { LUNCH.curLoc = {...LUNCH.curLoc, ...d.location}; renderLocBar(); }
+      renderCats(); renderList();
+      msg(LUNCH.rows.length ? "" : "아직 수집된 식당이 없어요.");
+    } catch (_) {
+      if (sequence !== restaurantSequence || LUNCH.curLoc?.id !== locId) return;
+      if (useCache && cached) { LUNCH.rows = cached.rows; renderCats(); renderList(); }
+      else if (list) list.innerHTML = `<li class="lunch-loading">식당 목록을 불러오지 못했어요.<br><button class="btn-collect" id="lunch-retry">다시 시도</button></li>`;
+      msg("연결이 지연되고 있어요. 잠시 후 다시 시도해 주세요.", true);
+    }
   }
 
   function catCounts() {
@@ -2657,7 +2719,7 @@ async function loadReport(id) {
     if (locMenu) locMenu.addEventListener("click", (e) => {
       const b = e.target.closest(".lunch-loc-item"); if (!b) return;
       const l = LUNCH.locs.find((x) => String(x.id) === b.dataset.id);
-      if (l) { LUNCH.curLoc = l; LUNCH.cat = "전체"; LUNCH.q = ""; const s = $("lunch-search"); if (s) s.value = ""; renderLocBar(); loadRestaurants(); }
+      if (l) { LUNCH.curLoc = l; LUNCH.cat = "전체"; LUNCH.q = ""; const s = $("lunch-search"); if (s) s.value = ""; rememberLocations(); renderLocBar(); loadRestaurants(true); }
       closeLocMenu();
     });
     // #lunch-loc(버튼+메뉴) 바깥을 누를 때만 닫음 → stopPropagation 의존 제거(가끔 안 펴지던 문제 해결)
@@ -2742,8 +2804,14 @@ async function loadReport(id) {
   }
 
   wire();
+  renderLocBar();
+  // Prepare labels while the user is browsing news, before the food tab is opened.
+  loadLocations();
   window.onShowLunch = function () {
-    if (!LUNCH.inited) { LUNCH.inited = true; loadLocations(); }
+    LUNCH.inited = true;
+    renderLocBar();
+    if (LUNCH.curLoc) loadRestaurants(true);
+    loadLocations();
   };
   // 헤더 🗑 초기화 버튼의 대메뉴별 분기용(맛집 화면일 때 이 컨텍스트로 동작)
   window.lunchPurgeCtx = {
