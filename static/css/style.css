@@ -44,20 +44,6 @@ body {
   overflow-x: clip; /* 탭 전환 슬라이드 시 가로 스크롤 방지(sticky는 안 깨지는 clip 사용) */
 }
 
-/* 탭 전환 크로스 슬라이드(스와이프·클릭 공통) — 이전 패널이 반대로 빠지고 새 패널이 들어옴 */
-#view-collector { position: relative; }
-.panel.sliding { position: absolute; left: 0; right: 0; z-index: 1; }  /* 빠져나가는 패널 오버레이 */
-@keyframes panelInR  { from { transform: translateX(100%); }  to { transform: none; } }
-@keyframes panelInL  { from { transform: translateX(-100%); } to { transform: none; } }
-@keyframes panelOutL { from { transform: none; } to { transform: translateX(-100%); } }
-@keyframes panelOutR { from { transform: none; } to { transform: translateX(100%); } }
-.panel.slide-r { animation: panelInR  0.32s cubic-bezier(.25, .8, .35, 1); }
-.panel.slide-l { animation: panelInL  0.32s cubic-bezier(.25, .8, .35, 1); }
-.panel.slide-out-l { animation: panelOutL 0.32s cubic-bezier(.4, 0, .6, 1) forwards; }
-.panel.slide-out-r { animation: panelOutR 0.32s cubic-bezier(.4, 0, .6, 1) forwards; }
-@media (prefers-reduced-motion: reduce) {
-  .panel.slide-r, .panel.slide-l, .panel.slide-out-l, .panel.slide-out-r { animation: none; }
-}
 
 .app-header {
   position: sticky;
@@ -246,6 +232,8 @@ body.is-loggedin .loggedout-only { display: none !important; }
 }
 .tabs {
   display: flex;
+  gap: 8px;                    /* 칩 사이 간격 */
+  padding: 9px 12px;
   overflow-x: auto;            /* 탭이 많아 좁으면 가로 스크롤 */
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -270,25 +258,28 @@ body.is-loggedin .loggedout-only { display: none !important; }
 .tabs-wrap.fade-left::before { opacity: 1; }
 .tabs-wrap.fade-right::after { opacity: 1; }
 .tab {
-  flex: 1 0 auto;              /* 내용 폭 확보 + 남으면 균등 확장 */
+  flex: 0 0 auto;              /* 칩: 내용 폭만, 넘치면 가로 스크롤 */
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  padding: 13px 12px;
+  padding: 8px 14px;
   border: none;
-  background: none;
+  background: #eef0f3;         /* 비활성 칩: 연회색 */
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text);
   cursor: pointer;
   white-space: nowrap;
 }
+.tab:active { transform: scale(0.97); }
 .tab .nc-ci, .tab .cat-ci, .tab .yt-ci { flex: 0 0 auto; display: block; }
 .tab .cat-photo { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; object-fit: cover; display: block; }
 .tab .nc-mark { flex: 0 0 auto; color: #1b3f8f; font-weight: 900; font-size: 17px; letter-spacing: -1.5px; line-height: 1; }
 .toolbar-title { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); align-self: center; }
 .tab.active {
-  color: var(--primary);
-  box-shadow: inset 0 -3px 0 var(--primary);
+  background: #1c1e21;         /* 활성 칩: 진한 채움 + 흰 글자(유튜브식 대비) */
+  color: #fff;
 }
+.tab.active .nc-mark { color: #9db8ff; }   /* 어두운 칩 위에서 가독성 */
 
 .panel { display: none; padding: 12px; }
 .panel.active { display: block; }

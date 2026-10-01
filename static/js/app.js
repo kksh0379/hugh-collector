@@ -326,43 +326,14 @@ document.addEventListener("click", (e) => {
   if (a) { const card = a.closest("[data-key]"); if (card) { markRead(card.dataset.key); card.classList.add("is-read"); } }
 });
 
-// ----------------------------- 탭 전환 -----------------------------
-let _swapTimer = null;
-function animateSwap(oldP, newP, dir) {
-  // 진행 중이던 슬라이드 정리
-  clearTimeout(_swapTimer);
-  document.querySelectorAll(".panel.sliding").forEach((p) => {
-    p.classList.remove("sliding", "slide-out-l", "slide-out-r", "active"); p.style.top = "";
-  });
-  document.querySelectorAll(".panel").forEach((p) => p.classList.remove("slide-l", "slide-r"));
-  if (!oldP || oldP === newP || !dir) {           // 애니메이션 없이 전환
-    if (oldP) oldP.classList.remove("active");
-    newP.classList.add("active");
-    return;
-  }
-  // 새 패널: 반대편에서 슬라이드 인 (오른쪽 탭이면 오른쪽에서)
-  newP.classList.add("active");
-  void newP.offsetWidth;
-  newP.classList.add(dir > 0 ? "slide-r" : "slide-l");
-  // 이전 패널: 오버레이로 두고 반대로 빠져나감
-  oldP.style.top = oldP.offsetTop + "px";
-  oldP.classList.add("sliding", dir > 0 ? "slide-out-l" : "slide-out-r");
-  _swapTimer = setTimeout(() => {
-    oldP.classList.remove("active", "sliding", "slide-out-l", "slide-out-r");
-    oldP.style.top = "";
-  }, 330);
-}
+// ----------------------------- 탭 전환 (유튜브식 칩, 슬라이드/스와이프 없음) -----------------------------
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
-    // 전환 방향 계산(오른쪽 탭=+1 → 오른쪽에서 슬라이드 인)
-    const all = Array.from(document.querySelectorAll(".tab"));
-    const prevTab = document.querySelector(".tab.active");
-    const dir = (prevTab && prevTab !== tab) ? (all.indexOf(tab) > all.indexOf(prevTab) ? 1 : -1) : 0;
-    const prevPanel = document.querySelector(".panel.active");
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     tab.classList.add("active");
     const panel = document.getElementById("panel-" + tab.dataset.tab);
-    animateSwap(prevPanel, panel, dir);
+    if (panel) panel.classList.add("active");
     document.body.classList.toggle("tab-event", tab.dataset.tab === "event");
     document.body.classList.toggle("tab-report", tab.dataset.tab === "report");
     try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); } catch (e) { /* 무시 */ }
@@ -371,36 +342,6 @@ document.querySelectorAll(".tab").forEach((tab) => {
     if (tab.dataset.tab === "report" && typeof loadReport === "function") loadReport();
   });
 });
-
-// ----------------------------- 상단 탭 좌우 스와이프 -----------------------------
-// 뉴스 본문에서 좌/우로 밀면 인접한(노출된) 탭으로 전환. 세로 스크롤·가로스크롤 요소는 방해 안 함.
-(function initTabSwipe() {
-  const host = document.getElementById("view-collector");
-  if (!host) return;
-  let x0 = null, y0 = null, t0 = 0, ignore = false;
-  host.addEventListener("touchstart", (e) => {
-    if (e.touches.length !== 1) { ignore = true; return; }
-    // 가로 스크롤/입력 요소에서 시작한 제스처는 스와이프로 보지 않음
-    if (e.target.closest(".tabs, .checkbar, input, textarea, select, .lunch-loc-menu")) { ignore = true; return; }
-    ignore = false;
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now();
-  }, { passive: true });
-  host.addEventListener("touchend", (e) => {
-    if (ignore || x0 == null) { x0 = null; return; }
-    const dx = e.changedTouches[0].clientX - x0;
-    const dy = e.changedTouches[0].clientY - y0;
-    const dt = Date.now() - t0;
-    x0 = null;
-    if (dt > 800 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.4) return;  // 세로 스크롤 우선
-    const tabs = Array.from(document.querySelectorAll(".tab:not([hidden])"));
-    const cur = document.querySelector(".tab.active");
-    const i = tabs.indexOf(cur);
-    if (i < 0) return;
-    const ni = dx < 0 ? i + 1 : i - 1;   // 왼쪽으로 밀면 다음, 오른쪽으로 밀면 이전
-    if (ni < 0 || ni >= tabs.length) return;
-    tabs[ni].click();
-  }, { passive: true });
-})();
 
 // ----------------------------- 보기 방식(리스트/카드) -----------------------------
 function setView(mode) {
