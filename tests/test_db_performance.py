@@ -77,6 +77,13 @@ class CacheTests(unittest.TestCase):
             self.assertEqual(cache.get("key", fail, ttl=0), [1])
         self.assertEqual(len(calls), 1)
 
+    def test_fork_resets_inherited_pending_work(self):
+        cache = ReadCache(workers=1)
+        cache.pending["key"] = threading.Event()
+        cache.slots.acquire()
+        cache._after_fork()
+        self.assertEqual(cache.get("key", lambda: ["worker"]), ["worker"])
+
     def test_cache_is_bounded_and_empty_is_valid(self):
         cache = ReadCache(max_entries=3)
         for n in range(10):

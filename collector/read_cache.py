@@ -1,5 +1,6 @@
 """Bounded single-flight cache: stale reads never wait for a database reconnect."""
 import logging
+import os
 import threading
 import time
 from collections import OrderedDict
@@ -11,9 +12,19 @@ class ReadCache:
         self.pending = {}
         self.failures = {}
         self.lock = threading.Lock()
+        self.workers = workers
         self.slots = threading.BoundedSemaphore(workers)
         self.max_entries = max_entries
         self.cooldown = cooldown
+        if hasattr(os, "register_at_fork"):
+            os.register_at_fork(after_in_child=self._after_fork)
+
+    def _after_fork(self):
+        # A child inherits lock/event state, but none of the parent's running threads.
+        self.lock = threading.Lock()
+        self.slots = threading.BoundedSemaphore(self.workers)
+        self.pending = {}
+        self.failures = {}
 
     def get(self, key, fetch, ttl=45, wait=None):
         """Return cached data or None while loading. wait=None loads cold keys inline.

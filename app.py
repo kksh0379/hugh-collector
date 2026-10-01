@@ -31,6 +31,7 @@ app.register_blueprint(reader_bp)
 @app.before_request
 def _start_request_timer():
     g.request_started = time.perf_counter()
+    _start_read_prewarm()
 
 
 @app.after_request
@@ -2141,7 +2142,19 @@ def _prewarm_reads():
     _read_metadata()
 
 
-if os.environ.get("ENABLE_DB_PREWARM", "1") == "1":
+_prewarm_started = False
+_prewarm_lock = threading.Lock()
+
+
+def _start_read_prewarm():
+    # Import may run in a preloading Gunicorn master: start threads only in a worker.
+    global _prewarm_started
+    if os.environ.get("ENABLE_DB_PREWARM", "1") != "1" or _prewarm_started:
+        return
+    with _prewarm_lock:
+        if _prewarm_started:
+            return
+        _prewarm_started = True
     threading.Thread(target=_prewarm_reads, daemon=True).start()
 
 _start_scheduler()
