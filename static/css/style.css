@@ -1192,7 +1192,6 @@ body.tab-report .viewbar { display: none; }
   padding: 13px 16px; border: 0; border-radius: 16px; cursor: pointer; color: #fff;
   background: linear-gradient(135deg, #4f7dff, #7a5cff); box-shadow: 0 6px 16px rgba(79, 92, 255, 0.28);
 }
-.lunch-ai-cta .ic { font-size: 20px; }
 .lunch-ai-cta .t { flex: 1; text-align: left; font-size: 15px; font-weight: 800; }
 .lunch-ai-cta .go { font-size: 13px; font-weight: 800; opacity: 0.95; }
 .lunch-ai-cta:active { transform: translateY(1px); }
@@ -1252,6 +1251,11 @@ body.tab-report .viewbar { display: none; }
   font-family:inherit; font-size:13px; font-weight:700; line-height:1;
   white-space:nowrap; text-decoration:none; vertical-align:middle; cursor:pointer;
 }
+/* Fit all three food scrap actions on one row at mobile widths. */
+.card-actions.food-actions { flex-wrap:nowrap; gap:6px; }
+.card-actions.food-actions > .lbtn,
+.card-actions.food-actions > .copy-btn,
+.card-actions.food-actions > .grp-assign { flex:1 1 0; min-width:0; padding:0 4px; font-size:12px; gap:4px; }
 .lbtn.kakao, .card-actions .lbtn.kakao { background:#fee500; color:#3a1d1d; border-color:#e4cb00; }
 .lbtn.rev { background:#f4f7ff; border-color:#cbd9ff; }
 .lbtn.ex { color:var(--muted); }

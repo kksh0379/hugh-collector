@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.28") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.29") }}" />
   <!-- 표시 설정(온오프) 첫 페인트 전 적용 → 새로고침 시 숨긴 항목이 깜빡이지 않게(FOUC 방지).
        직전 방문 상태를 캐시해 사용. 관리자면 전부 표시. 실제 상태는 로드 후 app.js가 재확정. -->
   <script>
@@ -43,7 +43,7 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.28") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.29") }}">
 </head>
 <body>
   <header class="app-header">
@@ -303,7 +303,7 @@
       </div>
       <span class="result-count" id="lunch-count"></span>
     </div>
-    <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="ic">🤖</span><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
+    <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
     <div class="checkbar lunch-cats" id="lunch-cats" role="group" aria-label="카테고리"></div>
     <div class="toolbar admin-only" style="margin:8px 16px 0">
       <button class="btn-collect" id="lunch-collect">🔄 주변 식당 수집</button>
@@ -322,7 +322,7 @@
 
   <!-- 맛집: AI 추천 (본문 뷰) -->
   <main class="view-body" id="view-lunch-ai" hidden>
-    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-ai-back" aria-label="뒤로">‹</button><span class="view-title">🤖 AI 점심 추천</span></div>
+    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-ai-back" aria-label="뒤로">‹</button><span class="view-title">AI 점심 추천</span></div>
     <div class="view-inner" id="lunch-ai-body"></div>
   </main>
 
@@ -331,8 +331,8 @@
     <div class="view-head"><span class="view-title" id="report-title">🔍 AI 재단 동향 리포트</span></div>
     <div class="view-inner">
       <div class="seg rep-kind" id="rep-kind" role="group" aria-label="리포트 종류">
-        <button type="button" data-kind="foundation" class="active">재단 동향</button>
-        <button type="button" data-kind="security">🛡 보안(월간)</button>
+        <button type="button" data-kind="foundation" class="active">재단동향(분기)</button>
+        <button type="button" data-kind="security">보안(월간)</button>
       </div>
       <div class="report-bar">
         <select id="report-snap" class="report-snap" aria-label="리포트 스냅샷"></select>
@@ -486,7 +486,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v2.28 · build 261002</span>
+    <span class="ver">v2.29 · build 261002</span>
     <span class="ver" id="storage-badge"></span>
   </div>
   </div><!-- /bottombar -->
@@ -513,8 +513,8 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.28") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.28") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.29") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.29") }}"></script>
 </body>
 </html>
 

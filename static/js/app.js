@@ -1600,7 +1600,7 @@ function scrapCardNode(s) {
       <div class="card-meta">${meta.join(" · ")}</div>
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
-      <div class="card-actions">
+      <div class="card-actions${isFood ? " food-actions" : ""}">
         ${link ? (isFood ? kakaoLinkHtml(link) : `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${s.tab === "social" ? "" : "data-reader"}>${s.tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
         ${copyBtnHtml(link)}
         <button class="grp-assign" type="button">🏷 그룹 지정</button>
@@ -2021,7 +2021,7 @@ async function loadReport(id) {
   function applyKindUI() {
     if (runBtn) runBtn.textContent = reportKind === "security" ? "지난달 분석" : "분석 실행";
     const title = document.getElementById("report-title");
-    if (title) title.textContent = reportKind === "security" ? "🛡 월간 보안 리포트" : "🔍 AI 재단 동향 리포트";
+    if (title) title.textContent = reportKind === "security" ? "월간 보안 리포트" : "🔍 AI 재단 동향 리포트";
     const nf = document.getElementById("report-note-foundation");
     const ns = document.getElementById("report-note-security");
     if (nf) nf.hidden = reportKind === "security";
@@ -2551,12 +2551,12 @@ async function loadReport(id) {
     const avoidChips = cats.map((c) => chip("avoid:" + c, c + " 말고")).join("");
     const moodChips = MOOD_CHIPS.map((m) => chip(m.key, m.label)).join("");
     body.innerHTML = `<div class="aipick">
-      <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요 🤖<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).</div>
+      <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).</div>
       <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🫠 지금 기분·상황</div><div class="mood-row">${moodChips}</div></div>
       <div class="aipick-btns">
-        <button type="button" class="aipick-go" id="lunch-ai-go">🤖 추천받기</button>
+        <button type="button" class="aipick-go" id="lunch-ai-go">추천받기</button>
         <button type="button" class="aipick-dice" id="lunch-ai-dice" title="랜덤 조건으로">🎲</button>
       </div>
       <div class="aipick-hint">🎲 를 누르면 조건을 <b>랜덤</b>으로 골라 바로 추천해요. 아무것도 안 골라도 OK.</div>
@@ -2616,7 +2616,7 @@ async function loadReport(id) {
     const alts = (res.alternatives || []).map((a) =>
       `<button type="button" class="alt" data-rev="${a.id}">${escapeHtml(a.name)} <span class="alt-cat">${escapeHtml(a.cat_norm || "")}</span></button>`).join("");
     body.innerHTML = `${backBtn}<div class="airec">
-      <div class="airec-badge">🤖 오늘의 추천</div>
+      <div class="airec-badge">오늘의 추천</div>
       ${tags ? `<div class="airec-tags">${tags}</div>` : ""}
       <div class="airec-name">${escapeHtml(p.name)}</div>
       <div class="airec-cat">${escapeHtml(p.sub_cat || p.cat_norm || "")}</div>
