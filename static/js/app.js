@@ -2559,7 +2559,7 @@ async function loadReport(id) {
         <button type="button" class="aipick-go" id="lunch-ai-go">추천받기</button>
         <button type="button" class="aipick-dice" id="lunch-ai-dice" title="랜덤 조건으로">🎲</button>
       </div>
-      <div class="aipick-hint">🎲 를 누르면 조건을 <b>랜덤</b>으로 골라 바로 추천해요. 아무것도 안 골라도 OK.</div>
+      <div class="aipick-hint">🎲 를 누르면 조건을 <b>랜덤</b>으로 골라 바로 추천해요.</div>
     </div>`;
   }
   // 🎲 랜덤 조건: 성향 1개 + 기분 1~2개를 무작위로 고르고 바로 추천(재미 요소)
