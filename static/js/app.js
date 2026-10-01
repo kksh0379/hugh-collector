@@ -368,9 +368,9 @@ function setView(mode) {
 })();
 
 // ----------------------------- 로딩 표시 / 무한 스크롤 -----------------------------
-// Shared pair loader: sixteen poses play in order, with both breeds in every frame.
+// Native animated image with isolated frames, plus a static reduced-motion source.
 function catRunSvg() {
-  return `<span class="cat-pair" aria-hidden="true"><span class="cat-frames" data-breeds="koshort chinchilla"></span></span>`;
+  return `<span class="cat-pair" aria-hidden="true"><span class="cat-orbit"></span><picture><source media="(prefers-reduced-motion: reduce)" srcset="/static/cats-loading-still-v2.28.webp"><img class="cat-frames" data-breeds="koshort chinchilla" src="/static/cats-loading-smooth-v2.28.webp" width="160" height="160" alt="" decoding="async"></picture></span>`;
 }
 function catSpin(label) {
   return `<div class="cat-load" role="status" aria-live="polite">${catRunSvg()}<span class="cat-load-label">${escapeHtml(label || "불러오는 중…")}</span></div>`;
