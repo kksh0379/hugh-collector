@@ -2145,15 +2145,32 @@ async function loadReport(id) {
     if (!body || !body.textContent.trim()) {
       msg.style.color = "#dc2626"; msg.textContent = "저장할 리포트가 없어요(먼저 리포트를 여세요)."; return;
     }
+    const snap = document.getElementById("report-snap");
+    const period = (snap && snap.options[snap.selectedIndex]) ? snap.options[snap.selectedIndex].textContent.trim() : "";
+    // ① 종류별 파일명 ② 날짜/번호는 간격 없이 붙여서(공백→_, 콜론/특수문자 제거)
+    const kindKo = reportKind === "security" ? "보안월간" : "재단동향";
+    const periodTight = period.replace(/\s+/g, "_").replace(/[:/\\?%*|"<>]/g, "");
+    const fname = `휴스코프_${kindKo}${periodTight ? "_" + periodTight : ""}`;
+    const oldTitle = document.title;
+    document.title = fname;                 // 브라우저가 PDF 기본 파일명으로 document.title 사용
+    // ③ 근거(접힌 details) 전부 펼치기 → 근거·링크가 PDF에 보이고 클릭 가능
+    const opened = [];
+    body.querySelectorAll("details:not([open])").forEach((dt) => { dt.open = true; opened.push(dt); });
+    // 인쇄 머리글(제목·기간·출처·생성일시)
     const ph = document.getElementById("report-print-head");
     if (ph) {
       const t = (document.getElementById("report-title").textContent || "리포트").trim();
-      const snap = document.getElementById("report-snap");
-      const period = (snap && snap.options[snap.selectedIndex]) ? snap.options[snap.selectedIndex].textContent : "";
       ph.innerHTML = `<div class="ph-title">${escapeHtml(t)}</div>`
         + `<div class="ph-meta">${escapeHtml(period)}${period ? " · " : ""}${escapeHtml(location.host)} · 생성 ${escapeHtml(new Date().toLocaleString("ko-KR"))}</div>`;
     }
-    setTimeout(() => window.print(), 60);  // 인쇄 대화상자 → "PDF로 저장" 선택
+    const restore = () => {
+      document.title = oldTitle;
+      opened.forEach((dt) => { dt.open = false; });   // 화면은 원래대로(접힘) 복원
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
+    setTimeout(restore, 60000);              // afterprint 미발생 브라우저 대비 백업 복원
+    setTimeout(() => window.print(), 80);    // 인쇄 대화상자 → "PDF로 저장"
   });
 
   // 리포트 본문 뷰가 열릴 때(footnav에서 호출): 데이터 로드 + 진행 중 분석 폴링 재개
