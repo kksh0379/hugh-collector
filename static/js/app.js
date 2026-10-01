@@ -1425,8 +1425,18 @@ document.addEventListener("click", () =>
 // (냥정보/게임정보/재단게시판 분류는 셀렉트박스 → 체크박스 다중선택으로 이관됨)
 
 // ----------------------------- 마지막 수집 일시 -----------------------------
+// 서버 저장형식 "YYYY.MM.DD HH:MM:SS"(24시간) → "YYYY.MM.DD 오전/오후 h:mm" 표기
+function toAmPm(ts) {
+  if (!ts) return ts;
+  const m = String(ts).match(/^(\d{4}\.\d{2}\.\d{2})\s+(\d{1,2}):(\d{2})/);
+  if (!m) return ts;
+  let h = parseInt(m[2], 10);
+  const ampm = h < 12 ? "오전" : "오후";
+  h = h % 12 || 12;
+  return `${m[1]} ${ampm} ${h}:${m[3]}`;
+}
 function fmtLast(ts) {
-  return ts ? `마지막 수집: ${ts} (서버 기준)` : "아직 수집 기록 없음";
+  return ts ? `마지막 수집: ${toAmPm(ts)} (서버 기준)` : "아직 수집 기록 없음";
 }
 async function loadMeta() {
   try {
