@@ -824,8 +824,15 @@ body.is-admin .legend.admin-only { display: flex !important; }
 }
 
 /* 읽음 처리된 카드(흐리게 + 제목 톤 다운) */
-.card.is-read { opacity: 0.62; }
+/* 읽은 글: 흐림 대신 제목 앞 '✓ 읽음' 배지로 명확히 표시(A안) */
+.card.is-read { opacity: 1; }
 .card.is-read .card-title a, .card.is-read .card-title { color: var(--muted); font-weight: 600; }
+.card.is-read .card-title::before {
+  content: "✓ 읽음";
+  display: inline-block; margin-right: 6px; vertical-align: middle;
+  font-size: 11px; font-weight: 800; color: #16a34a;
+  background: #e7f6ec; border: 1px solid #bfe6cc; border-radius: 999px; padding: 1px 7px;
+}
 
 /* 스크랩 버튼(카드 우상단, 북마크 아이콘) */
 .scrap-btn {
