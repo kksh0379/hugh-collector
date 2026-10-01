@@ -368,7 +368,7 @@ function setView(mode) {
 })();
 
 // ----------------------------- 로딩 표시 / 무한 스크롤 -----------------------------
-// Shared pair loader: eight poses play in order, with both breeds in every frame.
+// Shared pair loader: sixteen poses play in order, with both breeds in every frame.
 function catRunSvg() {
   return `<span class="cat-pair" aria-hidden="true"><span class="cat-frames" data-breeds="koshort chinchilla"></span></span>`;
 }

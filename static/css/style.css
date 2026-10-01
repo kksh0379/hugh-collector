@@ -190,23 +190,31 @@ body.is-loggedin .loggedout-only { display: none !important; }
   margin-right: 4px;
 }
 
-/* Eight real pose frames in a 4×2 transparent sprite sheet. */
+/* Sixteen real pose frames in a 4×4 transparent sprite sheet. */
 .cat-load { display:flex; flex-direction:column; align-items:center; gap:8px; padding:22px 8px; }
 .cat-load-label { color:var(--muted); font-size:13px; font-weight:600; text-align:center; overflow-wrap:anywhere; }
 .cat-pair { position:relative; display:inline-block; width:160px; height:160px; flex:0 0 auto; }
-.cat-frames { display:block; width:100%; height:100%; background-image:url('../cats-loading-frames-v2.25.webp'); background-size:400% 200%; background-repeat:no-repeat; background-position:0% 0%; animation:kitten-frames 2.4s step-end infinite; }
+.cat-frames { display:block; width:100%; height:100%; background-image:url('../cats-loading-frames-v2.26.webp'); background-size:400% 400%; background-repeat:no-repeat; background-position:0% 0%; animation:kitten-frames 2.4s step-end infinite; }
 .cat-inline { display:inline-flex; align-items:center; gap:8px; max-width:100%; color:var(--muted); font-size:13px; font-weight:600; vertical-align:middle; }
 .cat-inline .cat-pair { width:72px; height:72px; }
 .cat-inline .ci-t { min-width:0; white-space:normal; overflow-wrap:anywhere; }
 @keyframes kitten-frames {
   0% { background-position:0% 0%; }
-  12.5% { background-position:33.333333% 0%; }
-  25% { background-position:66.666667% 0%; }
-  37.5% { background-position:100% 0%; }
-  50% { background-position:0% 100%; }
-  62.5% { background-position:33.333333% 100%; }
-  75% { background-position:66.666667% 100%; }
-  87.5% { background-position:100% 100%; }
+  6.25% { background-position:33.333333% 0%; }
+  12.5% { background-position:66.666667% 0%; }
+  18.75% { background-position:100% 0%; }
+  25% { background-position:0% 33.333333%; }
+  31.25% { background-position:33.333333% 33.333333%; }
+  37.5% { background-position:66.666667% 33.333333%; }
+  43.75% { background-position:100% 33.333333%; }
+  50% { background-position:0% 66.666667%; }
+  56.25% { background-position:33.333333% 66.666667%; }
+  62.5% { background-position:66.666667% 66.666667%; }
+  68.75% { background-position:100% 66.666667%; }
+  75% { background-position:0% 100%; }
+  81.25% { background-position:33.333333% 100%; }
+  87.5% { background-position:66.666667% 100%; }
+  93.75% { background-position:100% 100%; }
   100% { background-position:0% 0%; }
 }
 @media(max-width:480px) { .cat-load { padding:18px 6px; } .cat-load .cat-pair { width:136px; height:136px; } .cat-inline .cat-pair { width:64px; height:64px; } }
@@ -267,13 +275,13 @@ body.is-loggedin .loggedout-only { display: none !important; }
 .tab:active { transform: scale(0.97); }
 .tab .nc-ci, .tab .cat-ci, .tab .yt-ci { flex: 0 0 auto; display: block; }
 .tab .cat-photo { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; object-fit: cover; display: block; }
-.tab .nc-mark { flex: 0 0 auto; color: #1b3f8f; font-weight: 900; font-size: 17px; letter-spacing: -1.5px; line-height: 1; }
+.tab .nc-mark { flex:0 0 auto; display:block; width:26px; height:14px; object-fit:contain; }
 .toolbar-title { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); align-self: center; }
 .tab.active {
   background: #1c1e21;         /* 활성 칩: 진한 채움 + 흰 글자(유튜브식 대비) */
   color: #fff;
 }
-.tab.active .nc-mark { color: #9db8ff; }   /* 어두운 칩 위에서 가독성 */
+.tab.active .nc-mark { filter:brightness(0) invert(1); }   /* 어두운 칩 위에서 가독성 */
 
 .panel { display: none; padding: 12px; }
 .panel.active { display: block; }
@@ -1245,11 +1253,26 @@ body.tab-report .viewbar { display: none; }
 .lbtn.ex { color: var(--muted); }
 .lbtn.ex.on { color: var(--primary); border-color: #cbd9ff; }
 .lbtn:active { transform: translateY(1px); }
+/* Shared action geometry, including buttons inside the scrap card reset. */
+.lbtn, .copy-btn, .grp-assign,
+.card-actions .lbtn, .card-actions .copy-btn, .card-actions .grp-assign {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  height:36px; padding:0 12px; margin:0; flex:0 0 auto;
+  border:1px solid var(--border); border-radius:9px;
+  background:var(--card); color:var(--primary);
+  font-family:inherit; font-size:13px; font-weight:700; line-height:1;
+  white-space:nowrap; text-decoration:none; vertical-align:middle; cursor:pointer;
+}
+.lbtn.kakao, .card-actions .lbtn.kakao { background:#fee500; color:#3a1d1d; border-color:#e4cb00; }
+.lbtn.rev { background:#f4f7ff; border-color:#cbd9ff; }
+.lbtn.ex { color:var(--muted); }
+.card-actions .lbtn:focus-visible, .copy-btn:focus-visible, .grp-assign:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+
 
 /* 후기 뷰 */
 .lrev-summary { font-size: 15px; font-weight: 700; margin: 6px 0 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .lrev-summary .lstar { font-size: 17px; }
-.lrev-links { margin-bottom: 12px; }
+.lrev-links { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
 .lrev-note { font-size: 13px; color: var(--muted); background: var(--card); border: 1px dashed var(--border); border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 12px; }
 .lwriter { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 9px; }
 .lw-stars { display: flex; gap: 2px; }
