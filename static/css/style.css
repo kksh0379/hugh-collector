@@ -273,7 +273,11 @@ body.is-loggedin .loggedout-only { display: none !important; }
   white-space: nowrap;
 }
 .tab:active { transform: scale(0.97); }
-.tab .nc-ci, .tab .cat-ci, .tab .yt-ci { flex: 0 0 auto; display: block; }
+.tab .nc-ci, .tab .cat-ci, .tab .yt-ci, .tab .security-ci { flex: 0 0 auto; display: block; }
+.tab .yt-ci { width:24px; height:17px; object-fit:contain; }
+.tab .security-ci { width:24px; height:24px; }
+.tab .security-screen { fill:#eef0f3; }
+.tab.active .security-screen { fill:#1c1e21; }
 .tab .cat-photo { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; object-fit: cover; display: block; }
 .tab .nc-mark { flex:0 0 auto; display:block; width:26px; height:14px; object-fit:contain; }
 .toolbar-title { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); align-self: center; }
