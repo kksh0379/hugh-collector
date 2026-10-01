@@ -383,14 +383,21 @@ function catRunInline(text) {
 function foodSlotHtml() {
   const foods = ['bibimbap', 'noodles', 'cutlet', 'dumplings'];
   const tiles = Array.from({length:12}, (_, i) => `<span class="slot-tile"><img src="/static/slot-${foods[i % 4]}-v2.31.webp" width="72" height="72" alt="" decoding="async"></span>`).join('');
-  return `<div class="food-slot" role="status" aria-live="polite"><div class="slot-machine" aria-hidden="true">${[0,1,2].map(i => `<div class="slot-reel"><div class="slot-track" style="--reel:${i}">${tiles}</div></div>`).join('')}<span class="slot-spoon"></span></div><div class="slot-dots" aria-hidden="true"><i></i><i></i><i></i></div><strong class="slot-label">오늘의 점심 찾는 중…</strong><span class="slot-hint">맛있는 후보들이 줄 서는 중이에요</span></div>`;
+  const host = Array.from({length:6}, (_, i) => `<img class="host-pose host-pose-${i}" src="/static/slot-chinchilla-${i}-v2.35.webp" width="320" height="320" alt="" decoding="async">`).join('');
+  return `<div class="food-slot" data-started-at="${Date.now()}" role="status" aria-live="polite"><div class="slot-stage" aria-hidden="true"><div class="slot-host">${host}</div><div class="slot-machine">${[0,1,2].map(i => `<div class="slot-reel"><div class="slot-track" style="--reel:${i}">${tiles}</div></div>`).join('')}<span class="slot-spoon"></span></div></div><div class="slot-dots" aria-hidden="true"><i></i><i></i><i></i></div><strong class="slot-label">오늘의 점심 찾는 중…</strong><span class="slot-hint">냥이 집사가 맛있는 한 끼를 고르고 있어요</span></div>`;
 }
 async function settleFoodSlot(body, category) {
-  if (!body || !body.querySelector('.food-slot')) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const loader = body && body.querySelector('.food-slot');
+  if (!loader) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const introRemaining = Math.max(0, 1200 - (Date.now() - Number(loader.dataset.startedAt)));
+  if (!reduced && introRemaining) await new Promise(resolve => setTimeout(resolve, introRemaining));
+  if (loader.isConnected === false) return;
+  loader.classList.add('is-stopping');
   const chosen = /면|분식|국수|라멘/.test(category) ? 1 : /양식|돈가스|돈까스/.test(category) ? 2 : /중식|만두/.test(category) ? 3 : 0;
   const label = body.querySelector('.slot-label');
   if (label) label.textContent = '오늘의 점심 찾았어요!';
+  if (reduced) { loader.classList.add('is-settled'); return; }
   const stops = [...body.querySelectorAll('.slot-track')].map((track, i) => {
     const from = getComputedStyle(track).transform;
     track.style.animation = 'none';
@@ -400,6 +407,8 @@ async function settleFoodSlot(body, category) {
     return track.animate([{transform:from}, {transform:to}], {duration:500 + i * 100, easing:'cubic-bezier(.12,.7,.18,1)', fill:'forwards'}).finished.catch(() => {});
   });
   await Promise.all(stops);
+  loader.classList.add('is-settled');
+  if (loader.isConnected !== false) await new Promise(resolve => setTimeout(resolve, 450));
 }
 
 // Recommendation remains available from the current region's loaded restaurants.
@@ -2879,4 +2888,3 @@ loadEvent();
 loadBoards();
 loadSocial();
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
-

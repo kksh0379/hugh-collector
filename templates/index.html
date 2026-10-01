@@ -30,7 +30,10 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.34") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.35") }}" />
+  {% for pose in range(6) %}
+  <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
+  {% endfor %}
   <!-- 표시 설정(온오프) 첫 페인트 전 적용 → 새로고침 시 숨긴 항목이 깜빡이지 않게(FOUC 방지).
        직전 방문 상태를 캐시해 사용. 관리자면 전부 표시. 실제 상태는 로드 후 app.js가 재확정. -->
   <script>
@@ -43,7 +46,7 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.34") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.35") }}">
 </head>
 <body>
   <header class="app-header">
@@ -486,7 +489,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v2.34 · build 261002</span>
+    <span class="ver">v2.35 · build 261002</span>
     <span class="ver" id="storage-badge"></span>
   </div>
   </div><!-- /bottombar -->
@@ -513,8 +516,7 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.34") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.34") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.35") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.35") }}"></script>
 </body>
 </html>
-
