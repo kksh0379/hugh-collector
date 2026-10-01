@@ -49,7 +49,7 @@ KST = timezone(timedelta(hours=9))  # 마지막 수집 일시는 서버에서 KS
 # 관리자 로그인: 로그인해야 상태확인/수집 실행이 보이고 동작한다(뷰어는 조회만).
 ADMIN_PW = os.environ.get("ADMIN_PW", "rlatkdghk12#")
 # 일반 사용자(테스트용) 계정: tester1~tester10 / 비번 1234
-TEST_USERS = {f"tester{i}": "1234" for i in range(1, 11)}
+TEST_USERS = {"test1": "1234"}   # 일반 테스트 계정 1개(로그인창 자동입력)
 
 
 def _admin_ok():

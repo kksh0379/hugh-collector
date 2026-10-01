@@ -1467,17 +1467,18 @@ function setLoginRole(role) {
   // 일반=아이디+비번, 관리자=비번만
   const idWrap = document.getElementById("login-id-wrap");
   if (idWrap) idWrap.hidden = (loginRole === "admin");
+  const id = document.getElementById("login-id");
   const pw = document.getElementById("login-pw");
   if (pw) pw.placeholder = loginRole === "admin" ? "관리자 비밀번호" : "비밀번호";
+  // 일반 계정은 자동 입력(바로 로그인만), 관리자는 비움
+  if (loginRole === "user") { if (id) id.value = "test1"; if (pw) pw.value = "1234"; }
+  else { if (id) id.value = ""; if (pw) pw.value = ""; }
   loginErr.textContent = "";
 }
 function openLogin() {
-  loginErr.textContent = "";
-  document.getElementById("login-id").value = "";
-  document.getElementById("login-pw").value = "";
-  setLoginRole("user");
+  setLoginRole("user");                 // test1/1234 자동 입력
   loginModal.hidden = false;
-  setTimeout(() => document.getElementById("login-id").focus(), 50);
+  setTimeout(() => { const s = document.getElementById("login-submit"); if (s) s.focus(); }, 50);
 }
 function closeLogin() { loginModal.hidden = true; pendingScrapKey = null; }
 document.getElementById("login-btn").addEventListener("click", openLogin);
