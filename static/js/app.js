@@ -670,7 +670,7 @@ function syncSearchInput() {
 
 // ----------------------------- 데이터 로드 -----------------------------
 // NC뉴스 분류(체크박스): 재단 / 본사 / 자회사. 자회사는 본사 카테고리 중 자회사 키워드로 구분.
-let newsCats = new Set(["재단"]);
+let newsCats = new Set(["재단", "본사", "자회사"]);   // 기본 전체 체크
 const NEWS_SUB_KW = ["엔씨에이아이", "nc ai", "ncai", "엔씨qa", "ncqa", "엔씨ids", "ncids",
   "퍼스트스파크", "빅파이어", "루디우스", "자회사"];
 function newsBucket(it) {
@@ -986,7 +986,7 @@ async function loadBoards() {
 }
 
 // 재단YT 분류(체크박스): 재단(NC문화재단 채널) / 주요재단(기관명 검색).
-let socialCats = new Set(["재단"]);
+let socialCats = new Set(["재단", "주요재단"]);   // 기본 전체 체크
 function socialBucket(it) { return (it.account || "") === "NC문화재단" ? "재단" : "주요재단"; }
 function filterSocialByCat(items) {
   if (socialCats.size >= 2) return items;

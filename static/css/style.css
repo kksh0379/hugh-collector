@@ -1004,8 +1004,9 @@ body.tab-event #view-toggle { display: none; }
 /* 분류 체크박스: 한 줄(줄바꿈 없음) + 가로 스크롤(항목이 많아도 안 깨지게) */
 .checkbar {
   display: flex; flex-wrap: nowrap; align-items: center; gap: 14px;
-  flex: 1; min-width: 0;
+  flex: 1 1 100%; min-width: 0;   /* 한 줄 전체 차지 → 관리자 버튼에 안 가려짐(버튼은 아랫줄) */
   overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  padding-bottom: 2px;            /* 가로 스크롤 시 체크박스 잘림 방지 여유 */
 }
 .checkbar::-webkit-scrollbar { display: none; }
 .checkbar label { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; }
