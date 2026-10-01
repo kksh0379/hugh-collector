@@ -16,6 +16,7 @@ HTML = f'<html><article><h2>문화교육 소식</h2><p>{TEXT}</p><div class="ad"
 class ReaderTests(unittest.TestCase):
     def setUp(self):
         reader._cache.clear()
+        reader._summary_sources.clear()
         self.tmp = tempfile.TemporaryDirectory()
         self.db_path = patch.object(db, "DB_PATH", str(Path(self.tmp.name) / "test.db"))
         self.db_path.start()

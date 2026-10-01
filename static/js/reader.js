@@ -9,7 +9,7 @@
   const status = document.getElementById("reader-status");
   const source = document.getElementById("reader-source");
   const retry = document.getElementById("reader-retry");
-  let controller, trigger, activeUrl, sequence = 0, fontSize = 18, oldOverflow;
+  let controller, summaryController, trigger, activeUrl, sequence = 0, fontSize = 18, oldOverflow;
 
   function safeUrl(value) {
     try {
@@ -20,6 +20,7 @@
 
   async function load(url) {
     if (controller) controller.abort();
+    if (summaryController) summaryController.abort();
     controller = new AbortController();
     const currentController = controller;
     const current = ++sequence;
@@ -38,13 +39,14 @@
       title.textContent = data.title;
       meta.textContent = [data.author, data.published_at].filter(Boolean).join(" · ");
       source.href = safeUrl(data.url) || url;
-      status.textContent = data.mode === "excerpt" ? data.notice : "본문 읽기 · 출처의 텍스트를 읽기 편하게 정리했어요.";
+      status.textContent = data.mode === "excerpt" ? data.notice : "AI 요약을 준비하고 있어요…";
       retry.hidden = data.mode !== "excerpt";
       for (const text of data.paragraphs) {
         const p = document.createElement("p");
         p.textContent = text; // Never execute publisher HTML.
         body.append(p);
       }
+      if (data.mode === 'article') loadSummary(url, current);
     } catch (error) {
       if (current !== sequence || !dialog.open) return;
       status.textContent = error.name === "AbortError"
@@ -56,6 +58,61 @@
     } finally {
       clearTimeout(timer);
       if (current === sequence) body.setAttribute("aria-busy", "false");
+    }
+  }
+
+  function showSummary(points, notice) {
+    status.replaceChildren();
+    const heading = document.createElement('strong');
+    heading.className = 'reader-summary-title';
+    heading.textContent = 'AI 핵심 요약';
+    status.append(heading);
+    if (points) {
+      const list = document.createElement('ul');
+      list.className = 'reader-summary-points';
+      for (const point of points) {
+        const item = document.createElement('li');
+        item.textContent = point;
+        list.append(item);
+      }
+      status.append(list);
+    }
+    const note = document.createElement('p');
+    note.className = 'reader-summary-note';
+    note.textContent = notice;
+    status.append(note);
+  }
+
+  async function loadSummary(url, current) {
+    summaryController = new AbortController();
+    const control = summaryController;
+    const isCurrent = () => current === sequence && dialog.open && !control.signal.aborted;
+    const timer = setTimeout(() => control.abort(), 60000);
+    showSummary(null, '본문에서 핵심만 골라 정리하고 있어요…');
+    status.setAttribute('aria-busy', 'true');
+    try {
+      while (isCurrent()) {
+        const response = await fetch('/api/reader-summary?url=' + encodeURIComponent(url), {signal:control.signal});
+        const data = await response.json();
+        if (!isCurrent()) return;
+        if (!response.ok) throw new Error('Summary unavailable');
+        if (data.status === 'ready') {
+          if (!Array.isArray(data.points) || data.points.length < 2 || data.points.length > 3 || data.points.some(p => typeof p !== 'string' || !p.trim())) throw new Error('Invalid summary');
+          showSummary(data.points, data.partial ? '긴 본문의 일부를 바탕으로 AI가 정리했어요. 전체 내용은 아래 본문에서 확인하세요.' : 'AI가 정리한 요약이에요. 자세한 내용은 아래 본문에서 확인하세요.');
+          return;
+        }
+        if (data.status !== 'pending') {
+          showSummary(null, typeof data.notice === 'string' ? data.notice : '지금은 요약을 만들지 못했어요. 본문은 아래에서 읽을 수 있어요.');
+          return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      if (current === sequence && dialog.open) showSummary(null, 'AI 요약이 지연되고 있어요. 본문은 아래에서 읽을 수 있어요.');
+    } catch (_) {
+      if (current === sequence && dialog.open) showSummary(null, 'AI 요약이 지연되거나 연결되지 않았어요. 본문은 아래에서 읽을 수 있어요.');
+    } finally {
+      clearTimeout(timer);
+      if (current === sequence) status.setAttribute('aria-busy', 'false');
     }
   }
 
@@ -80,6 +137,7 @@
   dialog.addEventListener("close", () => {
     ++sequence;
     if (controller) controller.abort();
+    if (summaryController) summaryController.abort();
     document.body.style.overflow = oldOverflow || "";
     if (trigger?.isConnected) trigger.focus({ preventScroll: true });
   });

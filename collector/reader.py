@@ -13,12 +13,22 @@ from bs4 import BeautifulSoup
 from flask import Blueprint, jsonify, request
 
 from collector import db
+from collector.reader_summary import article_summary
 
 bp = Blueprint("reader", __name__)
 MAX_BYTES = 2 * 1024 * 1024
 _cache = OrderedDict()
 _lock = threading.Lock()
 _slots = threading.BoundedSemaphore(3)
+_summary_sources = OrderedDict()
+
+
+def _remember_summary_source(url, article):
+    with _lock:
+        _summary_sources[url] = (time.monotonic() + 600, article)
+        _summary_sources.move_to_end(url)
+        while len(_summary_sources) > 64:
+            _summary_sources.popitem(last=False)
 
 
 class ReaderUnavailable(ValueError):
@@ -200,4 +210,29 @@ def reader_article():
         return jsonify(error="저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요."), 503
     if not item:
         return jsonify(error="저장된 글을 찾지 못했습니다. 원문 사이트에서 확인해 주세요."), 404
-    return jsonify(read_article(item))
+    article = read_article(item)
+    _remember_summary_source(url, article)
+    return jsonify(article)
+
+
+@bp.get("/api/reader-summary")
+def reader_summary():
+    url = request.args.get("url", "")
+    if not url or len(url) > 4096:
+        return jsonify(error="읽을 글의 주소가 올바르지 않습니다."), 400
+    with _lock:
+        cached = _summary_sources.get(url)
+        article = cached[1] if cached and cached[0] > time.monotonic() else None
+    if article is None:
+        try:
+            item = db.reader_item(url)
+        except Exception:
+            return jsonify(error="저장소에 연결하지 못했습니다."), 503
+        if not item:
+            return jsonify(error="저장된 글을 찾지 못했습니다."), 404
+        article = read_article(item)
+        _remember_summary_source(url, article)
+    result = article_summary(article)
+    response = jsonify(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response, 202 if result["status"] == "pending" else 200
