@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>휴 스코프 — 소식을 모으고, 흐름을 읽고, 자료를 정리하다</title>
-  <meta name="description" content="뉴스·행사·재단 게시판·유튜브를 모아 보고, 재단동향(분기)·보안(월간) 리포트와 주변 맛집 추천까지. 친칠라 슬롯 추천·리더뷰·계정별 스크랩을 만나보세요." />
+  <meta name="description" content="뉴스·행사·재단 게시판·유튜브를 모아 보고, 재단동향(분기)·보안(월간) 리포트와 주변 맛집 추천까지. 리더뷰 AI 요약·핵심 구절 강조·계정별 스크랩과 점심 슬롯 추천을 만나보세요." />
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
   <meta property="og:title" content="휴 스코프 — 뉴스·행사·동향을 한눈에" />
-  <meta property="og:description" content="재단 소식·국내 행사·유튜브·보안 동향과 오늘 점심을 한곳에서. 분기·월간 리포트, 친칠라 슬롯 추천, 스크랩·그룹 정리." />
+  <meta property="og:description" content="재단 소식·국내 행사·유튜브·보안 동향과 오늘 점심을 한곳에서. 분기·월간 리포트, 리더뷰 AI 핵심 요약, 스크랩·그룹 정리." />
   <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}" />
   <meta property="og:type" content="website" />
   <style>
@@ -96,6 +96,16 @@
       background:#f4f5f7;box-shadow:inset 0 0 0 1px rgba(0,0,0,.02)}
     .shot img{display:block;width:100%;height:auto}
 
+    /* Reader summary display example */
+    .reader-preview{padding:20px;background:#f5f5f1;border:1px solid #e6e8df;border-radius:16px}
+    .reader-preview-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin-bottom:12px}
+    .reader-preview-head b{font-size:14px;color:#254b2d}
+    .reader-preview-head span{font-size:11px;color:var(--muted)}
+    .reader-preview ul{padding-left:20px;margin:0;display:grid;gap:10px;font-size:13px;line-height:1.85}
+    .reader-preview strong{font-weight:800;color:#254b2d;text-decoration:underline;text-decoration-color:#6b9d7766;text-decoration-thickness:.16em;text-underline-offset:.16em}
+    .reader-preview .note{font-size:11.5px;margin:14px 0 0;color:var(--muted)}
+    @media(max-width:540px){.reader-preview{padding:16px}.reader-preview ul{font-size:12.5px}}
+
     /* AI 강조 섹션 */
     .ai-hero{background:linear-gradient(160deg,#1b2b52,#122043);color:#fff;border-radius:20px;
       padding:24px 20px;margin-top:8px;position:relative;overflow:hidden}
@@ -160,7 +170,7 @@
       <div class="scope-visual" role="group" aria-label="휴 스코프의 주요 기능 구성">
         <div class="scope-head"><span class="scope-brand"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" />휴 스코프</span><span class="scope-label">모으고 · 살펴보고 · 정리하기</span></div>
         <div class="scope-grid"><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></span><h2>소식 모아보기</h2><p><span>뉴스 · 재단 게시판</span><span>유튜브 · 업계동향</span></p></div><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2"/></svg></span><h2>일정 확인</h2><p><span>국내 행사</span><span>앨범 · 캘린더</span></p></div><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 16v-4M12 16V5M17 16V9"/></svg></span><h2>흐름 읽기</h2><p><span>재단동향(분기)</span><span>보안(월간)</span></p></div><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span><h2>내 자료로 저장</h2><p><span>관심 글 스크랩</span><span>그룹으로 정리</span></p></div></div>
-        <div class="scope-extra"><span>냥정보 · 게임정보</span><span>주변 맛집 · 점심 추천</span><span>리더뷰 · 원문 보기</span></div>
+        <div class="scope-extra"><span>냥정보 · 게임정보</span><span>주변 맛집 · 점심 추천</span><span>리더뷰 · AI 핵심 요약</span></div>
       </div>
     </div>
   </header>
@@ -178,7 +188,7 @@
         <div class="feat"><div class="ic">🔍</div><h3><span class="phrase">재단동향(분기)</span> 리포트</h3><p>재단 동향을 AI가 제3자 관점으로 요약·비교</p></div>
         <div class="feat"><div class="ic">🔐</div><h3><span class="phrase">보안(월간)</span> 리포트</h3><p>정보보안·개인정보 담당자용 지난달 브리핑(자동)</p></div>
         <div class="feat"><div class="ic">🔖</div><h3>스크랩 · 그룹</h3><p>관심 글을 계정에 저장하고 그룹으로 정리</p></div>
-        <div class="feat"><div class="ic">📖</div><h3>리더뷰 · AI 핵심 요약</h3><p>지원되는 기사는 본문과 핵심 요약을 함께 읽고, 원문도 바로 확인</p></div>
+        <div class="feat"><div class="ic">📖</div><h3>리더뷰 · AI 핵심 요약</h3><p>지원되는 기사 본문을 2~3개의 핵심 문장으로 요약. 중요한 사실·수치·조치는 볼드와 밑줄로 짚고, 원문도 바로 확인해요.</p></div>
         <div class="feat"><div class="ic">🐱</div><h3>냥정보 · 게임정보</h3><p>반려묘·게임 뉴스를 취향대로 모아보기</p></div>
         <div class="feat"><div class="ic">🍽️</div><h3>맛집 · 오늘 점심</h3><p>지역별 맛집·도보 거리·평점·후기를 보고, 기분과 제외 조건에 맞춰 추천받기</p></div>
       </div>
@@ -188,6 +198,7 @@
       <p class="kicker">최근 업데이트</p>
       <h2>살펴보고 정리하는 경험을 더 편하게</h2>
       <div class="feats">
+        <div class="feat"><div class="ic">📖</div><h3>요약에서도 핵심을 한눈에</h3><p>리더뷰 상단에서 AI 핵심 요약을 읽고, 선별된 구절은 볼드·은은한 밑줄로 빠르게 확인하세요. 본문을 읽는 동안 요약이 준비돼요.</p></div>
         <div class="feat"><div class="ic">💻</div><h3>넓은 화면에서도 가지런하게</h3><p>PC·태블릿에서는 행사·재단 게시판·유튜브의 이미지와 글을 나란히 배치. 이미지가 없는 글도 같은 위치에 정렬돼요.</p></div>
         <div class="feat"><div class="ic">🔖</div><h3>잘 보이는 스크랩 버튼</h3><p>관심 글과 맛집을 계정에 저장하고 그룹으로 정리. 맛집의 상세보기·링크 복사·그룹 지정도 버튼으로 모았어요.</p></div>
         <div class="feat"><div class="ic">🐾</div><h3>기다림도 즐겁게</h3><p>소식을 불러올 때는 두 고양이, 점심을 고를 때는 친칠라 슬롯머신. 움직임 감소 설정도 지원해요.</p></div>
@@ -207,6 +218,7 @@
             <div class="ai-stat"><b>매월 자동</b><span>지난달 보안 리포트 생성</span></div>
           </div>
           <div class="ai-list">
+            <div class="ai-item"><div class="ic">📖</div><div><h3>리더뷰 핵심 요약 <span class="auto">읽을 때</span></h3><p>추출한 기사 본문을 바탕으로 핵심 2~3문장을 정리하고 중요한 사실·수치·조치를 선별해 강조해요. 요약과 본문, 원문을 함께 확인할 수 있어요.</p></div></div>
             <div class="ai-item"><div class="ic">🏷️</div><div><h3>자동 분류·태깅 <span class="auto">자동</span></h3><p>보안 기사를 개인정보유출·해킹·취약점·개보위 처분 등으로 자동 태깅.</p></div></div>
             <div class="ai-item"><div class="ic">🚨</div><div><h3>중요도 자동 평가 <span class="auto">자동</span></h3><p>기사마다 심각·높음·보통·낮음 4단계로 등급을 매겨 중요도순 정렬.</p></div></div>
             <div class="ai-item"><div class="ic">🛡️</div><div><h3>보안담당자 시사점 <span class="auto">자동</span></h3><p>사고마다 시사점·확인사항·예방조치와 CVE·유출규모·조치를 뽑아줘요.</p></div></div>
@@ -258,6 +270,19 @@
           <p>성향·기분·제외 조건에 맞춰 한 곳을 골라줘요. 슬롯이 돌아가며 추천 결과를 소개합니다. 서버 응답이 늦어도 이미 불러온 지역 맛집이 있으면 대체 추천으로 이어져요.</p>
           <div class="frame"><img src="{{ url_for('static', filename='intro/shot-lunch-ai.png') }}" alt="맛집 AI 추천 화면" loading="lazy" /></div>
         </div>
+        <div class="shot">
+          <div class="cap"><span class="n">08</span><h3>리더뷰 · AI 핵심 요약</h3></div>
+          <p>기사 카드에서 리더뷰를 열면 본문 위에 핵심 요약이 표시돼요. 중요한 구절만 강조해 훑어보고, 아래 본문과 원문으로 자세한 내용을 확인하세요.</p>
+          <div class="reader-preview" role="group" aria-label="AI 핵심 요약 표시 예시">
+            <div class="reader-preview-head"><b>AI 핵심 요약</b><span>표시 예시 · 실제 기사 요약 아님</span></div>
+            <ul>
+              <li>지원되는 기사 본문을 <strong>핵심 2~3문장</strong>으로 정리해 전체 흐름을 먼저 보여줘요.</li>
+              <li>요약 중 <strong>중요한 사실·수치·조치</strong>를 선별해 볼드와 은은한 밑줄로 표시해요.</li>
+              <li>요약을 읽은 뒤 <strong>본문과 원문</strong>에서 맥락과 자세한 내용을 확인할 수 있어요.</li>
+            </ul>
+            <p class="note">본문을 먼저 보여주고 요약은 따로 준비해요. 본문을 확보하지 못한 기사는 요약 제공이 제한돼요.</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -281,7 +306,7 @@
   </div>
 
   <footer>
-    <span class="phrase">휴 스코프 · 소식을 모으고 흐름을 읽다</span> <span class="phrase">· v2.39</span>
+    <span class="phrase">휴 스코프 · 소식을 모으고 흐름을 읽다</span> <span class="phrase">· v2.40</span>
     <div class="disc">※ 뉴스·행사·리포트는 공개 데이터를 자동 수집·요약한 것으로 실제와 다를 수 있어요. 베타 테스트용입니다.</div>
     <div class="disc">서체: KoddiUD 온고딕 (한국장애인개발원, CC BY-SA)</div>
   </footer>
