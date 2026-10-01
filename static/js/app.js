@@ -2138,6 +2138,24 @@ async function loadReport(id) {
   if (purgeBtn) purgeBtn.addEventListener("click", () =>
     armConfirm(purgeBtn, "전체삭제 확정", () => purgeReport({ all: true, kind: reportKind })));
 
+  // 📄 PDF 저장: 브라우저 인쇄→PDF (링크 클릭 유지, 서버 부하 0)
+  const pdfBtn = document.getElementById("report-pdf");
+  if (pdfBtn) pdfBtn.addEventListener("click", () => {
+    const body = document.getElementById("report-body");
+    if (!body || !body.textContent.trim()) {
+      msg.style.color = "#dc2626"; msg.textContent = "저장할 리포트가 없어요(먼저 리포트를 여세요)."; return;
+    }
+    const ph = document.getElementById("report-print-head");
+    if (ph) {
+      const t = (document.getElementById("report-title").textContent || "리포트").trim();
+      const snap = document.getElementById("report-snap");
+      const period = (snap && snap.options[snap.selectedIndex]) ? snap.options[snap.selectedIndex].textContent : "";
+      ph.innerHTML = `<div class="ph-title">${escapeHtml(t)}</div>`
+        + `<div class="ph-meta">${escapeHtml(period)}${period ? " · " : ""}${escapeHtml(location.host)} · 생성 ${escapeHtml(new Date().toLocaleString("ko-KR"))}</div>`;
+    }
+    setTimeout(() => window.print(), 60);  // 인쇄 대화상자 → "PDF로 저장" 선택
+  });
+
   // 리포트 본문 뷰가 열릴 때(footnav에서 호출): 데이터 로드 + 진행 중 분석 폴링 재개
   window.onShowReport = function () {
     loadReport();

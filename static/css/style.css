@@ -1337,3 +1337,31 @@ body.chrome-hidden .view-head { position: static; }
 .view-title #scrap-count-h { font-weight: 600; color: var(--muted); font-size: 14px; }
 .view-inner { padding: 0 16px 16px; }
 #view-report .view-inner, #view-scrap .view-inner { min-height: 40vh; }
+
+/* ============ 리포트 PDF 저장(인쇄) ============ */
+/* 화면에선 숨기고 인쇄(PDF)에서만 보이는 요소 */
+.print-only { display: none; }
+
+@media print {
+  /* 리포트 뷰만 남기고 전부 숨김 */
+  body > *:not(#view-report) { display: none !important; }
+  #view-report { display: block !important; position: static !important; }
+  .view-inner { padding: 0 !important; }
+  /* 컨트롤·안내·버튼·메시지·헤더 숨김(제목은 인쇄 머리글이 대신 표시) */
+  #view-report .view-head, .rep-kind, .report-bar, .report-note,
+  #msg-report, .pdf-save-btn { display: none !important; }
+  /* 인쇄 전용 머리글(제목·기간·출처·생성일시) */
+  .print-only { display: block !important; }
+  .report-print-head { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid #222; }
+  .report-print-head .ph-title { font-size: 18px; font-weight: 800; color: #000; }
+  .report-print-head .ph-meta { font-size: 11px; color: #555; margin-top: 3px; }
+  /* 링크는 클릭 유지(브라우저 인쇄가 하이퍼링크 보존) + 눈에 보이게 */
+  #report-body a { color: #1a56db !important; text-decoration: underline; word-break: break-all; }
+  /* 배경/여백/색 정리 */
+  html, body { background: #fff !important; }
+  body { padding: 0 !important; color: #000; }
+  @page { margin: 15mm 14mm; }
+  /* 섹션이 페이지 중간에 잘리지 않게 */
+  #report-body section, #report-body .card, #report-body li,
+  #report-body .rep-block, #report-body table, #report-body .ai-row { break-inside: avoid; }
+}
