@@ -2161,7 +2161,7 @@ async function loadReport(id) {
     if (ph) {
       const t = (document.getElementById("report-title").textContent || "리포트").trim();
       ph.innerHTML = `<div class="ph-title">${escapeHtml(t)}</div>`
-        + `<div class="ph-meta">${escapeHtml(period)}${period ? " · " : ""}${escapeHtml(location.host)} · 생성 ${escapeHtml(new Date().toLocaleString("ko-KR"))}</div>`;
+        + `<div class="ph-meta">${escapeHtml(period)}${period ? " · " : ""}생성 ${escapeHtml(new Date().toLocaleString("ko-KR"))}</div>`;
     }
     const restore = () => {
       document.title = oldTitle;
