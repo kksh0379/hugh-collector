@@ -829,11 +829,12 @@ body.is-admin .legend.admin-only { display: flex !important; }
   position: absolute; top: 8px; right: 8px; z-index: 2;
   width: 30px; height: 30px; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  border: none; border-radius: 50%; cursor: pointer;
-  background: rgba(255, 255, 255, 0.85); color: #c2c7d0;
+  border:1px solid #8fa9d7; border-radius:9px; cursor:pointer;
+  background:#edf3ff; color:#315b98; box-shadow:0 1px 3px rgba(30,60,110,.12);
 }
 .scrap-btn svg { fill: currentColor; }
-.scrap-btn.on { color: var(--primary); }
+.scrap-btn.on { color:#fff; background:var(--primary); border-color:var(--primary); }
+.scrap-btn:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
 .scrap-btn:active { transform: scale(0.88); }
 
 /* 스크랩 담기 애니메이션(지니 효과) — 하단 스크랩 탭으로 빨려들어감 */
@@ -1377,3 +1378,24 @@ body.chrome-hidden .view-head { position: static; }
   #report-body .rep-block, #report-body table, #report-body .ai-row { break-inside: avoid; }
 }
 
+
+/* Food reels move continuously; artwork stays isolated within clipped windows. */
+.food-slot { display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 0 24px; text-align:center; }
+.slot-machine { position:relative; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; width:min(100%,300px); padding:14px; border:2px solid #b6cfff; border-radius:22px; background:linear-gradient(145deg,#f2f7ff,#ccddff); box-shadow:0 9px 22px rgba(46,107,223,.13),inset 0 2px 0 #fff; }
+.slot-reel { position:relative; height:84px; overflow:hidden; border-radius:12px; background:#fff; box-shadow:inset 0 0 8px #bed0ef; }
+.slot-reel::after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(#e4edffcc,transparent 25%,transparent 75%,#e4edffcc); border:1px solid #bbcef0; border-radius:12px; }
+.slot-track { animation:food-reel .72s linear infinite; animation-delay:calc(var(--reel) * -.17s); will-change:transform; }
+.slot-tile { display:flex; height:84px; align-items:center; justify-content:center; }
+.slot-tile img { display:block; width:min(100%,72px); height:72px; object-fit:contain; }
+@keyframes food-reel { to { transform:translate3d(0,-336px,0); } }
+.slot-spoon { position:absolute; right:-7px; top:18px; width:10px; height:68px; border-radius:8px; background:linear-gradient(90deg,#8fa4bf,#fff,#8fa4bf); box-shadow:0 2px 3px #57718b55; transform:rotate(9deg); }
+.slot-spoon::before { content:''; position:absolute; width:21px; height:30px; border-radius:50%; left:-5px; top:-12px; background:radial-gradient(ellipse,#bac6d4,#eef4fa 65%,#8299b1); border:1px solid #a4b5c7; }
+.slot-label { color:var(--primary-dark); font-size:16px; }
+.slot-hint { color:var(--muted); font-size:12px; }
+.slot-dots { display:flex; gap:8px; margin-top:4px; }
+.slot-dots i { width:7px; height:7px; border-radius:50%; background:#2e6bdf; animation:slot-dot 1.2s ease-in-out infinite; }
+.slot-dots i:nth-child(2) { animation-delay:.15s; }.slot-dots i:nth-child(3) { animation-delay:.3s; }
+@keyframes slot-dot { 0%,70%,100% { opacity:.25; transform:scale(.8); } 35% { opacity:1; transform:scale(1.1); } }
+.airec { animation:recommend-reveal .3s ease-out; }
+@keyframes recommend-reveal { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@media(prefers-reduced-motion:reduce) { .slot-track,.slot-dots i,.airec { animation:none; } }

@@ -379,6 +379,29 @@ function catRunInline(text) {
   return `<span class="cat-inline" role="status" aria-live="polite">${catRunSvg()}<span class="ci-t">${escapeHtml(text || "불러오는 중…")}</span></span>`;
 }
 
+// Continuous compositor animation: four food characters loop through each reel.
+function foodSlotHtml() {
+  const foods = ['bibimbap', 'noodles', 'cutlet', 'dumplings'];
+  const tiles = Array.from({length:12}, (_, i) => `<span class="slot-tile"><img src="/static/slot-${foods[i % 4]}-v2.31.webp" width="72" height="72" alt="" decoding="async"></span>`).join('');
+  return `<div class="food-slot" role="status" aria-live="polite"><div class="slot-machine" aria-hidden="true">${[0,1,2].map(i => `<div class="slot-reel"><div class="slot-track" style="--reel:${i}">${tiles}</div></div>`).join('')}<span class="slot-spoon"></span></div><div class="slot-dots" aria-hidden="true"><i></i><i></i><i></i></div><strong class="slot-label">오늘의 점심 찾는 중…</strong><span class="slot-hint">맛있는 후보들이 줄 서는 중이에요</span></div>`;
+}
+async function settleFoodSlot(body, category) {
+  if (!body || !body.querySelector('.food-slot')) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const chosen = /면|분식|국수|라멘/.test(category) ? 1 : /양식|돈가스|돈까스/.test(category) ? 2 : /중식|만두/.test(category) ? 3 : 0;
+  const label = body.querySelector('.slot-label');
+  if (label) label.textContent = '오늘의 점심 찾았어요!';
+  const stops = [...body.querySelectorAll('.slot-track')].map((track, i) => {
+    const from = getComputedStyle(track).transform;
+    track.style.animation = 'none';
+    const to = `translate3d(0,${-(8 + chosen) * 84}px,0)`;
+    track.style.transform = to;
+    if (!track.animate) return Promise.resolve();
+    return track.animate([{transform:from}, {transform:to}], {duration:500 + i * 100, easing:'cubic-bezier(.12,.7,.18,1)', fill:'forwards'}).finished.catch(() => {});
+  });
+  await Promise.all(stops);
+}
+
 function showLoading(el) {
   el.innerHTML = `<li class="empty">${catSpin("불러오는 중…")}</li>`;
 }
@@ -1369,7 +1392,7 @@ async function loadMeta() {
         badge.textContent = "⛔ DB 연결 안 됨";
         badge.style.color = "#dc2626";
       } else if (m.storage === "postgres") {
-        badge.textContent = "☁ 영구저장";
+        badge.textContent = "";
         badge.style.color = "#16a34a";
       } else {
         badge.textContent = "⚠ 임시저장";
@@ -2215,6 +2238,7 @@ async function loadReport(id) {
 // 상세정보는 우리가 만들지 않고(원칙: 메뉴·가격·영업시간 지어내지 않음) 카카오맵으로 넘긴다.
 // 이용자 평점/후기는 우리 앱에 직접 누적, AI가 '오늘 뭐 먹지?'를 추천.
 (function initLunch() {
+  let recommendationRequest = 0;
   const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", poll: null };
   const $ = (id) => document.getElementById(id);
 
@@ -2541,6 +2565,7 @@ async function loadReport(id) {
     renderPicker();
   }
   function renderPicker() {
+    recommendationRequest++;
     const body = $("lunch-ai-body"); if (!body) return;
     const cats = Object.keys(catCounts()).filter((c) => c !== "기타").sort();  // '기타 말고'는 어색 → 제외
     const chip = (key, label) =>
@@ -2589,7 +2614,8 @@ async function loadReport(id) {
     if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
     showView("view-lunch-ai");
     const body = $("lunch-ai-body");
-    if (body) body.innerHTML = catSpin("오늘 점심 고르는 중…");
+    const requestId = ++recommendationRequest;
+    if (body) body.innerHTML = foodSlotHtml();
     const cond = gatherConditions();
     const ids = LUNCH.rows.map((r) => r.id);   // 위치 내 전체에서 조건 적용
     let res;
@@ -2599,6 +2625,9 @@ async function loadReport(id) {
         avoid_cats: cond.avoid_cats, moods: cond.moods, persona: LUNCH.aiPersona || "",
       });
     } catch (e) { res = { ok: false, error: "추천을 불러오지 못했어요" }; }
+    if (requestId !== recommendationRequest) return;
+    if (res && res.ok && res.pick) await settleFoodSlot(body, res.pick.cat_norm || "");
+    if (requestId !== recommendationRequest) return;
     renderRecommend(res);
   }
   function renderRecommend(res) {
