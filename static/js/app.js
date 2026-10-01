@@ -368,49 +368,15 @@ function setView(mode) {
 })();
 
 // ----------------------------- 로딩 표시 / 무한 스크롤 -----------------------------
-// 🐱 로딩 스피너: 춤추는 하얀 코숏(직접 그린 애니메이션 SVG). 애니메이션은 style.css.
-// 달려가는 고양이 로더 SVG — 흰 코숏 / 페르시안 친칠라 랜덤(breed 지정 가능)
-function catRunSvg(breed) {
-  breed = breed || (Math.random() < 0.5 ? "koshort" : "chinchilla");
-  const chin = breed === "chinchilla";
-  const body = chin ? "#f1f2f8" : "#ffffff";     // 친칠라=은백 / 코숏=흰색
-  const line = chin ? "#d6d9e6" : "#e4e4ea";
-  const earIn = chin ? "#ecd6e1" : "#f6b8ce";
-  const eye = chin ? "#5f9170" : "#4a4a52";       // 친칠라=연녹 / 코숏=진회
-  // 귀: 코숏=뾰족, 친칠라=작고 둥글. 꼬리: 친칠라=풍성
-  const ears = chin
-    ? `<path d="M80,25 q2,-8 9,-4 q-1,6 -7,7 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
-       <path d="M101,24 q5,-6 9,0 q-4,4 -8,4 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`
-    : `<path d="M80,26 L82,11 L92,23 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
-       <path d="M106,26 L108,12 L97,22 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`;
-  const tail = chin
-    ? `<path class="cr-tail" d="M30,40 q-20,-4 -23,-21 q-1,-9 7,-6 q-3,9 4,13 q8,4 14,9 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`
-    : `<path class="cr-tail" d="M30,42 q-17,-2 -20,-17 q-1,-7 5,-6 q-1,9 6,12 q7,3 12,8 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`;
-  const leg = (x, cls) => `<rect class="${cls}" x="${x - 2.3}" y="50" width="4.6" height="15" rx="2.3" fill="${body}" stroke="${line}" stroke-width="1.5" style="transform-origin:${x}px 52px"/>`;
-  return `<svg class="catrun ${breed}" viewBox="0 0 122 80" role="img" aria-label="불러오는 중">
-    <ellipse class="cr-shadow" cx="62" cy="70" rx="33" ry="4" fill="#000"/>
-    <g class="cr-all">
-      ${tail}
-      ${leg(46, "cr-legA")}${leg(55, "cr-legB")}${leg(72, "cr-legB")}${leg(81, "cr-legA")}
-      <ellipse cx="58" cy="42" rx="31" ry="15" fill="${body}" stroke="${line}" stroke-width="2"/>
-      <g class="cr-head">
-        ${ears}
-        <circle cx="95" cy="34" r="13" fill="${body}" stroke="${line}" stroke-width="2"/>
-        <ellipse cx="91" cy="40" rx="3.2" ry="2" fill="${chin ? "#f3dbe6" : "#f9ccdb"}"/>
-        <circle cx="100" cy="33" r="1.9" fill="${eye}"/>
-        <path d="M105,36 l4,1 -3,2 Z" fill="${earIn}"/>
-        <path d="M108,34 h7 M108,38 h6" stroke="${line}" stroke-width="1.2" stroke-linecap="round"/>
-      </g>
-    </g>
-  </svg>`;
+// Shared pair loader: both breeds always appear; CSS handles independent motion.
+function catRunSvg() {
+  return `<span class="cat-pair" aria-hidden="true"><span class="cat-orbit"></span><span class="cat-kitten koshort"></span><span class="cat-kitten chinchilla"></span><span class="cat-heart">♥</span></span>`;
 }
-// 큰 로더(세로): 달리는 고양이 + 라벨
 function catSpin(label) {
-  return `<div class="cat-load">${catRunSvg()}<span class="cat-load-label">${escapeHtml(label || "불러오는 중…")}</span></div>`;
+  return `<div class="cat-load" role="status" aria-live="polite">${catRunSvg()}<span class="cat-load-label">${escapeHtml(label || "불러오는 중…")}</span></div>`;
 }
-// 인라인 로더: 텍스트 + 우측에 조그만 달리는 고양이(후기/본문읽기 레이아웃용)
 function catRunInline(text) {
-  return `<span class="cat-inline"><span class="ci-t">${escapeHtml(text || "불러오는 중…")}</span>${catRunSvg()}</span>`;
+  return `<span class="cat-inline" role="status" aria-live="polite">${catRunSvg()}<span class="ci-t">${escapeHtml(text || "불러오는 중…")}</span></span>`;
 }
 
 function showLoading(el) {
@@ -1166,7 +1132,7 @@ statusModal.addEventListener("click", (e) => {
 
 async function runStatus(group) {
   statusModal.hidden = false;
-  statusModalBody.innerHTML = '<div class="status-loading">접속 상태 확인 중…</div>';
+  statusModalBody.innerHTML = catSpin("접속 상태 확인 중…");
   try {
     const res = await fetch("/api/diag?group=" + group);
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1209,7 +1175,7 @@ function _renderCrawlState(group, st) {
   if (st.running) {
     if (btn) btn.disabled = true;
     msgEl.style.color = "";
-    msgEl.innerHTML = '<span class="mini-spin"></span> ' + escapeHtml(st.progress || "수집 중…");
+    msgEl.innerHTML = catRunInline(st.progress || "수집 중…");
     return false;
   }
   // 완료(또는 미실행)
@@ -1248,7 +1214,7 @@ function _startPolling(group) {
 function runCrawl(btn, group, msgEl, reload) {
   btn.disabled = true;
   msgEl.style.color = "";
-  msgEl.innerHTML = '<span class="mini-spin"></span> 수집 시작…';
+  msgEl.innerHTML = catRunInline("수집 시작…");
   // 뉴스 수집 기간은 서버 기본값(최근 2년)을 사용한다(기간 선택 UI 제거).
   const url = "/api/crawl/" + group + "/start";
   fetch(url, { method: "POST" }).catch(() => {});
@@ -1582,7 +1548,7 @@ function showNotes(which) {
 }
 document.getElementById("notes-btn").addEventListener("click", async () => {
   notesModal.hidden = false;
-  document.getElementById("notes-content").textContent = "불러오는 중…";
+  document.getElementById("notes-content").innerHTML = catSpin("불러오는 중…");
   try {
     _notesData = await (await fetch("/api/notes")).json();
     showNotes("devnote");
@@ -1813,7 +1779,7 @@ async function loadLog(which) {
   document.querySelectorAll("#runlog-modal .notes-tab").forEach((b) =>
     b.classList.toggle("active", b.dataset.log === which));
   const body = document.getElementById("runlog-body");
-  body.innerHTML = '<div class="empty">불러오는 중…</div>';
+  body.innerHTML = catSpin("불러오는 중…");
   try {
     if (which === "visit") renderVisit(await (await fetch("/api/visitlog")).json());
     else renderRunlog(await (await fetch("/api/runlog")).json());
@@ -2033,7 +1999,7 @@ async function loadReport(id) {
   function poll() {
     fetch("/api/report/status?kind=" + reportKind).then((r) => r.json()).then((st) => {
       if (st.running) {
-        msg.style.color = ""; msg.innerHTML = '<span class="mini-spin"></span> ' + escapeHtml(st.progress || "분석 중…");
+        msg.style.color = ""; msg.innerHTML = catRunInline(st.progress || "분석 중…");
       } else {
         clearInterval(timer); timer = null;
         if (runBtn) runBtn.disabled = false;
@@ -2044,7 +2010,7 @@ async function loadReport(id) {
     }).catch(() => {});
   }
   if (runBtn) runBtn.addEventListener("click", () => {
-    runBtn.disabled = true; msg.style.color = ""; msg.innerHTML = '<span class="mini-spin"></span> 분석 시작…';
+    runBtn.disabled = true; msg.style.color = ""; msg.innerHTML = catRunInline("분석 시작…");
     const url = reportKind === "security" ? "/api/report/run?kind=security" : "/api/report/run?window=90";
     fetch(url, { method: "POST" }).then((r) => r.json()).then(() => {
       if (!timer) timer = setInterval(poll, 2500); poll();
@@ -2074,7 +2040,7 @@ async function loadReport(id) {
   applyKindUI();
   // 스냅샷 삭제(현재 선택) / 전체 초기화
   async function purgeReport(body) {
-    msg.style.color = ""; msg.innerHTML = '<span class="mini-spin"></span> 삭제 중…';
+    msg.style.color = ""; msg.innerHTML = catRunInline("삭제 중…");
     try {
       const r = await fetch("/api/report/purge", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -2227,7 +2193,7 @@ async function loadReport(id) {
   modal.addEventListener("change", async (e) => {
     const cb = e.target.closest("[data-feat]");
     if (!cb) return;
-    if (msg) { msg.style.color = ""; msg.textContent = "저장 중…"; }
+    if (msg) { msg.style.color = ""; msg.innerHTML = catRunInline("저장 중…"); }
     try {
       const r = await fetch("/api/features", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -2327,7 +2293,7 @@ async function loadReport(id) {
     if (!LUNCH.locs.length) {   // 빈 메뉴가 '펴지다 마는' 것처럼 보이지 않게 안내 표시
       const txt = LUNCH.locLoading ? "위치 불러오는 중… (DB 연결 확인)"
         : (LUNCH.locFailed ? "데이터 연결 실패 — 아래 ‘다시 시도’" : "위치가 없어요 — 새로고침 해주세요");
-      menu.innerHTML = `<div class="lunch-loc-empty">${txt}</div>`;
+      menu.innerHTML = `<div class="lunch-loc-empty">${LUNCH.locLoading ? catRunInline("위치 불러오는 중…") : escapeHtml(txt)}</div>`;
       return;
     }
     // 실제 주소는 노출하지 않음(개인정보). 이름 + 반경만 표시.
@@ -2623,7 +2589,7 @@ async function loadReport(id) {
     if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
     showView("view-lunch-ai");
     const body = $("lunch-ai-body");
-    if (body) body.innerHTML = `<div class="airec-load">🤖 오늘 점심 고르는 중…</div>`;
+    if (body) body.innerHTML = catSpin("오늘 점심 고르는 중…");
     const cond = gatherConditions();
     const ids = LUNCH.rows.map((r) => r.id);   // 위치 내 전체에서 조건 적용
     let res;
@@ -2825,3 +2791,4 @@ loadEvent();
 loadBoards();
 loadSocial();
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
+

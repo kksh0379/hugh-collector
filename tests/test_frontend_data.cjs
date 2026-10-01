@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync('static/js/app.js', 'utf8');
 const helper = source.slice(0, source.indexOf('// ===== 인증'));
 function context(fetch) {
-  return vm.createContext({fetch, AbortController, Response,
+  return vm.createContext({document:{addEventListener(){}},fetch, AbortController, Response,
     setTimeout: (fn, ms) => setTimeout(fn, ms < 3000 ? 0 : ms), clearTimeout});
 }
 test('parallel data reads share one request and independently consume responses', async () => {
@@ -44,3 +44,4 @@ test('a slow previous location cannot overwrite the latest selection',async () =
   assert.equal(state.curLoc.id,2);
   assert.equal(state.rows[0].name,'second');
 });
+

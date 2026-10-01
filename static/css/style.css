@@ -190,34 +190,25 @@ body.is-loggedin .loggedout-only { display: none !important; }
   margin-right: 4px;
 }
 
-/* 🐱 로딩 스피너 — 춤추는 하얀 코숏(직접 그린 애니메이션 SVG) */
-.cat-load { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 26px 0; }
-.cat-load-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-
-/* 달려가는 고양이 로더 (흰 코숏 / 페르시안 친칠라) */
-.catrun { display: inline-block; width: 96px; height: 63px; overflow: visible; }
-.cat-load .catrun { width: 104px; height: 68px; }
-.catrun .cr-all, .catrun .cr-head, .catrun .cr-tail, .catrun .cr-shadow,
-.catrun .cr-legA, .catrun .cr-legB { transform-box: view-box; }
-.catrun .cr-all    { transform-origin: 58px 42px; animation: cr-body 0.5s ease-in-out infinite; }
-.catrun .cr-head   { transform-origin: 95px 40px; animation: cr-head 0.5s ease-in-out infinite; }
-.catrun .cr-tail   { transform-origin: 30px 40px; animation: cr-tail 0.6s ease-in-out infinite; }
-.catrun .cr-legA   { animation: cr-legA 0.4s linear infinite; }
-.catrun .cr-legB   { animation: cr-legB 0.4s linear infinite; }
-.catrun .cr-shadow { transform-origin: 62px 70px; animation: cr-shadow 0.5s ease-in-out infinite; }
-
-@keyframes cr-body { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-@keyframes cr-head { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-1.5px) rotate(-3deg); } }
-@keyframes cr-tail { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(12deg); } }
-@keyframes cr-legA { 0% { transform: rotate(32deg); } 50% { transform: rotate(-32deg); } 100% { transform: rotate(32deg); } }
-@keyframes cr-legB { 0% { transform: rotate(-32deg); } 50% { transform: rotate(32deg); } 100% { transform: rotate(-32deg); } }
-@keyframes cr-shadow { 0%,100% { transform: scaleX(1); opacity: .16; } 50% { transform: scaleX(.8); opacity: .1; } }
-@media (prefers-reduced-motion: reduce) { .catrun * { animation: none !important; } }
-
-/* 인라인 로더: 텍스트 + 우측 조그만 달리는 고양이 */
-.cat-inline { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 600; }
-.cat-inline .ci-t { white-space: nowrap; }
-.cat-inline .catrun { width: 44px; height: 29px; flex: 0 0 auto; }
+/* Shared two-kitten loader, no JS timers or animation work while unmounted. */
+.cat-load { display:flex; flex-direction:column; align-items:center; gap:8px; padding:22px 8px; }
+.cat-load-label { color:var(--muted); font-size:13px; font-weight:600; text-align:center; overflow-wrap:anywhere; }
+.cat-pair { position:relative; display:inline-block; width:160px; height:128px; flex:0 0 auto; }
+.cat-kitten { position:absolute; bottom:0; width:50%; aspect-ratio:1; background-image:url('../cats-loading.webp'); background-size:200% 100%; background-repeat:no-repeat; animation:kitten-hop 1.8s ease-in-out infinite; transform-origin:50% 90%; }
+.cat-kitten.koshort { left:0; background-position:left center; }
+.cat-kitten.chinchilla { right:0; background-position:right center; animation-delay:-.9s; }
+.cat-orbit { position:absolute; top:0; left:20%; width:60%; aspect-ratio:1; border:5px dotted #efb3bd; border-bottom-color:transparent; border-left-color:#f7dce2; border-radius:50%; animation:kitten-orbit 2.8s linear infinite; }
+.cat-heart { position:absolute; top:28%; left:48%; color:#ef98aa; font-size:17px; animation:kitten-heart 1.8s ease-in-out infinite; }
+.cat-inline { display:inline-flex; align-items:center; gap:8px; max-width:100%; color:var(--muted); font-size:13px; font-weight:600; vertical-align:middle; }
+.cat-inline .cat-pair { width:72px; height:58px; }
+.cat-inline .cat-orbit { border-width:3px; }
+.cat-inline .cat-heart { font-size:10px; }
+.cat-inline .ci-t { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+@keyframes kitten-hop { 0%,100% { transform:translateY(0) rotate(-2deg); } 40% { transform:translateY(-7px) rotate(2deg); } 65% { transform:translateY(0) rotate(0); } }
+@keyframes kitten-orbit { to { transform:rotate(360deg); } }
+@keyframes kitten-heart { 0%,100% { transform:scale(.8); opacity:.4; } 50% { transform:scale(1.15); opacity:1; } }
+@media(max-width:480px) { .cat-load { padding:18px 6px; } .cat-load .cat-pair { width:136px; height:110px; } .cat-inline .cat-pair { width:64px; height:52px; } }
+@media(prefers-reduced-motion:reduce) { .cat-pair, .cat-pair * { animation:none !important; } }
 
 /* 인스타 안내 메모 */
 .ig-note { font-size: 12.5px; color: var(--muted); margin: 2px 0 4px; }
@@ -1367,3 +1358,4 @@ body.chrome-hidden .view-head { position: static; }
   #report-body section, #report-body .card, #report-body li,
   #report-body .rep-block, #report-body table, #report-body .ai-row { break-inside: avoid; }
 }
+
