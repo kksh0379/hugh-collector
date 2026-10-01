@@ -204,50 +204,33 @@ body.is-loggedin .loggedout-only { display: none !important; }
 }
 
 /* 🐱 로딩 스피너 — 춤추는 하얀 코숏(직접 그린 애니메이션 SVG) */
-.cat-load { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 0; }
-.cat-dance { display: inline-block; width: 96px; height: 96px; overflow: visible; }
+.cat-load { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 26px 0; }
 .cat-load-label { font-size: 13px; color: var(--muted); font-weight: 600; }
 
-/* 각 파트 회전축을 viewBox 좌표(0~100)로 정확히 지정 */
-.cat-dance .cd-all, .cat-dance .cd-head, .cat-dance .cd-armL,
-.cat-dance .cd-armR, .cat-dance .cd-tail, .cat-dance .cd-shadow { transform-box: view-box; }
-.cat-dance .cd-all   { transform-origin: 50px 88px; animation: cd-body 0.85s ease-in-out infinite; }
-.cat-dance .cd-head  { transform-origin: 50px 53px; animation: cd-head 0.85s ease-in-out infinite; }
-.cat-dance .cd-armL  { transform-origin: 63px 60px; animation: cd-armL 0.85s ease-in-out infinite; }
-.cat-dance .cd-armR  { transform-origin: 37px 60px; animation: cd-armR 0.85s ease-in-out infinite; }
-.cat-dance .cd-tail  { transform-origin: 37px 80px; animation: cd-tail 0.85s ease-in-out infinite; }
-.cat-dance .cd-shadow{ transform-origin: 50px 93px; animation: cd-shadow 0.85s ease-in-out infinite; }
+/* 달려가는 고양이 로더 (흰 코숏 / 페르시안 친칠라) */
+.catrun { display: inline-block; width: 96px; height: 63px; overflow: visible; }
+.cat-load .catrun { width: 104px; height: 68px; }
+.catrun .cr-all, .catrun .cr-head, .catrun .cr-tail, .catrun .cr-shadow,
+.catrun .cr-legA, .catrun .cr-legB { transform-box: view-box; }
+.catrun .cr-all    { transform-origin: 58px 42px; animation: cr-body 0.5s ease-in-out infinite; }
+.catrun .cr-head   { transform-origin: 95px 40px; animation: cr-head 0.5s ease-in-out infinite; }
+.catrun .cr-tail   { transform-origin: 30px 40px; animation: cr-tail 0.6s ease-in-out infinite; }
+.catrun .cr-legA   { animation: cr-legA 0.4s linear infinite; }
+.catrun .cr-legB   { animation: cr-legB 0.4s linear infinite; }
+.catrun .cr-shadow { transform-origin: 62px 70px; animation: cr-shadow 0.5s ease-in-out infinite; }
 
-@keyframes cd-body {
-  0%,100% { transform: translateY(0) rotate(-4deg); }
-  25%     { transform: translateY(-5px) rotate(0deg); }
-  50%     { transform: translateY(0) rotate(4deg); }
-  75%     { transform: translateY(-5px) rotate(0deg); }
-}
-@keyframes cd-head {
-  0%,100% { transform: rotate(5deg); }
-  50%     { transform: rotate(-5deg); }
-}
-@keyframes cd-armL {
-  0%,100% { transform: rotate(28deg); }
-  50%     { transform: rotate(-42deg); }
-}
-@keyframes cd-armR {
-  0%,100% { transform: rotate(42deg); }
-  50%     { transform: rotate(-28deg); }
-}
-@keyframes cd-tail {
-  0%,100% { transform: rotate(-16deg); }
-  50%     { transform: rotate(20deg); }
-}
-@keyframes cd-shadow {
-  0%,100% { transform: scaleX(1); opacity: .28; }
-  25%,75% { transform: scaleX(.8); opacity: .18; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .cat-dance .cd-all, .cat-dance .cd-head, .cat-dance .cd-armL,
-  .cat-dance .cd-armR, .cat-dance .cd-tail, .cat-dance .cd-shadow { animation: none; }
-}
+@keyframes cr-body { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes cr-head { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-1.5px) rotate(-3deg); } }
+@keyframes cr-tail { 0%,100% { transform: rotate(-10deg); } 50% { transform: rotate(12deg); } }
+@keyframes cr-legA { 0% { transform: rotate(32deg); } 50% { transform: rotate(-32deg); } 100% { transform: rotate(32deg); } }
+@keyframes cr-legB { 0% { transform: rotate(-32deg); } 50% { transform: rotate(32deg); } 100% { transform: rotate(-32deg); } }
+@keyframes cr-shadow { 0%,100% { transform: scaleX(1); opacity: .16; } 50% { transform: scaleX(.8); opacity: .1; } }
+@media (prefers-reduced-motion: reduce) { .catrun * { animation: none !important; } }
+
+/* 인라인 로더: 텍스트 + 우측 조그만 달리는 고양이 */
+.cat-inline { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 600; }
+.cat-inline .ci-t { white-space: nowrap; }
+.cat-inline .catrun { width: 44px; height: 29px; flex: 0 0 auto; }
 
 /* 인스타 안내 메모 */
 .ig-note { font-size: 12.5px; color: var(--muted); margin: 2px 0 4px; }

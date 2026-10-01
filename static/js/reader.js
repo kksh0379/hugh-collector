@@ -25,7 +25,9 @@
     const current = ++sequence;
     body.replaceChildren();
     body.setAttribute("aria-busy", "true");
-    status.textContent = "기사 본문을 불러오고 있어요…";
+    // 본문 로딩: 텍스트 우측에 조그만 달리는 고양이(app.js의 catRunInline, 없으면 텍스트만)
+    if (typeof window.catRunInline === "function") status.innerHTML = window.catRunInline("기사 본문을 불러오고 있어요…");
+    else status.textContent = "기사 본문을 불러오고 있어요…";
     retry.hidden = true;
     const timer = setTimeout(() => currentController.abort(), 25000);
     try {

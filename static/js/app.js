@@ -422,50 +422,48 @@ function setView(mode) {
 
 // ----------------------------- 로딩 표시 / 무한 스크롤 -----------------------------
 // 🐱 로딩 스피너: 춤추는 하얀 코숏(직접 그린 애니메이션 SVG). 애니메이션은 style.css.
-function catSpin(label) {
-  return `<div class="cat-load">
-    <svg class="cat-dance" viewBox="0 0 100 100" role="img" aria-label="불러오는 중">
-      <ellipse class="cd-shadow" cx="50" cy="93" rx="22" ry="3.6" fill="#000"/>
-      <g class="cd-all">
-        <!-- 꼬리 -->
-        <path class="cd-tail" d="M37,80 C21,81 15,66 22,56 C25,51 31,53 31,59 C31,65 28,71 38,75 Z"
-              fill="#fff" stroke="#e4e4ea" stroke-width="2" stroke-linejoin="round"/>
-        <!-- 팔(양쪽으로 흔들흔들) -->
-        <g class="cd-armR">
-          <path d="M37,60 C28,60 23,54 22,47" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
-          <circle cx="21.5" cy="46" r="4.6" fill="#fff" stroke="#e4e4ea" stroke-width="2"/>
-        </g>
-        <g class="cd-armL">
-          <path d="M63,60 C72,60 77,54 78,47" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
-          <circle cx="78.5" cy="46" r="4.6" fill="#fff" stroke="#e4e4ea" stroke-width="2"/>
-        </g>
-        <!-- 몸통 -->
-        <path d="M34,86 C31,66 37,55 50,55 C63,55 69,66 66,86 C66,89 60,90.5 50,90.5 C40,90.5 34,89 34,86 Z"
-              fill="#fff" stroke="#e4e4ea" stroke-width="2" stroke-linejoin="round"/>
-        <ellipse cx="50" cy="77" rx="8.5" ry="11" fill="#f4f5f8"/>
-        <!-- 발 -->
-        <ellipse cx="43" cy="89.5" rx="5.4" ry="4.1" fill="#fff" stroke="#e4e4ea" stroke-width="2"/>
-        <ellipse cx="57" cy="89.5" rx="5.4" ry="4.1" fill="#fff" stroke="#e4e4ea" stroke-width="2"/>
-        <!-- 머리 -->
-        <g class="cd-head">
-          <path d="M31,29 L33,12 L47,25 Z" fill="#fff" stroke="#e4e4ea" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M69,29 L67,12 L53,25 Z" fill="#fff" stroke="#e4e4ea" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M34.5,26 L35.5,17 L43,25 Z" fill="#f6b8ce"/>
-          <path d="M65.5,26 L64.5,17 L57,25 Z" fill="#f6b8ce"/>
-          <circle cx="50" cy="37" r="20" fill="#fff" stroke="#e4e4ea" stroke-width="2"/>
-          <ellipse cx="37" cy="43" rx="4" ry="2.6" fill="#f9ccdb"/>
-          <ellipse cx="63" cy="43" rx="4" ry="2.6" fill="#f9ccdb"/>
-          <path d="M40,37 q3,-4.5 6,0" fill="none" stroke="#4a4a52" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="M54,37 q3,-4.5 6,0" fill="none" stroke="#4a4a52" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="M48.4,41.5 h3.2 l-1.6,1.9 Z" fill="#f2879f"/>
-          <path d="M50,43.4 q-2.3,2.4 -4.6,0 M50,43.4 q2.3,2.4 4.6,0" fill="none" stroke="#c98aa0" stroke-width="1.4" stroke-linecap="round"/>
-          <path d="M32,39 H22 M33,43 H23.5" stroke="#dcdce3" stroke-width="1.3" stroke-linecap="round"/>
-          <path d="M68,39 H78 M67,43 H76.5" stroke="#dcdce3" stroke-width="1.3" stroke-linecap="round"/>
-        </g>
+// 달려가는 고양이 로더 SVG — 흰 코숏 / 페르시안 친칠라 랜덤(breed 지정 가능)
+function catRunSvg(breed) {
+  breed = breed || (Math.random() < 0.5 ? "koshort" : "chinchilla");
+  const chin = breed === "chinchilla";
+  const body = chin ? "#f1f2f8" : "#ffffff";     // 친칠라=은백 / 코숏=흰색
+  const line = chin ? "#d6d9e6" : "#e4e4ea";
+  const earIn = chin ? "#ecd6e1" : "#f6b8ce";
+  const eye = chin ? "#5f9170" : "#4a4a52";       // 친칠라=연녹 / 코숏=진회
+  // 귀: 코숏=뾰족, 친칠라=작고 둥글. 꼬리: 친칠라=풍성
+  const ears = chin
+    ? `<path d="M80,25 q2,-8 9,-4 q-1,6 -7,7 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
+       <path d="M101,24 q5,-6 9,0 q-4,4 -8,4 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`
+    : `<path d="M80,26 L82,11 L92,23 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>
+       <path d="M106,26 L108,12 L97,22 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`;
+  const tail = chin
+    ? `<path class="cr-tail" d="M30,40 q-20,-4 -23,-21 q-1,-9 7,-6 q-3,9 4,13 q8,4 14,9 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`
+    : `<path class="cr-tail" d="M30,42 q-17,-2 -20,-17 q-1,-7 5,-6 q-1,9 6,12 q7,3 12,8 Z" fill="${body}" stroke="${line}" stroke-width="2" stroke-linejoin="round"/>`;
+  const leg = (x, cls) => `<rect class="${cls}" x="${x - 2.3}" y="50" width="4.6" height="15" rx="2.3" fill="${body}" stroke="${line}" stroke-width="1.5" style="transform-origin:${x}px 52px"/>`;
+  return `<svg class="catrun ${breed}" viewBox="0 0 122 80" role="img" aria-label="불러오는 중">
+    <ellipse class="cr-shadow" cx="62" cy="70" rx="33" ry="4" fill="#000"/>
+    <g class="cr-all">
+      ${tail}
+      ${leg(46, "cr-legA")}${leg(55, "cr-legB")}${leg(72, "cr-legB")}${leg(81, "cr-legA")}
+      <ellipse cx="58" cy="42" rx="31" ry="15" fill="${body}" stroke="${line}" stroke-width="2"/>
+      <g class="cr-head">
+        ${ears}
+        <circle cx="95" cy="34" r="13" fill="${body}" stroke="${line}" stroke-width="2"/>
+        <ellipse cx="91" cy="40" rx="3.2" ry="2" fill="${chin ? "#f3dbe6" : "#f9ccdb"}"/>
+        <circle cx="100" cy="33" r="1.9" fill="${eye}"/>
+        <path d="M105,36 l4,1 -3,2 Z" fill="${earIn}"/>
+        <path d="M108,34 h7 M108,38 h6" stroke="${line}" stroke-width="1.2" stroke-linecap="round"/>
       </g>
-    </svg>
-    <span class="cat-load-label">${escapeHtml(label || "불러오는 중…")}</span>
-  </div>`;
+    </g>
+  </svg>`;
+}
+// 큰 로더(세로): 달리는 고양이 + 라벨
+function catSpin(label) {
+  return `<div class="cat-load">${catRunSvg()}<span class="cat-load-label">${escapeHtml(label || "불러오는 중…")}</span></div>`;
+}
+// 인라인 로더: 텍스트 + 우측에 조그만 달리는 고양이(후기/본문읽기 레이아웃용)
+function catRunInline(text) {
+  return `<span class="cat-inline"><span class="ci-t">${escapeHtml(text || "불러오는 중…")}</span>${catRunSvg()}</span>`;
 }
 
 function showLoading(el) {
@@ -2484,7 +2482,7 @@ async function loadReport(id) {
     const nameEl = $("lunch-rev-name"), body = $("lunch-rev-body");
     if (nameEl) nameEl.textContent = r.name || "식당";
     showView("view-lunch-reviews");
-    if (body) body.innerHTML = `<div class="lrev-head">불러오는 중…</div>`;
+    if (body) body.innerHTML = `<div class="lrev-head">${catRunInline("평점·후기 불러오는 중…")}</div>`;
     let revs = [];
     try { revs = await getJSON("/api/lunch/reviews?rid=" + id); } catch (e) { revs = []; }
     renderReviews(r, revs);
