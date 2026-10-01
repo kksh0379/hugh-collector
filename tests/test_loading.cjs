@@ -20,3 +20,15 @@ test('loader progress labels cannot inject HTML', () => {
 test('old random and mini spinners are no longer emitted', () => {
   assert.doesNotMatch(source, /class="mini-spin"|class="catrun/);
 });
+test('sprite playback visits all eight cells discretely and loops to the first pose', () => {
+  const css = fs.readFileSync('static/css/style.css', 'utf8');
+  const frames = css.match(/@keyframes kitten-frames \{([\s\S]*?)\n\}/)[1];
+  const positions = [...frames.matchAll(/background-position:([^;]+);/g)].map(m => m[1]);
+  assert.equal(positions.length, 9);
+  assert.equal(new Set(positions.slice(0, 8)).size, 8);
+  assert.equal(positions[8], positions[0]);
+  assert.match(css, /background-size:400% 200%/);
+  assert.match(css, /kitten-frames 2\.4s step-end infinite/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.doesNotMatch(css, /kitten-hop/);
+});

@@ -368,9 +368,9 @@ function setView(mode) {
 })();
 
 // ----------------------------- 로딩 표시 / 무한 스크롤 -----------------------------
-// Shared pair loader: both breeds always appear; CSS handles independent motion.
+// Shared pair loader: eight poses play in order, with both breeds in every frame.
 function catRunSvg() {
-  return `<span class="cat-pair" aria-hidden="true"><span class="cat-orbit"></span><span class="cat-kitten koshort"></span><span class="cat-kitten chinchilla"></span><span class="cat-heart">♥</span></span>`;
+  return `<span class="cat-pair" aria-hidden="true"><span class="cat-frames" data-breeds="koshort chinchilla"></span></span>`;
 }
 function catSpin(label) {
   return `<div class="cat-load" role="status" aria-live="polite">${catRunSvg()}<span class="cat-load-label">${escapeHtml(label || "불러오는 중…")}</span></div>`;
