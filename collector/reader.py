@@ -162,7 +162,15 @@ def read_article(item):
         return dict(result, **fallback(item))
     try:
         try:
-            body = {"mode": "article", "paragraphs": extract_paragraphs(fetch_html(url))}
+            target = url
+            if urlsplit(url).hostname == "news.google.com":
+                from collector.google_news import _decode_google_url
+                target = _decode_google_url(url)
+                if not target:
+                    raise ReaderUnavailable("Unresolved Google News URL")
+            # Resolved destinations still pass the same pinned public-IP checks.
+            body = {"mode": "article", "paragraphs": extract_paragraphs(fetch_html(target)),
+                    "url": target}
         except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
             body = fallback(item)
         with _lock:

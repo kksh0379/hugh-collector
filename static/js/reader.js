@@ -27,7 +27,7 @@
     body.setAttribute("aria-busy", "true");
     status.textContent = "기사 본문을 불러오고 있어요…";
     retry.hidden = true;
-    const timer = setTimeout(() => currentController.abort(), 15000);
+    const timer = setTimeout(() => currentController.abort(), 25000);
     try {
       const response = await fetch("/api/reader?url=" + encodeURIComponent(url), { signal: currentController.signal });
       const data = await response.json();

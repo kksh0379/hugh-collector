@@ -87,6 +87,14 @@ class ReaderTests(unittest.TestCase):
             self.assertEqual(first, second)
             fetch.assert_called_once_with("https://publisher.example/story/1")
 
+    def test_google_news_resolves_before_safe_fetch(self):
+        item = {"url": "https://news.google.com/rss/articles/test", "title": "기사"}
+        with patch("collector.google_news._decode_google_url", return_value="https://publisher.example/story"), patch.object(reader, "fetch_html", return_value=HTML) as fetch:
+            data = reader.read_article(item)
+            self.assertEqual(data["mode"], "article")
+            self.assertEqual(data["url"], "https://publisher.example/story")
+            fetch.assert_called_once_with("https://publisher.example/story")
+
     def test_timeout_returns_labelled_excerpt(self):
         with patch.object(reader, "fetch_html", side_effect=TimeoutError):
             data = self.client.get('/api/reader?url=https://publisher.example/story/1').get_json()
