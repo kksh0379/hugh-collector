@@ -10,6 +10,19 @@ ARTICLE = {"mode": "article", "title": "문화 소식", "paragraphs": ["새로�
 
 
 class SummaryTests(unittest.TestCase):
+    def test_highlights_are_exact_limited_phrases_without_changing_summary(self):
+        point = "개인정보 10만 건이 유출되어 기관이 비밀번호 변경을 권고했습니다."
+        data = summaries._normalize_summary({"points": [point, "대응 과정과 원인에 대한 추가 조사가 진행됩니다."],
+                                             "highlights": [["10만 건", "비밀번호 변경", "추가 주장"], ["없는 사실", 12]]})
+        self.assertEqual(data["points"][0], point)
+        self.assertEqual(data["highlights"], [["10만 건", "비밀번호 변경"], []])
+
+    def test_whole_sentence_and_overlapping_highlights_are_discarded(self):
+        point = "기관은 개인정보 보호 조치를 강화하고 관련 절차를 점검했습니다."
+        data = summaries._normalize_summary({"points": [point, "추가 조사는 계속 진행될 예정입니다."],
+                                             "highlights": [[point, "개인정보 보호", "개인정보", "관련 절차"], []]})
+        self.assertEqual(data["highlights"][0], ["개인정보 보호", "관련 절차"])
+
     def setUp(self):
         summaries._jobs.clear()
         reader._summary_sources.clear()

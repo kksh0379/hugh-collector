@@ -28,3 +28,21 @@ test('summary failure leaves a readable message in the summary box',async()=>{
   await ctx.loadSummary('https://publisher.example/1',1);
   assert.match(status.children[1].textContent,/본문은 아래에서 읽을 수/);
 });
+test('key phrases become strong text nodes and the sentence stays intact',()=>{
+  const item=node();
+  const ctx=vm.createContext({document:{createElement:()=>node(),createTextNode:text=>({textContent:text})}});
+  vm.runInContext(helpers,ctx);
+  const point='기관은 10만 건 유출을 확인하고 비밀번호 변경을 권고했습니다.';
+  ctx.appendSummaryHighlights(item,point,['비밀번호 변경','10만 건','없는 내용']);
+  assert.equal(item.children.map(c=>c.textContent).join(''),point);
+  assert.deepEqual(item.children.filter(c=>c.className==='reader-summary-key').map(c=>c.textContent),['10만 건','비밀번호 변경']);
+});
+test('invalid, overlapping and excessive highlighting stays bounded',()=>{
+  const item=node();
+  const ctx=vm.createContext({document:{createElement:()=>node(),createTextNode:text=>({textContent:text})}});
+  vm.runInContext(helpers,ctx);
+  const point='기관은 개인정보 보호 조치를 강화하고 관련 절차를 점검했습니다.';
+  ctx.appendSummaryHighlights(item,point,[point,'개인정보 보호','개인정보','관련 절차','기관']);
+  assert.equal(item.children.map(c=>c.textContent).join(''),point);
+  assert.deepEqual(item.children.filter(c=>c.className==='reader-summary-key').map(c=>c.textContent),['개인정보 보호','관련 절차']);
+});

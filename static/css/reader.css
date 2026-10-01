@@ -13,6 +13,10 @@
 .reader-summary-title { display:block; color:#315c39; font-size:14px; margin-bottom:8px; }
 .reader-summary-points { margin:0; padding-left:20px; word-break:keep-all; overflow-wrap:anywhere; }
 .reader-summary-points li + li { margin-top:7px; }
+.reader-summary-points li::marker { color:#527a5a; }
+.reader-summary-key { font-weight:800; color:#254b2d; text-decoration:underline; text-decoration-color:#8dbca18c; text-decoration-thickness:.16em; text-underline-offset:.16em; }
+.reader-view.dark .reader-summary-key { color:#c2e8cc; text-decoration-color:#639d7480; }
+.reader-view.dark .reader-summary-points li::marker { color:#8fcaa0; }
 .reader-summary-note { margin:8px 0 0; font-size:12px; color:#697168; word-break:keep-all; overflow-wrap:anywhere; }
 .reader-view.dark .reader-summary-title { color:#8fcaa0; }
 .reader-view.dark .reader-summary-note { color:#a6adb5; }

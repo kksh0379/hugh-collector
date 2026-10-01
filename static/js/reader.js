@@ -61,7 +61,7 @@
     }
   }
 
-  function showSummary(points, notice) {
+  function showSummary(points, notice, highlights) {
     status.replaceChildren();
     const heading = document.createElement('strong');
     heading.className = 'reader-summary-title';
@@ -70,9 +70,9 @@
     if (points) {
       const list = document.createElement('ul');
       list.className = 'reader-summary-points';
-      for (const point of points) {
+      for (const [index, point] of points.entries()) {
         const item = document.createElement('li');
-        item.textContent = point;
+        appendSummaryHighlights(item, point, Array.isArray(highlights) ? highlights[index] : null);
         list.append(item);
       }
       status.append(list);
@@ -81,6 +81,30 @@
     note.className = 'reader-summary-note';
     note.textContent = notice;
     status.append(note);
+  }
+
+  function appendSummaryHighlights(item, point, phrases) {
+    const ranges = [];
+    let total = 0;
+    for (const phrase of Array.isArray(phrases) ? phrases : []) {
+      if (typeof phrase !== 'string' || phrase.length < 2 || phrase.length > 45) continue;
+      const start = point.indexOf(phrase), end = start + phrase.length;
+      if (start < 0 || ranges.length >= 2 || total + phrase.length > point.length / 2 || ranges.some(r => start < r.end && end > r.start)) continue;
+      ranges.push({start, end});
+      total += phrase.length;
+    }
+    if (!ranges.length) { item.textContent = point; return; }
+    ranges.sort((a,b) => a.start - b.start);
+    let offset = 0;
+    for (const range of ranges) {
+      item.append(document.createTextNode(point.slice(offset, range.start)));
+      const key = document.createElement('strong');
+      key.className = 'reader-summary-key';
+      key.textContent = point.slice(range.start, range.end);
+      item.append(key);
+      offset = range.end;
+    }
+    item.append(document.createTextNode(point.slice(offset)));
   }
 
   async function loadSummary(url, current) {
@@ -98,7 +122,7 @@
         if (!response.ok) throw new Error('Summary unavailable');
         if (data.status === 'ready') {
           if (!Array.isArray(data.points) || data.points.length < 2 || data.points.length > 3 || data.points.some(p => typeof p !== 'string' || !p.trim())) throw new Error('Invalid summary');
-          showSummary(data.points, data.partial ? '긴 본문의 일부를 바탕으로 AI가 정리했어요. 전체 내용은 아래 본문에서 확인하세요.' : 'AI가 정리한 요약이에요. 자세한 내용은 아래 본문에서 확인하세요.');
+          showSummary(data.points, data.partial ? '긴 본문의 일부를 바탕으로 AI가 정리했어요. 전체 내용은 아래 본문에서 확인하세요.' : 'AI가 정리한 요약이에요. 자세한 내용은 아래 본문에서 확인하세요.', data.highlights);
           return;
         }
         if (data.status !== 'pending') {
