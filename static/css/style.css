@@ -600,6 +600,16 @@ body.view-list .card-title {
   text-decoration: none;
 }
 
+.card-actions .read-action {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 34px; padding: 7px 12px; border: 1px solid #a8bfe4; border-radius: 9px;
+  background: #f3f7ff; color: var(--primary-dark); font-size: 13px; font-weight: 700;
+  line-height: 1.2; text-decoration: none; white-space: nowrap;
+}
+.card-actions .read-action:hover { background: #e8f0ff; border-color: var(--primary); }
+.card-actions .read-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.card-actions .read-action:active { background: #dce9ff; }
+
 .empty {
   text-align: center;
   color: var(--muted);
@@ -808,7 +818,7 @@ body.is-admin .legend.admin-only { display: flex !important; }
 
 /* ===== 읽음/최신(N)/스크랩/나의 스크랩 ===== */
 .card { position: relative; }
-.card .card-title { padding-right: 100px; }         /* 우상단 스크랩 버튼과 겹침 방지 */
+.card .card-title { padding-right: 42px; }         /* 우상단 스크랩 버튼과 겹침 방지 */
 
 /* 오늘 등록 글 N 딱지 */
 .badge-new {
@@ -832,7 +842,7 @@ body.is-admin .legend.admin-only { display: flex !important; }
 /* 스크랩 버튼(카드 우상단, 북마크 아이콘) */
 .scrap-btn {
   position: absolute; top: 8px; right: 8px; z-index: 2;
-  width: 98px; min-height: 36px; padding: 6px 8px;
+  width: 36px; height: 36px; padding: 8px;
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   border: 1.5px solid #537ebf; border-radius: 9px; cursor: pointer;
   background: #fff; color: #245596; font: inherit; font-size: 11px; font-weight: 700;
@@ -841,6 +851,7 @@ body.is-admin .legend.admin-only { display: flex !important; }
 .scrap-btn svg { fill: none; stroke: currentColor; stroke-width: 1.7; flex: none; }
 .scrap-btn.on { color: #fff; background: var(--primary); border-color: var(--primary); }
 .scrap-btn.on svg { fill: currentColor; }
+@media (pointer: coarse) { .scrap-btn::before { content: ""; position: absolute; inset: -4px; } }
 .scrap-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .scrap-btn:active { transform: scale(.96); }
 
@@ -962,7 +973,7 @@ body.tab-event #view-toggle { display: none; }
 .event-card .card-body { padding: 12px; }
 .event-date { display: inline-block; font-size: 12px; font-weight: 800; color: var(--primary-dark); background: #eef2ff; padding: 3px 8px; border-radius: 6px; margin-bottom: 6px; }
 .event-place { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
-.event-card .card-title { padding-right: 100px; }
+.event-card .card-title { padding-right: 42px; }
 
 /* Fixed media and text columns, even when the thumbnail is absent or fails. */
 @media (min-width:768px) {
@@ -1260,7 +1271,7 @@ body.tab-report .viewbar { display: none; }
   background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 13px;
 }
 .lunch-card.is-ex { opacity: 0.55; }
-.lc-top { display: flex; align-items: baseline; gap: 8px; padding-right: 100px; }
+.lc-top { display: flex; align-items: baseline; gap: 8px; padding-right: 42px; }
 .lcatpath { margin-top: 3px; font-size: 11.5px; color: var(--muted); }
 .lmeta2 { margin-top: 4px; font-size: 12px; color: var(--muted); }
 .linfo-tel { color: var(--primary); text-decoration: none; }

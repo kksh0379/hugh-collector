@@ -165,19 +165,16 @@ function registerItem(it, tab, link) {
 // 카드 우상단 스크랩 버튼 + 오늘글 N딱지 HTML
 function updateScrapButton(button) {
   const saved = isScrapped(button.dataset.key);
-  const label = saved ? "✓ 스크랩됨" : "스크랩";
   button.classList.toggle("on", saved);
   button.setAttribute("aria-pressed", String(saved));
   button.setAttribute("aria-label", saved ? "스크랩됨 — 누르면 취소" : "스크랩하기");
   button.title = saved ? "스크랩됨 — 누르면 취소" : "스크랩하기";
-  const text = button.querySelector(".scrap-btn-label");
-  if (text) text.textContent = label;
 }
 function scrapBtnHtml(key) {
   const saved = isScrapped(key);
   const action = saved ? "스크랩됨 — 누르면 취소" : "스크랩하기";
   return `<button class="scrap-btn${saved ? " on" : ""}" type="button" data-key="${escapeHtml(key)}" aria-pressed="${saved}" aria-label="${action}" title="${action}">`
-    + `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6 3h12c.55 0 1 .45 1 1v17l-7-3.9L5 21V4c0-.55.45-1 1-1z"/></svg><span class="scrap-btn-label">${saved ? "✓ 스크랩됨" : "스크랩"}</span></button>`;
+    + `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 3h12c.55 0 1 .45 1 1v17l-7-3.9L5 21V4c0-.55.45-1 1-1z"/></svg></button>`;
 }
 function newBadgeHtml(iso) { return isToday(iso) ? `<span class="badge-new" title="오늘 등록">N</span>` : ""; }
 function readClass(key) { return isRead(key) ? " is-read" : ""; }
@@ -552,7 +549,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" ${tab === "social" ? "" : "data-reader"}>${tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
+          ${item.url ? `<a class="read-action" href="${escapeHtml(item.url)}" target="_blank" rel="noopener" ${tab === "social" ? "" : "data-reader"}>${tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
           ${copyBtnHtml(item.url)}
         </div>
       </div>
@@ -933,7 +930,7 @@ function newsGroupNode(arr, tab) {
         <p class="card-summary">${escapeHtml(rep.content || "요약 없음")}</p>
         ${secAiHtml(rep)}
         <div class="card-actions">
-          ${repLink ? `<a href="${escapeHtml(repLink)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}
+          ${repLink ? `<a class="read-action" href="${escapeHtml(repLink)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}
           ${copyBtnHtml(repLink)}
         </div>
       </div>
@@ -1072,7 +1069,7 @@ function eventAlbumCard(s) {
       <h3 class="card-title">${newBadgeHtml(s.published_at)}${titleHtml}</h3>
       ${place ? `<div class="event-place">📍 ${escapeHtml(place)}</div>` : ""}
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
-      <div class="card-actions">${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${copyBtnHtml(link)}</div>
+      <div class="card-actions">${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${copyBtnHtml(link)}</div>
     </div>`;
   return li;
 }
@@ -1714,7 +1711,7 @@ function scrapCardNode(s) {
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
-        ${link ? (isFood ? kakaoLinkHtml(link) : `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${s.tab === "social" ? "" : "data-reader"}>${s.tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${s.tab === "social" ? "" : "data-reader"}>${s.tab === "social" ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
         ${copyBtnHtml(link)}
         <button class="grp-assign" type="button">🏷 그룹 지정</button>
       </div>

@@ -22,7 +22,8 @@
 .reader-view.dark .reader-summary-note { color:#a6adb5; }
 .reader-body { font-size:18px; line-height:1.95; letter-spacing:-.015em; overflow-wrap:anywhere; word-break:normal; }
 .reader-body p { margin:1.3em 0; }
-.reader-source { display:inline-block; margin-top:24px; padding:12px 0; color:#315c39; text-underline-offset:4px; font-size:15px; }
+.reader-source { display:inline-flex; align-items:center; justify-content:center; min-height:44px; margin-top:24px; padding:10px 16px; border:1px solid #b8cabb; border-radius:10px; background:#eef5ee; color:#315c39; font-size:15px; font-weight:700; text-decoration:none; }
+.reader-source:hover { background:#e1eee2; }
 .reader-retry { margin-top:12px; }
 @media (max-width:600px) {
   .reader-view { width:100%; max-width:100%; height:100dvh; max-height:100dvh; border:0; border-radius:0; margin:0; }
@@ -38,5 +39,6 @@
 .reader-view.dark .reader-toolbar button, .reader-view.dark .reader-retry { background:#23262b; color:#e7e8ea; border-color:#33373d; }
 .reader-view.dark .reader-meta { color:#a6adb5; }
 .reader-view.dark .reader-status { background:#22252a; color:#b9c0c8; }
-.reader-view.dark .reader-source { color:#8ab4ff; }
+.reader-view.dark .reader-source { color:#8ab4ff; background:#232b37; border-color:#485b78; }
+.reader-view.dark .reader-source:hover { background:#2c394c; }
 .reader-view.dark .reader-body { color:#e7e8ea; }
