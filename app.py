@@ -779,9 +779,10 @@ def _load_lunch_locations():
     if not _lunch_synced:
         # sync inserts missing locations itself; a separate seed pass is redundant.
         db.lunch_sync_locations(LUNCH_OFFICES)
-        from collector.lunch_history import import_history
+        from collector.lunch_history import import_history, rewrite_history
         with db.get_conn() as conn:
             import_history(conn, db._q, db._now())
+            rewrite_history(conn, db._q, db._now())
         _invalidate_lunch_cache()
         _lunch_synced = True
     return db.lunch_list_locations()
