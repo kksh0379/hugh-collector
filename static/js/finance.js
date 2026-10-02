@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const labels = {policy:'세법·보도자료',support:'지원사업',guide:'회계·세무 가이드',legislation:'입법예고'};
+  const labels = {policy:'세법·보도자료',guide:'회계·세무 가이드',legislation:'입법예고'};
   const modes = {live:'실데이터',demo:'예시 데이터',unconfigured:'연결 준비',unavailable:'일시 중단',loading:'불러오는 중'};
   let data = null, category = 'all', loading = false, dartVersion = 0;
   const esc = text => String(text ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -27,6 +27,22 @@
     const rows = data.items.filter(r => (category === 'all' || r.category === category) && `${r.title} ${r.description} ${r.source}`.toLowerCase().includes(query));
     $('finance-news').innerHTML = rows.length ? rows.map(r => `<article class="finance-news-item"><span class="finance-mode">${esc(labels[r.category])}</span><h3>${link(r.url,r.title)}</h3><p>${esc(r.description)}</p><p>${esc(r.source)}${r.pub_date ? ' · '+esc(r.pub_date) : ''}</p></article>`).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
+  function renderCalendar() {
+    const cal = data && data.calendar, list = $('finance-calendar-list');
+    if (!list) return;
+    const events = cal && Array.isArray(cal.events) ? cal.events : [];
+    const days = '일월화수목금토';
+    list.innerHTML = events.length ? events.map(e => {
+      // Date is already a KST business day from the server; parse its parts so the
+      // viewer's timezone never shifts the day or weekday.
+      const [y, m, dd] = String(e.date || '').split('-').map(Number);
+      const label = (y && m && dd) ? `${m}.${dd}(${days[new Date(Date.UTC(y, m-1, dd)).getUTCDay()]})` : esc(e.date);
+      const dday = e.days_left === 0 ? 'D-DAY' : (e.days_left > 0 ? 'D-'+e.days_left : '');
+      const shift = e.shifted ? '<span class="finance-calendar-shift">주말 순연</span>' : '';
+      return `<li class="finance-calendar-item"><span class="finance-calendar-dday${e.days_left===0?' today':''}">${esc(dday)}</span><div><strong>${esc(label)} · ${esc(e.title)}</strong>${shift}<p>${esc(e.note||'')}</p></div></li>`;
+    }).join('') : '<li class="finance-calendar-empty">다가오는 신고·납부 기한이 없습니다.</li>';
+    $('finance-calendar-message').textContent = cal ? (cal.message || '') : '';
+  }
   function render(result) {
     data = result;
     $('finance-indicators').innerHTML = data.indicators.map(r => {
@@ -38,7 +54,7 @@
       }
       return `<article class="finance-indicator"><span class="finance-mode ${r.mode === 'live' ? 'live' : ''}">${esc(modes[r.mode])}</span><h3>${esc(r.name)}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${r.date ? esc(r.date)+' 기준' : '실제 시세 아님'}</p><p>${r.change == null ? '비교 데이터 없음' : `직전 관측 대비 ${r.change > 0 ? '+' : ''}${esc(r.change)}${r.unit === '%' ? '%p' : esc(r.unit)}`}</p></article>`;
     }).join('');
-    $('finance-calendar-message').textContent = data.calendar.message;
+    renderCalendar();
     $('finance-sources').innerHTML = data.sources.map(s => `<div class="finance-source">${link(s.url,s.name)}<span class="finance-mode">${esc(modes[s.mode])}${s.mode==='live' ? ' · '+s.count+'건' : ''}</span></div>`).join('');
     const hasDemo = data.indicators.some(r => r.mode==='demo');
     $('finance-status').textContent = data.pending ? '연결 상태를 확인하고 있습니다. 아래 숫자는 화면 예시입니다.' : (hasDemo ? '예시 데이터가 포함되어 있습니다. 실제 시세·판단 근거로 사용할 수 없습니다. ' : '지표별 기준일과 출처별 연결 상태를 확인하세요. ') + (data.fetched_at ? '확인: '+new Date(data.fetched_at).toLocaleString('ko-KR') : '');

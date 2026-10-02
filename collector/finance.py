@@ -3,7 +3,7 @@ import os
 import re
 import math
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlsplit, quote, urlencode
+from urllib.parse import urlsplit, quote
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -19,7 +19,6 @@ KST = timezone(timedelta(hours=9))
 SOURCES = [
     ('MOEF', '재정경제부(구 기획재정부)', 'policy', 'https://mofe.go.kr/'),
     ('NTS', '국세청', 'policy', 'https://www.nts.go.kr/'),
-    ('BIZINFO', '기업마당', 'support', 'https://www.bizinfo.go.kr/'),
     ('PWC', '삼일회계법인', 'guide', 'https://www.pwc.com/kr/ko.html'),
     ('KPMG', '삼정KPMG', 'guide', 'https://kpmg.com/kr/ko/home.html'),
     ('JOSEILBO', '조세일보', 'guide', 'https://www.joseilbo.com/'),
@@ -30,10 +29,28 @@ DEFAULT_FEEDS = {
     'MOEF': 'https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028',
     'TAXWATCH': 'https://news.bizwatch.co.kr/rss/service/tax',
 }
-CATEGORIES = {'policy': '세법·보도자료', 'support': '지원사업', 'guide': '회계·세무 가이드', 'legislation': '입법예고'}
+CATEGORIES = {'policy': '세법·보도자료', 'guide': '회계·세무 가이드', 'legislation': '입법예고'}
 INDICATORS = [('731Y001', '0000001', '원/달러 환율', '원', 1350.0),
               ('817Y002', '010502000', 'CD 91일', '%', 3.0),
               ('817Y002', '010200000', '국고채 3년', '%', 2.8)]
+# 국세 법정 신고·납부 기한. 모두 세법에 명시된 고정 기한이며, 추측이 아닌 확정 규칙입니다.
+# 기한이 주말이면 다음 영업일로 조정합니다(국세기본법 제5조). 공휴일이 겹치면 추가 연장되나,
+# 공휴일(특히 음력 명절) 날짜는 검증 없이 하드코딩하지 않고 안내 문구로만 처리합니다.
+TAX_MONTHLY = [(10, '원천세 신고·납부', '전월 원천징수분(반기납부 승인 사업자 제외)')]
+TAX_ANNUAL = [
+    (1, 25, '부가가치세 제2기 확정신고·납부', '직전 과세기간(7~12월) 분'),
+    (1, 25, '간이과세자 부가가치세 신고·납부', '직전 1년(1~12월) 분'),
+    (2, 10, '면세사업자 사업장현황신고', '개인 면세사업자 직전 연도 수입금액'),
+    (3, 31, '법인세 신고·납부', '12월 말 결산 법인'),
+    (4, 25, '부가가치세 제1기 예정신고·납부', '법인사업자(개인 일반과세자는 예정고지)'),
+    (5, 31, '종합소득세·개인지방소득세 확정신고·납부', '직전 연도 귀속분'),
+    (6, 30, '성실신고확인대상자 종합소득세 신고·납부', '성실신고확인서 제출 대상'),
+    (7, 25, '부가가치세 제1기 확정신고·납부', '1~6월 분'),
+    (8, 31, '법인세 중간예납 신고·납부', '12월 말 결산 법인'),
+    (10, 25, '부가가치세 제2기 예정신고·납부', '법인사업자(개인 일반과세자는 예정고지)'),
+    (11, 30, '종합소득세 중간예납 납부', '고지분(11월 중 고지서 수령)'),
+]
+NTS_CALENDAR_URL = 'https://www.nts.go.kr/'
 
 
 def now():
@@ -86,9 +103,6 @@ def parse_feed(content, source):
 def collect_source(source):
     env = 'FINANCE_RSS_' + source[0]
     url = os.getenv(env, DEFAULT_FEEDS.get(source[0], '')).strip()
-    if source[0] == 'BIZINFO' and not url and os.getenv('BIZINFO_API_KEY'):
-        url = 'https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?' + urlencode(dict(
-            crtfcKey=os.environ['BIZINFO_API_KEY'], dataType='rss', searchCnt=30))
     status = dict(name=source[1], category=source[2], url=source[3], mode='unconfigured')
     if not url:
         return [], status
@@ -149,14 +163,50 @@ def indicator(spec):
     return result
 
 
+def next_business_day(day):
+    # 주말이면 다음 영업일(월요일)로 이동. 공휴일은 안내 문구로만 처리한다.
+    while day.weekday() >= 5:
+        day += timedelta(days=1)
+    return day
+
+
+def tax_calendar(today=None):
+    today = (today or now().date())
+    horizon = today + timedelta(days=120)
+    raw = []
+    # 매월 반복 기한(원천세 등)을 향후 5개월까지 생성.
+    for offset in range(0, 5):
+        year, month = divmod(today.year * 12 + today.month - 1 + offset, 12)
+        month += 1
+        for day, title, note in TAX_MONTHLY:
+            raw.append((datetime(year, month, day).date(), title, note))
+    # 연 1회 고정 기한은 올해와 내년 모두 생성해 연말·연초 경계를 포함.
+    for year in (today.year, today.year + 1):
+        for month, day, title, note in TAX_ANNUAL:
+            raw.append((datetime(year, month, day).date(), title, note))
+    events, seen = [], set()
+    for statutory, title, note in sorted(raw):
+        due = next_business_day(statutory)
+        if not (today <= due <= horizon):
+            continue
+        key = (due.isoformat(), title)
+        if key in seen:
+            continue
+        seen.add(key)
+        events.append(dict(date=due.isoformat(), statutory_date=statutory.isoformat(),
+                           shifted=due != statutory, days_left=(due - today).days,
+                           title=title, note=note, url=NTS_CALENDAR_URL))
+    events.sort(key=lambda e: (e['date'], e['title']))
+    return dict(mode='reference', source_url=NTS_CALENDAR_URL, events=events[:8],
+        message='세법에 명시된 국세 신고·납부 법정기한입니다. 주말은 다음 영업일로 조정했으며, '
+                '공휴일이 겹치면 기한이 하루 이상 연장될 수 있으니 확정 일정은 국세청 홈택스에서 확인하세요.')
+
+
 def dashboard():
     with ThreadPoolExecutor(max_workers=3) as executor:
         indicators = list(executor.map(indicator, INDICATORS))
     data = news()
-    # Image says "독일 정보 API". Unverified source: do not call it or create legal deadlines.
-    # TODO: integrate a verified Korean holiday API + reviewed tax rules and exceptions.
-    data.update(indicators=indicators, calendar=dict(mode='unconfigured', events=[],
-        message='세무 일정은 공식 데이터 및 휴일·기한 연장 규칙 검증 후 제공됩니다.'))
+    data.update(indicators=indicators, calendar=tax_calendar())
     return data
 
 
@@ -166,8 +216,7 @@ def dashboard_route():
     if data is None:
         return jsonify(dict(pending=True, indicators=[dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3],
             value=s[4], change=None, date=None, mode='demo', history=[]) for s in INDICATORS],
-            items=[], sources=[], calendar=dict(mode='unconfigured', events=[],
-            message='세무 일정은 공식 데이터 및 휴일·기한 연장 규칙 검증 후 제공됩니다.')))
+            items=[], sources=[], calendar=tax_calendar()))
     return jsonify(dict(data, pending=False))
 
 

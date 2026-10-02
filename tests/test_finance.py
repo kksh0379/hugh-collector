@@ -94,12 +94,32 @@ class FinanceTests(unittest.TestCase):
         with patch.object(finance,'get_json',return_value=payload):
             self.assertTrue(finance.disclosures('')['items'][0]['url'].endswith('20261002000001'))
 
-    def test_dashboard_partial_sources_and_no_unverified_deadlines(self):
+    def test_dashboard_partial_sources_and_statutory_calendar(self):
         with patch.object(finance,'collect_source',return_value=([],{'name':'source','mode':'unavailable'})):
             result=finance.dashboard()
             self.assertEqual(len(result['indicators']),3)
-            self.assertEqual(len(result['sources']),8)
-            self.assertEqual(result['calendar']['events'],[])
+            self.assertEqual(len(result['sources']),7)
+            cal=result['calendar']
+            self.assertEqual(cal['mode'],'reference')
+            self.assertTrue(cal['events'])
+            for e in cal['events']:
+                self.assertTrue(e['url'].startswith('https://www.nts.go.kr'))
+                self.assertIn('statutory_date',e)
+                self.assertIsInstance(e['days_left'],int)
+
+    def test_tax_calendar_shifts_weekends_and_stays_in_horizon(self):
+        import datetime as dt
+        base=dt.date(2026,1,20)
+        cal=finance.tax_calendar(today=base)
+        self.assertEqual(cal['mode'],'reference')
+        # 2026-01-25 falls on Sunday: statutory date is kept, due date shifts to Monday 01-26.
+        due=next(e for e in cal['events'] if '제2기 확정' in e['title'])
+        self.assertEqual((due['statutory_date'],due['date'],due['shifted']),('2026-01-25','2026-01-26',True))
+        # Every surfaced due date is a weekday within [today, today+120].
+        for e in cal['events']:
+            d=dt.date.fromisoformat(e['date'])
+            self.assertLess(d.weekday(),5)
+            self.assertTrue(0<=(d-base).days<=120)
 
     def test_cold_dashboard_is_nonblocking(self):
         with patch.object(finance.cache,'get',return_value=None) as get:
@@ -108,12 +128,15 @@ class FinanceTests(unittest.TestCase):
             self.assertTrue(result.json['pending'])
             self.assertEqual(get.call_args.kwargs['wait'],0)
 
-    def test_bizinfo_key_is_server_side(self):
-        os.environ['BIZINFO_API_KEY']='secret'
+    def test_rss_url_comes_from_operator_env_only(self):
+        # Sources connect via operator-set FINANCE_RSS_<CODE>; nothing is guessed.
+        nts=next(s for s in finance.SOURCES if s[0]=='NTS')
+        rows,status=finance.collect_source(nts)
+        self.assertEqual(status['mode'],'unconfigured')
+        os.environ['FINANCE_RSS_NTS']='https://example.org/feed.xml'
         with patch.object(finance.requests,'get',side_effect=TimeoutError) as get:
-            rows,status=finance.collect_source(finance.SOURCES[2])
-            self.assertIn('crtfcKey=secret',get.call_args.args[0])
-            self.assertNotIn('secret',str(status))
+            rows,status=finance.collect_source(nts)
+            self.assertEqual(get.call_args.args[0],'https://example.org/feed.xml')
             self.assertEqual(status['mode'],'unavailable')
 
 if __name__ == '__main__':

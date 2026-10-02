@@ -28,9 +28,15 @@
 .finance-input-row { display: flex; gap: 8px; }
 .finance-view input { min-width: 0; width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; background: var(--card); font-size: 16px; color: var(--text); }
 .finance-view button { min-height: 40px; flex-shrink: 0; }
-.finance-calendar-placeholder { display: flex; align-items: center; gap: 15px; margin: 22px 0; font-size: 13px; }
-.finance-calendar-placeholder > span { font-size: 36px; color: var(--muted); }
-.finance-calendar-placeholder p { font-size: 12px; color: var(--muted); margin: 5px 0; }
+.finance-calendar-list { list-style: none; margin: 16px 0 10px; padding: 0; }
+.finance-calendar-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.finance-calendar-item:last-child { border-bottom: none; }
+.finance-calendar-dday { flex-shrink: 0; min-width: 48px; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 5px 6px; }
+.finance-calendar-dday.today { color: #fff; background: var(--primary); border-color: var(--primary); }
+.finance-calendar-item strong { font-size: 13px; line-height: 1.5; }
+.finance-calendar-item p { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
+.finance-calendar-shift { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
+.finance-calendar-empty { list-style: none; padding: 20px 0; color: var(--muted); font-size: 13px; }
 .finance-filters { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 10px; }
 .finance-filters button { border: 1px solid var(--border); background: var(--card); color: var(--muted); padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; }
 .finance-filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
