@@ -42,7 +42,7 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(rewrite_history(self.conn,lambda s:s,'2026-10-03'),0)
         self.assertEqual(list(self.conn.execute('SELECT id,rating FROM lunch_review')),ratings)
         self.assertEqual(self.conn.execute("SELECT comment FROM lunch_review WHERE username='실제 이용자'").fetchone()[0],'기존 후기')
-        personal = [r[0] for r in self.conn.execute("SELECT comment FROM lunch_review WHERE username='휴'")]
+        personal = [r[0] for r in self.conn.execute("SELECT comment FROM lunch_review WHERE username='관리자'")]
         self.assertEqual(len(personal),62)
         self.assertTrue(all('예시' not in s and '임의' not in s for s in personal))
         self.assertTrue(any('배달' in s for s in personal))
