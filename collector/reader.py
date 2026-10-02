@@ -21,6 +21,8 @@ _cache = OrderedDict()
 _lock = threading.Lock()
 _slots = threading.BoundedSemaphore(3)
 _summary_sources = OrderedDict()
+# 재무세무 브리핑 등 DB에 저장하지 않는 수집 항목을 리더가 읽을 수 있도록 메모리에 등록한다.
+_external = OrderedDict()
 
 
 def _remember_summary_source(url, article):
@@ -29,6 +31,36 @@ def _remember_summary_source(url, article):
         _summary_sources.move_to_end(url)
         while len(_summary_sources) > 64:
             _summary_sources.popitem(last=False)
+
+
+def register_external(items):
+    """URL로 리더 조회가 가능하도록 임시 항목을 등록(TTL 1시간, 최대 256건)."""
+    now = time.monotonic()
+    with _lock:
+        for item in items:
+            url = item.get("url")
+            if not url or len(url) > 4096:
+                continue
+            _external[url] = (now + 3600, {
+                "url": url, "source_url": url,
+                "title": item.get("title") or "제목 없음",
+                "author": item.get("author") or "",
+                "published_at": item.get("published_at") or "",
+                "content": item.get("content") or ""})
+            _external.move_to_end(url)
+        while len(_external) > 256:
+            _external.popitem(last=False)
+
+
+def _external_item(url):
+    with _lock:
+        hit = _external.get(url)
+        if hit and hit[0] > time.monotonic():
+            _external.move_to_end(url)
+            return dict(hit[1])
+        if hit:
+            _external.pop(url, None)
+    return None
 
 
 class ReaderUnavailable(ValueError):
@@ -208,11 +240,16 @@ def reader_article():
     url = request.args.get("url", "")
     if not url or len(url) > 4096:
         return jsonify(error="읽을 글의 주소가 올바르지 않습니다."), 400
+    db_error = False
     try:
         item = db.reader_item(url)
     except Exception:
-        return jsonify(error="저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요."), 503
+        item, db_error = None, True
     if not item:
+        item = _external_item(url)
+    if not item:
+        if db_error:
+            return jsonify(error="저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요."), 503
         return jsonify(error="저장된 글을 찾지 못했습니다. 원문 사이트에서 확인해 주세요."), 404
     article = read_article(item)
     _remember_summary_source(url, article)
@@ -228,11 +265,16 @@ def reader_summary():
         cached = _summary_sources.get(url)
         article = cached[1] if cached and cached[0] > time.monotonic() else None
     if article is None:
+        db_error = False
         try:
             item = db.reader_item(url)
         except Exception:
-            return jsonify(error="저장소에 연결하지 못했습니다."), 503
+            item, db_error = None, True
         if not item:
+            item = _external_item(url)
+        if not item:
+            if db_error:
+                return jsonify(error="저장소에 연결하지 못했습니다."), 503
             return jsonify(error="저장된 글을 찾지 못했습니다."), 404
         article = read_article(item)
         _remember_summary_source(url, article)

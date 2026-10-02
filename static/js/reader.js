@@ -148,7 +148,7 @@
     event.preventDefault();
     trigger = link;
     activeUrl = url;
-    title.textContent = link.closest(".card")?.querySelector(".card-title")?.textContent || "본문 읽기";
+    title.textContent = link.closest(".card, .finance-news-item")?.querySelector(".card-title, h3")?.textContent || "본문 읽기";
     meta.textContent = new URL(url).hostname;
     source.href = url;
     oldOverflow = document.body.style.overflow;
@@ -166,9 +166,14 @@
     if (trigger?.isConnected) trigger.focus({ preventScroll: true });
   });
   retry.addEventListener("click", () => load(activeUrl));
+  function applyFontSize() {
+    body.style.fontSize = fontSize + "px";
+    // AI 요약(.reader-status)도 본문과 함께 확대·축소. 기본 14px ↔ 본문 18px의 간격(-4) 유지.
+    status.style.fontSize = (fontSize - 4) + "px";
+  }
   document.querySelectorAll("[data-reader-size]").forEach((button) => button.addEventListener("click", () => {
     fontSize = Math.max(16, Math.min(24, fontSize + Number(button.dataset.readerSize)));
-    body.style.fontSize = fontSize + "px";
+    applyFontSize();
     document.querySelector('[data-reader-size="-2"]').disabled = fontSize === 16;
     document.querySelector('[data-reader-size="2"]').disabled = fontSize === 24;
   }));

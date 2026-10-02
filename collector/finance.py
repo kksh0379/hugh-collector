@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from flask import Blueprint, jsonify, request
 from lxml import etree
 from collector.read_cache import ReadCache
+from collector import reader
 
 bp = Blueprint('finance', __name__, url_prefix='/api/finance')
 cache = ReadCache(max_entries=16, workers=2)
@@ -242,6 +243,9 @@ def dashboard_route():
         return jsonify(dict(pending=True, indicators=[dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3],
             value=s[4], change=None, date=None, mode='demo', history=[]) for s in INDICATORS],
             items=[], sources=[], calendar=tax_calendar()))
+    # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
+    reader.register_external([dict(url=r['url'], title=r['title'], author=r.get('source', ''),
+        published_at=r.get('pub_date', ''), content=r.get('description', '')) for r in data.get('items', [])])
     return jsonify(dict(data, pending=False))
 
 

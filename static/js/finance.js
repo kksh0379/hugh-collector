@@ -11,6 +11,12 @@
     catch { return esc(title); }
     return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(title)} ↗</a>`;
   }
+  function readerLink(url, title) {
+    // 브리핑 기사는 리더(본문 읽기·AI 요약)로 연다. 좌클릭은 리더, 새 탭/보조클릭은 원문.
+    try { const u = new URL(url); if (!['https:','http:'].includes(u.protocol)) return esc(title); }
+    catch { return esc(title); }
+    return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-reader>${esc(title)}</a>`;
+  }
   async function json(url, options = {}) {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
     try {
@@ -25,7 +31,7 @@
     if (!data) return;
     const query = $('finance-search').value.trim().toLowerCase();
     const rows = data.items.filter(r => (category === 'all' || r.category === category) && `${r.title} ${r.description} ${r.source}`.toLowerCase().includes(query));
-    $('finance-news').innerHTML = rows.length ? rows.map(r => `<article class="finance-news-item"><span class="finance-mode">${esc(labels[r.category])}</span><h3>${link(r.url,r.title)}</h3><p>${esc(r.description)}</p><p>${esc(r.source)}${r.pub_date ? ' · '+esc(r.pub_date) : ''}</p></article>`).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
+    $('finance-news').innerHTML = rows.length ? rows.map(r => `<article class="finance-news-item"><span class="finance-mode">${esc(labels[r.category])}</span><h3>${readerLink(r.url,r.title)}</h3><p>${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(r.pub_date) : ''}</p><p class="finance-news-actions"><a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기</a></p></article>`).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
   function renderCalendar() {
     const cal = data && data.calendar, list = $('finance-calendar-list');

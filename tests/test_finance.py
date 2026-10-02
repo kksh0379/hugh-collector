@@ -141,5 +141,16 @@ class FinanceTests(unittest.TestCase):
             self.assertEqual(get.call_args.args[0],'https://example.org/feed.xml')
             self.assertEqual(status['mode'],'unavailable')
 
+    def test_external_reader_registry_roundtrip(self):
+        # 브리핑 기사는 DB 저장 없이 메모리 등록만으로 리더가 열 수 있어야 한다.
+        from collector import reader
+        reader._external.clear()
+        reader.register_external([dict(url='https://example.org/a', title='브리핑',
+            author='국세청·국세 뉴스', published_at='2026-10-01', content='요약 본문')])
+        got=reader._external_item('https://example.org/a')
+        self.assertEqual((got['title'],got['content'],got['source_url']),
+                         ('브리핑','요약 본문','https://example.org/a'))
+        self.assertIsNone(reader._external_item('https://example.org/missing'))
+
 if __name__ == '__main__':
     unittest.main()
