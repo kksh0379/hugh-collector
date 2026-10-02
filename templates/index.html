@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.53") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.54") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -46,7 +46,7 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.53") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.54") }}">
 </head>
 <body>
   <header class="app-header">
@@ -304,11 +304,13 @@
         <input type="search" id="lunch-search" class="search-input" placeholder="식당·카테고리 검색…" enterkeyhint="search" autocomplete="off" />
         <button type="button" class="search-btn" id="lunch-search-btn" aria-label="검색">🔍</button>
       </div>
-      <span class="result-count" id="lunch-count"></span>
+    </div>
+    <div class="lunch-filterbar">
+      <span class="result-count" id="lunch-count" aria-live="polite"></span>
+      <label class="lunch-reviewed-toggle"><input type="checkbox" id="lunch-reviewed-only"><span>리뷰 있는 식당만</span></label>
     </div>
     <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
     <div class="checkbar lunch-cats" id="lunch-cats" role="group" aria-label="카테고리"></div>
-    <div class="checkbar"><label class="lcat-chip"><input type="checkbox" id="lunch-reviewed-only"> 리뷰 있는 식당만</label></div>
     <div class="toolbar admin-only" style="margin:8px 16px 0">
       <button class="btn-collect" id="lunch-collect">🔄 주변 식당 수집</button>
       <button class="btn-status" id="lunch-add">＋ 직접 추가</button>
@@ -482,7 +484,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v2.53 · build 261002</span>
+    <span class="ver">v2.54 · build 261002</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -510,8 +512,8 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.53") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.53") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.54") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.54") }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>
