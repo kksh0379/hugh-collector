@@ -256,6 +256,7 @@ function toast(msg) {
     scrap: document.getElementById("view-scrap"),
   };
   function switchTo(n) {
+    closeEventCalendarPopover();
     // 스크랩은 로그인 필요 → 미로그인 시 전환하지 않고 로그인 유도
     if (n === "scrap" && !isLoggedIn()) { toast("로그인하면 스크랩을 볼 수 있어요"); if (typeof openLogin === "function") openLogin(); return; }
     nav.querySelectorAll(".fnav").forEach((x) => {
@@ -413,6 +414,7 @@ document.addEventListener("click", (e) => {
 // ----------------------------- 탭 전환 (유튜브식 칩, 슬라이드/스와이프 없음) -----------------------------
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => {
+    closeEventCalendarPopover();
     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
     tab.classList.add("active");
@@ -1166,7 +1168,90 @@ function _mdRange(s) {  // 09.28 ~ 30 형태
   if (b === a) return md(a);
   return md(a).split(".")[0] === md(b).split(".")[0] ? `${md(a)}~${md(b).split(".")[1]}` : `${md(a)}~${md(b)}`;
 }
+// A date preview uses collected facts, without another network/AI request.
+let eventCalendarCleanup = null;
+function closeEventCalendarPopover() {
+  const bubble = document.getElementById("cal-day-preview");
+  if (!bubble) return;
+  if (typeof bubble.hidePopover === "function") {
+    if (bubble.matches(":popover-open")) bubble.hidePopover();
+  } else bubble.hidden = true;
+  document.querySelectorAll(".cal-date[aria-expanded=true]").forEach(b => b.setAttribute("aria-expanded", "false"));
+}
+function calendarDayEvents(list, iso) {
+  return list.filter(s => s.start_date && s.start_date <= iso && (s.end_date || s.start_date) >= iso);
+}
+function calendarPreviewHtml(events) {
+  if (!events.length) return '<li class="cal-preview-empty">이 날짜에 수집된 행사가 없어요.</li>';
+  return events.map(s => {
+    const summary = String(s.content || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    const short = summary.length > 150 ? summary.slice(0, 150) + "…" : summary;
+    let link = null;
+    try { const u = new URL(s.source_url || s.url); if (["http:", "https:"].includes(u.protocol)) link = u.href; } catch (_) {}
+    return `<li class="cal-preview-item"><h4>${escapeHtml(s.title || "제목 없음")}</h4>
+      <p class="cal-preview-meta">${escapeHtml(eventDateBadge(s))} · ${escapeHtml(eventPlace(s) || "장소 미정")}</p>
+      ${short ? `<p class="cal-preview-summary">${escapeHtml(short)}</p>` : ""}
+      ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>행사 상세보기</a>` : ""}</li>`;
+  }).join("");
+}
+function calendarPreviewLayout(rect, width, desiredHeight, viewport) {
+  const gap = 12, left = Math.max(gap, Math.min(rect.left + rect.width / 2 - width / 2, viewport.width - width - gap));
+  const below = Math.max(0, viewport.bottom - rect.bottom - gap);
+  const above = Math.max(0, rect.top - viewport.top - gap);
+  const isAbove = below < Math.min(desiredHeight, 240) && above > below;
+  const maxHeight = Math.min(420, Math.max(80, isAbove ? above : below));
+  const height = Math.min(desiredHeight, maxHeight);
+  const top = Math.max(viewport.top, Math.min(isAbove ? rect.top - height - gap : rect.bottom + gap, viewport.bottom - height));
+  return {left, top, maxHeight, above:isAbove, arrow:Math.max(20, Math.min(width - 20, rect.left + rect.width / 2 - left))};
+}
+function bindCalendarPreview(cal, list) {
+  const bubble = cal.querySelector("#cal-day-preview"), heading = bubble.querySelector("h3"), content = bubble.querySelector(".cal-preview-list");
+  const close = bubble.querySelector(".cal-preview-close"), events = new AbortController();
+  const native = typeof bubble.showPopover === "function";
+  if (!native) { bubble.removeAttribute("popover"); bubble.hidden = true; }
+  let trigger = null;
+  const opened = () => native ? bubble.matches(":popover-open") : !bubble.hidden;
+  const position = () => {
+    if (!trigger || !opened()) return;
+    const rect = trigger.getBoundingClientRect();
+    const footer = document.querySelector(".bottombar");
+    const bottom = Math.min(window.innerHeight - 12, footer ? footer.getBoundingClientRect().top - 12 : window.innerHeight - 12);
+    if (rect.bottom < 12 || rect.top > bottom) { closeEventCalendarPopover(); return; }
+    bubble.style.width = Math.min(420, window.innerWidth - 24) + "px";
+    bubble.style.maxHeight = "420px";
+    const box = calendarPreviewLayout(rect, bubble.offsetWidth, bubble.offsetHeight, {width:window.innerWidth, top:12, bottom});
+    bubble.style.left = box.left + "px"; bubble.style.top = box.top + "px";
+    bubble.style.maxHeight = box.maxHeight + "px";
+    bubble.style.setProperty("--cal-arrow", box.arrow + "px");
+    bubble.classList.toggle("above", box.above);
+  };
+  cal.querySelectorAll(".cal-date").forEach(button => button.addEventListener("click", e => {
+    if (opened() && trigger === button) { closeEventCalendarPopover(); return; }
+    closeEventCalendarPopover(); trigger = button;
+    const iso = button.dataset.date, selected = calendarDayEvents(list, iso);
+    heading.textContent = `${iso.replace(/-/g, ".")} · 행사 ${selected.length}건`;
+    content.innerHTML = calendarPreviewHtml(selected);
+    content.scrollTop = 0;
+    if (native) bubble.showPopover(); else bubble.hidden = false;
+    button.setAttribute("aria-expanded", "true");
+    position();
+    if (e.detail === 0) close.focus({preventScroll:true});
+  }, {signal:events.signal}));
+  close.addEventListener("click", () => { closeEventCalendarPopover(); trigger?.focus({preventScroll:true}); }, {signal:events.signal});
+  bubble.addEventListener("toggle", e => {
+    if (e.newState === "closed") cal.querySelectorAll(".cal-date").forEach(b => b.setAttribute("aria-expanded", "false"));
+  }, {signal:events.signal});
+  bubble.addEventListener("click", e => { if (e.target.closest("a[data-reader]")) closeEventCalendarPopover(); }, {signal:events.signal});
+  if (!native) {
+    document.addEventListener("pointerdown", e => { if (opened() && !bubble.contains(e.target) && !e.target.closest(".cal-date")) closeEventCalendarPopover(); }, {signal:events.signal});
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && opened()) { closeEventCalendarPopover(); trigger?.focus({preventScroll:true}); } }, {signal:events.signal});
+  }
+  window.addEventListener("resize", position, {signal:events.signal});
+  window.addEventListener("scroll", position, {capture:true, passive:true, signal:events.signal});
+  eventCalendarCleanup = () => { closeEventCalendarPopover(); events.abort(); };
+}
 function renderEventCalendar(list) {
+  if (eventCalendarCleanup) { eventCalendarCleanup(); eventCalendarCleanup = null; }
   const cal = document.getElementById("cal-event");
   const dated = list.filter((s) => s.start_date);
   if (!eventCalYM) {
@@ -1205,7 +1290,7 @@ function renderEventCalendar(list) {
     const bars = evs.slice(0, 3).map((s) =>
       `<span class="cal-bar" style="background:${colorOf[s.url]}"></span>`).join("");
     const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3}</span>` : "";
-    cells += `<div class="cal-cell${iso === todayIso ? " today" : ""}${evs.length ? " has" : ""}"><div class="cal-day">${day}</div><div class="cal-bars">${bars}${more}</div></div>`;
+    cells += `<button type="button" class="cal-cell cal-date${iso === todayIso ? " today" : ""}${evs.length ? " has" : ""}" data-date="${iso}" aria-label="${Y}년 ${M + 1}월 ${day}일, 행사 ${evs.length}건" aria-haspopup="dialog" aria-expanded="false" aria-controls="cal-day-preview"><span class="cal-day">${day}</span><span class="cal-bars">${bars}${more}</span></button>`;
   }
   // 아젠다(이번 달 행사 상세 — 날짜·행사명·장소 모두 표시)
   let agenda;
@@ -1234,12 +1319,20 @@ function renderEventCalendar(list) {
     </div>
     <div class="cal-grid cal-dow">${dows.map((d, i) => `<div class="cal-cell cal-dowc${i === 0 ? " sun" : ""}">${d}</div>`).join("")}</div>
     <div class="cal-grid">${cells}</div>
+    <p class="cal-tap-hint">날짜를 누르면 그날의 행사 요약을 볼 수 있어요.</p>
+    <div id="cal-day-preview" class="cal-preview" popover="auto" role="dialog" aria-labelledby="cal-preview-title">
+      <div class="cal-preview-head"><h3 id="cal-preview-title"></h3><button type="button" class="cal-preview-close" aria-label="행사 요약 닫기">×</button></div>
+      <p class="cal-preview-note">수집된 정보 기준이에요. 참여 전 원문·공식 채널을 확인해 주세요.</p>
+      <ul class="cal-preview-list"></ul>
+    </div>
     <div class="agenda">${agenda}</div>
     ${undated ? `<div class="cal-note">날짜 미상 ${undated}건은 앨범에서 볼 수 있어요.</div>` : ""}`;
+  bindCalendarPreview(cal, monthEvents);
   document.getElementById("cal-prev").onclick = () => { eventCalYM = M === 0 ? [Y - 1, 11] : [Y, M - 1]; renderTab("event"); };
   document.getElementById("cal-next").onclick = () => { eventCalYM = M === 11 ? [Y + 1, 0] : [Y, M + 1]; renderTab("event"); };
 }
 function renderEvents(list) {
+  closeEventCalendarPopover();
   const albumEl = document.getElementById("list-event");
   const calEl = document.getElementById("cal-event");
   const isCal = eventView === "calendar";
