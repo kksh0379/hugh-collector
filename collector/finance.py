@@ -117,8 +117,11 @@ def parse_feed(content, source):
         url = safe_url(url)
         title = plain(field('title'))[:250]
         if title and url:
+            summary = plain(field('description', 'summary'))
+            # content:encoded(정부 RSS 본문)·Atom content가 있으면 전체 본문을 확보해 리더 대체 표시에 쓴다.
+            body = plain(field('encoded', 'content')) or summary
             items.append(dict(category=source[2], source=source[1], title=title,
-                              description=plain(field('description', 'summary', 'content'))[:500],
+                              description=summary[:500], content=body[:6000],
                               url=url, pub_date=field('pubDate', 'published', 'updated', 'date')[:80],
                               open_original=source[0] in ORIGINAL_SOURCES, mode='live'))
     return items
@@ -320,7 +323,8 @@ def dashboard_route():
             items=[], sources=[], calendar=tax_calendar()))
     # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
     reader.register_external([dict(url=r['url'], title=r['title'], author=r.get('source', ''),
-        published_at=r.get('pub_date', ''), content=r.get('description', '')) for r in data.get('items', [])])
+        published_at=r.get('pub_date', ''), content=r.get('content') or r.get('description', ''))
+        for r in data.get('items', [])])
     return jsonify(dict(data, pending=False))
 
 

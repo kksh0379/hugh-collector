@@ -107,7 +107,7 @@ class ReaderTests(unittest.TestCase):
             data = self.client.get('/api/reader?url=https://publisher.example/story/1').get_json()
             self.assertEqual(data["mode"], "excerpt")
             self.assertEqual(data["paragraphs"], ["저장된 요약"])
-            self.assertIn("요약", data["notice"])
+            self.assertIn("수집된 내용", data["notice"])
 
     def test_rejects_redirect_to_internal_network(self):
         class RedirectConnection:

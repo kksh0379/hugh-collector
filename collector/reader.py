@@ -239,9 +239,20 @@ def read_article(item):
 
 
 def fallback(item):
-    text = BeautifulSoup(item.get("content") or "", "lxml").get_text(" ", strip=True)[:20000]
-    return {"mode": "excerpt", "paragraphs": [text] if text else [],
-            "notice": "본문을 불러오지 못해 저장된 요약을 표시합니다. 전체 내용은 원문 사이트에서 확인해 주세요."}
+    text = BeautifulSoup(item.get("content") or "", "lxml").get_text("\n", strip=True)[:20000]
+    paragraphs = [p.strip() for p in re.split(r"\n+", text) if p.strip()]
+    if len(paragraphs) <= 1 and len(text) > 240:
+        # 단일 블록이면 문장 단위로 묶어 가독성 확보(약 180자 문단).
+        paragraphs, buffer = [], ""
+        for sentence in re.split(r"(?<=다\.)\s+|(?<=[.!?])\s+", text):
+            buffer += sentence + " "
+            if len(buffer) >= 180:
+                paragraphs.append(buffer.strip())
+                buffer = ""
+        if buffer.strip():
+            paragraphs.append(buffer.strip())
+    return {"mode": "excerpt", "paragraphs": paragraphs or ([text] if text else []),
+            "notice": "원문 사이트의 본문을 자동으로 불러오지 못해 수집된 내용을 표시합니다. 첨부파일·전체 내용은 원문에서 확인해 주세요."}
 
 
 @bp.get("/api/reader")
