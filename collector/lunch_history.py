@@ -156,3 +156,39 @@ def import_history(conn, q, now):
             if re.fullmatch(r'\d{2}-\d{2}', date):
                 conn.execute(q('INSERT INTO lunch_visit (restaurant_id,username,visited_at) VALUES (?,?,?)'), (rid,'방문기록 가져오기','2026-'+date))
     return len(grouped())
+
+
+def rewrite_history(conn, q, now):
+    """Rewrite only imported placeholder reviews; leave actual user reviews intact."""
+    marker = KEY + '_personal_notes'
+    claimed = conn.execute(q('INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT (key) DO NOTHING RETURNING key'),
+                           (marker, '방문기록 기반 개인 메모; 평점은 사용자 요청으로 임의 부여')).fetchone()
+    if not claimed:
+        return 0
+    rows = conn.execute(q('SELECT v.id,v.comment,r.name FROM lunch_review v JOIN lunch_restaurant r ON r.id=v.restaurant_id WHERE v.username=?'), (AUTHOR,)).fetchall()
+    for row in rows:
+        old = row['comment'] or ''
+        match = re.search(r'점심 기록에 (\d+)회 등장', old)
+        if not match:
+            raise ValueError('가져온 리뷰의 방문 횟수를 확인할 수 없음')
+        count = int(match.group(1))
+        tone = int(hashlib.sha256((row['name'] or '').encode()).hexdigest()[:8], 16) % 3
+        if '배달 이용' in old:
+            comment = '4월에 배달로 한 번 먹었음. 점심 배달 후보로 기록해 둔다.'
+        elif '한식뷔페' in old:
+            comment = '5월 점심에 한 번 갔음. 당시 기록에는 점심 한식뷔페로 적어 뒀다.'
+        elif count >= 4:
+            comment = [f'올해 점심으로 {count}번 찾았다. 여러 번 갔던 곳이라 다음 점심 후보에도 남겨 둔다.',
+                       f'기록을 보니 점심에 {count}번 갔음. 한동안 자주 찾았던 곳 중 하나.',
+                       f'점심으로 {count}번 방문. 메뉴 고민할 때 다시 떠올릴 만한 곳으로 적어 둠.'][tone]
+        elif count >= 2:
+            comment = [f'점심으로 {count}번 방문. 한 번으로 끝나지 않고 다시 갔던 곳이다.',
+                       f'올해 점심 기록에 {count}번 남아 있다. 재방문했던 곳이라 따로 적어 둠.',
+                       f'점심에 {count}번 다녀옴. 다음에 근처에서 식사할 때 참고할 곳.'][tone]
+        else:
+            comment = ['점심으로 한 번 방문. 다녀온 곳을 잊지 않으려고 기록해 둔다.',
+                       '한 번 점심 먹으러 갔던 곳. 다음 식사 고를 때 참고하려고 남겨 둠.',
+                       '점심 방문 기록이 한 번 있다. 아직 자주 간 곳은 아니라 방문 목록에만 적어 둔다.'][tone]
+        conn.execute(q('UPDATE lunch_review SET username=?,comment=? WHERE id=? AND username=?'),
+                     ('휴', comment, row['id'], AUTHOR))
+    return len(rows)
