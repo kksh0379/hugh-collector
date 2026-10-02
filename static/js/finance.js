@@ -41,8 +41,9 @@
       const read = (typeof isRead === 'function' && isRead(key)) ? ' is-read' : '';
       const scrap = typeof scrapBtnHtml === 'function' ? scrapBtnHtml(key) : '';
       const copy = typeof copyBtnHtml === 'function' ? copyBtnHtml(r.url) : '';
-      const titleLink = `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>${esc(r.title)}</a>`;
-      return `<article class="finance-news-item card${read}" data-key="${esc(key)}">${scrap}<span class="finance-mode">${esc(labels[r.category])}</span><h3 class="card-title">${titleLink}</h3><p class="card-summary">${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><div class="card-actions"><a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기</a>${copy}</div></article>`;
+      // 제목 = 원문 직접 링크(리더가 가로채지 않음). 리더(본문 읽기)는 별도 버튼으로 제공.
+      const titleLink = `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.title)} ↗</a>`;
+      return `<article class="finance-news-item card${read}" data-key="${esc(key)}">${scrap}<span class="finance-mode">${esc(labels[r.category])}</span><h3 class="card-title">${titleLink}</h3><p class="card-summary">${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><div class="card-actions"><a class="read-action reader-open" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기(앱)</a>${copy}</div></article>`;
     }).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
   function renderCalendar() {
