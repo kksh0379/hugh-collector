@@ -2777,10 +2777,18 @@ async function loadReport(id) {
     const cats = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
     if (!LUNCH.rows.length) { bar.innerHTML = ""; return; }
     if (LUNCH.cat !== "전체" && !counts[LUNCH.cat]) LUNCH.cat = "전체";
-    const chip = (key, label, n) =>
-      `<label class="lcat-chip${LUNCH.cat === key ? " on" : ""}"><input type="radio" name="lcat" value="${escapeHtml(key)}"${LUNCH.cat === key ? " checked" : ""}>`
-      + `${escapeHtml(label)}${n != null ? ` <b>${n}</b>` : ""}</label>`;
-    bar.innerHTML = chip("전체", "전체", LUNCH.rows.length) + cats.map((c) => chip(c, c, counts[c])).join("");
+    const chip = (key, label, n) => {
+      const on = !LUNCH.reviewedOnly && LUNCH.cat === key;   // 검증된 곳 선택 중엔 일반 칩 off
+      return `<label class="lcat-chip${on ? " on" : ""}"><input type="radio" name="lcat" value="${escapeHtml(key)}"${on ? " checked" : ""}>`
+        + `${escapeHtml(label)}${n != null ? ` <b>${n}</b>` : ""}</label>`;
+    };
+    // 평점·리뷰 있는 '검증된 곳'을 별도 칩으로 맨 앞에 고정.
+    const reviewedN = LUNCH.rows.filter((r) => Number(r.review_count || 0) > 0).length;
+    const reviewedChip = reviewedN
+      ? `<label class="lcat-chip lcat-star${LUNCH.reviewedOnly ? " on" : ""}" title="평점·리뷰가 있는 검증된 곳만 보기"><input type="radio" name="lcat" value="__reviewed"${LUNCH.reviewedOnly ? " checked" : ""}>⭐ 검증된 곳 <b>${reviewedN}</b></label>`
+      : "";
+    bar.innerHTML = reviewedChip + chip("전체", "전체", LUNCH.rows.length) + cats.map((c) => chip(c, c, counts[c])).join("");
+    const rev = $("lunch-reviewed-only"); if (rev) rev.checked = LUNCH.reviewedOnly;   // 기존 체크박스 동기화
   }
 
   function filtered() {
@@ -2970,6 +2978,25 @@ async function loadReport(id) {
     showView("view-lunch-ai");
     renderPicker();
   }
+  // 추천 점수 구성(시각화) — _lunch_score 기본 가중치와 동일.
+  function recipeHtml() {
+    const rows = [
+      ["리뷰·평점 (검증)", 25, "‘검증된 곳 우선’·‘안전’ 성향에서 ↑"],
+      ["거리 (가까움)", 15, "‘가까이’·‘빨리’에서 ↑"],
+      ["상황 (요일·시간)", 15, "월요일=검증된 곳, 늦은 점심=가까운 곳"],
+      ["다양성 (안 겹치게)", 15, "최근 먹은 종류는 ↓"],
+      ["탐색 (안 가본 곳)", 10, "‘모험’·‘숨은맛집’에서 ↑"],
+      ["팀 선호 (많이 간 곳)", 10, ""],
+      ["무작위 (재미)", 10, "매번 결과가 조금씩 달라져요"],
+    ];
+    const bars = rows.map(([l, w, note]) =>
+      `<div class="recipe-row"><span class="recipe-label">${l}</span>`
+      + `<span class="recipe-track"><span class="recipe-bar" style="width:${Math.round(w / 25 * 100)}%"></span></span>`
+      + `<span class="recipe-pct">${w}%</span></div>`
+      + (note ? `<div class="recipe-note">${note}</div>` : "")).join("");
+    return `<p class="recipe-lead">상위 후보 5곳 중 <b>점수 비중대로</b> 뽑아요(가중 랜덤).</p>${bars}`
+      + `<p class="recipe-foot">고른 <b>성향·기분</b>에 따라 위 비중이 자동 조정됩니다.</p>`;
+  }
   function renderPicker() {
     recommendationRequest++;
     const body = $("lunch-ai-body"); if (!body) return;
@@ -2982,7 +3009,9 @@ async function loadReport(id) {
     const avoidChips = cats.map((c) => chip("avoid:" + c, c + " 말고")).join("");
     const moodChips = MOOD_CHIPS.map((m) => chip(m.key, m.label)).join("");
     body.innerHTML = `<div class="aipick">
-      <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).</div>
+      <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).
+        <button type="button" class="aipick-recipe-btn" id="lunch-recipe-toggle" aria-expanded="false">ⓘ 추천 방식</button></div>
+      <div class="aipick-recipe" id="lunch-recipe" hidden>${recipeHtml()}</div>
       <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🫠 지금 기분·상황</div><div class="mood-row">${moodChips}</div></div>
@@ -3132,11 +3161,13 @@ async function loadReport(id) {
     const cats = $("lunch-cats");
     const reviewedOnly = $("lunch-reviewed-only");
     if (reviewedOnly) reviewedOnly.addEventListener("change", () => {
-      LUNCH.reviewedOnly = reviewedOnly.checked; renderList();
+      LUNCH.reviewedOnly = reviewedOnly.checked; renderCats(); renderList();
     });
     if (cats) cats.addEventListener("change", (e) => {
       const r = e.target.closest('input[name="lcat"]'); if (!r) return;
-      LUNCH.cat = r.value; renderCats(); renderList();
+      if (r.value === "__reviewed") { LUNCH.reviewedOnly = true; LUNCH.cat = "전체"; }   // 검증된 곳(전 카테고리)
+      else { LUNCH.reviewedOnly = false; LUNCH.cat = r.value; }
+      renderCats(); renderList();
     });
 
     const list = $("lunch-list");
@@ -3171,6 +3202,11 @@ async function loadReport(id) {
       }
       const chip = e.target.closest("[data-mood]");
       if (chip) { const k = chip.dataset.mood; LUNCH.aiSel[k] = !LUNCH.aiSel[k]; chip.classList.toggle("on", LUNCH.aiSel[k]); return; }
+      const recipeBtn = e.target.closest("#lunch-recipe-toggle");
+      if (recipeBtn) {   // 추천 방식(점수 구성) 펼치기/접기
+        const panel = $("lunch-recipe"); if (panel) { panel.hidden = !panel.hidden; recipeBtn.setAttribute("aria-expanded", String(!panel.hidden)); }
+        return;
+      }
       if (e.target.closest("#lunch-ai-dice")) { randomizeAndRecommend(); return; }
       if (e.target.closest("#lunch-ai-go")) { runRecommend(); return; }
       if (e.target.closest("#lunch-ai-retry")) { runRecommend(); return; }

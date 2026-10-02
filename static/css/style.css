@@ -1282,6 +1282,24 @@ body.tab-report .viewbar { display: none; }
 .lcat-chip b { color: var(--muted); font-weight: 700; }
 .lcat-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 .lcat-chip.on b { color: rgba(255, 255, 255, 0.85); }
+/* 검증된 곳(평점·리뷰) 칩 — 금색 강조 */
+.lcat-chip.lcat-star { border-color: #f0c23a; color: #8a6d00; background: #fffbe9; }
+.lcat-chip.lcat-star b { color: #b78a00; }
+.lcat-chip.lcat-star.on { background: #f2b60c; border-color: #f2b60c; color: #3a2c00; }
+.lcat-chip.lcat-star.on b { color: #5a4600; }
+/* 추천 방식(점수 구성) 토글·패널 */
+.aipick-recipe-btn { display: inline-block; margin-left: 6px; padding: 2px 9px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.aipick-recipe-btn[aria-expanded="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+.aipick-recipe { margin: -6px 0 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); }
+.recipe-lead { margin: 0 0 10px; font-size: 12.5px; color: var(--text); }
+.recipe-foot { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+.recipe-lead b, .recipe-foot b { color: var(--primary); }
+.recipe-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.recipe-label { flex: 0 0 38%; font-size: 12px; font-weight: 700; color: var(--text); }
+.recipe-track { flex: 1; height: 8px; border-radius: var(--r-pill); background: #e6e9ef; overflow: hidden; }
+.recipe-bar { display: block; height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--primary), #5b8def); }
+.recipe-pct { flex: 0 0 auto; width: 34px; text-align: right; font-size: 11px; font-weight: 800; color: var(--muted); }
+.recipe-note { margin: 2px 0 0 38%; font-size: 11px; color: var(--muted); line-height: 1.4; }
 
 /* 식당 카드 리스트 */
 #lunch-list { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 10px; }
