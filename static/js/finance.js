@@ -38,12 +38,11 @@
     const query = $('finance-search').value.trim().toLowerCase();
     const rows = data.items.filter(r => (category === 'all' || r.category === category) && `${r.title} ${r.description} ${r.source}`.toLowerCase().includes(query));
     $('finance-news').innerHTML = rows.length ? rows.map(r => {
-      // 일부 출처(재정경제부 등)는 리더 본문 추출이 어려워 원문으로 직접 연다.
+      // 일부 출처(재정경제부 등)는 리더 본문 추출이 어려워 제목 자체를 원문 링크로 연다(별도 버튼 없음).
       const titleHtml = r.open_original ? link(r.url, r.title) : readerLink(r.url, r.title);
-      const action = r.open_original
-        ? `<a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">원문 보기 ↗</a>`
-        : `<a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기</a>`;
-      return `<article class="finance-news-item"><span class="finance-mode">${esc(labels[r.category])}</span><h3>${titleHtml}</h3><p>${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><p class="finance-news-actions">${action}</p></article>`;
+      const action = r.open_original ? ''
+        : `<p class="finance-news-actions"><a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기</a></p>`;
+      return `<article class="finance-news-item"><span class="finance-mode">${esc(labels[r.category])}</span><h3>${titleHtml}</h3><p>${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p>${action}</article>`;
     }).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
   function renderCalendar() {

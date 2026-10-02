@@ -98,7 +98,7 @@ def parse_feed(content, source):
     if etree.QName(root).localname not in ('rss', 'feed', 'RDF'):
         raise ValueError('Not a feed')
     items = []
-    for node in root.xpath('//*[local-name()="item" or local-name()="entry"]')[:30]:
+    for node in root.xpath('//*[local-name()="item" or local-name()="entry"]')[:50]:
         def field(*names):
             for name in names:
                 found = node.xpath('./*[local-name()=$name]', name=name)
@@ -207,32 +207,38 @@ def _num(value):
 
 
 def nc_stock():
-    """엔씨소프트(036570) 주가. 실시간이 아닌 수집 시점 종가/등락. 실패 시 값을 지어내지 않는다."""
+    """(주)엔씨 주가와 추이. 일별 종가 시계열로 값·등락·6개월 추이를 만든다. 실패 시 값을 지어내지 않는다."""
     code = os.getenv('NC_STOCK_CODE', '036570')
-    result = dict(code='KRX/' + code, name='엔씨소프트 주가', unit='원', value=None,
-                  change=None, ratio=None, date=None, mode='unavailable', history=[],
-                  desc='엔씨소프트(NCSOFT, %s) 보통주 주가입니다. 전일 종가 대비 등락이며, 실시간이 아닌 수집 시점 기준입니다.' % code)
-    url = os.getenv('NC_STOCK_URL') or ('https://polling.finance.naver.com/api/realtime?query='
-                                        + quote('SERVICE_ITEM:' + code, safe=''))
+    name = os.getenv('NC_STOCK_NAME', '(주)엔씨')
+    result = dict(code='KRX/' + code, name=name, unit='원', value=None,
+                  change=None, ratio=None, date=None, mode='unavailable', history=[], desc='')
+    # 네이버 일별 시세(종가 시계열) XML. requestType=0 → data="날짜|시가|고가|저가|종가|거래량".
+    url = os.getenv('NC_STOCK_URL') or ('https://fchart.stock.naver.com/sise.nhn?symbol='
+                                        + quote(code, safe='') + '&timeframe=day&count=140&requestType=0')
     try:
         if urlsplit(url).scheme != 'https':
             raise ValueError('HTTPS required')
-        payload = get_json(url, headers={'User-Agent': 'Mozilla/5.0',
-                                         'Referer': 'https://finance.naver.com/'})
-        row = payload['result']['areas'][0]['datas'][0]
-        close = _num(row.get('nv'))
-        change = _num(row.get('cv'))
-        ratio = _num(row.get('cr'))
-        if close is None or not math.isfinite(close):
-            raise ValueError('No price')
-        # rf: 2/1 상승·상한, 4/5 하락·하한, 3 보합 → 등락 부호 적용.
-        sign = -1 if str(row.get('rf')) in ('4', '5') else 1
-        result.update(mode='live', value=close,
-                      change=None if change is None else round(sign * abs(change)),
-                      ratio=None if ratio is None else round(sign * abs(ratio), 2),
-                      date=now().strftime('%Y%m%d'))
+        response = requests.get(url, timeout=(3, 7), allow_redirects=False,
+                                headers={'User-Agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+        root = etree.fromstring(response.content, parser=etree.XMLParser(
+            resolve_entities=False, no_network=True, recover=True))
+        values = []
+        for item in root.xpath('//item'):
+            parts = (item.get('data') or '').split('|')
+            close = _num(parts[4]) if len(parts) >= 5 else None
+            if parts and parts[0].isdigit() and close is not None and math.isfinite(close):
+                values.append((parts[0], close))
+        if len(values) < 2:
+            raise ValueError('No series')
+        values.sort()
+        last, prev = values[-1][1], values[-2][1]
+        change = last - prev
+        result.update(mode='live', value=round(last), date=values[-1][0],
+                      change=round(change), ratio=round(change / prev * 100, 2) if prev else None,
+                      history=sample_history(values))
     except Exception:
-        result.update(mode='unavailable', value=None, change=None, ratio=None)
+        result.update(mode='unavailable', value=None, change=None, ratio=None, history=[])
     return result
 
 
@@ -291,9 +297,9 @@ def dashboard_route():
     if data is None:
         indicators = [dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3], value=s[4], change=None,
             ratio=None, date=None, mode='demo', history=[], desc=s[5]) for s in INDICATORS]
-        indicators.append(dict(code='KRX/'+os.getenv('NC_STOCK_CODE', '036570'), name='엔씨소프트 주가',
-            unit='원', value=None, change=None, ratio=None, date=None, mode='loading', history=[],
-            desc='엔씨소프트(NCSOFT) 보통주 주가입니다. 수집 시점 기준이며 실시간이 아닙니다.'))
+        indicators.append(dict(code='KRX/'+os.getenv('NC_STOCK_CODE', '036570'),
+            name=os.getenv('NC_STOCK_NAME', '(주)엔씨'), unit='원', value=None, change=None,
+            ratio=None, date=None, mode='loading', history=[], desc=''))
         return jsonify(dict(pending=True, indicators=indicators,
             items=[], sources=[], calendar=tax_calendar()))
     # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
