@@ -277,14 +277,30 @@ _SOCIAL_RE = re.compile(
     r'twitter\.com|x\.com|band\.us|tiktok\.com|brunch\.co\.kr)/[^\s"\'<>)\\]+', re.I)
 
 
+_YT_ID = re.compile(r'^[A-Za-z0-9_-]{11}$')
+
+
 def _find_social_url(node, depth=0):
     """리스트/상세 JSON·HTML 어디든 들어있는 소셜·외부 매체 URL을 찾아 반환(없으면 None)."""
     if depth > 6 or node is None:
         return None
     if isinstance(node, str):
         m = _SOCIAL_RE.search(node)
-        return m.group(0).rstrip('\\') if m else None
+        if not m:
+            return None
+        url = m.group(0).rstrip('\\')
+        em = re.search(r'youtube\.com/embed/([A-Za-z0-9_-]{11})', url)  # embed → watch(정상 랜딩)
+        return "https://www.youtube.com/watch?v=" + em.group(1) if em else url
     if isinstance(node, dict):
+        # 전체 URL이 없고 유튜브 영상 ID만 있는 경우(videoId/ytId/snsId+youtube 타입) → watch URL 구성.
+        type_hint = " ".join(str(node.get(k) or "") for k in
+                             ("snsType", "type", "dtype", "channel", "media", "platform")).lower()
+        for k, v in node.items():
+            kl = str(k).lower()
+            if isinstance(v, str) and _YT_ID.match(v) and (
+                    "youtube" in kl or "video" in kl or kl in ("vid", "yid", "ytid", "ytvid")
+                    or ("youtube" in type_hint and ("id" in kl or kl in ("sns", "src", "key")))):
+                return "https://www.youtube.com/watch?v=" + v
         for v in node.values():
             u = _find_social_url(v, depth + 1)
             if u:
