@@ -48,9 +48,10 @@
     $('finance-indicators').innerHTML = data.indicators.map(r => {
       let chart = '';
       if (r.history.length > 1) {
+        // 값 범위로 정규화해 세로 4~32 영역에 맞춘다(환율처럼 큰 수도 박스를 벗어나지 않게).
         const vals = r.history.map(x => x.value), low = Math.min(...vals), range = Math.max(...vals)-low || 1;
-        const points = vals.map((v,i) => `${i*160/(vals.length-1)},${30-(v-low)*25}`).join(' ');
-        chart = `<svg viewBox="0 0 160 35" role="img" aria-label="${esc(r.name)} 최근 관측치 추이"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+        const points = vals.map((v,i) => `${(i*160/(vals.length-1)).toFixed(1)},${(32-(v-low)/range*28).toFixed(1)}`).join(' ');
+        chart = `<svg viewBox="0 0 160 36" role="img" aria-label="${esc(r.name)} 최근 6개월 추이"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span class="finance-spark-label">최근 6개월 추이</span>`;
       }
       return `<article class="finance-indicator"><span class="finance-mode ${r.mode === 'live' ? 'live' : ''}">${esc(modes[r.mode])}</span><h3>${esc(r.name)}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${r.date ? esc(r.date)+' 기준' : '실제 시세 아님'}</p><p>${r.change == null ? '비교 데이터 없음' : `직전 관측 대비 ${r.change > 0 ? '+' : ''}${esc(r.change)}${r.unit === '%' ? '%p' : esc(r.unit)}`}</p></article>`;
     }).join('');

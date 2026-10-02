@@ -139,6 +139,17 @@ def news():
     return dict(items=items, sources=sources, fetched_at=now().isoformat())
 
 
+def sample_history(values, points=26):
+    """최근 6개월 추이를 과밀하지 않게 균등 샘플링. 가장 최신 값은 항상 포함한다."""
+    if len(values) <= points:
+        sampled = values
+    else:
+        step = (len(values) - 1) / (points - 1)
+        index = sorted({round(i * step) for i in range(points)} | {len(values) - 1})
+        sampled = [values[i] for i in index]
+    return [dict(date=d, value=v) for d, v in sampled]
+
+
 def indicator(spec):
     table, code, name, unit, sample = spec
     result = dict(code=f'{table}/{code}', name=name, unit=unit, value=sample,
@@ -148,8 +159,9 @@ def indicator(spec):
         return result
     try:
         end = now().date()
-        url = (f'https://ecos.bok.or.kr/api/StatisticSearch/{quote(key, safe="")}/json/kr/1/100/'
-               f'{table}/D/{(end-timedelta(days=30)):%Y%m%d}/{end:%Y%m%d}/{code}')
+        start = end - timedelta(days=190)  # 최근 약 6개월
+        url = (f'https://ecos.bok.or.kr/api/StatisticSearch/{quote(key, safe="")}/json/kr/1/700/'
+               f'{table}/D/{start:%Y%m%d}/{end:%Y%m%d}/{code}')
         rows = get_json(url)['StatisticSearch']['row']
         rows = sorted(rows, key=lambda x: x['TIME'])
         values = [(r['TIME'], float(r['DATA_VALUE'])) for r in rows if r.get('DATA_VALUE') not in (None, '')]
@@ -157,7 +169,7 @@ def indicator(spec):
             raise ValueError('No observations')
         result.update(value=values[-1][1], date=values[-1][0], mode='live',
                       change=round(values[-1][1]-values[-2][1], 4) if len(values)>1 else None,
-                      history=[dict(date=d, value=v) for d, v in values[-14:]])
+                      history=sample_history(values))
     except Exception:
         result.update(mode='unavailable', value=None)
     return result
