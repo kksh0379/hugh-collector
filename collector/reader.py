@@ -1,6 +1,7 @@
 """Text-only reader for collected articles; never serves publisher HTML or scripts."""
 import http.client
 import ipaddress
+import os
 import re
 import socket
 import ssl
@@ -234,6 +235,49 @@ def extract_paragraphs(html):
     raise ReaderUnavailable("No article body")
 
 
+_ERROR_SIGNS = ("페이지를 찾을 수가 없습니다", "페이지를 찾을 수 없", "주소가 잘못 입력",
+                "변경 혹은 삭제", "요청하신 페이지", "존재하지 않는 페이지", "잘못된 접근",
+                "sorry...", "page not found", "404 not found")
+
+
+def looks_like_error_page(paragraphs):
+    text = " ".join(paragraphs)[:1500].lower()
+    return any(sign.lower() in text for sign in _ERROR_SIGNS)
+
+
+def fetch_via_jina(url):
+    """JS 렌더링 외부 리더(r.jina.ai)로 본문 텍스트를 받아 문단으로 반환. READER_JS_FALLBACK로만 활성화."""
+    p, host, port, address = public_target("https://r.jina.ai/" + url)
+    conn = _PinnedHTTP(host, port, address, True, 15)
+    try:
+        path = (p.path or "/") + (("?" + p.query) if p.query else "")
+        conn.request("GET", path, headers={"User-Agent": "HuscopeReader/1.0",
+            "Accept": "text/plain, text/markdown, */*", "Accept-Encoding": "identity",
+            "X-Return-Format": "text"})
+        response = conn.getresponse()
+        if response.status != 200:
+            raise ReaderUnavailable("Jina unavailable")
+        chunks, size = [], 0
+        while True:
+            chunk = response.read1(32768)
+            if not chunk:
+                break
+            size += len(chunk)
+            if size > MAX_BYTES:
+                break
+            chunks.append(chunk)
+        text = b"".join(chunks).decode("utf-8", "replace")
+    finally:
+        conn.close()
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)              # 이미지 마크다운 제거
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)          # 링크는 텍스트만
+    paragraphs = [re.sub(r"^[#>*\-\s]+", "", ln).strip() for ln in re.split(r"\n{2,}", text)]
+    paragraphs = [pp for pp in paragraphs if len(pp) >= 2]
+    if sum(map(len, paragraphs)) < 120 or looks_like_error_page(paragraphs):
+        raise ReaderUnavailable("Jina empty")
+    return paragraphs[:400]
+
+
 def read_article(item):
     url = item.get("source_url") or item["url"]
     result = {"title": item.get("title") or "제목 없음", "url": url,
@@ -247,18 +291,25 @@ def read_article(item):
     if not _slots.acquire(blocking=False):
         return dict(result, **fallback(item))
     try:
+        target = url
         try:
-            target = url
             if urlsplit(url).hostname == "news.google.com":
                 from collector.google_news import _decode_google_url
-                target = _decode_google_url(url)
-                if not target:
-                    raise ReaderUnavailable("Unresolved Google News URL")
+                target = _decode_google_url(url) or url
             # Resolved destinations still pass the same pinned public-IP checks.
-            body = {"mode": "article", "paragraphs": extract_paragraphs(fetch_html(target)),
-                    "url": target}
+            paragraphs = extract_paragraphs(fetch_html(target))
+            if looks_like_error_page(paragraphs):   # 사이트가 오류/안내 페이지를 준 경우
+                raise ReaderUnavailable("Error/landing page")
+            body = {"mode": "article", "paragraphs": paragraphs, "url": target}
         except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
-            body = fallback(item)
+            body = None
+            if os.getenv("READER_JS_FALLBACK"):     # JS 렌더링 외부 리더(선택, env로 활성화)
+                try:
+                    body = {"mode": "article", "paragraphs": fetch_via_jina(target), "url": target}
+                except Exception:
+                    body = None
+            if body is None:
+                body = fallback(item)
         with _lock:
             _cache[url] = (time.monotonic() + (600 if body["mode"] == "article" else 60), body)
             _cache.move_to_end(url)
