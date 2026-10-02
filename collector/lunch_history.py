@@ -160,6 +160,9 @@ def import_history(conn, q, now):
 
 def rewrite_history(conn, q, now):
     """Rewrite only imported placeholder reviews; leave actual user reviews intact."""
+    # Upgrade only this import's previously generated author label.
+    conn.execute(q("UPDATE lunch_review SET username=? WHERE username=? AND created_at=(SELECT value FROM meta WHERE key=?)"),
+                 ('관리자', '휴', KEY))
     marker = KEY + '_personal_notes'
     claimed = conn.execute(q('INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT (key) DO NOTHING RETURNING key'),
                            (marker, '방문기록 기반 개인 메모; 평점은 사용자 요청으로 임의 부여')).fetchone()
@@ -190,5 +193,5 @@ def rewrite_history(conn, q, now):
                        '한 번 점심 먹으러 갔던 곳. 다음 식사 고를 때 참고하려고 남겨 둠.',
                        '점심 방문 기록이 한 번 있다. 아직 자주 간 곳은 아니라 방문 목록에만 적어 둔다.'][tone]
         conn.execute(q('UPDATE lunch_review SET username=?,comment=? WHERE id=? AND username=?'),
-                     ('휴', comment, row['id'], AUTHOR))
+                     ('관리자', comment, row['id'], AUTHOR))
     return len(rows)
