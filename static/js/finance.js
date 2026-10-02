@@ -31,8 +31,10 @@
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   function renderNews() {
     if (!data) return;
-    const query = $('finance-search').value.trim().toLowerCase();
-    const rows = data.items.filter(r => (category === 'all' || r.category === category) && `${r.title} ${r.description} ${r.source}`.toLowerCase().includes(query));
+    const query = $('finance-search').value.trim();
+    // 다른 검색과 동일한 한글 자모 유사 매칭(부분·초성·오타). 전역 koreanMatchAll 사용, 없으면 부분일치.
+    const match = (hay, q) => !q ? true : (typeof koreanMatchAll === 'function' ? koreanMatchAll(hay, q) : hay.toLowerCase().includes(q.toLowerCase()));
+    const rows = data.items.filter(r => (category === 'all' || r.category === category) && match(`${r.title} ${r.description} ${r.source}`, query));
     $('finance-news').innerHTML = rows.length ? rows.map(r => {
       const key = r.url;
       // 메인 뉴스 카드와 동일하게 읽음·스크랩·링크복사를 재사용(전역 헬퍼). 본문은 리더로 연다.
