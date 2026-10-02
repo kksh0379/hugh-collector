@@ -101,8 +101,11 @@ def plain(text):
 
 
 def parse_feed(content, source):
-    root = etree.fromstring(content, parser=etree.XMLParser(resolve_entities=False, no_network=True, recover=False))
-    if etree.QName(root).localname not in ('rss', 'feed', 'RDF'):
+    # 많은 피드가 URL·본문의 &를 escape하지 않아 XML이 깨진다. 유효 엔티티가 아닌 &만 바이트 수준에서
+    # &amp;로 바꿔 URL 손상 없이 복구하고(인코딩 무관), 파서도 관대 모드로 둔다. XXE는 계속 차단.
+    content = re.sub(rb'&(?!(?:amp|lt|gt|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);)', b'&amp;', content or b'')
+    root = etree.fromstring(content, parser=etree.XMLParser(resolve_entities=False, no_network=True, recover=True))
+    if root is None or etree.QName(root).localname not in ('rss', 'feed', 'RDF'):
         raise ValueError('Not a feed')
     items = []
     for node in root.xpath('//*[local-name()="item" or local-name()="entry"]')[:50]:
@@ -130,10 +133,14 @@ def parse_feed(content, source):
 
 
 def _fetch_feed(url):
-    headers = {'User-Agent': 'Mozilla/5.0 (compatible; HuscopeBot/1.0; +https://hscope.onrender.com)',
-               'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8'}
-    # RSS 제공처(특히 구글 뉴스)는 UA가 필요하고 리다이렉트를 쓴다. 따라가되 HTTPS만 허용.
-    with requests.get(url, timeout=(5, 12), stream=True, allow_redirects=True, headers=headers) as response:
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                             '(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+               'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+               'Accept-Language': 'ko-KR,ko;q=0.9',
+               # 구글 뉴스는 데이터센터 IP에 동의 페이지를 띄운다. 동의 쿠키로 RSS를 바로 받는다.
+               'Cookie': 'CONSENT=YES+'}
+    # 느린 피드 하나가 대시보드 전체를 막지 않도록 빠르게 실패시킨다(실패분은 최근 성공분으로 대체).
+    with requests.get(url, timeout=(4, 8), stream=True, allow_redirects=True, headers=headers) as response:
         response.raise_for_status()
         if urlsplit(response.url).scheme != 'https':
             raise ValueError('Insecure redirect')
@@ -155,16 +162,14 @@ def collect_source(source):
     # Operator-controlled URL only(공식 RSS 또는 구글 뉴스); 브라우저 입력은 받지 않는다.
     if not safe_url(url) or urlsplit(url).scheme != 'https':
         return [], status
-    last_error = None
-    for attempt in range(2):  # 일시적 실패(타임아웃·일시 차단)에 1회 재시도.
-        try:
-            items = parse_feed(_fetch_feed(url), source)
-            with _feed_lock:
-                _feed_cache[source[0]] = (time.monotonic(), items)
-            status.update(mode='live', count=len(items))
-            return items, status
-        except Exception as exc:
-            last_error = exc
+    try:
+        items = parse_feed(_fetch_feed(url), source)
+        with _feed_lock:
+            _feed_cache[source[0]] = (time.monotonic(), items)
+        status.update(mode='live', count=len(items))
+        return items, status
+    except Exception:
+        pass
     # 실패 시 최근 성공분(최대 6시간)을 유지해 섹션이 빈 채로 비지 않게 한다.
     with _feed_lock:
         cached = _feed_cache.get(source[0])
