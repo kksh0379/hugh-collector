@@ -2,6 +2,8 @@
 import os
 import re
 import math
+import time
+import threading
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit, quote, urlencode
 from concurrent.futures import ThreadPoolExecutor
@@ -15,6 +17,9 @@ from collector import reader
 
 bp = Blueprint('finance', __name__, url_prefix='/api/finance')
 cache = ReadCache(max_entries=16, workers=2)
+# 출처별 최근 성공분 보관(일시 실패 시 빈 섹션 대신 직전 기사 유지).
+_feed_cache = {}
+_feed_lock = threading.Lock()
 KST = timezone(timedelta(hours=9))
 
 
@@ -119,39 +124,54 @@ def parse_feed(content, source):
     return items
 
 
+def _fetch_feed(url):
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; HuscopeBot/1.0; +https://hscope.onrender.com)',
+               'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8'}
+    # RSS 제공처(특히 구글 뉴스)는 UA가 필요하고 리다이렉트를 쓴다. 따라가되 HTTPS만 허용.
+    with requests.get(url, timeout=(5, 12), stream=True, allow_redirects=True, headers=headers) as response:
+        response.raise_for_status()
+        if urlsplit(response.url).scheme != 'https':
+            raise ValueError('Insecure redirect')
+        chunks, size = [], 0
+        for chunk in response.iter_content(32768):
+            size += len(chunk)
+            if size > 2 * 1024 * 1024:
+                raise ValueError('Feed too large')
+            chunks.append(chunk)
+    return b''.join(chunks)
+
+
 def collect_source(source):
     env = 'FINANCE_RSS_' + source[0]
     url = os.getenv(env, DEFAULT_FEEDS.get(source[0], '')).strip()
     status = dict(name=source[1], category=source[2], url=source[3], mode='unconfigured')
     if not url:
         return [], status
-    try:
-        # Operator-controlled URL only(공식 RSS 또는 구글 뉴스); 브라우저 입력은 받지 않는다.
-        if not safe_url(url) or urlsplit(url).scheme != 'https':
-            raise ValueError('HTTPS required')
-        headers = {'User-Agent': 'Mozilla/5.0 (compatible; HuscopeBot/1.0; +https://hscope.onrender.com)',
-                   'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8'}
-        # RSS 제공처(특히 구글 뉴스)는 UA가 필요하고 리다이렉트를 쓴다. 따라가되 HTTPS만 허용.
-        with requests.get(url, timeout=(3, 6), stream=True, allow_redirects=True, headers=headers) as response:
-            response.raise_for_status()
-            if urlsplit(response.url).scheme != 'https':
-                raise ValueError('Insecure redirect')
-            chunks, size = [], 0
-            for chunk in response.iter_content(32768):
-                size += len(chunk)
-                if size > 2 * 1024 * 1024:
-                    raise ValueError('Feed too large')
-                chunks.append(chunk)
-        items = parse_feed(b''.join(chunks), source)
-        status.update(mode='live', count=len(items))
-        return items, status
-    except Exception:
-        status['mode'] = 'unavailable'
+    # Operator-controlled URL only(공식 RSS 또는 구글 뉴스); 브라우저 입력은 받지 않는다.
+    if not safe_url(url) or urlsplit(url).scheme != 'https':
         return [], status
+    last_error = None
+    for attempt in range(2):  # 일시적 실패(타임아웃·일시 차단)에 1회 재시도.
+        try:
+            items = parse_feed(_fetch_feed(url), source)
+            with _feed_lock:
+                _feed_cache[source[0]] = (time.monotonic(), items)
+            status.update(mode='live', count=len(items))
+            return items, status
+        except Exception as exc:
+            last_error = exc
+    # 실패 시 최근 성공분(최대 6시간)을 유지해 섹션이 빈 채로 비지 않게 한다.
+    with _feed_lock:
+        cached = _feed_cache.get(source[0])
+    if cached and (time.monotonic() - cached[0]) < 6 * 3600 and cached[1]:
+        status.update(mode='live', count=len(cached[1]), stale=True)
+        return list(cached[1]), status
+    status['mode'] = 'unavailable'
+    return [], status
 
 
 def news():
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=len(SOURCES)) as executor:
         results = list(executor.map(collect_source, SOURCES))
     items, sources, seen = [], [], set()
     for rows, status in results:

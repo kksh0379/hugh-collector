@@ -15,7 +15,7 @@
 .finance-muted, .finance-section-heading > a { color: var(--muted); font-size: 12px; }
 .finance-indicators { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-bottom: 18px; position: relative; }
 @media (min-width: 720px) { .finance-indicators { grid-template-columns: repeat(4, minmax(0,1fr)); } }
-.finance-help { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 6px; padding: 0; border: 0; border-radius: 50%; background: #eaf1ff; color: var(--primary); font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: middle; flex: 0 0 auto; -webkit-appearance: none; appearance: none; transition: background .15s, color .15s, transform .1s; }
+.finance-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 18px; height: 18px; min-width: 18px; min-height: 18px; aspect-ratio: 1; margin-left: 6px; padding: 0; border: 0; border-radius: 50%; background: #eaf1ff; color: var(--primary); font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: middle; flex: 0 0 auto; -webkit-appearance: none; appearance: none; transition: background .15s, color .15s, transform .1s; }
 .finance-help:hover { background: #d7e4ff; }
 .finance-help[aria-expanded="true"] { background: var(--primary); color: #fff; }
 .finance-help:active { transform: scale(.92); }
@@ -36,7 +36,8 @@
 .finance-view label { display: block; font-size: 12px; margin: 15px 0 7px; font-weight: 700; }
 .finance-input-row { display: flex; gap: 8px; }
 .finance-view input { min-width: 0; width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 11px 12px; background: var(--card); font-size: 16px; color: var(--text); }
-.finance-view button { min-height: 40px; flex-shrink: 0; }
+/* 폼 액션 버튼에만 최소 높이 적용(도움말 ?·스크랩·복사 아이콘 버튼은 제외). */
+.finance-view .btn-collect, .finance-view .btn-status { min-height: 40px; flex-shrink: 0; }
 .finance-calendar-list { list-style: none; margin: 16px 0 10px; padding: 0; }
 .finance-calendar-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
 .finance-calendar-item:last-child { border-bottom: none; }
