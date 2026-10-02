@@ -607,6 +607,26 @@ def clear_news_section(section):
     return n
 
 
+def prune_news(keep=3000):
+    """섹션별로 최신 keep건만 남기고 오래된 기사를 삭제한다(DB 무한 증가 방지, 화면 조회 한도와 일치).
+    최신 기준은 published_at·id 내림차순(화면 정렬과 동일). 반환: 삭제 건수."""
+    deleted = 0
+    with get_conn() as conn:
+        rows = conn.execute("SELECT DISTINCT COALESCE(section,'nc') AS sec FROM news").fetchall()
+        for r in rows:
+            sec = dict(r)["sec"]
+            cur = conn.execute(_q(
+                "DELETE FROM news WHERE COALESCE(section,'nc') = ? AND id NOT IN "
+                "(SELECT id FROM news WHERE COALESCE(section,'nc') = ? "
+                "ORDER BY published_at DESC, id DESC LIMIT ?)"),
+                (sec, sec, keep))
+            try:
+                deleted += max(0, cur.rowcount or 0)
+            except Exception:  # noqa: BLE001
+                pass
+    return deleted
+
+
 def clear_tables(tables):
     """지정한 테이블(news/boards/social)을 통째로 비운다. 반환: {테이블: 삭제된 행 수}.
     관리자 'DB 비우기' 기능용. meta(마지막 수집 일시 등)는 건드리지 않는다."""

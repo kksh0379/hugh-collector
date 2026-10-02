@@ -2006,6 +2006,12 @@ def _batch_all():
                 except Exception as e:  # noqa: BLE001
                     print(f"[batch] {group} 오류: {e}", flush=True)
             try:
+                removed = db.prune_news()  # 섹션별 최신 3000건만 유지, 오래된 기사 삭제
+                if removed:
+                    print(f"[batch] 오래된 뉴스 {removed}건 정리(섹션별 최신 3000 유지)", flush=True)
+            except Exception as e:  # noqa: BLE001
+                print(f"[batch] prune 오류: {e}", flush=True)
+            try:
                 _auto_security_report()  # 월초에 지난달 보안 리포트 자동 생성(이미 있으면 skip)
             except Exception as e:  # noqa: BLE001
                 print(f"[batch] secreport 오류: {e}", flush=True)
