@@ -183,6 +183,24 @@ function copyBtnHtml(url) {
   if (!url) return "";
   return `<button type="button" class="copy-btn" data-url="${escapeHtml(url)}">🔗 링크 복사</button>`;
 }
+// 링크가 소셜 매체면 매체별 딱지(배지) — 재단게시판/재단YT에서 유튜브·블로그·인스타 구분
+function socialMediaKind(url) {
+  const u = String(url || "").toLowerCase();
+  if (!u) return null;
+  if (/youtube\.com|youtu\.be/.test(u)) return { cls: "yt", label: "유튜브" };
+  if (/tv\.naver\.com/.test(u)) return { cls: "navertv", label: "네이버TV" };
+  if (/blog\.naver\.com|naver\.me|post\.naver\.com/.test(u)) return { cls: "blog", label: "네이버블로그" };
+  if (/instagram\.com/.test(u)) return { cls: "insta", label: "인스타그램" };
+  if (/facebook\.com|fb\.watch/.test(u)) return { cls: "fb", label: "페이스북" };
+  if (/band\.us/.test(u)) return { cls: "band", label: "밴드" };
+  if (/tiktok\.com/.test(u)) return { cls: "tiktok", label: "틱톡" };
+  if (/brunch\.co\.kr/.test(u)) return { cls: "brunch", label: "브런치" };
+  return null;
+}
+function socialBadgeHtml(url) {
+  const k = socialMediaKind(url);
+  return k ? `<span class="src-badge src-${k.cls}">${k.label}</span>` : "";
+}
 // 카카오 상징(말풍선) 아이콘 + '상세보기' 랜딩 버튼 — 맛집 카드/스크랩 공용
 function kakaoIcon() {
   return `<svg class="kakao-ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">`
@@ -621,7 +639,7 @@ function renderCard(item, opts) {
     <div class="card-main">
       ${newsThumb(item)}
       <div class="card-body">
-        <h3 class="card-title">${newBadgeHtml(item.published_at)}${titleHtml}</h3>
+        <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at)}${titleHtml}</h3>
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
