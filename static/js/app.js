@@ -645,6 +645,78 @@ function renderList(el, items, opts) {
 const TAB_DATA = {};  // tab -> { el, items:[], render:(list)=>void, query:"" }
 
 // 검색어를 토큰으로 분해. 조사(은/는/이/가…)는 떼어내 어간으로도 매칭(자연어 입력 대응).
+// ===== 한글 자모 유사 검색: 단어가 정확하지 않아도(부분·초성·오타·받침차이) 매칭 =====
+const HJ_CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const HJ_JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+const HJ_JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const HJ_CHO_SET = new Set(HJ_CHO);
+// 음절 → 초성·중성·종성 자모열(한글 외 글자는 그대로)
+function jamoDecompose(str) {
+  let out = "";
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code >= 0xAC00 && code <= 0xD7A3) {
+      const s = code - 0xAC00;
+      out += HJ_CHO[Math.floor(s / 588)] + HJ_JUNG[Math.floor((s % 588) / 28)] + HJ_JONG[s % 28];
+    } else out += str[i];
+  }
+  return out;
+}
+// 음절 → 초성만(한글 외 글자는 그대로) — "ㅁㅈ"로 맛집 찾기
+function jamoChoseong(str) {
+  let out = "";
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    if (code >= 0xAC00 && code <= 0xD7A3) out += HJ_CHO[Math.floor((code - 0xAC00) / 588)];
+    else out += str[i];
+  }
+  return out;
+}
+function isChoseongOnly(token) {
+  if (!token) return false;
+  for (const ch of token) if (!HJ_CHO_SET.has(ch)) return false;
+  return true;
+}
+// 오타 허용 근사 부분일치(편집거리 DP, 시작 위치 자유). 비용 보호를 위해 hay/needle 길이 제한.
+function fuzzySubstr(hay, needle, maxErr) {
+  const n = needle.length, m = hay.length;
+  if (!n || n > 40 || m > 3000) return false;
+  let prev = new Array(m + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    const cur = new Array(m + 1);
+    cur[0] = i;
+    for (let j = 1; j <= m; j++) {
+      const cost = needle[i - 1] === hay[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j - 1] + cost, prev[j] + 1, cur[j - 1] + 1);
+    }
+    prev = cur;
+  }
+  let best = Infinity;
+  for (let j = 0; j <= m; j++) if (prev[j] < best) best = prev[j];
+  return best <= maxErr;
+}
+// needle 하나가 hay(원문·자모·초성)에 걸리는지. hayJamo/hayCho는 미리 계산해 전달.
+function koreanTokenHit(hay, hayJamo, hayCho, needle) {
+  if (!needle) return false;
+  if (hay.indexOf(needle) >= 0) return true;                       // 부분일치
+  const nJ = jamoDecompose(needle);
+  if (nJ && hayJamo.indexOf(nJ) >= 0) return true;                 // 받침·조합 차이
+  if (needle.length >= 2 && isChoseongOnly(needle) && hayCho.indexOf(needle) >= 0) return true;  // 초성
+  if (nJ.length >= 4) {                                            // 오타 허용(2자 이상일 때만)
+    const maxErr = Math.min(2, Math.floor(nJ.length * 0.25));
+    if (maxErr >= 1 && fuzzySubstr(hayJamo, nJ, maxErr)) return true;
+  }
+  return false;
+}
+// 짧은 목록용(맛집 등): hay 문자열 하나에 대해 공백 단위 AND 매칭
+function koreanMatchAll(hay, query) {
+  hay = (hay || "").toLowerCase();
+  const hj = jamoDecompose(hay), hc = jamoChoseong(hay);
+  const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  return words.every((w) => koreanTokenHit(hay, hj, hc, w));
+}
+
 function searchTokens(q) {
   const JOSA = /(으로|에서|에게|한테|까지|부터|보다|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만|요)$/;
   return (q || "").toLowerCase().split(/\s+/).filter(Boolean).map((t) => {
@@ -665,7 +737,9 @@ function smartFilter(items, q) {
   if (!toks.length) return items;
   return items.filter((it) => {
     const h = searchHay(it);
-    return toks.every((cands) => cands.some((c) => h.includes(c)));
+    // 반복 입력(키 입력마다) 성능을 위해 자모·초성 분해를 항목에 캐시.
+    if (it.__hay !== h) { it.__hay = h; it.__hj = jamoDecompose(h); it.__hc = jamoChoseong(h); }
+    return toks.every((cands) => cands.some((c) => koreanTokenHit(h, it.__hj, it.__hc, c)));
   });
 }
 function setTabData(tab, el, items, render) {
@@ -2661,8 +2735,8 @@ async function loadReport(id) {
       if (LUNCH.reviewedOnly && Number(r.review_count || 0) <= 0) return false;
       if (LUNCH.cat !== "전체" && (r.cat_norm || "기타") !== LUNCH.cat) return false;
       if (q) {
-        const hay = [r.name, r.category, r.cat_norm, r.sub_cat, r.road_address, r.address].join(" ").toLowerCase();
-        if (hay.indexOf(q) < 0) return false;
+        const hay = [r.name, r.category, r.cat_norm, r.sub_cat, r.road_address, r.address].join(" ");
+        if (!koreanMatchAll(hay, q)) return false;  // 부분·초성·오타 허용 검색
       }
       return true;
     });
