@@ -67,6 +67,7 @@
 .finance-news-item .finance-news-meta { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
 .finance-empty { padding: 24px 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .finance-loading { text-align: center; }
+.finance-pc-only { display: inline-flex; align-items: center; min-height: 34px; padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--bg); border: 1px dashed var(--border); border-radius: 9px; }
 .finance-sources { margin-top: 14px; font-size: 12px; }
 .finance-sources summary { cursor: pointer; padding: 10px 0; }
 .finance-source { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }

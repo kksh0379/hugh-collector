@@ -270,24 +270,52 @@ _DETAIL_KEYS = {"contents", "content", "body", "contenthtml", "html",
                 "desc", "description", "text", "bodyhtml",
                 "boardcontents", "boardcontent", "cont", "detail", "memo"}
 
+# 대표 홈페이지 글 중 소셜(유튜브·네이버블로그·인스타 등)로 연결되는 항목은 해당 소셜 URL로 바인딩한다.
+_SOCIAL_RE = re.compile(
+    r'https?://(?:[\w-]+\.)*(?:youtube\.com|youtu\.be|naver\.me|blog\.naver\.com|m\.blog\.naver\.com|'
+    r'post\.naver\.com|cafe\.naver\.com|tv\.naver\.com|instagram\.com|facebook\.com|fb\.watch|'
+    r'twitter\.com|x\.com|band\.us|tiktok\.com|brunch\.co\.kr)/[^\s"\'<>)\\]+', re.I)
+
+
+def _find_social_url(node, depth=0):
+    """리스트/상세 JSON·HTML 어디든 들어있는 소셜·외부 매체 URL을 찾아 반환(없으면 None)."""
+    if depth > 6 or node is None:
+        return None
+    if isinstance(node, str):
+        m = _SOCIAL_RE.search(node)
+        return m.group(0).rstrip('\\') if m else None
+    if isinstance(node, dict):
+        for v in node.values():
+            u = _find_social_url(v, depth + 1)
+            if u:
+                return u
+    elif isinstance(node, list):
+        for v in node:
+            u = _find_social_url(v, depth + 1)
+            if u:
+                return u
+    return None
+
 
 def _ncf_detail_summary(api_base, dtype, pid):
-    """대표 홈페이지 상세 API에서 본문을 받아 카드용 요약으로. 실패 시 빈 문자열."""
+    """대표 홈페이지 상세 API에서 (요약, 소셜URL)을 반환. 실패 시 ('', None)."""
     try:
         resp = fetcher.get(f"{api_base}/community/{dtype}/{pid}", retries=0, timeout=8)
+        social = None
         try:
             j = resp.json()
             raw = _find_str_by_keys(j, _DETAIL_KEYS)
+            social = _find_social_url(j)
         except ValueError:
             raw = extractor.extract_main_text(BeautifulSoup(resp.text, "lxml"))
+            social = _find_social_url(resp.text)
         if raw:
             text = extractor.clean_text(raw)
             if text and len(text) >= 10:
-                return extractor.summarize(text)
-        # 본문 텍스트가 없으면 빈 문자열(이미지 글은 카드에 썸네일이 대신 표시됨)
+                return extractor.summarize(text), social
+        return "", social  # 본문이 없어도 소셜 링크는 반환(이미지 글은 썸네일 표시)
     except Exception:  # noqa: BLE001
-        pass
-    return ""
+        return "", None
 
 
 def _crawl_json_api(cfg, max_items, max_workers=5):
@@ -329,7 +357,7 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
         fp = th.get("fullPath") if isinstance(th, dict) else None
         image = urljoin(api_base, fp) if fp else None
         entries.append({"subject": subject, "url": url, "dtype": dtype, "pid": pid,
-                        "pub": published, "image_url": image})
+                        "pub": published, "image_url": image, "social": _find_social_url(it)})
 
     # 본문이 아직 없는 글만 상세 API로 요약 보강(이미 요약된 글은 재요청 안 함).
     # 썸네일은 목록에서 오므로 전 글에 채워진다. 전 글을 upsert(기존 요약은 보존).
@@ -340,12 +368,16 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
     fetched = {}
     if need:
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            for e, s in zip(need, pool.map(_summ, need)):
-                fetched[e["url"]] = s
+            for e, res in zip(need, pool.map(_summ, need)):
+                summary, social = res
+                fetched[e["url"]] = summary
+                if social and not e.get("social"):
+                    e["social"] = social  # 상세에서 발견한 소셜 URL로 보강
 
     items = []
     for e in entries:
         content = (known_content.get(e["url"]) or "").strip() or fetched.get(e["url"], "")
+        # 소셜(유튜브·블로그·인스타 등) 글은 홈페이지 상세 대신 해당 소셜 URL로 바로 연결.
         items.append({
             "service": cfg["service"],
             "category": cfg["category"],
@@ -353,7 +385,7 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
             "published_at": e["pub"],
             "author": "NC문화재단",
             "content": content,
-            "url": e["url"],
+            "url": e.get("social") or e["url"],
             "image_url": e.get("image_url"),
         })
     print(f"[board] {label}: {len(items)}건(본문보강 {len(need)}) / {time.time() - t0:.1f}s", flush=True)

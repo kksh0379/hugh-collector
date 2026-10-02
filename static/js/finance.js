@@ -46,9 +46,12 @@
       const read = (typeof isRead === 'function' && isRead(key)) ? ' is-read' : '';
       const scrap = typeof scrapBtnHtml === 'function' ? scrapBtnHtml(key) : '';
       const copy = typeof copyBtnHtml === 'function' ? copyBtnHtml(r.url) : '';
-      // 제목 = 원문 직접 링크(리더가 가로채지 않음). 리더(본문 읽기)는 별도 버튼으로 제공.
+      // 제목 = 원문 직접 링크. 리더 추출이 불가한 출처(재정경제부 등)는 본문 읽기 버튼 대신 PC 전용 안내.
       const titleLink = `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.title)} ↗</a>`;
-      return `<article class="finance-news-item card${read}" data-key="${esc(key)}">${scrap}<span class="finance-mode">${esc(labels[r.category])}</span><h3 class="card-title">${titleLink}</h3><p class="card-summary">${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><div class="card-actions"><a class="read-action reader-open" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기(앱)</a>${copy}</div></article>`;
+      const actions = r.open_original
+        ? `<span class="finance-pc-only" title="이 출처는 모바일에서 원문이 메인 페이지로 이동합니다. PC에서 원문을 열어 주세요.">💻 PC에서 원문 열람</span>${copy}`
+        : `<a class="read-action reader-open" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기(앱)</a>${copy}`;
+      return `<article class="finance-news-item card${read}" data-key="${esc(key)}">${scrap}<span class="finance-mode">${esc(labels[r.category])}</span><h3 class="card-title">${titleLink}</h3><p class="card-summary">${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><div class="card-actions">${actions}</div></article>`;
     }).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
   function renderCalendar() {

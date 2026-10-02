@@ -1026,7 +1026,9 @@ def _lunch_score(cands, avoid_ids, all_visited, recent3, recent7, avoid_cats, mo
         rc = c.get("review_count") or 0
         vc = c.get("visit_count") or 0
         walk = c.get("walk_min")
-        trust = ((rating / 5.0) if rating else 0.4) * (0.5 + 0.5 * min(rc, 8) / 8.0)
+        # 리뷰/평점 선호는 기본값에서 과하지 않게(무평점도 불이익 최소화). 강한 리뷰 선호는
+        # '검증된 곳 우선'(trusted)·'안전'(safe) 옵션에서 가중치를 키워 적용한다.
+        trust = ((rating / 5.0) if rating else 0.55) * (0.72 + 0.28 * min(rc, 8) / 8.0)
         dist = 1.0 - min(walk if walk is not None else 12, 20) / 20.0
         situ = 0.5
         if ctx["weekday"] == 0 and rating: situ += 0.2 * (rating / 5.0)          # 월: 검증된 곳
