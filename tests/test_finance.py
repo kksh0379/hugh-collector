@@ -98,7 +98,7 @@ class FinanceTests(unittest.TestCase):
         with patch.object(finance,'collect_source',return_value=([],{'name':'source','mode':'unavailable'})):
             result=finance.dashboard()
             self.assertEqual(len(result['indicators']),3)
-            self.assertEqual(len(result['sources']),7)
+            self.assertEqual(len(result['sources']),6)
             cal=result['calendar']
             self.assertEqual(cal['mode'],'reference')
             self.assertTrue(cal['events'])

@@ -24,7 +24,7 @@ def _gnews(query):
         {'q': query, 'hl': 'ko', 'gl': 'KR', 'ceid': 'KR:ko'})
 
 
-# 공식 RSS가 확인된 출처(MOEF·TAXWATCH)는 그대로, 나머지는 구글 뉴스 주제 RSS로 기본 연결.
+# 공식 RSS가 확인된 출처(MOEF)는 그대로, 나머지는 구글 뉴스 주제 RSS로 기본 연결.
 # 임의의 비공개 엔드포인트를 추측하지 않으며, 운영자 환경변수로 공식 RSS를 지정하면 대체된다.
 SOURCES = [
     ('MOEF', '재정경제부(구 기획재정부)', 'policy', 'https://mofe.go.kr/'),
@@ -32,12 +32,10 @@ SOURCES = [
     ('PWC', '삼일회계법인(PwC) 뉴스', 'guide', 'https://www.pwc.com/kr/ko.html'),
     ('KPMG', '삼정KPMG 뉴스', 'guide', 'https://kpmg.com/kr/ko/home.html'),
     ('JOSEILBO', '조세일보', 'guide', 'https://www.joseilbo.com/'),
-    ('TAXWATCH', '택스워치', 'guide', 'https://www.taxwatch.co.kr/'),
     ('ASSEMBLY', '세법 입법 동향', 'legislation', 'https://pal.assembly.go.kr/'),
 ]
 DEFAULT_FEEDS = {
     'MOEF': 'https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028',
-    'TAXWATCH': 'https://news.bizwatch.co.kr/rss/service/tax',
     'NTS': _gnews('국세청 세금 세정'),
     'PWC': _gnews('삼일회계법인 PwC 세무'),
     'KPMG': _gnews('삼정KPMG 세무'),

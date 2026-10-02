@@ -1,4 +1,4 @@
-# 재무세무 beta (v2.60)
+# 재무세무 beta (v2.61)
 
 하단 `재무세무 beta`에서 경제지표, 사업자 상태조회, RSS 브리핑, 기업 공시와 국세 법정기한 캘린더를 제공합니다. 기존 하단 메뉴·폰트·색상·버튼을 재사용합니다.
 
@@ -11,10 +11,10 @@
 | ECOS_API_KEY | 한국은행 환율, CD 91일·국고채 3년 지표 | 명확히 표시한 예시 숫자 |
 | NTS_API_KEY | 국세청 사업자등록 상태조회, 디코딩된 서비스키 | 조회 불가 안내, 사업자 상태를 추측하지 않음 |
 | DART_API_KEY | Open DART 최근 90일 공시, 선택한 8자리 고유번호 | 연결 준비 안내와 공식 사이트 링크 |
-| FINANCE_RSS_MOEF/NTS/PWC/KPMG/JOSEILBO/TAXWATCH/ASSEMBLY | 출처별 공식 HTTPS RSS URL(선택) | 지정 시 구글 뉴스 기본값 대신 해당 공식 RSS 사용 |
+| FINANCE_RSS_MOEF/NTS/PWC/KPMG/JOSEILBO/ASSEMBLY | 출처별 공식 HTTPS RSS URL(선택) | 지정 시 구글 뉴스 기본값 대신 해당 공식 RSS 사용 |
 
 - 지원사업(기업마당/BIZINFO) 출처와 분류는 v2.58에서 제거했습니다. 관련 환경변수(`BIZINFO_API_KEY`, `FINANCE_RSS_BIZINFO`)는 더 이상 사용하지 않습니다.
-- 재정경제부(구 기획재정부) 공식 RSS와 택스워치 RSS 안내의 비즈워치 세금 RSS는 공식 RSS 기본값으로 연결되어 있습니다.
+- 재정경제부(구 기획재정부) 공식 RSS는 공식 RSS 기본값으로 연결되어 있습니다. (택스워치 출처는 v2.61에서 제거)
 - 국세청·삼일(PwC)·삼정KPMG·조세일보·국회(세법 입법) 출처는 v2.60부터 **구글 뉴스 RSS**(`news.google.com/rss/search`, 공개·안정 엔드포인트)로 주제별 기본 연결됩니다. 비공개 엔드포인트를 임의로 추측하지 않으며, 구글 뉴스 각 항목은 실제 기사 원문으로 연결됩니다.
   - 공식 RSS를 확보하면 `FINANCE_RSS_<코드>`에 넣어 구글 뉴스 기본값을 대체할 수 있습니다. 예) Render → Environment에 `FINANCE_RSS_NTS = https://…/rss.xml` 한 줄 추가 후 재배포.
   - 연결 상태: 공식/구글 뉴스 수집 성공 `실데이터`, 미설정 `연결 준비`, 설정했으나 응답 없음 `일시 중단`.
@@ -40,7 +40,6 @@
 - [국세기본법 제5조(기한의 특례)](https://www.law.go.kr/법령/국세기본법/제5조)
 - [ECOS Open API](https://ecos.bok.or.kr/api/)
 - [Open DART 개발가이드](https://opendart.fss.or.kr/guide/main.do)
-- [택스워치 RSS 안내](https://www1.taxwatch.co.kr/help/rss)
 
 ## 검증
 
