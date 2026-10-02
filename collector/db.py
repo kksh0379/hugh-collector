@@ -928,9 +928,10 @@ def lunch_list_restaurants(loc_id, include_excluded=False, conn=None):
     cond = "" if include_excluded else "AND r.excluded=0"
     with (get_conn() if conn is None else nullcontext(conn)) as conn:
         rows = conn.execute(_q(
-            "SELECT r.*, COALESCE(v.review_count,0) AS review_count, v.avg_rating, "
+            "SELECT r.*, COALESCE(v.review_count,0) AS review_count, v.avg_rating, COALESCE(v.sample_review_count,0) AS sample_review_count, "
             "COALESCE(t.visit_count,0) AS visit_count FROM lunch_restaurant r "
-            "LEFT JOIN (SELECT v.restaurant_id, COUNT(*) AS review_count, AVG(v.rating) AS avg_rating "
+            "LEFT JOIN (SELECT v.restaurant_id, COUNT(*) AS review_count, AVG(v.rating) AS avg_rating, "
+            "SUM(CASE WHEN v.username='방문기록 · 예시 리뷰' THEN 1 ELSE 0 END) AS sample_review_count "
             "FROM lunch_review v JOIN lunch_restaurant lr ON lr.id=v.restaurant_id "
             "WHERE lr.loc_id=? GROUP BY v.restaurant_id) v ON v.restaurant_id=r.id "
             "LEFT JOIN (SELECT t.restaurant_id, COUNT(*) AS visit_count FROM lunch_visit t "
