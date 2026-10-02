@@ -1,6 +1,6 @@
 import sqlite3
 import unittest
-from collector.lunch_history import import_history, rewrite_history, grouped, AUTHOR
+from collector.lunch_history import import_history, rewrite_history, rewrite_varied_history, grouped, AUTHOR
 
 class HistoryTests(unittest.TestCase):
     def setUp(self):
@@ -46,5 +46,13 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(len(personal),62)
         self.assertTrue(all('예시' not in s and '임의' not in s for s in personal))
         self.assertTrue(any('배달' in s for s in personal))
+
+    def test_individual_notes_are_unique_and_leave_existing_review_intact(self):
+        import_history(self.conn,lambda s:s,'2026-10-02')
+        rewrite_history(self.conn,lambda s:s,'2026-10-02')
+        self.assertEqual(rewrite_varied_history(self.conn,lambda s:s),62)
+        self.assertEqual(rewrite_varied_history(self.conn,lambda s:s),0)
+        self.assertEqual(self.conn.execute("SELECT COUNT(DISTINCT comment) FROM lunch_review WHERE username='관리자'").fetchone()[0],62)
+        self.assertEqual(self.conn.execute("SELECT comment FROM lunch_review WHERE username='실제 이용자'").fetchone()[0],'기존 후기')
 
 if __name__ == '__main__': unittest.main()
