@@ -23,6 +23,15 @@
 .finance-tip { position: absolute; z-index: 6; background: #1c1e21; color: #fff; font-size: 12px; font-weight: 400; line-height: 1.55; letter-spacing: 0; text-align: left; padding: 9px 11px; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.22); white-space: normal; }
 .finance-tip::before { content: ''; position: absolute; bottom: 100%; left: var(--arrow, 16px); transform: translateX(-50%); border: 6px solid transparent; border-bottom-color: #1c1e21; }
 .finance-card, .finance-indicator { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+.finance-indicator { position: relative; }
+.finance-stock-refresh { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--primary); font-size: 15px; line-height: 1; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.finance-stock-refresh:hover { background: #eaf1ff; border-color: var(--primary); }
+.finance-stock-refresh:active { transform: scale(.92); }
+.finance-stock-refresh.spin { animation: finance-spin .8s linear infinite; pointer-events: none; }
+@keyframes finance-spin { to { transform: rotate(360deg); } }
+.finance-quick { margin: 4px 0 2px; }
+.finance-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #a8bfe4; background: #f3f7ff; color: var(--primary-dark); border-radius: 20px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.finance-chip:hover { background: #e8f0ff; border-color: var(--primary); }
 .finance-indicator h3 { font-size: 13px; font-weight: 700; margin: 10px 0 6px; }
 .finance-indicator strong { font-size: 24px; letter-spacing: -.5px; }
 .finance-indicator .finance-unit { font-size: 12px; margin-left: 5px; color: var(--muted); }
@@ -47,8 +56,9 @@
 .finance-calendar-item p { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.5; }
 .finance-calendar-shift { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
 .finance-calendar-empty { list-style: none; padding: 20px 0; color: var(--muted); font-size: 13px; }
-.finance-filters { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 10px; }
-.finance-filters button { border: 1px solid var(--border); background: var(--card); color: var(--muted); padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.finance-filters { display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 6px; padding-bottom: 10px; scrollbar-width: none; }
+.finance-filters::-webkit-scrollbar { display: none; }
+.finance-filters button { flex: 0 0 auto; white-space: nowrap; border: 1px solid var(--border); background: var(--card); color: var(--muted); padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .finance-filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
 /* 브리핑 항목은 메인 뉴스 카드(card/card-title/card-summary/card-actions/scrap-btn/copy-btn)를
    그대로 재사용하되, 브리핑 안에서는 박스 대신 구분선 리스트로 보이도록 겉모양만 덜어낸다. */

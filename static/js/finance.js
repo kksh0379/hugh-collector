@@ -4,7 +4,9 @@
   const $ = id => document.getElementById(id);
   const labels = {policy:'세법·보도자료',guide:'회계·세무 가이드',legislation:'입법예고'};
   const modes = {live:'실데이터',demo:'예시 데이터',unconfigured:'연결 준비',unavailable:'일시 중단',loading:'불러오는 중'};
-  let data = null, category = 'all', loading = false, dartVersion = 0;
+  let data = null, category = 'all', loading = false, dartVersion = 0, ncData = null;
+  const NC_CODE = '036570';
+  const ncPlaceholder = () => ({code:'KRX/'+NC_CODE, name:'(주)엔씨', unit:'원', value:null, change:null, ratio:null, date:null, mode:'loading', history:[], desc:''});
   const esc = text => String(text ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = value => {
     const s = String(value ?? '');
@@ -59,24 +61,29 @@
     }).join('') : '<li class="finance-calendar-empty">다가오는 신고·납부 기한이 없습니다.</li>';
     $('finance-calendar-message').textContent = cal ? (cal.message || '') : '';
   }
+  function indicatorCardHtml(r) {
+    let chart = '';
+    if (r.history && r.history.length > 1) {
+      // 값 범위로 정규화해 세로 4~32 영역에 맞춘다(환율처럼 큰 수도 박스를 벗어나지 않게).
+      const vals = r.history.map(x => x.value), low = Math.min(...vals), range = Math.max(...vals)-low || 1;
+      const points = vals.map((v,i) => `${(i*160/(vals.length-1)).toFixed(1)},${(32-(v-low)/range*28).toFixed(1)}`).join(' ');
+      chart = `<svg viewBox="0 0 160 36" role="img" aria-label="${esc(r.name)} 최근 6개월 추이"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span class="finance-spark-label">최근 6개월 추이</span>`;
+    }
+    const help = r.desc ? `<button type="button" class="finance-help" aria-label="${esc(r.name)} 설명 보기" aria-expanded="false" data-tip="${esc(r.desc)}">?</button>` : '';
+    const dateLine = r.date ? esc(fmtDate(r.date))+' 기준' : (r.mode === 'loading' ? '불러오는 중…' : '실제 시세 아님');
+    let changeLine;
+    if (r.change == null) changeLine = r.mode === 'loading' ? '주가를 불러오고 있습니다.' : '비교 데이터 없음';
+    else if (r.ratio != null) changeLine = `전일 종가 대비 ${r.change>0?'+':''}${esc(Number(r.change).toLocaleString('ko-KR'))}원 (${r.ratio>0?'+':''}${esc(r.ratio)}%)`;
+    else changeLine = `직전 관측 대비 ${r.change>0?'+':''}${esc(r.change)}${r.unit==='%'?'%p':esc(r.unit)}`;
+    const isNc = String(r.code||'').startsWith('KRX');
+    const idAttr = isNc ? ' id="finance-nc"' : '';
+    const refresh = isNc ? `<button type="button" class="finance-stock-refresh" aria-label="주가 새로고침" title="주가 새로고침">↻</button>` : '';
+    return `<article class="finance-indicator"${idAttr}><span class="finance-mode ${r.mode === 'live' ? 'live' : ''}">${esc(modes[r.mode])}</span>${refresh}<h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;
+  }
   function render(result) {
     data = result;
-    $('finance-indicators').innerHTML = data.indicators.map(r => {
-      let chart = '';
-      if (r.history && r.history.length > 1) {
-        // 값 범위로 정규화해 세로 4~32 영역에 맞춘다(환율처럼 큰 수도 박스를 벗어나지 않게).
-        const vals = r.history.map(x => x.value), low = Math.min(...vals), range = Math.max(...vals)-low || 1;
-        const points = vals.map((v,i) => `${(i*160/(vals.length-1)).toFixed(1)},${(32-(v-low)/range*28).toFixed(1)}`).join(' ');
-        chart = `<svg viewBox="0 0 160 36" role="img" aria-label="${esc(r.name)} 최근 6개월 추이"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span class="finance-spark-label">최근 6개월 추이</span>`;
-      }
-      const help = r.desc ? `<button type="button" class="finance-help" aria-label="${esc(r.name)} 설명 보기" aria-expanded="false" data-tip="${esc(r.desc)}">?</button>` : '';
-      const dateLine = r.date ? esc(fmtDate(r.date))+' 기준' : '실제 시세 아님';
-      let changeLine;
-      if (r.change == null) changeLine = '비교 데이터 없음';
-      else if (r.ratio != null) changeLine = `전일 종가 대비 ${r.change>0?'+':''}${esc(Number(r.change).toLocaleString('ko-KR'))}원 (${r.ratio>0?'+':''}${esc(r.ratio)}%)`;
-      else changeLine = `직전 관측 대비 ${r.change>0?'+':''}${esc(r.change)}${r.unit==='%'?'%p':esc(r.unit)}`;
-      return `<article class="finance-indicator"><span class="finance-mode ${r.mode === 'live' ? 'live' : ''}">${esc(modes[r.mode])}</span><h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;
-    }).join('');
+    // 지표 3종(ECOS) + 엔씨 주가(별도 /stock 로드). 엔씨 카드는 ncData를 사용해 폴링에도 유지.
+    $('finance-indicators').innerHTML = data.indicators.map(indicatorCardHtml).join('') + indicatorCardHtml(ncData || ncPlaceholder());
     renderCalendar();
     $('finance-sources').innerHTML = data.sources.map(s => `<div class="finance-source">${link(s.url,s.name)}<span class="finance-mode">${esc(modes[s.mode])}${s.mode==='live' ? ' · '+s.count+'건' : ''}</span></div>`).join('');
     const hasDemo = data.indicators.some(r => r.mode==='demo');
@@ -95,6 +102,18 @@
       $('finance-status').textContent='연결 확인이 지연되고 있습니다. 잠시 후 새로고침해 주세요. 표시된 숫자는 예시입니다.';
     } catch { $('finance-status').textContent='정보를 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.'; }
     finally { loading=false; $('finance-refresh').disabled=false; }
+  }
+  async function loadStock() {
+    const spin = add => { const b=document.querySelector('.finance-stock-refresh'); if(b) b.classList.toggle('spin', add); };
+    spin(true);
+    try {
+      for (let attempt=0; attempt<8; attempt++) {
+        const result = await json('/api/finance/stock');
+        if (!result.pending) { ncData = result; const el=$('finance-nc'); if(el) el.outerHTML = indicatorCardHtml(ncData); return; }
+        await pause(1500);
+      }
+    } catch { /* 실패 시 직전 값 유지 */ }
+    finally { spin(false); }
   }
   async function loadDart() {
     const version=++dartVersion, code=$('finance-corp-code').value.trim();
@@ -123,6 +142,7 @@
     document.querySelectorAll('.finance-help[aria-expanded="true"]').forEach(b=>b.setAttribute('aria-expanded','false'));
   }
   $('finance-indicators').addEventListener('click',event=>{
+    if(event.target.closest('.finance-stock-refresh')){ event.preventDefault(); loadStock(); return; }
     const btn=event.target.closest('.finance-help'); if(!btn) return;
     event.preventDefault(); event.stopPropagation();
     const wasOpen=btn.getAttribute('aria-expanded')==='true';
@@ -141,8 +161,10 @@
   });
   document.addEventListener('click',closeTips);
   $('finance-search').addEventListener('input',renderNews);
-  $('finance-refresh').addEventListener('click',()=>{load();loadDart();});
+  $('finance-refresh').addEventListener('click',()=>{load();loadStock();loadDart();});
   $('finance-dart-form').addEventListener('submit',event=>{event.preventDefault();loadDart();});
+  const dartNc=document.getElementById('finance-dart-nc');
+  if(dartNc) dartNc.addEventListener('click',()=>{ $('finance-corp-code').value=dartNc.dataset.corp||''; loadDart(); });
   $('finance-business-form').addEventListener('submit',async event=>{
     event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true;
     $('finance-business-result').textContent='국세청 사업자 상태를 확인하고 있습니다.';
@@ -152,5 +174,5 @@
     } catch(e) { $('finance-business-result').textContent=e.name==='AbortError' ? '조회 시간이 초과되었습니다. 다시 시도해 주세요.' : e.message; }
     finally {button.disabled=false;}
   });
-  window.onShowFinance=()=>{load();loadDart();};
+  window.onShowFinance=()=>{load();loadStock();loadDart();};
 })();

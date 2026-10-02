@@ -302,10 +302,9 @@ def tax_calendar(today=None):
 
 
 def dashboard():
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    # 엔씨 주가는 자주 바뀌므로 대시보드 캐시와 분리(/stock 엔드포인트, 짧은 캐시)해 방문마다 갱신한다.
+    with ThreadPoolExecutor(max_workers=3) as executor:
         indicators = list(executor.map(indicator, INDICATORS))
-        nc = executor.submit(nc_stock).result()
-    indicators.append(nc)
     data = news()
     data.update(indicators=indicators, calendar=tax_calendar())
     return data
@@ -317,14 +316,22 @@ def dashboard_route():
     if data is None:
         indicators = [dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3], value=s[4], change=None,
             ratio=None, date=None, mode='demo', history=[], desc=s[5]) for s in INDICATORS]
-        indicators.append(dict(code='KRX/'+os.getenv('NC_STOCK_CODE', '036570'),
-            name=os.getenv('NC_STOCK_NAME', '(주)엔씨'), unit='원', value=None, change=None,
-            ratio=None, date=None, mode='loading', history=[], desc=''))
         return jsonify(dict(pending=True, indicators=indicators,
             items=[], sources=[], calendar=tax_calendar()))
     # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
     reader.register_external([dict(url=r['url'], title=r['title'], author=r.get('source', ''),
         published_at=r.get('pub_date', ''), content=r.get('description', '')) for r in data.get('items', [])])
+    return jsonify(dict(data, pending=False))
+
+
+@bp.get('/stock')
+def stock_route():
+    # 엔씨 주가는 60초 캐시로 방문·수동 새로고침마다 최신에 가깝게 제공한다.
+    data = cache.get('nc', nc_stock, ttl=60, wait=0)
+    if data is None:
+        return jsonify(dict(pending=True, code='KRX/'+os.getenv('NC_STOCK_CODE', '036570'),
+            name=os.getenv('NC_STOCK_NAME', '(주)엔씨'), unit='원', value=None, change=None,
+            ratio=None, date=None, mode='loading', history=[], desc=''))
     return jsonify(dict(data, pending=False))
 
 
