@@ -1513,3 +1513,11 @@ body.chrome-hidden .view-head { position: static; }
 .cal-preview-summary { font-size:12px; line-height:1.7; color:#536073; margin:7px 0; overflow-wrap:anywhere; }
 .cal-preview-item .read-action { display:inline-flex; margin-top:6px; font-size:12px; min-height:36px; align-items:center; }
 .cal-preview-empty { color:var(--muted); font-size:13px; padding:10px 0; }
+
+/* Lunch results and review toggle share the same 16px content gutters. */
+.lunch-filterbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 16px 10px;min-height:36px}
+.lunch-filterbar .result-count{margin:0;white-space:nowrap}
+.lunch-reviewed-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--muted);font-size:12px;font-weight:700;line-height:1.4;cursor:pointer;white-space:nowrap}
+.lunch-reviewed-toggle input{width:15px;height:15px;margin:0;accent-color:var(--primary);flex:none}
+.lunch-reviewed-toggle:has(input:checked){border-color:var(--primary);color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--card))}
+.lunch-reviewed-toggle:focus-within{outline:2px solid var(--primary);outline-offset:2px}
