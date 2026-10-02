@@ -3,7 +3,7 @@ import os
 import re
 import math
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlsplit, quote
+from urllib.parse import urlsplit, quote, urlencode
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -15,19 +15,34 @@ from collector.read_cache import ReadCache
 bp = Blueprint('finance', __name__, url_prefix='/api/finance')
 cache = ReadCache(max_entries=16, workers=2)
 KST = timezone(timedelta(hours=9))
-# Official feed availability varies. Configure verified RSS URLs, never guess endpoints.
+
+
+def _gnews(query):
+    """공식 RSS를 확인하지 못한 출처는 구글 뉴스 RSS(공개·안정 엔드포인트)로 주제별 수집한다.
+    운영자가 FINANCE_RSS_<코드>에 검증된 공식 RSS를 지정하면 그 값이 항상 우선한다."""
+    return 'https://news.google.com/rss/search?' + urlencode(
+        {'q': query, 'hl': 'ko', 'gl': 'KR', 'ceid': 'KR:ko'})
+
+
+# 공식 RSS가 확인된 출처(MOEF·TAXWATCH)는 그대로, 나머지는 구글 뉴스 주제 RSS로 기본 연결.
+# 임의의 비공개 엔드포인트를 추측하지 않으며, 운영자 환경변수로 공식 RSS를 지정하면 대체된다.
 SOURCES = [
     ('MOEF', '재정경제부(구 기획재정부)', 'policy', 'https://mofe.go.kr/'),
-    ('NTS', '국세청', 'policy', 'https://www.nts.go.kr/'),
-    ('PWC', '삼일회계법인', 'guide', 'https://www.pwc.com/kr/ko.html'),
-    ('KPMG', '삼정KPMG', 'guide', 'https://kpmg.com/kr/ko/home.html'),
+    ('NTS', '국세청·국세 뉴스', 'policy', 'https://www.nts.go.kr/'),
+    ('PWC', '삼일회계법인(PwC) 뉴스', 'guide', 'https://www.pwc.com/kr/ko.html'),
+    ('KPMG', '삼정KPMG 뉴스', 'guide', 'https://kpmg.com/kr/ko/home.html'),
     ('JOSEILBO', '조세일보', 'guide', 'https://www.joseilbo.com/'),
     ('TAXWATCH', '택스워치', 'guide', 'https://www.taxwatch.co.kr/'),
-    ('ASSEMBLY', '국회 입법예고', 'legislation', 'https://pal.assembly.go.kr/'),
+    ('ASSEMBLY', '세법 입법 동향', 'legislation', 'https://pal.assembly.go.kr/'),
 ]
 DEFAULT_FEEDS = {
     'MOEF': 'https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028',
     'TAXWATCH': 'https://news.bizwatch.co.kr/rss/service/tax',
+    'NTS': _gnews('국세청 세금 세정'),
+    'PWC': _gnews('삼일회계법인 PwC 세무'),
+    'KPMG': _gnews('삼정KPMG 세무'),
+    'JOSEILBO': _gnews('조세일보'),
+    'ASSEMBLY': _gnews('세법 개정 입법예고'),
 }
 CATEGORIES = {'policy': '세법·보도자료', 'guide': '회계·세무 가이드', 'legislation': '입법예고'}
 INDICATORS = [('731Y001', '0000001', '원/달러 환율', '원', 1350.0),

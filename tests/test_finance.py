@@ -128,11 +128,13 @@ class FinanceTests(unittest.TestCase):
             self.assertTrue(result.json['pending'])
             self.assertEqual(get.call_args.kwargs['wait'],0)
 
-    def test_rss_url_comes_from_operator_env_only(self):
-        # Sources connect via operator-set FINANCE_RSS_<CODE>; nothing is guessed.
+    def test_every_source_has_default_feed_and_env_overrides(self):
+        # 모든 출처에 기본 피드(공식 RSS 또는 구글 뉴스 주제 RSS)가 연결되어 있다.
+        for s in finance.SOURCES:
+            self.assertIn(s[0], finance.DEFAULT_FEEDS)
+            self.assertTrue(finance.DEFAULT_FEEDS[s[0]].startswith('https://'))
+        # 운영자 환경변수가 항상 기본값보다 우선한다.
         nts=next(s for s in finance.SOURCES if s[0]=='NTS')
-        rows,status=finance.collect_source(nts)
-        self.assertEqual(status['mode'],'unconfigured')
         os.environ['FINANCE_RSS_NTS']='https://example.org/feed.xml'
         with patch.object(finance.requests,'get',side_effect=TimeoutError) as get:
             rows,status=finance.collect_source(nts)
