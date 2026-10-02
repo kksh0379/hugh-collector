@@ -277,39 +277,25 @@ _SOCIAL_RE = re.compile(
     r'twitter\.com|x\.com|band\.us|tiktok\.com|brunch\.co\.kr)/[^\s"\'<>)\\]+', re.I)
 
 
-_YT_ID = re.compile(r'^[A-Za-z0-9_-]{11}$')
+# 소셜 글의 대표 외부 링크가 담기는 필드들(본문은 스캔하지 않는다 — 기사 속 인용 링크 오탐 방지).
+_SOCIAL_LINK_KEYS = {"link", "snsurl", "snslink", "originurl", "outlink", "sns",
+                     "url", "videourl", "movieurl", "extlink", "externalurl"}
 
 
-def _find_social_url(node, depth=0):
-    """리스트/상세 JSON·HTML 어디든 들어있는 소셜·외부 매체 URL을 찾아 반환(없으면 None)."""
-    if depth > 6 or node is None:
+def _social_link(obj):
+    """게시글 객체의 대표 링크 필드(link 등)가 소셜 매체 URL이면 반환. 본문 텍스트는 보지 않는다."""
+    if not isinstance(obj, dict):
         return None
-    if isinstance(node, str):
-        m = _SOCIAL_RE.search(node)
-        if not m:
-            return None
-        url = m.group(0).rstrip('\\')
-        em = re.search(r'youtube\.com/embed/([A-Za-z0-9_-]{11})', url)  # embed → watch(정상 랜딩)
-        return "https://www.youtube.com/watch?v=" + em.group(1) if em else url
-    if isinstance(node, dict):
-        # 전체 URL이 없고 유튜브 영상 ID만 있는 경우(videoId/ytId/snsId+youtube 타입) → watch URL 구성.
-        type_hint = " ".join(str(node.get(k) or "") for k in
-                             ("snsType", "type", "dtype", "channel", "media", "platform")).lower()
-        for k, v in node.items():
-            kl = str(k).lower()
-            if isinstance(v, str) and _YT_ID.match(v) and (
-                    "youtube" in kl or "video" in kl or kl in ("vid", "yid", "ytid", "ytvid")
-                    or ("youtube" in type_hint and ("id" in kl or kl in ("sns", "src", "key")))):
-                return "https://www.youtube.com/watch?v=" + v
-        for v in node.values():
-            u = _find_social_url(v, depth + 1)
-            if u:
-                return u
-    elif isinstance(node, list):
-        for v in node:
-            u = _find_social_url(v, depth + 1)
-            if u:
-                return u
+    d = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+    if not isinstance(d, dict):
+        return None
+    for k, v in d.items():
+        if str(k).lower() in _SOCIAL_LINK_KEYS and isinstance(v, str):
+            m = _SOCIAL_RE.search(v)
+            if m:
+                url = m.group(0).rstrip('\\')
+                em = re.search(r'youtube\.com/embed/([A-Za-z0-9_-]{11})', url)  # embed → watch
+                return "https://www.youtube.com/watch?v=" + em.group(1) if em else url
     return None
 
 
@@ -321,10 +307,9 @@ def _ncf_detail_summary(api_base, dtype, pid):
         try:
             j = resp.json()
             raw = _find_str_by_keys(j, _DETAIL_KEYS)
-            social = _find_social_url(j)
+            social = _social_link(j)   # 대표 링크 필드만(본문 인용 링크 오탐 방지)
         except ValueError:
             raw = extractor.extract_main_text(BeautifulSoup(resp.text, "lxml"))
-            social = _find_social_url(resp.text)
         if raw:
             text = extractor.clean_text(raw)
             if text and len(text) >= 10:
@@ -372,8 +357,9 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
         th = it.get("thumbnail") or {}
         fp = th.get("fullPath") if isinstance(th, dict) else None
         image = urljoin(api_base, fp) if fp else None
-        entries.append({"subject": subject, "url": url, "dtype": dtype, "pid": pid,
-                        "pub": published, "image_url": image, "social": _find_social_url(it)})
+        # 소셜 글(dtype=social)만 대표 링크로 바인딩. 일반글(all 등)은 본문에 소셜 링크가 있어도 건드리지 않음.
+        entries.append({"subject": subject, "url": url, "dtype": dtype, "pid": pid, "pub": published,
+                        "image_url": image, "social": (_social_link(it) if dtype == "social" else None)})
 
     # 본문이 아직 없는 글은 상세 API로 요약 보강. 소셜 글(dtype=social)은 본문이 있어도 상세의
     # link(유튜브·블로그·인스타 URL)를 확보해야 하므로, 아직 소셜 URL이 없으면 함께 상세를 받는다.
@@ -389,8 +375,8 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
             for e, res in zip(need, pool.map(_summ, need)):
                 summary, social = res
                 fetched[e["url"]] = summary
-                if social and not e.get("social"):
-                    e["social"] = social  # 상세에서 발견한 소셜 URL로 보강
+                if e["dtype"] == "social" and social and not e.get("social"):
+                    e["social"] = social  # 소셜 글만 상세의 대표 링크로 바인딩
 
     items = []
     for e in entries:
