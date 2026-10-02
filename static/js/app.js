@@ -2514,7 +2514,7 @@ async function loadReport(id) {
 (function initLunch() {
   let recommendationRequest = 0;
   let previousRecommendationId = null;
-  const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", poll: null };
+  const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", reviewedOnly: false, poll: null };
   const $ = (id) => document.getElementById(id);
 
   function isAdmin() { return document.body.classList.contains("is-admin"); }
@@ -2656,6 +2656,7 @@ async function loadReport(id) {
   function filtered() {
     const q = (LUNCH.q || "").trim().toLowerCase();
     return LUNCH.rows.filter((r) => {
+      if (LUNCH.reviewedOnly && Number(r.review_count || 0) <= 0) return false;
       if (LUNCH.cat !== "전체" && (r.cat_norm || "기타") !== LUNCH.cat) return false;
       if (q) {
         const hay = [r.name, r.category, r.cat_norm, r.sub_cat, r.road_address, r.address].join(" ").toLowerCase();
@@ -2705,7 +2706,7 @@ async function loadReport(id) {
         <span class="lcat">${escapeHtml(sub)}</span>
       </div>
       ${catPath ? `<div class="lcatpath">${escapeHtml(catPath)}</div>` : ""}
-      <div class="lrate">${rate} ${visit}</div>
+      <div class="lrate">${rate} ${visit}${r.sample_review_count ? ' <span class="lrc">· 예시 평점 포함</span>' : ''}</div>
       ${meta || addr ? `<div class="lmeta">📍 ${escapeHtml([meta, addr].filter(Boolean).join(" · "))}</div>` : ""}
       ${info2 ? `<div class="lmeta2">${info2}</div>` : ""}
       <div class="lacts">
@@ -2758,6 +2759,7 @@ async function loadReport(id) {
       : `<div class="lrev-empty">첫 후기를 남겨보세요 🙌</div>`;
     const writer = isLoggedIn() ? writerHtml() : `<div class="lrev-note">로그인하면 평점·후기를 남길 수 있어요</div>`;
     body.innerHTML = `<div class="lrev-summary">${avg}</div>
+      ${r.sample_review_count ? '<p class="lrev-note">방문 기록을 바탕으로 만든 예시 리뷰와 임의 평점이 포함되어 있어요. 실제 맛·가격·응대 평가는 아닙니다.</p>' : ''}
       <div class="lrev-links">${kakao}</div>
       ${writer}
       <div class="lrev-list">${list}</div>`;
@@ -2999,6 +3001,10 @@ async function loadReport(id) {
     if (sBtn) sBtn.addEventListener("click", doSearch);
 
     const cats = $("lunch-cats");
+    const reviewedOnly = $("lunch-reviewed-only");
+    if (reviewedOnly) reviewedOnly.addEventListener("change", () => {
+      LUNCH.reviewedOnly = reviewedOnly.checked; renderList();
+    });
     if (cats) cats.addEventListener("change", (e) => {
       const r = e.target.closest('input[name="lcat"]'); if (!r) return;
       LUNCH.cat = r.value; renderCats(); renderList();
