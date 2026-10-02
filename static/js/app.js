@@ -252,6 +252,7 @@ function toast(msg) {
   const views = {
     collector: document.getElementById("view-collector"),
     food: document.getElementById("view-food"),
+    finance: document.getElementById("view-finance"),
     report: document.getElementById("view-report"),
     scrap: document.getElementById("view-scrap"),
   };
@@ -268,6 +269,7 @@ function toast(msg) {
     Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
     // 맛집 하위 뷰(후기/AI 추천)는 항상 닫고 대메뉴로 복귀
     ["view-lunch-reviews", "view-lunch-ai"].forEach((id) => { const e = document.getElementById(id); if (e) e.hidden = true; });
+    if (n === "finance" && window.onShowFinance) window.onShowFinance();
     window.scrollTo(0, 0);
     document.body.classList.remove("chrome-hidden");
     if (n === "report" && typeof window.onShowReport === "function") window.onShowReport();

@@ -1,0 +1,235 @@
+"""Finance adapters. Secrets stay server-side; unavailable data is never a verdict."""
+import os
+import re
+import math
+from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit, quote, urlencode
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
+from bs4 import BeautifulSoup
+from flask import Blueprint, jsonify, request
+from lxml import etree
+from collector.read_cache import ReadCache
+
+bp = Blueprint('finance', __name__, url_prefix='/api/finance')
+cache = ReadCache(max_entries=16, workers=2)
+KST = timezone(timedelta(hours=9))
+# Official feed availability varies. Configure verified RSS URLs, never guess endpoints.
+SOURCES = [
+    ('MOEF', '재정경제부(구 기획재정부)', 'policy', 'https://mofe.go.kr/'),
+    ('NTS', '국세청', 'policy', 'https://www.nts.go.kr/'),
+    ('BIZINFO', '기업마당', 'support', 'https://www.bizinfo.go.kr/'),
+    ('PWC', '삼일회계법인', 'guide', 'https://www.pwc.com/kr/ko.html'),
+    ('KPMG', '삼정KPMG', 'guide', 'https://kpmg.com/kr/ko/home.html'),
+    ('JOSEILBO', '조세일보', 'guide', 'https://www.joseilbo.com/'),
+    ('TAXWATCH', '택스워치', 'guide', 'https://www.taxwatch.co.kr/'),
+    ('ASSEMBLY', '국회 입법예고', 'legislation', 'https://pal.assembly.go.kr/'),
+]
+DEFAULT_FEEDS = {
+    'MOEF': 'https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028',
+    'TAXWATCH': 'https://news.bizwatch.co.kr/rss/service/tax',
+}
+CATEGORIES = {'policy': '세법·보도자료', 'support': '지원사업', 'guide': '회계·세무 가이드', 'legislation': '입법예고'}
+INDICATORS = [('731Y001', '0000001', '원/달러 환율', '원', 1350.0),
+              ('817Y002', '010502000', 'CD 91일', '%', 3.0),
+              ('817Y002', '010200000', '국고채 3년', '%', 2.8)]
+
+
+def now():
+    return datetime.now(KST)
+
+
+def safe_url(url):
+    try:
+        p = urlsplit(url)
+        return url if p.scheme in ('https', 'http') and p.hostname and not p.username and not p.password else ''
+    except ValueError:
+        return ''
+
+
+def get_json(url, **kwargs):
+    response = requests.get(url, timeout=(3, 7), allow_redirects=False, **kwargs)
+    response.raise_for_status()
+    return response.json()
+
+
+def plain(text):
+    return BeautifulSoup(text or '', 'html.parser').get_text(' ', strip=True)
+
+
+def parse_feed(content, source):
+    root = etree.fromstring(content, parser=etree.XMLParser(resolve_entities=False, no_network=True, recover=False))
+    if etree.QName(root).localname not in ('rss', 'feed', 'RDF'):
+        raise ValueError('Not a feed')
+    items = []
+    for node in root.xpath('//*[local-name()="item" or local-name()="entry"]')[:30]:
+        def field(*names):
+            for name in names:
+                found = node.xpath('./*[local-name()=$name]', name=name)
+                if found:
+                    return ''.join(found[0].itertext()).strip()
+            return ''
+        url = field('link')
+        if not url:
+            links = node.xpath('./*[local-name()="link"][@href]')
+            url = next((x.get('href') for x in links if x.get('rel', 'alternate') == 'alternate'), '')
+        url = safe_url(url)
+        title = plain(field('title'))[:250]
+        if title and url:
+            items.append(dict(category=source[2], source=source[1], title=title,
+                              description=plain(field('description', 'summary', 'content'))[:500],
+                              url=url, pub_date=field('pubDate', 'published', 'updated', 'date')[:80], mode='live'))
+    return items
+
+
+def collect_source(source):
+    env = 'FINANCE_RSS_' + source[0]
+    url = os.getenv(env, DEFAULT_FEEDS.get(source[0], '')).strip()
+    if source[0] == 'BIZINFO' and not url and os.getenv('BIZINFO_API_KEY'):
+        url = 'https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do?' + urlencode(dict(
+            crtfcKey=os.environ['BIZINFO_API_KEY'], dataType='rss', searchCnt=30))
+    status = dict(name=source[1], category=source[2], url=source[3], mode='unconfigured')
+    if not url:
+        return [], status
+    try:
+        # Operator-controlled URL only; no arbitrary URL is accepted from a browser.
+        if not safe_url(url) or urlsplit(url).scheme != 'https':
+            raise ValueError('HTTPS required')
+        with requests.get(url, timeout=(3, 6), stream=True, allow_redirects=False) as response:
+            response.raise_for_status()
+            chunks, size = [], 0
+            for chunk in response.iter_content(32768):
+                size += len(chunk)
+                if size > 2 * 1024 * 1024:
+                    raise ValueError('Feed too large')
+                chunks.append(chunk)
+        items = parse_feed(b''.join(chunks), source)
+        status.update(mode='live', count=len(items))
+        return items, status
+    except Exception:
+        status['mode'] = 'unavailable'
+        return [], status
+
+
+def news():
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(collect_source, SOURCES))
+    items, sources, seen = [], [], set()
+    for rows, status in results:
+        sources.append(status)
+        for row in rows:
+            if row['url'] not in seen:
+                seen.add(row['url'])
+                items.append(row)
+    return dict(items=items, sources=sources, fetched_at=now().isoformat())
+
+
+def indicator(spec):
+    table, code, name, unit, sample = spec
+    result = dict(code=f'{table}/{code}', name=name, unit=unit, value=sample,
+                  change=None, date=None, mode='demo', history=[])
+    key = os.getenv('ECOS_API_KEY')
+    if not key:
+        return result
+    try:
+        end = now().date()
+        url = (f'https://ecos.bok.or.kr/api/StatisticSearch/{quote(key, safe="")}/json/kr/1/100/'
+               f'{table}/D/{(end-timedelta(days=30)):%Y%m%d}/{end:%Y%m%d}/{code}')
+        rows = get_json(url)['StatisticSearch']['row']
+        rows = sorted(rows, key=lambda x: x['TIME'])
+        values = [(r['TIME'], float(r['DATA_VALUE'])) for r in rows if r.get('DATA_VALUE') not in (None, '')]
+        if not values or not all(math.isfinite(v) for _, v in values):
+            raise ValueError('No observations')
+        result.update(value=values[-1][1], date=values[-1][0], mode='live',
+                      change=round(values[-1][1]-values[-2][1], 4) if len(values)>1 else None,
+                      history=[dict(date=d, value=v) for d, v in values[-14:]])
+    except Exception:
+        result.update(mode='unavailable', value=None)
+    return result
+
+
+def dashboard():
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        indicators = list(executor.map(indicator, INDICATORS))
+    data = news()
+    # Image says "독일 정보 API". Unverified source: do not call it or create legal deadlines.
+    # TODO: integrate a verified Korean holiday API + reviewed tax rules and exceptions.
+    data.update(indicators=indicators, calendar=dict(mode='unconfigured', events=[],
+        message='세무 일정은 공식 데이터 및 휴일·기한 연장 규칙 검증 후 제공됩니다.'))
+    return data
+
+
+@bp.get('/dashboard')
+def dashboard_route():
+    data = cache.get('dashboard', dashboard, ttl=900, wait=0)
+    if data is None:
+        return jsonify(dict(pending=True, indicators=[dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3],
+            value=s[4], change=None, date=None, mode='demo', history=[]) for s in INDICATORS],
+            items=[], sources=[], calendar=dict(mode='unconfigured', events=[],
+            message='세무 일정은 공식 데이터 및 휴일·기한 연장 규칙 검증 후 제공됩니다.')))
+    return jsonify(dict(data, pending=False))
+
+
+@bp.post('/business-status')
+def business_status():
+    body = request.get_json(silent=True)
+    raw = body.get('number', '') if isinstance(body, dict) else ''
+    if not isinstance(raw, str) or not re.fullmatch(r'(?:[0-9]{10}|[0-9]{3}-[0-9]{2}-[0-9]{5})', raw):
+        return jsonify(error='사업자등록번호 10자리를 입력해 주세요.'), 400
+    number = raw.replace('-', '')
+    key = os.getenv('NTS_API_KEY')
+    if not key:
+        return jsonify(mode='unconfigured', status='조회 불가', message='조회 서비스 연결 전입니다. 실제 사업자 상태는 확인되지 않았습니다.')
+    try:
+        response = requests.post('https://api.odcloud.kr/api/nts-businessman/v1/status',
+            params={'serviceKey': key, 'returnType': 'JSON'}, json={'b_no': [number]}, timeout=(3, 7), allow_redirects=False)
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get('status_code') != 'OK':
+            raise ValueError('Provider failure')
+        row = payload['data'][0]
+        if row.get('b_no') != number:
+            raise ValueError('Mismatched response')
+        return jsonify(mode='live', status=row.get('b_stt') or '등록 상태 확인 불가',
+            tax_type=row.get('tax_type', ''), end_date=row.get('end_dt', ''), checked_at=now().isoformat())
+    except Exception:
+        return jsonify(mode='unavailable', status='조회 실패', message='조회 기관 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.')
+
+
+@bp.after_request
+def private_response(response):
+    if request.path.endswith('/business-status'):
+        response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
+def disclosures(corp):
+    key = os.getenv('DART_API_KEY')
+    if not key:
+        return dict(mode='unconfigured', items=[], message='공시 서비스 연결 전입니다. Open DART에서 확인할 수 있습니다.')
+    end = now().date()
+    try:
+        params = dict(crtfc_key=key, bgn_de=(end-timedelta(days=90)).strftime('%Y%m%d'),
+                      end_de=end.strftime('%Y%m%d'), page_count=30, sort='date', sort_mth='desc')
+        if corp:
+            params['corp_code'] = corp
+        data = get_json('https://opendart.fss.or.kr/api/list.json', params=params)
+        if data.get('status') == '013':
+            return dict(mode='live', items=[], message='최근 90일 공시가 없습니다.')
+        if data.get('status') != '000':
+            raise ValueError('Provider failure')
+        items = [dict(company=r['corp_name'], title=r['report_nm'], date=r['rcept_dt'],
+                      url='https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+quote(r['rcept_no'], safe='')) for r in data.get('list', [])]
+        return dict(mode='live', items=items, fetched_at=now().isoformat())
+    except Exception:
+        return dict(mode='unavailable', items=[], message='공시를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.')
+
+
+@bp.get('/disclosures')
+def disclosures_route():
+    corp = request.args.get('corp_code', '').strip()
+    if corp and not re.fullmatch(r'[0-9]{8}', corp):
+        return jsonify(error='DART 고유번호 8자리를 입력해 주세요.'), 400
+    data = cache.get('dart:'+corp, lambda: disclosures(corp), ttl=300, wait=0)
+    return jsonify(data or dict(mode='loading', pending=True, items=[], message='공시를 불러오고 있습니다.'))

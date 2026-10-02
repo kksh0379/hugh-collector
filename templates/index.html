@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.56") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.57") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -46,7 +46,8 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.56") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.57") }}">
 </head>
 <body>
   <header class="app-header">
@@ -294,6 +295,7 @@
   </main><!-- /view-collector -->
 
   <!-- 대메뉴 2: 점심 맛집 -->
+  {% include "finance.html" %}
   <main id="view-food" hidden>
     <div class="vh"><div class="vt">오늘 점심 <span style="color:var(--accent)">뭐 먹지?</span></div><div class="lunch-sub">내 주변 점심, 지금 바로 골라보세요</div></div>
     <div class="lunch-top-controls">
@@ -478,6 +480,8 @@
       <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="nav-fill" x="3" y="4" width="18" height="16" rx="3"/><path d="M7 8h4v4H7zM14 8h3M14 12h3M7 16h10"/></svg></span><span class="fnav-t">뉴스</span></button>
     <button type="button" class="fnav" data-nav="food">
       <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3v5a3 3 0 0 0 6 0V3M8 3v18M17 3v18M17 3c-2 2-3 5-3 8h3"/></svg></span><span class="fnav-t">맛집</span></button>
+    <button type="button" class="fnav" data-nav="finance" aria-label="재무세무 beta">
+      <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="nav-fill" x="4" y="3" width="16" height="18" rx="3"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18h2M14 18h2"/></svg></span><span class="fnav-t finance-nav-label">재무세무<span class="finance-beta">beta</span></span></button>
     <button type="button" class="fnav report-open" id="report-open-btn" data-nav="report">
       <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="nav-fill" d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 17v-3M12 17v-6M16 17v-4"/></svg></span><span class="fnav-t">리포트</span></button>
     <button type="button" class="fnav scrap-open" id="scrap-open-btn" data-nav="scrap">
@@ -486,7 +490,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v2.56 · build 261002</span>
+    <span class="ver">v2.57 · build 261002</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -514,8 +518,9 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.56") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.56") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.57") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.57") }}"></script>
+  <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>

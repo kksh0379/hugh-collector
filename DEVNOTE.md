@@ -317,3 +317,8 @@ flowchart TB
 - `Server-Timing: app;dur=...`는 네트워크를 제외한 요청 처리 시간(ms). DB 쿼리 시간만을 뜻하지 않는다.
 - 검증: `python -m unittest discover -s tests -v`, `node --test tests/test_frontend_data.cjs`.
 - 재배포 후 첫 DB 초기화에서 조회 인덱스를 만든다. 추가 인덱스는 기존 데이터/스키마와 호환되므로 코드 롤백 시 제거할 필요가 없다.
+
+
+## 재무세무 beta (v2.57)
+
+하단 신규 재무세무 탭과 독립 `/api/finance/*` 어댑터를 추가했습니다. 환경변수, 공식 출처, 대체 데이터 정책, 세무 일정 보류 이유는 [FINANCE.md](FINANCE.md)를 참고하세요. 사업자번호는 저장하지 않으며 키가 없을 때 실제 상태를 만들어내지 않습니다.
