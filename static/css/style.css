@@ -1481,3 +1481,9 @@ body.chrome-hidden .view-head { position: static; }
 /* Scrap cancellation: show intent before fading and collapsing the card. */
 #scrap-list .scrap-removing { position: relative; overflow: hidden; pointer-events: none; box-sizing: border-box; min-height: 0; }
 .scrap-removing-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(246,248,252,.88); color: #425779; font-size: 14px; font-weight: 800; border-radius: inherit; }
+
+/* Test access has no password input; real credentials appear only on request. */
+.login-test-info { margin: 8px 0 14px; padding: 12px; border-radius: 10px; background: #f2f6ff; font-size: 13px; color: #3d5275; }
+#login-fields { display: grid; gap: 10px; }
+.login-other { display: block; margin: 12px auto 0; padding: 6px; border: 0; background: none; color: var(--primary-dark); font: inherit; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.login-other[hidden], .login-test-info[hidden] { display: none; }

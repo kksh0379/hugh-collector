@@ -1565,40 +1565,57 @@ async function loadMeta() {
 const loginModal = document.getElementById("login-modal");
 const loginErr = document.getElementById("login-err");
 let loginRole = "user";   // 'user'(일반) | 'admin'(관리자)
-function setLoginRole(role) {
+let loginManual = false;
+function setLoginRole(role, manual = false) {
   loginRole = role === "admin" ? "admin" : "user";
+  loginManual = loginRole === "user" && manual;
   document.querySelectorAll("#login-role button").forEach((b) =>
     b.classList.toggle("active", b.dataset.role === loginRole));
-  // 일반=아이디+비번, 관리자=비번만
-  const idWrap = document.getElementById("login-id-wrap");
-  if (idWrap) idWrap.hidden = (loginRole === "admin");
-  const id = document.getElementById("login-id");
-  const pw = document.getElementById("login-pw");
-  if (pw) pw.placeholder = loginRole === "admin" ? "관리자 비밀번호" : "비밀번호";
-  // 일반 계정은 자동 입력(바로 로그인만), 관리자는 비움
-  if (loginRole === "user") { if (id) id.value = "test1"; if (pw) pw.value = "1234"; }
-  else { if (id) id.value = ""; if (pw) pw.value = ""; }
+  const fields = document.getElementById("login-fields");
+  fields.replaceChildren();
+  const testLogin = loginRole === "user" && !loginManual;
+  document.getElementById("login-test-info").hidden = !testLogin;
+  document.getElementById("login-other").hidden = loginRole === "admin";
+  document.getElementById("login-other").textContent = loginManual ? "테스트 계정으로 로그인" : "다른 계정으로 로그인";
+  document.getElementById("login-submit").textContent = testLogin ? "테스트 계정으로 로그인" : "로그인";
+  // No credential input exists during normal browsing or test-account login.
+  if (!testLogin) {
+    if (loginManual) {
+      const id = document.createElement("input");
+      id.type = "text"; id.id = "login-id"; id.name = "username";
+      id.placeholder = "아이디"; id.autocomplete = "username";
+      id.setAttribute("aria-label", "아이디"); fields.appendChild(id);
+    }
+    const pw = document.createElement("input");
+    pw.type = "password"; pw.id = "login-pw"; pw.name = "password";
+    pw.placeholder = loginRole === "admin" ? "관리자 비밀번호" : "비밀번호";
+    pw.autocomplete = "current-password";
+    pw.setAttribute("aria-label", pw.placeholder); fields.appendChild(pw);
+  }
   loginErr.textContent = "";
 }
+function loginRequestBody() {
+  if (loginRole === "admin") return {role: "admin", pw: document.getElementById("login-pw").value};
+  if (loginManual) return {role: "user", username: document.getElementById("login-id").value.trim(), pw: document.getElementById("login-pw").value};
+  return {role: "user", username: "test1", pw: "1234"};
+}
 function openLogin() {
-  setLoginRole("user");                 // test1/1234 자동 입력
+  setLoginRole("user");                 // test account without password fields
   loginModal.hidden = false;
   setTimeout(() => { const s = document.getElementById("login-submit"); if (s) s.focus(); }, 50);
 }
-function closeLogin() { loginModal.hidden = true; pendingScrapKey = null; }
+function closeLogin() { loginModal.hidden = true; document.getElementById("login-fields").replaceChildren(); pendingScrapKey = null; }
 document.getElementById("login-btn").addEventListener("click", openLogin);
 document.getElementById("login-close").addEventListener("click", closeLogin);
 loginModal.addEventListener("click", (e) => { if (e.target === loginModal) closeLogin(); });
 document.querySelectorAll("#login-role button").forEach((b) =>
   b.addEventListener("click", () => setLoginRole(b.dataset.role)));
+document.getElementById("login-other").addEventListener("click", () => setLoginRole("user", !loginManual));
 
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   loginErr.textContent = "";
-  const pw = document.getElementById("login-pw").value;
-  const body = loginRole === "admin"
-    ? { role: "admin", pw }
-    : { role: "user", username: document.getElementById("login-id").value.trim(), pw };
+  const body = loginRequestBody();
   let res = null;
   try {
     const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -1608,6 +1625,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     applyAuthUI(res.user, res.admin);
     await loadMyData();
     loginModal.hidden = true;
+    document.getElementById("login-fields").replaceChildren();
     toast((res.user === "admin" ? "관리자" : res.user) + " 님, 로그인되었어요");
     if (pendingScrapKey) { const k = pendingScrapKey; pendingScrapKey = null; toggleScrap(k); }
   } else {
