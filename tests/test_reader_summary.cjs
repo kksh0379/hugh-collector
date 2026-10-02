@@ -46,3 +46,18 @@ test('invalid, overlapping and excessive highlighting stays bounded',()=>{
   assert.equal(item.children.map(c=>c.textContent).join(''),point);
   assert.deepEqual(item.children.filter(c=>c.className==='reader-summary-key').map(c=>c.textContent),['개인정보 보호','관련 절차']);
 });
+
+test('saved-information summaries show one point and their limited source explicitly',async()=>{
+  const status=node();
+  const ctx=vm.createContext({status,sequence:1,dialog:{open:true},AbortController,setTimeout:()=>1,clearTimeout:()=>{},document:{createElement:()=>node()},fetch:async()=>({ok:true,json:async()=>({status:'ready',source_kind:'excerpt',points:['기관이 새 프로그램 참여자를 모집합니다.'],highlights:[[]]})})});
+  vm.runInContext(helpers,ctx);
+  await ctx.loadSummary('https://publisher.example/1',1);
+  assert.equal(status.children[0].textContent,'AI 요약 · 수집 정보 기준');
+  assert.equal(status.children[1].children.length,1);
+  assert.match(status.children[2].textContent,/원문 전체를 확보하지 못해/);
+});
+test('reader requests summaries for extracted and saved article information',()=>{
+  const load=source.slice(source.indexOf('  async function load('),source.indexOf('  function showSummary'));
+  assert.match(load,/loadSummary\(url, current\);/);
+  assert.doesNotMatch(load,/if \(data.mode === 'article'\) loadSummary/);
+});

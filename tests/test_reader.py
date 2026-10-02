@@ -39,6 +39,12 @@ class ReaderTests(unittest.TestCase):
         self.assertNotIn("광고문구", " ".join(paragraphs))
         self.assertNotIn("alert", " ".join(paragraphs))
 
+    def test_publisher_div_bodies_are_extracted_without_page_navigation(self):
+        for marker in ('id="article-view-content-div"', 'id="news_body_area"', 'id="article_txt"', 'class="article-text"'):
+            with self.subTest(marker=marker):
+                html = f'<nav>{TEXT}</nav><div {marker}><p>{TEXT}</p></div>'
+                self.assertEqual(reader.extract_paragraphs(html), [TEXT.strip()])
+
     def test_rejects_navigation_only(self):
         with self.assertRaises(reader.ReaderUnavailable):
             reader.extract_paragraphs('<main><a href="/">' + TEXT + '</a></main>')

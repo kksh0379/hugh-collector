@@ -132,7 +132,11 @@ def extract_paragraphs(html):
     # Prefer explicit article bodies over surrounding layouts, menus and sidebars.
     selectors = ("#dic_area, #articeBody, #articleBody, #article-body, #newsct_article,"
                  "[itemprop=articleBody], .article-body, .article_body, .article-view-content-div,"
-                 ".view_content, .board_view, .post-content, .content_view", "article", "main")
+                 ".view_content, .board_view, .post-content, .content_view,"
+                 "#article-view-content-div, #newsEndContents, #news_body_area, #news_body_id,"
+                 "#article_txt, #articleText, #artText, #news_content, #article_content,"
+                 ".article_content, .article-text, .news_body, .news-body, .news_text,"
+                 ".view_cont, .view_con, .article_view, .articleView", "article", "main")
     for selector in selectors:
         candidates = []
         for node in soup.select(selector):

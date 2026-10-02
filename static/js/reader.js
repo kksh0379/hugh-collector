@@ -46,7 +46,7 @@
         p.textContent = text; // Never execute publisher HTML.
         body.append(p);
       }
-      if (data.mode === 'article') loadSummary(url, current);
+      loadSummary(url, current);
     } catch (error) {
       if (current !== sequence || !dialog.open) return;
       status.textContent = error.name === "AbortError"
@@ -61,11 +61,11 @@
     }
   }
 
-  function showSummary(points, notice, highlights) {
+  function showSummary(points, notice, highlights, excerpt = false) {
     status.replaceChildren();
     const heading = document.createElement('strong');
     heading.className = 'reader-summary-title';
-    heading.textContent = 'AI 핵심 요약';
+    heading.textContent = excerpt ? 'AI 요약 · 수집 정보 기준' : 'AI 핵심 요약';
     status.append(heading);
     if (points) {
       const list = document.createElement('ul');
@@ -121,8 +121,8 @@
         if (!isCurrent()) return;
         if (!response.ok) throw new Error('Summary unavailable');
         if (data.status === 'ready') {
-          if (!Array.isArray(data.points) || data.points.length < 2 || data.points.length > 3 || data.points.some(p => typeof p !== 'string' || !p.trim())) throw new Error('Invalid summary');
-          showSummary(data.points, data.partial ? '긴 본문의 일부를 바탕으로 AI가 정리했어요. 전체 내용은 아래 본문에서 확인하세요.' : 'AI가 정리한 요약이에요. 자세한 내용은 아래 본문에서 확인하세요.', data.highlights);
+          if (!Array.isArray(data.points) || data.points.length < 1 || data.points.length > 3 || data.points.some(p => typeof p !== 'string' || !p.trim())) throw new Error('Invalid summary');
+          showSummary(data.points, data.source_kind === 'excerpt' ? '원문 전체를 확보하지 못해 수집된 기사 정보만 AI로 정리했어요. 전체 내용은 원문 보기에서 확인해 주세요.' : data.partial ? '긴 본문의 일부를 바탕으로 AI가 정리했어요. 전체 내용은 아래 본문에서 확인하세요.' : 'AI가 정리한 요약이에요. 자세한 내용은 아래 본문에서 확인하세요.', data.highlights, data.source_kind === 'excerpt');
           return;
         }
         if (data.status !== 'pending') {

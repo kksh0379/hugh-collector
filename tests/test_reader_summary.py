@@ -37,6 +37,25 @@ class SummaryTests(unittest.TestCase):
             self.assertEqual(summaries.article_summary({"mode": "excerpt"})["status"], "unavailable")
             generate.assert_not_called()
 
+    def test_saved_information_produces_labeled_summary_without_inventing_full_body(self):
+        article = {"mode": "excerpt", "title": "출시 소식", "paragraphs": ["기관이 새로운 교육 프로그램 참여자를 모집한다고 발표했습니다. 모집 대상은 지역 주민이며 신청은 홈페이지에서 가능합니다."]}
+        result = {"points": ["기관이 지역 주민을 위한 교육 프로그램 참여자를 모집합니다."], "highlights": [["참여자를 모집"]]}
+        with patch.object(summaries, "_generate", return_value=result) as call:
+            summaries.article_summary(article)
+            for _ in range(100):
+                ready = summaries.article_summary(article)
+                if ready["status"] == "ready": break
+                threading.Event().wait(.01)
+            self.assertEqual(ready["source_kind"], "excerpt")
+            self.assertEqual(len(ready["points"]), 1)
+            call.assert_called_once_with(article["title"], article["paragraphs"][0], excerpt=True)
+
+    def test_insufficient_saved_information_does_not_call_ai(self):
+        with patch.object(summaries, "_generate") as call:
+            result = summaries.article_summary({"mode": "excerpt", "paragraphs": ["본문 정보 없음"]})
+            self.assertEqual(result["status"], "unavailable")
+            call.assert_not_called()
+
     def test_missing_key_is_clear_and_makes_no_call(self):
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}), patch.object(summaries, "_generate") as generate:
             self.assertEqual(summaries.article_summary(ARTICLE)["status"], "unavailable")
