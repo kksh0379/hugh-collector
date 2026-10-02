@@ -152,5 +152,15 @@ class FinanceTests(unittest.TestCase):
                          ('브리핑','요약 본문','https://example.org/a'))
         self.assertIsNone(reader._external_item('https://example.org/missing'))
 
+    def test_first_registered_sources_are_not_evicted(self):
+        # 재정경제부처럼 먼저 등록되는 출처가 많은 기사 수에 밀려 404 나지 않아야 한다.
+        from collector import reader
+        reader._external.clear()
+        reader.register_external([dict(url=f'https://mofe.go.kr/a{i}', title=f'보도자료 {i}',
+            content='본문') for i in range(50)] +
+            [dict(url=f'https://news.google.com/g{i}', title=f'G{i}', content='x') for i in range(250)])
+        self.assertIsNotNone(reader._external_item('https://mofe.go.kr/a0'))
+        self.assertIsNotNone(reader._external_item('https://news.google.com/g249'))
+
 if __name__ == '__main__':
     unittest.main()

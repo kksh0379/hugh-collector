@@ -34,7 +34,9 @@ def _remember_summary_source(url, article):
 
 
 def register_external(items):
-    """URL로 리더 조회가 가능하도록 임시 항목을 등록(TTL 1시간, 최대 256건)."""
+    """URL로 리더 조회가 가능하도록 임시 항목을 등록(TTL 1시간).
+    상한은 모든 출처의 현재 기사(출처×최대건수)를 넉넉히 담아, 먼저 등록된 출처(재정경제부 등)가
+    상한 초과로 밀려나 404가 나지 않게 한다."""
     now = time.monotonic()
     with _lock:
         for item in items:
@@ -48,7 +50,7 @@ def register_external(items):
                 "published_at": item.get("published_at") or "",
                 "content": item.get("content") or ""})
             _external.move_to_end(url)
-        while len(_external) > 256:
+        while len(_external) > 1200:
             _external.popitem(last=False)
 
 
