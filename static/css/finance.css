@@ -13,7 +13,8 @@
 .fnav .finance-beta { font-size: 8px; padding: 1px 2px; }
 .finance-notice { background: #eaf1ff; color: #254d85; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
 .finance-muted, .finance-section-heading > a { color: var(--muted); font-size: 12px; }
-.finance-indicators { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-bottom: 18px; position: relative; }
+.finance-indicators { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-bottom: 18px; position: relative; }
+@media (min-width: 720px) { .finance-indicators { grid-template-columns: repeat(4, minmax(0,1fr)); } }
 .finance-help { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 6px; padding: 0; border: 0; border-radius: 50%; background: #eaf1ff; color: var(--primary); font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; vertical-align: middle; flex: 0 0 auto; -webkit-appearance: none; appearance: none; transition: background .15s, color .15s, transform .1s; }
 .finance-help:hover { background: #d7e4ff; }
 .finance-help[aria-expanded="true"] { background: var(--primary); color: #fff; }
@@ -48,14 +49,11 @@
 .finance-filters { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 10px; }
 .finance-filters button { border: 1px solid var(--border); background: var(--card); color: var(--muted); padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .finance-filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
-.finance-news-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
-.finance-news-item h3 { margin: 8px 0; font-size: 15px; font-weight: 700; line-height: 1.5; }
-.finance-news-item p { font-size: 13px; color: #374151; line-height: 1.55; margin: 6px 0; overflow-wrap: anywhere; }
-.finance-news-item .finance-news-meta { font-size: 12px; color: var(--muted); }
-.finance-news-actions { margin: 10px 0 0; }
-.finance-news-actions .read-action { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 7px 12px; border: 1px solid #a8bfe4; border-radius: 9px; background: #f3f7ff; color: var(--primary-dark); font-size: 13px; font-weight: 700; line-height: 1.2; text-decoration: none; }
-.finance-news-actions .read-action:hover { background: #e8f0ff; border-color: var(--primary); }
-.finance-news-actions .read-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* 브리핑 항목은 메인 뉴스 카드(card/card-title/card-summary/card-actions/scrap-btn/copy-btn)를
+   그대로 재사용하되, 브리핑 안에서는 박스 대신 구분선 리스트로 보이도록 겉모양만 덜어낸다. */
+.finance-news-item.card { background: none; border: 0; border-radius: 0; box-shadow: none; margin: 0; padding: 16px 0; border-bottom: 1px solid var(--border); }
+.finance-news-item.card:last-child { border-bottom: 0; }
+.finance-news-item .finance-news-meta { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
 .finance-empty { padding: 24px 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .finance-sources { margin-top: 14px; font-size: 12px; }
 .finance-sources summary { cursor: pointer; padding: 10px 0; }
@@ -70,12 +68,12 @@
   .finance-view { padding: 20px 12px; }
   .finance-tools { grid-template-columns: 1fr; gap: 0; }
   .finance-card { padding: 16px; }
-  .finance-indicators { gap: 6px; }
-  .finance-indicator { padding: 12px 8px; border-radius: 10px; }
-  .finance-indicator strong { font-size: 21px; }
-  .finance-indicator h3 { font-size: 11px; }
-  .finance-indicator .finance-unit { font-size: 10px; margin-left: 2px; }
-  .finance-section-heading > a { font-size: 10px; }
+  .finance-indicators { gap: 10px; }
+  .finance-indicator { padding: 14px 12px; border-radius: 12px; }
+  .finance-indicator strong { font-size: 22px; }
+  .finance-indicator h3 { font-size: 13px; }
+  .finance-indicator .finance-unit { font-size: 11px; margin-left: 3px; }
+  .finance-section-heading > a { font-size: 11px; }
 }
 @media (max-width: 350px) { .fnav { padding-left: 1px; padding-right: 1px; font-size: 10px; } .finance-indicator strong { font-size: 18px; } }
 @media (max-width: 350px) {

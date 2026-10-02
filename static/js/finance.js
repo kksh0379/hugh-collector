@@ -17,12 +17,6 @@
     catch { return esc(title); }
     return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(title)} ↗</a>`;
   }
-  function readerLink(url, title) {
-    // 브리핑 기사는 리더(본문 읽기·AI 요약)로 연다. 좌클릭은 리더, 새 탭/보조클릭은 원문.
-    try { const u = new URL(url); if (!['https:','http:'].includes(u.protocol)) return esc(title); }
-    catch { return esc(title); }
-    return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-reader>${esc(title)}</a>`;
-  }
   async function json(url, options = {}) {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
     try {
@@ -38,11 +32,15 @@
     const query = $('finance-search').value.trim().toLowerCase();
     const rows = data.items.filter(r => (category === 'all' || r.category === category) && `${r.title} ${r.description} ${r.source}`.toLowerCase().includes(query));
     $('finance-news').innerHTML = rows.length ? rows.map(r => {
-      // 일부 출처(재정경제부 등)는 리더 본문 추출이 어려워 제목 자체를 원문 링크로 연다(별도 버튼 없음).
-      const titleHtml = r.open_original ? link(r.url, r.title) : readerLink(r.url, r.title);
-      const action = r.open_original ? ''
-        : `<p class="finance-news-actions"><a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기</a></p>`;
-      return `<article class="finance-news-item"><span class="finance-mode">${esc(labels[r.category])}</span><h3>${titleHtml}</h3><p>${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p>${action}</article>`;
+      const key = r.url;
+      // 메인 뉴스 카드와 동일하게 읽음·스크랩·링크복사를 재사용(전역 헬퍼). 본문은 리더로 연다.
+      if (typeof registerItem === 'function') registerItem({url:r.url, source_url:r.url, title:r.title,
+        published_at:r.pub_date, author:r.source, content:r.description, category:r.category}, 'finance', r.url);
+      const read = (typeof isRead === 'function' && isRead(key)) ? ' is-read' : '';
+      const scrap = typeof scrapBtnHtml === 'function' ? scrapBtnHtml(key) : '';
+      const copy = typeof copyBtnHtml === 'function' ? copyBtnHtml(r.url) : '';
+      const titleLink = `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>${esc(r.title)}</a>`;
+      return `<article class="finance-news-item card${read}" data-key="${esc(key)}">${scrap}<span class="finance-mode">${esc(labels[r.category])}</span><h3 class="card-title">${titleLink}</h3><p class="card-summary">${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><div class="card-actions"><a class="read-action" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기</a>${copy}</div></article>`;
     }).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
   function renderCalendar() {

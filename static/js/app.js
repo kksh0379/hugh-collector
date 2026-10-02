@@ -134,7 +134,7 @@ async function loadMyData() {
 }
 // 이미 렌더된 카드에 읽음/스크랩 상태를 반영(로그인 직후 등)
 function applyUserStateToDom() {
-  document.querySelectorAll(".card[data-key]").forEach((c) => {
+  document.querySelectorAll(".card[data-key], .finance-news-item[data-key]").forEach((c) => {
     c.classList.toggle("is-read", isRead(c.dataset.key));
   });
   document.querySelectorAll(".scrap-btn[data-key]").forEach((b) => {
