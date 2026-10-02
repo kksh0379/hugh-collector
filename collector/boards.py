@@ -375,9 +375,11 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
         entries.append({"subject": subject, "url": url, "dtype": dtype, "pid": pid,
                         "pub": published, "image_url": image, "social": _find_social_url(it)})
 
-    # 본문이 아직 없는 글만 상세 API로 요약 보강(이미 요약된 글은 재요청 안 함).
-    # 썸네일은 목록에서 오므로 전 글에 채워진다. 전 글을 upsert(기존 요약은 보존).
-    need = [e for e in entries if not (known_content.get(e["url"]) or "").strip() and e["pid"] is not None]
+    # 본문이 아직 없는 글은 상세 API로 요약 보강. 소셜 글(dtype=social)은 본문이 있어도 상세의
+    # link(유튜브·블로그·인스타 URL)를 확보해야 하므로, 아직 소셜 URL이 없으면 함께 상세를 받는다.
+    need = [e for e in entries if e["pid"] is not None and (
+        not (known_content.get(e["url"]) or "").strip()
+        or (e["dtype"] == "social" and not e.get("social")))]
 
     def _summ(e):
         return _ncf_detail_summary(api_base, e["dtype"], e["pid"])
