@@ -1515,9 +1515,18 @@ body.chrome-hidden .view-head { position: static; }
 .cal-preview-empty { color:var(--muted); font-size:13px; padding:10px 0; }
 
 /* Lunch results and review toggle share the same 16px content gutters. */
-.lunch-filterbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 16px 10px;min-height:36px}
+.lunch-filterbar{margin:0 16px 6px;line-height:1.4}
 .lunch-filterbar .result-count{margin:0;white-space:nowrap}
 .lunch-reviewed-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--muted);font-size:12px;font-weight:700;line-height:1.4;cursor:pointer;white-space:nowrap}
 .lunch-reviewed-toggle input{width:15px;height:15px;margin:0;accent-color:var(--primary);flex:none}
 .lunch-reviewed-toggle:has(input:checked){border-color:var(--primary);color:var(--primary);background:color-mix(in srgb,var(--primary) 8%,var(--card))}
 .lunch-reviewed-toggle:focus-within{outline:2px solid var(--primary);outline-offset:2px}
+
+/* Location and review filter align above search with shared content gutters. */
+.lunch-top-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 16px 8px}
+.lunch-top-controls .lunch-loc{flex:1;min-width:0;padding:0}
+.lunch-top-controls .lunch-loc-btn{min-height:36px}
+.lunch-top-controls .lunch-loc-btn b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lunch-top-controls .lunch-loc-btn span{flex:none}
+.lunch-top-controls .lunch-reviewed-toggle{flex:none;min-height:36px;border-radius:999px}
+.lunch-top-controls .lunch-loc-menu{left:0;top:calc(100% + 8px);min-width:240px;max-width:calc(100vw - 32px)}
