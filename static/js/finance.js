@@ -29,8 +29,11 @@
     } finally { clearTimeout(timer); }
   }
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const LOADING_MSG = '재무세무 소식을 불러오고 있어요…';
+  const loadingHtml = () => `<p class="finance-empty finance-loading">${typeof window.catRunInline === 'function' ? window.catRunInline(LOADING_MSG) : esc(LOADING_MSG)}</p>`;
   function renderNews() {
     if (!data) return;
+    if (data.pending) { $('finance-news').innerHTML = loadingHtml(); return; }  // 로딩 중 표시
     const query = $('finance-search').value.trim();
     // 다른 검색과 동일한 한글 자모 유사 매칭(부분·초성·오타). 전역 koreanMatchAll 사용, 없으면 부분일치.
     const match = (hay, q) => !q ? true : (typeof koreanMatchAll === 'function' ? koreanMatchAll(hay, q) : hay.toLowerCase().includes(q.toLowerCase()));
@@ -96,6 +99,7 @@
   async function load() {
     if (loading) return;
     loading=true; $('finance-refresh').disabled=true;
+    if (!data || !data.items || !data.items.length) $('finance-news').innerHTML = loadingHtml();  // 즉시 로딩 표시
     try {
       for (let attempt=0; attempt<12; attempt++) {
         const result=await json('/api/finance/dashboard'); render(result);

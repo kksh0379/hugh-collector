@@ -139,13 +139,16 @@ def fetch_html(url):
         conn = _PinnedHTTP(host, port, address, p.scheme == "https", min(4, remaining))
         try:
             path = (p.path or "/") + (("?" + p.query) if p.query else "")
-            # 데스크톱 브라우저 UA로 요청한다. 일부 사이트(재정경제부 등)는 모바일 UA를
-            # 메인으로 리다이렉트하므로, 서버에서 PC용 기사 페이지를 받아 본문을 추출한다.
+            # PC 브라우저처럼 요청한다(재정경제부 등은 모바일·직접접근을 메인으로 돌림).
+            # 데스크톱 UA + 같은 사이트에서 넘어온 듯한 Referer를 보내 PC 기사 페이지를 받는다.
             conn.request("GET", path, headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                               "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "ko-KR,ko;q=0.9", "Accept-Encoding": "identity"})
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,"
+                          "image/webp,*/*;q=0.8",
+                "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+                "Referer": "%s://%s/" % (p.scheme, host),
+                "Upgrade-Insecure-Requests": "1", "Accept-Encoding": "identity"})
             response = conn.getresponse()
             if response.status in (301, 302, 303, 307, 308):
                 location = response.getheader("Location")

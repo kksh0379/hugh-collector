@@ -120,6 +120,10 @@ def parse_feed(content, source):
             links = node.xpath('./*[local-name()="link"][@href]')
             url = next((x.get('href') for x in links if x.get('rel', 'alternate') == 'alternate'), '')
         url = safe_url(url)
+        # http 링크는 https로 올린다(재정경제부 등은 http 접근을 메인으로 돌리는데, https 직링크는
+        # 딥링크 파라미터를 유지한다). 포트가 명시된 경우는 그대로 둔다.
+        if url.startswith('http://') and ':' not in url[len('http://'):].split('/', 1)[0]:
+            url = 'https://' + url[len('http://'):]
         title = plain(field('title'))[:250]
         if title and url:
             summary = plain(field('description', 'summary'))
