@@ -20,6 +20,8 @@ cache = ReadCache(max_entries=16, workers=2)
 # 출처별 최근 성공분 보관(일시 실패 시 빈 섹션 대신 직전 기사 유지).
 _feed_cache = {}
 _feed_lock = threading.Lock()
+# 리더가 등록 목록에 없어도 현재 브리핑 기사를 찾도록 하는 URL→기사 색인.
+_article_index = {}
 KST = timezone(timedelta(hours=9))
 
 
@@ -322,10 +324,19 @@ def dashboard_route():
         return jsonify(dict(pending=True, indicators=indicators,
             items=[], sources=[], calendar=tax_calendar()))
     # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
-    reader.register_external([dict(url=r['url'], title=r['title'], author=r.get('source', ''),
+    entries = {r['url']: dict(title=r['title'], author=r.get('source', ''),
         published_at=r.get('pub_date', ''), content=r.get('content') or r.get('description', ''))
-        for r in data.get('items', [])])
+        for r in data.get('items', [])}
+    reader.register_external([dict(url=u, **v) for u, v in entries.items()])
+    _article_index.update(entries)
+    if len(_article_index) > 3000:  # 오래된 항목 정리(메모리 보호).
+        for key in list(_article_index)[:len(_article_index)-3000]:
+            _article_index.pop(key, None)
     return jsonify(dict(data, pending=False))
+
+
+# 등록 목록이 비어도(상한·TTL·재시작) 현재 브리핑 기사면 리더가 찾도록 보조 조회자 연결.
+reader.register_resolver(lambda url: _article_index.get(url))
 
 
 @bp.get('/stock')

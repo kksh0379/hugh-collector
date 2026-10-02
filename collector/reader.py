@@ -65,6 +65,32 @@ def _external_item(url):
     return None
 
 
+_resolvers = []
+
+
+def register_resolver(resolver):
+    """등록 목록에 없어도 URL로 항목을 찾는 보조 조회자(예: 재무세무 대시보드 캐시)."""
+    _resolvers.append(resolver)
+
+
+def _resolve_external(url):
+    item = _external_item(url)
+    if item:
+        return item
+    for resolver in _resolvers:
+        try:
+            got = resolver(url)
+        except Exception:
+            got = None
+        if got:
+            return {"url": url, "source_url": url,
+                    "title": got.get("title") or "제목 없음",
+                    "author": got.get("author") or "",
+                    "published_at": got.get("published_at") or "",
+                    "content": got.get("content") or ""}
+    return None
+
+
 class ReaderUnavailable(ValueError):
     pass
 
@@ -268,7 +294,7 @@ def reader_article():
     except Exception:
         item, db_error = None, True
     if not item:
-        item = _external_item(url)
+        item = _resolve_external(url)
     if not item:
         if db_error:
             return jsonify(error="저장소에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요."), 503
@@ -293,7 +319,7 @@ def reader_summary():
         except Exception:
             item, db_error = None, True
         if not item:
-            item = _external_item(url)
+            item = _resolve_external(url)
         if not item:
             if db_error:
                 return jsonify(error="저장소에 연결하지 못했습니다."), 503
