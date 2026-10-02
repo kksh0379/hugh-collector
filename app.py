@@ -1230,33 +1230,42 @@ def _safe_list(fetch, ttl=_READ_TTL):
     return response
 
 
+def _months_arg():
+    """months 쿼리 파라미터 → 최근 N개월(양수)만, 0/없음이면 전체. 초기 로딩 가속용."""
+    try:
+        m = int(request.args.get("months", 0))
+        return m if m > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
 @app.get("/api/news")
 def get_news():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="nc"))
+    return _safe_list(lambda: db.list_news(category=category, section="nc", months=_months_arg()))
 
 
 @app.get("/api/catnews")
 def get_catnews():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="cat"))
+    return _safe_list(lambda: db.list_news(category=category, section="cat", months=_months_arg()))
 
 
 @app.get("/api/gamenews")
 def get_gamenews():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="game"))
+    return _safe_list(lambda: db.list_news(category=category, section="game", months=_months_arg()))
 
 
 @app.get("/api/biznews")
 def get_biznews():
-    return _safe_list(lambda: db.list_news(section="biz"))
+    return _safe_list(lambda: db.list_news(section="biz", months=_months_arg()))
 
 
 @app.get("/api/secnews")
 def get_secnews():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="sec"))
+    return _safe_list(lambda: db.list_news(category=category, section="sec", months=_months_arg()))
 
 
 @app.get("/api/events")
@@ -2006,9 +2015,9 @@ def _batch_all():
                 except Exception as e:  # noqa: BLE001
                     print(f"[batch] {group} 오류: {e}", flush=True)
             try:
-                removed = db.prune_news()  # 섹션별 최신 3000건만 유지, 오래된 기사 삭제
+                removed = db.prune_news()  # 섹션별 최신 5000건만 유지, 오래된 기사 삭제
                 if removed:
-                    print(f"[batch] 오래된 뉴스 {removed}건 정리(섹션별 최신 3000 유지)", flush=True)
+                    print(f"[batch] 오래된 뉴스 {removed}건 정리(섹션별 최신 5000 유지)", flush=True)
             except Exception as e:  # noqa: BLE001
                 print(f"[batch] prune 오류: {e}", flush=True)
             try:

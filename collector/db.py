@@ -607,7 +607,7 @@ def clear_news_section(section):
     return n
 
 
-def prune_news(keep=3000):
+def prune_news(keep=5000):
     """섹션별로 최신 keep건만 남기고 오래된 기사를 삭제한다(DB 무한 증가 방지, 화면 조회 한도와 일치).
     최신 기준은 published_at·id 내림차순(화면 정렬과 동일). 반환: 삭제 건수."""
     deleted = 0
@@ -716,19 +716,27 @@ def existing_board_titles(service):
         return {r["title"] for r in rows}
 
 
-def list_news(limit=3000, category=None, section="nc"):
+def list_news(limit=5000, category=None, section="nc", months=None):
+    """뉴스 목록(최신순). months를 주면 최근 N개월(발행일 기준)만 반환 — 초기 로딩 가속용.
+    검색은 months 없이 전체(최대 limit)를 받아 클라이언트에서 수행한다."""
+    from datetime import timedelta as _td
     cond, cargs = _section_cond(section)
+    extra, eargs = "", []
+    if months:
+        cutoff = (datetime.now() - _td(days=int(months) * 31)).strftime("%Y-%m-%d")
+        extra = " AND published_at >= ?"
+        eargs = [cutoff]
     with get_conn() as conn:
         if category and category != "all":
             rows = conn.execute(
-                _q(f"SELECT * FROM news WHERE {cond} AND category = ? "
+                _q(f"SELECT * FROM news WHERE {cond} AND category = ?{extra} "
                    "ORDER BY published_at DESC, id DESC LIMIT ?"),
-                (*cargs, category, limit),
+                (*cargs, category, *eargs, limit),
             ).fetchall()
         else:
             rows = conn.execute(
-                _q(f"SELECT * FROM news WHERE {cond} ORDER BY published_at DESC, id DESC LIMIT ?"),
-                (*cargs, limit),
+                _q(f"SELECT * FROM news WHERE {cond}{extra} ORDER BY published_at DESC, id DESC LIMIT ?"),
+                (*cargs, *eargs, limit),
             ).fetchall()
         return [dict(r) for r in rows]
 
