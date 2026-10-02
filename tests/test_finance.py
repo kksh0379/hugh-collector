@@ -97,7 +97,8 @@ class FinanceTests(unittest.TestCase):
     def test_dashboard_partial_sources_and_statutory_calendar(self):
         with patch.object(finance,'collect_source',return_value=([],{'name':'source','mode':'unavailable'})):
             result=finance.dashboard()
-            self.assertEqual(len(result['indicators']),3)
+            self.assertEqual(len(result['indicators']),4)  # 3 ECOS + 엔씨 주가
+            self.assertTrue(result['indicators'][-1]['code'].startswith('KRX/'))
             self.assertEqual(len(result['sources']),6)
             cal=result['calendar']
             self.assertEqual(cal['mode'],'reference')

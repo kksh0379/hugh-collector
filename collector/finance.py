@@ -44,9 +44,13 @@ DEFAULT_FEEDS = {
     'ASSEMBLY': _gnews('세법 개정 입법예고'),
 }
 CATEGORIES = {'policy': '세법·보도자료', 'guide': '회계·세무 가이드', 'legislation': '입법예고'}
-INDICATORS = [('731Y001', '0000001', '원/달러 환율', '원', 1350.0),
-              ('817Y002', '010502000', 'CD 91일', '%', 3.0),
-              ('817Y002', '010200000', '국고채 3년', '%', 2.8)]
+# 리더 본문 추출이 어려운 출처는 리더뷰 대신 원문으로 연다(재정경제부 등).
+ORIGINAL_SOURCES = {'MOEF'}
+INDICATORS = [('731Y001', '0000001', '원/달러 환율', '원', 1350.0, ''),
+              ('817Y002', '010502000', 'CD 91일', '%', 3.0,
+               'CD(양도성예금증서) 91일물 금리입니다. 은행이 발행하는 단기 예금증서의 금리로, 단기 시장금리·대출금리의 기준으로 쓰입니다.'),
+              ('817Y002', '010200000', '국고채 3년', '%', 2.8,
+               '정부가 발행하는 만기 3년 국고채의 유통수익률입니다. 시장금리 수준과 채권시장을 보는 대표 지표입니다.')]
 # 국세 법정 신고·납부 기한. 모두 세법에 명시된 고정 기한이며, 추측이 아닌 확정 규칙입니다.
 # 기한이 주말이면 다음 영업일로 조정합니다(국세기본법 제5조). 공휴일이 겹치면 추가 연장되나,
 # 공휴일(특히 음력 명절) 날짜는 검증 없이 하드코딩하지 않고 안내 문구로만 처리합니다.
@@ -110,7 +114,8 @@ def parse_feed(content, source):
         if title and url:
             items.append(dict(category=source[2], source=source[1], title=title,
                               description=plain(field('description', 'summary', 'content'))[:500],
-                              url=url, pub_date=field('pubDate', 'published', 'updated', 'date')[:80], mode='live'))
+                              url=url, pub_date=field('pubDate', 'published', 'updated', 'date')[:80],
+                              open_original=source[0] in ORIGINAL_SOURCES, mode='live'))
     return items
 
 
@@ -121,11 +126,16 @@ def collect_source(source):
     if not url:
         return [], status
     try:
-        # Operator-controlled URL only; no arbitrary URL is accepted from a browser.
+        # Operator-controlled URL only(공식 RSS 또는 구글 뉴스); 브라우저 입력은 받지 않는다.
         if not safe_url(url) or urlsplit(url).scheme != 'https':
             raise ValueError('HTTPS required')
-        with requests.get(url, timeout=(3, 6), stream=True, allow_redirects=False) as response:
+        headers = {'User-Agent': 'Mozilla/5.0 (compatible; HuscopeBot/1.0; +https://hscope.onrender.com)',
+                   'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8'}
+        # RSS 제공처(특히 구글 뉴스)는 UA가 필요하고 리다이렉트를 쓴다. 따라가되 HTTPS만 허용.
+        with requests.get(url, timeout=(3, 6), stream=True, allow_redirects=True, headers=headers) as response:
             response.raise_for_status()
+            if urlsplit(response.url).scheme != 'https':
+                raise ValueError('Insecure redirect')
             chunks, size = [], 0
             for chunk in response.iter_content(32768):
                 size += len(chunk)
@@ -165,9 +175,9 @@ def sample_history(values, points=26):
 
 
 def indicator(spec):
-    table, code, name, unit, sample = spec
+    table, code, name, unit, sample, desc = spec
     result = dict(code=f'{table}/{code}', name=name, unit=unit, value=sample,
-                  change=None, date=None, mode='demo', history=[])
+                  change=None, ratio=None, date=None, mode='demo', history=[], desc=desc)
     key = os.getenv('ECOS_API_KEY')
     if not key:
         return result
@@ -186,6 +196,43 @@ def indicator(spec):
                       history=sample_history(values))
     except Exception:
         result.update(mode='unavailable', value=None)
+    return result
+
+
+def _num(value):
+    try:
+        return float(str(value).replace(',', '').strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def nc_stock():
+    """엔씨소프트(036570) 주가. 실시간이 아닌 수집 시점 종가/등락. 실패 시 값을 지어내지 않는다."""
+    code = os.getenv('NC_STOCK_CODE', '036570')
+    result = dict(code='KRX/' + code, name='엔씨소프트 주가', unit='원', value=None,
+                  change=None, ratio=None, date=None, mode='unavailable', history=[],
+                  desc='엔씨소프트(NCSOFT, %s) 보통주 주가입니다. 전일 종가 대비 등락이며, 실시간이 아닌 수집 시점 기준입니다.' % code)
+    url = os.getenv('NC_STOCK_URL') or ('https://polling.finance.naver.com/api/realtime?query='
+                                        + quote('SERVICE_ITEM:' + code, safe=''))
+    try:
+        if urlsplit(url).scheme != 'https':
+            raise ValueError('HTTPS required')
+        payload = get_json(url, headers={'User-Agent': 'Mozilla/5.0',
+                                         'Referer': 'https://finance.naver.com/'})
+        row = payload['result']['areas'][0]['datas'][0]
+        close = _num(row.get('nv'))
+        change = _num(row.get('cv'))
+        ratio = _num(row.get('cr'))
+        if close is None or not math.isfinite(close):
+            raise ValueError('No price')
+        # rf: 2/1 상승·상한, 4/5 하락·하한, 3 보합 → 등락 부호 적용.
+        sign = -1 if str(row.get('rf')) in ('4', '5') else 1
+        result.update(mode='live', value=close,
+                      change=None if change is None else round(sign * abs(change)),
+                      ratio=None if ratio is None else round(sign * abs(ratio), 2),
+                      date=now().strftime('%Y%m%d'))
+    except Exception:
+        result.update(mode='unavailable', value=None, change=None, ratio=None)
     return result
 
 
@@ -229,8 +276,10 @@ def tax_calendar(today=None):
 
 
 def dashboard():
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         indicators = list(executor.map(indicator, INDICATORS))
+        nc = executor.submit(nc_stock).result()
+    indicators.append(nc)
     data = news()
     data.update(indicators=indicators, calendar=tax_calendar())
     return data
@@ -240,8 +289,12 @@ def dashboard():
 def dashboard_route():
     data = cache.get('dashboard', dashboard, ttl=900, wait=0)
     if data is None:
-        return jsonify(dict(pending=True, indicators=[dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3],
-            value=s[4], change=None, date=None, mode='demo', history=[]) for s in INDICATORS],
+        indicators = [dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3], value=s[4], change=None,
+            ratio=None, date=None, mode='demo', history=[], desc=s[5]) for s in INDICATORS]
+        indicators.append(dict(code='KRX/'+os.getenv('NC_STOCK_CODE', '036570'), name='엔씨소프트 주가',
+            unit='원', value=None, change=None, ratio=None, date=None, mode='loading', history=[],
+            desc='엔씨소프트(NCSOFT) 보통주 주가입니다. 수집 시점 기준이며 실시간이 아닙니다.'))
+        return jsonify(dict(pending=True, indicators=indicators,
             items=[], sources=[], calendar=tax_calendar()))
     # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
     reader.register_external([dict(url=r['url'], title=r['title'], author=r.get('source', ''),
