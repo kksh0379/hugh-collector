@@ -262,14 +262,17 @@ def diagnose():
         cx = os.getenv("COEX_SCHEDULE_URL", "https://www.coex.co.kr/event/full-schedules/")
         r = requests.get(cx, timeout=(3, 12), headers={"User-Agent": "Mozilla/5.0"})
         txt = r.text or ""
-        # 상단 필터(숨은 입력)가 아니라 '실제 행사 목록 행'을 보도록, 날짜 매치 중 더 뒤쪽(목록부)을 집는다.
         ms = list(_re.finditer(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt))
         pick = ms[min(20, len(ms) - 1)] if ms else None
-        row_sample = txt[max(0, pick.start() - 700): pick.start() + 700] if pick else ""
+        # 목록 구조를 찾는 여러 단서: 상세링크 주변 / 목록 컨테이너(List) / 중간 청크
+        link_m = _re.search(r'<a[^>]+href="[^"]*(?:detail|exhibition|event|idx=)[^"]*"[^>]*>', txt, _re.I)
+        cont_m = _re.search(r'<[^>]+class="[^"]*(?:List|Schedule|Event|Exhibition)[^"]*"', txt)
         out["coex_probe"] = {
             "status": r.status_code, "bytes": len(r.content), "date_like": len(ms),
             "spa_hint": ("__NEXT_DATA__" in txt or "/_next/" in txt or "id=\"root\"" in txt or "ng-app" in txt),
-            "row_sample": row_sample,
+            "row_sample": (txt[max(0, pick.start() - 700): pick.start() + 700] if pick else ""),
+            "link_sample": (txt[link_m.start(): link_m.start() + 900] if link_m else ""),
+            "cont_sample": (txt[cont_m.start(): cont_m.start() + 900] if cont_m else ""),
         }
     except Exception as e:  # noqa: BLE001
         out["coex_probe"] = {"error": f"{type(e).__name__}: {e}"}

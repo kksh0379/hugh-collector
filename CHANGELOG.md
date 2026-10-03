@@ -2,6 +2,10 @@
 
 ## 2026-10-03
 
+### v3.28 · 261003 — 코엑스 진단 단서 보강(상세링크·컨테이너·중간 청크)
+
+- 코엑스 진단 `coex_probe`에 목록 구조를 찾기 위한 단서 추가: `link_sample`(상세링크 주변), `cont_sample`(List/Schedule/Event 컨테이너), `row_sample`(날짜 뒤쪽). → 행사 행 HTML 구조 확인 후 어댑터 구현.
+
 ### v3.27 · 261003 — 문화정보 연결 성공: 페이지네이션 + 공연류 제외
 
 - 문화정보(한눈에보는문화정보/period2) **연결 성공 확인**(필드 title/startDate/place/realmName/area/thumbnail 매핑). API가 페이지당 10건이라 **페이지네이션 추가**(최대 20p, `CULTURE_MAX_PAGES`로 조절)로 전시·행사를 더 많이 수집.
