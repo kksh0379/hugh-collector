@@ -540,6 +540,8 @@ body.view-list .ai-tags, body.view-list .ai-facts, body.view-list .ai-insight { 
   font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap;
 }
 .result-count b { color: var(--primary); font-weight: 800; }
+/* 뉴스 표시 수치(총 N개)는 관리자 로그인 시에만 노출 */
+body:not(.is-admin) #result-count { display: none; }
 .search-box {
   flex: 1 1 auto; min-width: 0;
   display: flex; align-items: center;

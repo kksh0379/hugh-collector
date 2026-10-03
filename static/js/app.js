@@ -176,7 +176,26 @@ function scrapBtnHtml(key) {
   return `<button class="scrap-btn${saved ? " on" : ""}" type="button" data-key="${escapeHtml(key)}" aria-pressed="${saved}" aria-label="${action}" title="${action}">`
     + `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 3h12c.55 0 1 .45 1 1v17l-7-3.9L5 21V4c0-.55.45-1 1-1z"/></svg></button>`;
 }
-function newBadgeHtml(iso) { return isToday(iso) ? `<span class="badge-new" title="오늘 등록">N</span>` : ""; }
+// '신규(N)' 기준일: 오늘 글이 있으면 오늘, 없으면 가장 최근 일자(그래서 N이 아예 사라지지 않음).
+let NEWS_NEW_DATE = "";
+function computeNewDate(items) {
+  if (!items || !items.length) return "";
+  const today = todayStr();
+  let max = "";
+  for (const it of items) {
+    const d = String(it.published_at || "").slice(0, 10);
+    if (!d) continue;
+    if (d === today) return today;      // 오늘 글이 하나라도 있으면 오늘 기준
+    if (d > max) max = d;
+  }
+  return max;                            // 오늘 글이 없으면 최신 일자 기준
+}
+function newBadgeHtml(iso, newDate) {
+  const d = String(iso || "").slice(0, 10);
+  const target = newDate || todayStr();  // newDate 미지정(예: 스크랩)은 '오늘'만
+  if (!d || !target || d !== target) return "";
+  return `<span class="badge-new" title="${d === todayStr() ? "오늘 등록" : "최근 등록"}">N</span>`;
+}
 function readClass(key) { return isRead(key) ? " is-read" : ""; }
 // 카드 '링크 복사' 버튼
 function copyBtnHtml(url) {
@@ -642,7 +661,7 @@ function renderCard(item, opts) {
     <div class="card-main">
       ${newsThumb(item)}
       <div class="card-body">
-        <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at)}${titleHtml}</h3>
+        <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
@@ -805,6 +824,7 @@ function renderTab(tab) {
   const d = TAB_DATA[tab];
   if (!d) return;
   const base = d.prefilter ? d.prefilter(d.items) : d.items;  // 탭 고유 사전필터(예: 뉴스 분류 체크박스)
+  NEWS_NEW_DATE = computeNewDate(base);                        // 현재 탭의 '신규(N)' 기준일
   const list = d.query ? smartFilter(base, d.query) : base;
   d.count = list.length;
   d.searching = !!d.query;
@@ -1205,7 +1225,7 @@ function newsGroupNode(arr, tab) {
     ${scrapBtnHtml(key)}
     <div class="card-main">
       <div class="card-body">
-        <h3 class="card-title">${impBadgeHtml(rep)}${newBadgeHtml(rep.published_at)}${titleHtml}</h3>
+        <h3 class="card-title">${impBadgeHtml(rep)}${newBadgeHtml(rep.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
         <div class="card-meta">${meta.join(" · ")}</div>
         <p class="card-summary">${escapeHtml(rep.content || "요약 없음")}</p>
         ${secAiHtml(rep)}
@@ -1346,7 +1366,7 @@ function eventAlbumCard(s) {
     ${s.image_url ? `<div class="card-thumb"><img class="thumb-img" loading="lazy" src="/api/img?u=${encodeURIComponent(s.image_url)}" alt="" onerror="this.closest('.card-thumb').remove()"></div>` : ""}
     <div class="card-body">
       <div class="event-date">📅 ${escapeHtml(eventDateBadge(s))}</div>
-      <h3 class="card-title">${newBadgeHtml(s.published_at)}${titleHtml}</h3>
+      <h3 class="card-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
       ${place ? `<div class="event-place">📍 ${escapeHtml(place)}</div>` : ""}
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="card-actions">${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${copyBtnHtml(link)}</div>
@@ -1509,7 +1529,7 @@ function renderEventCalendar(list) {
       return `<a class="agenda-item" href="${escapeHtml(link)}" target="_blank" rel="noopener">
         <span class="agenda-date" style="background:${colorOf[s.url]}">${escapeHtml(_mdRange(s))}</span>
         <span class="agenda-main">
-          <span class="agenda-title">${newBadgeHtml(s.published_at)}${escapeHtml(s.title || "(제목 없음)")}</span>
+          <span class="agenda-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${escapeHtml(s.title || "(제목 없음)")}</span>
           ${place ? `<span class="agenda-place">📍 ${escapeHtml(place)}</span>` : ""}
         </span>
         <span class="agenda-go">↗</span>
