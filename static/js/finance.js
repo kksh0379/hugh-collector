@@ -6,6 +6,7 @@
   const modes = {live:'실데이터',demo:'예시 데이터',unconfigured:'연결 준비',unavailable:'일시 중단',loading:'불러오는 중'};
   let data = null, category = 'all', loading = false, dartVersion = 0, ncData = null;
   const NC_CODE = '036570';
+  const NC_CORP = '00261443';   // (주)엔씨 DART 고유번호(화면에 노출하지 않고 내부에서만 사용)
   const ncPlaceholder = () => ({code:'KRX/'+NC_CODE, name:'(주)엔씨', unit:'원', value:null, change:null, ratio:null, date:null, mode:'loading', history:[], desc:''});
   const esc = text => String(text ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate = value => {
@@ -135,7 +136,7 @@
     finally { spin(false); }
   }
   async function loadDart() {
-    const version=++dartVersion, code=$('finance-corp-code').value.trim();
+    const version=++dartVersion, code=NC_CORP;
     $('finance-dart-status').textContent='공시를 불러오는 중입니다.';
     $('finance-dart-rows').innerHTML='';
     try {
@@ -180,9 +181,6 @@
   });
   document.addEventListener('click',closeTips);
   $('finance-search').addEventListener('input',renderNews);
-  $('finance-dart-form').addEventListener('submit',event=>{event.preventDefault();loadDart();});
-  const dartNc=document.getElementById('finance-dart-nc');
-  if(dartNc) dartNc.addEventListener('click',()=>{ $('finance-corp-code').value=dartNc.dataset.corp||''; loadDart(); });
   $('finance-business-form').addEventListener('submit',async event=>{
     event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true;
     $('finance-business-result').textContent='국세청 사업자 상태를 확인하고 있습니다.';
