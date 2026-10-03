@@ -258,7 +258,8 @@ def coex_events(progress=None):
 def collect(progress=None):
     """설정된 구조화 소스를 모두 모아 반환(미설정/실패는 자동 제외)."""
     items = []
-    for fn in (tour_festivals, culture_events, coex_events):
+    from . import venue_sources
+    for fn in (tour_festivals, culture_events, coex_events, venue_sources.collect):
         try:
             items.extend(fn(progress) or [])
         except Exception:
@@ -322,4 +323,6 @@ def diagnose():
         }
     except Exception as e:  # noqa: BLE001
         out["coex_probe"] = {"error": f"{type(e).__name__}: {e}"}
+    from . import venue_sources
+    out['venue_schedules'] = venue_sources.diagnose()
     return out

@@ -38,3 +38,11 @@ test('checkboxes select a union of multiple fields, clear all, restore all and r
  onChange({target:{dataset:{cat:'AI·데이터'},checked:true}});assert.equal(select(items).length,2);
  onChange({target:{dataset:{cat:'all'},checked:true}});assert.equal(select(items).length,4);assert.equal(renders,5);
 });
+test('pet field covers Korean cat fairs and English names without carpet false positives',()=>{
+ const c=setup();
+ for(const title of ['궁디팡팡 캣페스타 SUWON','2026 냥냥펀치캣쇼 in aT','케이펫페어','고양이 박람회','Pet Fair','Catfesta']) assert.ok(c.eventCategories({title}).includes('반려동물'),title);
+ assert.ok(!c.eventCategories({title:'Carpet Design Fair'}).includes('반려동물'));
+ assert.ok(!c.eventCategories({title:'미술 전시',venue:'고양이센터'}).includes('반려동물'));
+ assert.match(fs.readFileSync('templates/index.html','utf8'),/data-cat="반려동물"/);
+ assert.match(fs.readFileSync('static/js/events-ui.js','utf8'),/const topics = .*'반려동물'/);
+});

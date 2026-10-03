@@ -392,7 +392,18 @@ def eventcheck():
     """행사 구조화 소스(관광공사 축제·문화행사) 진단: 소스별 설정·응답상태·행수·첫항목 키·
     원문 일부를 보여준다. 서비스키는 요청 파라미터로만 쓰여 응답에 노출되지 않으므로
     dbcheck/newscheck처럼 로그인 없이도 열 수 있게 둔다."""
-    return jsonify(event_sources.diagnose())
+    from collector import venue_sources
+    result = ({'venue_schedules': venue_sources.diagnose()}
+              if request.args.get('venues') == '1' else event_sources.diagnose())
+    # A completed initial import survives worker restarts in DB metadata.
+    try:
+        saved = json.loads(db.get_meta('venue_sources_status', '{}'))
+        for source, state in result['venue_schedules'].items():
+            if state.get('checked') is False and source in saved:
+                result['venue_schedules'][source] = saved[source]
+    except Exception:
+        pass
+    return jsonify(result)
 
 
 @app.get("/api/newscheck")
@@ -2223,6 +2234,32 @@ def _auto_backfill():
     threading.Thread(target=_run, daemon=True).start()
 
 
+def _bootstrap_venue_schedules():
+    """One bounded import for newly added official sources; no news crawl or AI.
+
+    Leave the marker unset on partial failures so a restart can retry. Existing
+    records are upserted; collecting never removes user data or old sources.
+    """
+    if (os.environ.get('ENABLE_SCHEDULER', '1') != '1'
+            or os.environ.get('VENUE_SOURCES_OFF') == '1'):
+        return
+    try:
+        from collector import venue_sources
+        if not _ensure_db(force=True) or db.get_meta('venue_sources_version') == '1':
+            return
+        items = venue_sources.collect(lambda message: print('[venue] ' + message, flush=True))
+        status = venue_sources.diagnose()
+        if items:
+            counts = _save_event(items)
+            _invalidate_read_cache()
+            print(f"[venue] 공식 일정 저장 {len(items)}건 · 신규 {counts['new']}건", flush=True)
+        db.set_meta('venue_sources_status', json.dumps(status, ensure_ascii=False))
+        if all(row.get('ok') for row in status.values()):
+            db.set_meta('venue_sources_version', '1')
+    except Exception as exc:
+        print(f'[venue] 초기 수집 실패: {type(exc).__name__}', flush=True)
+
+
 # DB keep-alive: 주기적으로 DB에 가벼운 쿼리를 날려 잠들지 않게 유지.
 # ⚠️ 기본 꺼짐(0). Neon 무료는 compute 사용시간 한도가 있는데, keepalive를 켜면 DB가 상시
 # 가동돼 한도를 빠르게 소진 → 'quota exceeded'로 DB가 정지될 수 있다(실제 발생). 콜드스타트는
@@ -2269,6 +2306,7 @@ _start_scheduler()
 # 백필은 DB를 건드리므로(cold start로 느릴 수 있음) 백그라운드 스레드에서 돌려
 # import(부팅)를 절대 막지 않게 한다. → Render 배포가 DB 상태와 무관하게 성공.
 threading.Thread(target=_auto_backfill, daemon=True).start()
+threading.Thread(target=_bootstrap_venue_schedules, daemon=True).start()
 threading.Thread(target=_db_keepalive, daemon=True).start()
 
 

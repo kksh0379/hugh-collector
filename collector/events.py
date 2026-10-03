@@ -359,6 +359,13 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
                 continue
             key = _norm_title(s.get("title", "")) + "|" + st
             if key in seen:
+                # Venue/API rows carry the original schedule. Prefer these over
+                # news extraction for an identical title and start date.
+                for i, existing in enumerate(out):
+                    if (_norm_title(existing.get('title', '')) + '|' + (existing.get('start_date') or '') == key
+                            and existing.get('source') == '뉴스'):
+                        out[i] = s
+                        break
                 continue
             seen.add(key)
             out.append(s)

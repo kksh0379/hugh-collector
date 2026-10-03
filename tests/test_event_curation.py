@@ -15,6 +15,13 @@ class CurationTests(unittest.TestCase):
         for value in [None, [], {'topics':['unknown']},{'keywords':['x'*41]},{'topics':'AI 윤리'},{'keywords':[1]}]:
             with self.assertRaises(ValueError):cur.preferences(value)
 
+    def test_pet_field_reaches_personalized_candidates(self):
+        self.assertEqual(len(self.prefs(cur.TOPICS)['topics']), 8)
+        rows = [{'title': title, 'start_date': '2099-01-01', 'url': str(i)}
+                for i, title in enumerate(['궁디팡팡 캣페스타 SUWON', '냥냥펀치캣쇼', 'Pet Fair', '클라우드 포럼', 'Carpet design fair'])]
+        self.assertEqual([r['url'] for r in cur.candidates(rows, self.prefs(['반려동물']))], ['0', '1', '2'])
+        self.assertNotIn('반려동물', cur.categories({'title':'미술 전시', 'venue':'고양이센터'}))
+
     def test_relevance_and_expiry(self):
         rows=[{'title':'AI 윤리 거버넌스 포럼','start_date':'2099-01-01','end_date':'2099-01-01','url':'a'},
               {'title':'클라우드 보안 개발자 밋업','start_date':'2099-01-02','url':'b'},

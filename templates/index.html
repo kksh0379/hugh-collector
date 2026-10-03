@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.40") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.41") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -48,7 +48,7 @@
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.40") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.41") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
 </head>
 <body>
@@ -235,6 +235,7 @@
         <label title="산업·창업·투자·금융·채용"><input type="checkbox" data-cat="산업·비즈니스" checked /> 산업·비즈니스</label>
         <label title="문화·예술·전시·축제·콘텐츠"><input type="checkbox" data-cat="문화·전시" checked /> 문화·전시</label>
         <label title="교육·공익·복지·포용·환경"><input type="checkbox" data-cat="교육·공익" checked /> 교육·공익</label>
+        <label title="고양이·강아지·반려동물 박람회와 펫 행사"><input type="checkbox" data-cat="반려동물" checked /> 반려동물</label>
         <label title="분야를 확인할 단서가 부족한 행사"><input type="checkbox" data-cat="기타" checked /> 기타</label>
       </div>
       <button class="btn-status admin-only" id="status-event-btn">상태 확인</button>
@@ -242,10 +243,10 @@
     </div>
     <div class="legend admin-only">
       <span class="chip chip-done">국내 개최 · 종료 전 행사</span>
-      <span class="chip chip-plan">앨범/캘린더 · 날짜·장소 자동추출(구글 뉴스)</span>
+      <span class="chip chip-plan">행사장 공식 일정 · 공공기관 · 뉴스</span>
     </div>
     <div class="event-note">
-      ⚠️ <b>뉴스</b> 딱지 행사는 기사에서 <b>자동 추출</b>해 날짜·장소·개최 여부가 실제와 다르거나 누락·오류가 있을 수 있어요.<br><b>관광공사·문화포털</b> 딱지는 공식 기관 정보지만 일정이 변경될 수 있어요.<br>참여·신청 전 반드시 <b>원문·공식 채널</b>에서 확인해 주세요.
+      ⚠️ <b>뉴스</b> 딱지 행사는 기사에서 <b>자동 추출</b>해 날짜·장소·개최 여부가 실제와 다르거나 누락·오류가 있을 수 있어요.<br><b>행사장·관광공사·문화포털</b> 딱지는 공식 일정이지만 변경될 수 있어요.<br>참여·신청 전 반드시 <b>원문·공식 채널</b>에서 확인해 주세요.
     </div>
     <div class="last-crawl" id="last-event"></div>
     <div class="result-msg" id="msg-event"></div>
@@ -452,7 +453,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.40 · build 261004</span>
+    <span class="ver">v3.41 · build 261004</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -481,8 +482,8 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.40") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.40") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.41") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.41") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>

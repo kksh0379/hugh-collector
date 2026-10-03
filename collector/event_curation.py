@@ -17,8 +17,9 @@ FIELDS = {
     '산업·비즈니스': r'산업|비즈니스|스타트업|창업|벤처|투자|경제|금융|무역|물류|제조|모빌리티|헬스케어|바이오|의료|뷰티|식품|건설|채용|취업|business|startup',
     '문화·전시': r'문화|예술|미술|전시|박물관|축제|페스티벌|문학|도서|출판|디자인|공예|관광|게임|콘텐츠|아트|exhibition|festival',
     '교육·공익': r'교육|학습|청소년|어린이|아동|학교|공익|비영리|사회적\s*가치|사회적\s*경제|복지|장애|접근성|포용|환경|기후|탄소|지속가능|\bESG\b|봉사|시민',
+    '반려동물': r'반려\s*(?:동물|견|묘)|고양이|강아지|펫|궁디팡팡|궁팡|캣\s*(?:페스타|쇼|박람회)|냥냥펀치|케이캣|가낳지모|\b(?:pets?|cats?|dogs?|petfair|petexpo|catfesta)\b',
 }
-TOPICS = ['IT·기술', 'AI·데이터', 'AI 윤리', '산업·비즈니스', '문화·전시', '교육·공익', '기타']
+TOPICS = ['IT·기술', 'AI·데이터', 'AI 윤리', '산업·비즈니스', '문화·전시', '교육·공익', '반려동물', '기타']
 _jobs = OrderedDict()
 _lock = threading.Lock()
 _slots = threading.BoundedSemaphore(2)
@@ -37,10 +38,10 @@ def preferences(payload):
     if not isinstance(payload, dict):
         raise ValueError('입력값을 확인해 주세요.')
     topics, keywords = payload.get('topics', []), payload.get('keywords', [])
-    if (not isinstance(topics, list) or len(topics) > 7 or any(not isinstance(x, str) or x not in TOPICS for x in topics)
+    if (not isinstance(topics, list) or len(topics) > len(TOPICS) or any(not isinstance(x, str) or x not in TOPICS for x in topics)
             or not isinstance(keywords, list) or len(keywords) > 8
             or any(not isinstance(x, str) or not 1 <= len(x.strip()) <= 40 for x in keywords)):
-        raise ValueError('분야는 7개, 키워드는 8개(각 40자)까지 선택할 수 있어요.')
+        raise ValueError('분야는 8개, 키워드는 8개(각 40자)까지 선택할 수 있어요.')
     return {'topics': sorted(set(topics)), 'keywords': sorted(set(x.strip() for x in keywords))}
 
 

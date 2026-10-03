@@ -1,6 +1,6 @@
 /* Event discovery: compact month/day agenda and preference-driven banner feed. */
 (() => {
-  const topics = ['IT·기술','AI·데이터','AI 윤리','산업·비즈니스','문화·전시','교육·공익','기타'];
+  const topics = ['IT·기술','AI·데이터','AI 윤리','산업·비즈니스','문화·전시','교육·공익','반려동물','기타'];
   const esc = value => escapeHtml(String(value || ''));
   const isoToday = () => new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Seoul'}).format(new Date());
   const isoDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;

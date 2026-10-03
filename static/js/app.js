@@ -1351,6 +1351,7 @@ function eventCategories(item) {
   if (/산업|비즈니스|스타트업|창업|벤처|투자|경제|금융|무역|물류|제조|모빌리티|헬스케어|바이오|의료|뷰티|식품|건설|채용|취업|business|startup/i.test(text)) tags.push("산업·비즈니스");
   if (/문화|예술|미술|전시|박물관|축제|페스티벌|문학|도서|출판|디자인|공예|관광|게임|콘텐츠|아트|exhibition|festival/i.test(text)) tags.push("문화·전시");
   if (/교육|학습|청소년|어린이|아동|학교|공익|비영리|사회적\s*가치|사회적\s*경제|복지|장애|접근성|포용|환경|기후|탄소|지속가능|\bESG\b|봉사|시민/i.test(text)) tags.push("교육·공익");
+  if (/반려\s*(?:동물|견|묘)|고양이|강아지|펫|궁디팡팡|궁팡|캣\s*(?:페스타|쇼|박람회)|냥냥펀치|케이캣|가낳지모|\b(?:pets?|cats?|dogs?|petfair|petexpo|catfesta)\b/i.test(text)) tags.push("반려동물");
   return tags.length ? tags : ["기타"];
 }
 const filterEventsByCategory = makeCheckFilter("event", "event-cats", eventCategories);
