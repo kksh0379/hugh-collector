@@ -387,12 +387,11 @@ def dbcheck():
     return jsonify(db.diagnose())
 
 
-@app.get("/api/admin/eventcheck")
+@app.get("/api/eventcheck")
 def eventcheck():
     """행사 구조화 소스(관광공사 축제·문화행사) 진단: 소스별 설정·응답상태·행수·첫항목 키·
-    원문 일부를 보여준다(서비스키는 노출하지 않음). 어떤 소스/필드가 실제로 되는지 확인용."""
-    if not _admin_ok():
-        return jsonify({"error": "unauthorized"}), 401
+    원문 일부를 보여준다. 서비스키는 요청 파라미터로만 쓰여 응답에 노출되지 않으므로
+    dbcheck/newscheck처럼 로그인 없이도 열 수 있게 둔다."""
     return jsonify(event_sources.diagnose())
 
 

@@ -24,7 +24,7 @@
 
 ## 확인 · 진단
 
-관리자 로그인 후 **`/api/admin/eventcheck`** 를 열면 소스별로 다음을 보여준다(서비스키 비노출):
+브라우저로 **`/api/eventcheck`** 를 열면(로그인 불필요) 소스별로 다음을 보여준다(서비스키 비노출):
 
 - `configured` (env 설정 여부), `parsed` (파싱된 행사 수)
 - `raw.status` (HTTP 상태), `raw.rows` (응답 행수), `raw.first_keys` (첫 항목 필드명), `raw.sample` (원문 일부)
