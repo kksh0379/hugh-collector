@@ -138,8 +138,8 @@
   async function loadDart(corp) {
     const version=++dartVersion;
     const input=$('finance-corp-code');
-    // 단축키/기본은 (주)엔씨, 입력칸에 고유번호가 있으면 그 기업을 조회(검색 기능 유지).
-    const code=(corp || (input && input.value.trim()) || NC_CORP);
+    // corp===null → 전체(기본 호출, 회사 미지정) 조회. 그 외엔 (주)엔씨/입력값/기본 NC.
+    const code = corp===null ? '' : (corp || (input && input.value.trim()) || NC_CORP);
     $('finance-dart-status').textContent='공시를 불러오는 중입니다.';
     $('finance-dart-rows').innerHTML='';
     try {
@@ -189,8 +189,7 @@
   if(dartNc) dartNc.addEventListener('click',()=>{
     const on=!dartNc.classList.contains('on');
     setNc(on);
-    if(on){ loadDart(NC_CORP); }                               // 선택 → (주)엔씨 공시 조회
-    else { dartVersion++; $('finance-dart-rows').innerHTML=''; $('finance-dart-status').textContent='(주)엔씨 공시를 숨겼어요. 다시 보려면 버튼을 누르세요.'; }  // 미선택 → 미조회
+    loadDart(on ? NC_CORP : null);   // 선택 → (주)엔씨 공시 / 미선택 → 전체(기본) 공시 조회
   });
   $('finance-dart-form').addEventListener('submit',event=>{   // 입력한 종목코드·고유번호로 조회(검색)
     event.preventDefault();
@@ -313,6 +312,6 @@
   { const el=$('calc-loan-type'); if(el)el.addEventListener('change',calcLoan); }
   { const t=$('calc-save-type'); if(t)t.addEventListener('change',()=>{ const lb=$('calc-save-amount-label'); if(lb)lb.textContent = t.value==='lump'?'예치금 (원)':'월 납입액 (원)'; }); }
 
-  // 재무세무 진입 시: 엔씨 단축키가 '선택' 상태일 때만 (주)엔씨 공시를 자동 조회.
-  window.onShowFinance=()=>{load();loadStock(); if(!dartNc || dartNc.classList.contains('on')) loadDart();};
+  // 재무세무 진입 시: 엔씨 단축키가 '선택'이면 (주)엔씨, '미선택'이면 전체(기본) 공시를 조회.
+  window.onShowFinance=()=>{load();loadStock(); loadDart(dartNc && !dartNc.classList.contains('on') ? null : NC_CORP);};
 })();
