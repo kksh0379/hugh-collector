@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.05") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.06") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -47,7 +47,7 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.05") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.06") }}">
 </head>
 <body>
   <header class="app-header">
@@ -82,7 +82,7 @@
       <button class="tab" data-tab="game">🕹 게임정보</button>
       <button class="tab" data-tab="news" aria-label="NC 뉴스">
         <img class="nc-mark" src="{{ url_for('static', filename='nc-symbol.png', v='226') }}" alt="" aria-hidden="true" />뉴스</button>
-      <button class="tab" data-tab="biz">📊 업계동향</button>
+      <button class="tab" data-tab="biz">📊 재단업계 동향</button>
       <button class="tab" data-tab="security" aria-label="보안뉴스">
         <svg class="security-ci" viewBox="0 0 32 32" width="24" height="24" aria-hidden="true">
           <path fill="currentColor" fill-rule="evenodd" d="M16 1C11 1 6 9 6 13c0 3 4 6 10 6s10-3 10-6C26 9 21 1 16 1ZM10 10h12c-1 4-3 7-6 7s-5-3-6-7Z"/>
@@ -94,8 +94,8 @@
         </svg>보안뉴스</button>
       <button class="tab" data-tab="event">📅 행사일정</button>
       <button class="tab" data-tab="boards">📋 재단게시판</button>
-      <button class="tab" data-tab="social" aria-label="재단 영상">
-        <img class="yt-ci" src="{{ url_for('static', filename='youtube-tab.png', v='227') }}" alt="" aria-hidden="true" />재단</button>
+      <button class="tab" data-tab="social" aria-label="비영리재단">
+        <img class="yt-ci" src="{{ url_for('static', filename='youtube-tab.png', v='227') }}" alt="" aria-hidden="true" />비영리재단</button>
     </nav>
   </div>
 
@@ -455,7 +455,7 @@
           <label class="feat-locked"><input type="checkbox" data-feat="cat" checked disabled> 냥정보 <span class="feat-tag">기본</span></label>
           <label><input type="checkbox" data-feat="game"> 게임정보</label>
           <label><input type="checkbox" data-feat="news"> NC뉴스</label>
-          <label><input type="checkbox" data-feat="biz"> 업계동향</label>
+          <label><input type="checkbox" data-feat="biz"> 재단업계 동향</label>
           <label><input type="checkbox" data-feat="security"> 보안뉴스</label>
           <label><input type="checkbox" data-feat="event"> 행사일정</label>
           <label><input type="checkbox" data-feat="boards"> 재단게시판</label>
@@ -482,14 +482,14 @@
     <button type="button" class="fnav" data-nav="finance" aria-label="재무세무 beta">
       <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="nav-fill" x="4" y="3" width="16" height="18" rx="3"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18h2M14 18h2"/></svg></span><span class="fnav-t finance-nav-label">재무세무<span class="finance-beta">beta</span></span></button>
     <button type="button" class="fnav report-open" id="report-open-btn" data-nav="report">
-      <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="nav-fill" d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 17v-3M12 17v-6M16 17v-4"/></svg></span><span class="fnav-t">리포트</span></button>
+      <span class="fnav-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="nav-fill" d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 17v-3M12 17v-6M16 17v-4"/></svg></span><span class="fnav-t">AI리포트</span></button>
     <button type="button" class="fnav scrap-open" id="scrap-open-btn" data-nav="scrap">
       <span class="fnav-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="nav-fill" d="M6 3h12v18l-6-4-6 4z"/></svg><span class="scrap-badge" id="scrap-badge" hidden></span></span><span class="fnav-t">스크랩</span></button>
   </nav>
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.05 · build 261003</span>
+    <span class="ver">v3.06 · build 261003</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -517,8 +517,8 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.05") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.05") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.06") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.06") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>

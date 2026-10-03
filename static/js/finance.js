@@ -135,8 +135,11 @@
     } catch { /* 실패 시 직전 값 유지 */ }
     finally { spin(false); }
   }
-  async function loadDart() {
-    const version=++dartVersion, code=NC_CORP;
+  async function loadDart(corp) {
+    const version=++dartVersion;
+    const input=$('finance-corp-code');
+    // 단축키/기본은 (주)엔씨, 입력칸에 고유번호가 있으면 그 기업을 조회(검색 기능 유지).
+    const code=(corp || (input && input.value.trim()) || NC_CORP);
     $('finance-dart-status').textContent='공시를 불러오는 중입니다.';
     $('finance-dart-rows').innerHTML='';
     try {
@@ -181,8 +184,9 @@
   });
   document.addEventListener('click',closeTips);
   $('finance-search').addEventListener('input',renderNews);
-  const dartNc=document.getElementById('finance-dart-nc');   // (주)엔씨 공시 단축키(고유번호는 내부 상수로 사용)
-  if(dartNc) dartNc.addEventListener('click',()=>loadDart());
+  $('finance-dart-form').addEventListener('submit',event=>{event.preventDefault();loadDart();});  // 입력한 고유번호로 조회(검색)
+  const dartNc=document.getElementById('finance-dart-nc');   // (주)엔씨 공시 단축키(고유번호 노출 없이 내부 상수 사용)
+  if(dartNc) dartNc.addEventListener('click',()=>loadDart(NC_CORP));
   $('finance-business-form').addEventListener('submit',async event=>{
     event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true;
     $('finance-business-result').textContent='국세청 사업자 상태를 확인하고 있습니다.';
