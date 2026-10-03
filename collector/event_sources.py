@@ -91,9 +91,6 @@ def tour_festivals(progress=None):
 
 
 # ------------------------------ 문화포털/공공데이터: 문화행사 ------------------------------
-CULTURE_URL = "http://www.culture.go.kr/openapi/rest/publicperformancedisplays/period"
-
-
 def _culture_date(s):
     """'YYYY.MM.DD'·'YYYY-MM-DD'·'YYYYMMDD' → YYYY-MM-DD."""
     s = str(s or "").strip().replace(".", "").replace("-", "")
@@ -133,13 +130,13 @@ def _culture_rows(resp):
 
 
 def culture_events(progress=None):
-    """문화포털(culture.go.kr) 공연·전시정보 API — 국내 전시·공연·행사를 날짜·장소 구조화로.
-    CULTURE_API_KEY(디코딩 서비스키) 필요. URL은 CULTURE_API_URL로 교체 가능(기본: culture.go.kr).
-    응답이 XML이라 XML/JSON 모두 처리한다."""
+    """문화 행사 API(한눈에보는문화정보/KCISA 등) — 국내 전시·공연·행사를 날짜·장소 구조화로.
+    CULTURE_API_KEY(디코딩 서비스키) + CULTURE_API_URL(해당 API '요청주소') 둘 다 필요.
+    응답이 XML/JSON, KCISA <col name> 형식 모두 처리한다."""
     key = os.getenv("CULTURE_API_KEY")
-    if not key:
+    url = os.getenv("CULTURE_API_URL")
+    if not key or not url:
         return []
-    url = os.getenv("CULTURE_API_URL", CULTURE_URL)
     out = []
     try:
         today = datetime.date.today()
@@ -221,15 +218,15 @@ def diagnose():
                              "_type": "json", "arrange": "A",
                              "eventStartDate": start, "numOfRows": 5, "pageNo": 1})
     out["tour_festivals"] = row
-    ckey = os.getenv("CULTURE_API_KEY")
-    crow = {"configured": bool(ckey), "parsed": len(culture_events()) if ckey else 0}
-    if ckey:
+    ckey, curl = os.getenv("CULTURE_API_KEY"), os.getenv("CULTURE_API_URL")
+    crow = {"configured": bool(ckey and curl), "key_set": bool(ckey), "url_set": bool(curl),
+            "parsed": len(culture_events()) if (ckey and curl) else 0}
+    if ckey and curl:
         today = datetime.date.today()
-        crow["raw"] = _probe(os.getenv("CULTURE_API_URL", CULTURE_URL),
-                             {"serviceKey": ckey,
-                              "from": (today - datetime.timedelta(days=14)).strftime("%Y%m%d"),
-                              "to": (today + datetime.timedelta(days=180)).strftime("%Y%m%d"),
-                              "rows": 5, "cPage": 1})
+        crow["raw"] = _probe(curl, {"serviceKey": ckey,
+                                    "from": (today - datetime.timedelta(days=14)).strftime("%Y%m%d"),
+                                    "to": (today + datetime.timedelta(days=180)).strftime("%Y%m%d"),
+                                    "rows": 5, "cPage": 1, "numOfRows": 5, "pageNo": 1})
     out["culture_events"] = crow
     # 코엑스 행사 일정 페이지 구조 확인(어댑터 붙이기 전 SSR/SPA·HTML 구조 파악용)
     import re as _re
@@ -237,11 +234,14 @@ def diagnose():
         cx = os.getenv("COEX_SCHEDULE_URL", "https://www.coex.co.kr/event/full-schedules/")
         r = requests.get(cx, timeout=(3, 12), headers={"User-Agent": "Mozilla/5.0"})
         txt = r.text or ""
+        # 날짜 패턴 주변 HTML을 잘라 행(row) 구조를 파악할 수 있게 한다.
+        rm = _re.search(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt)
+        row_sample = txt[max(0, rm.start() - 500): rm.start() + 600] if rm else ""
         out["coex_probe"] = {
             "status": r.status_code, "bytes": len(r.content),
             "date_like": len(_re.findall(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt)),
             "spa_hint": ("__NEXT_DATA__" in txt or "/_next/" in txt or "id=\"root\"" in txt or "ng-app" in txt),
-            "sample": txt[:1200],
+            "row_sample": row_sample,
         }
     except Exception as e:  # noqa: BLE001
         out["coex_probe"] = {"error": f"{type(e).__name__}: {e}"}
