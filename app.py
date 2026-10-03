@@ -1223,7 +1223,8 @@ def _safe_list(fetch, ttl=_READ_TTL):
             raise RuntimeError("DB unavailable")
         return fetch()
 
-    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=.15)
+    # 첫 요청이 거의 항상 pending([])으로 떨어지지 않도록 대기시간을 늘림(백그라운드 로딩을 기다렸다 반환).
+    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=3.0)
     response = jsonify(data if data is not None else [])
     response.headers["Cache-Control"] = "no-store"
     if data is None:
