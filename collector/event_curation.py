@@ -143,7 +143,7 @@ def recommend(prefs):
         finally:
             _slots.release()
         with _lock:
-            _jobs[key] = (time.monotonic() + (600 if result['status'] == 'ready' and not result.get('ai_error') else 5), result)
+            _jobs[key] = (time.monotonic() + (600 if result['status'] == 'ready' and not result.get('ai_error') else 60), result)
 
     threading.Thread(target=work, daemon=True).start()
     return {'status': 'pending'}
