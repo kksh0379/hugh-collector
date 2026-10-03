@@ -1008,33 +1008,33 @@ body.tab-event #view-toggle { display: none; }
 @media (min-width:768px) {
   body:not(.view-list) #list-biz .card-board .card-main,
   body:not(.view-list) #list-biz .card-video .card-main,
-  body:not(.view-list) #list-event .event-card {
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card {
     --media-width:clamp(220px,26vw,280px); --media-ratio:4 / 3;
     display:grid; grid-template-columns:var(--media-width) minmax(0,1fr);
     align-items:start; column-gap:16px;
   }
   body:not(.view-list) #list-biz .card-video .card-main { --media-ratio:16 / 9; }
-  body:not(.view-list) #list-event .event-card { column-gap:0; }
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card { column-gap:0; }
   body:not(.view-list) #list-biz .card-board .card-main::before,
   body:not(.view-list) #list-biz .card-video .card-main::before,
-  body:not(.view-list) #list-event .event-card::before {
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card::before {
     content:''; grid-column:1; grid-row:1; width:100%; aspect-ratio:var(--media-ratio);
     border:1px dashed #d4dfed; border-radius: var(--r-md); background:#f2f5fa url('../media-document.svg') center / 54px 54px no-repeat;
   }
   body:not(.view-list) #list-biz .card-video .card-main::before { background-image:url('../media-video.svg'); }
-  body:not(.view-list) #list-event .event-card::before { border-radius:0; background-image:url('../media-calendar.svg'); }
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card::before { border-radius:0; background-image:url('../media-calendar.svg'); }
   body:not(.view-list) #list-biz .card-board .card-thumb,
   body:not(.view-list) #list-biz .card-video .card-thumb,
-  body:not(.view-list) #list-event .event-card .card-thumb {
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card .card-thumb {
     grid-column:1; grid-row:1; z-index:1; width:100%; height:auto; aspect-ratio:var(--media-ratio);
   }
   body:not(.view-list) #list-biz .card-board .card-body,
   body:not(.view-list) #list-biz .card-video .card-body,
-  body:not(.view-list) #list-event .event-card .card-body { grid-column:2; grid-row:1; min-width:0; }
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card .card-body { grid-column:2; grid-row:1; min-width:0; }
   body:not(.view-list) #list-biz .card-board .card-thumb img,
-  body:not(.view-list) #list-event .card-thumb img { object-fit:contain; }
-  body:not(.view-list) #list-event .event-card .card-body { padding:16px; }
-  #list-biz .empty, #list-event .empty { width:100%; }
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .card-thumb img { object-fit:contain; }
+  body:not(.view-list) :is(#list-event,.ed-agenda-list) .event-card .card-body { padding:16px; }
+  #list-biz .empty, :is(#list-event,.ed-agenda-list) .empty { width:100%; }
 }
 
 /* 캘린더 */

@@ -6,22 +6,15 @@
   const isoDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const dayEvents = (list, iso) => list.filter(s => s.start_date && s.start_date <= iso && (s.end_date || s.start_date) >= iso).sort((a,b)=>(b.start_date||'').localeCompare(a.start_date||''));
   function safeLink(value) { try {const u=new URL(value);return /^https?:$/.test(u.protocol)?u.href:'';}catch(_){return ''; } }
-  const tagsHtml = s => eventCategories(s).map(t => `<span class="ed-tag">${esc(t)}</span>`).join('');
   function eventCard(s, banner=false, position=0) {
     const link=safeLink(s.source_url || s.url);
     const image=safeLink(s.image_url);
     const index=position%6;
     if(banner){
-      const art=`${image?`<img loading="lazy" src="/api/img?u=${encodeURIComponent(image)}" alt="" onerror="this.remove()">`:''}<span class="ed-banner-category">${esc(eventCategories(s)[0])}</span><h3>${esc(s.title || '행사')}</h3><div class="ed-banner-facts"><span>${esc(eventDateBadge(s))}</span>${eventPlace(s)?`<span>${esc(eventPlace(s))}</span>`:''}</div>${link?'<span class="ed-banner-arrow" aria-hidden="true">↗</span>':''}`;
+      const art=`<div class="ed-banner-visual" aria-hidden="true">${image?`<img loading="lazy" src="/api/img?u=${encodeURIComponent(image)}" alt="" onerror="this.remove()">`:''}</div><div class="ed-banner-copy"><span class="ed-banner-category">${esc(eventCategories(s)[0])}</span><h3>${esc(s.title || '행사')}</h3><div class="ed-banner-facts"><span>${esc(eventDateBadge(s))}</span>${eventPlace(s)?`<span>${esc(eventPlace(s))}</span>`:''}</div></div>${link?'<span class="ed-banner-arrow" aria-hidden="true">↗</span>':''}`;
       return `<li class="ed-card ed-banner">${link?`<a class="ed-art ed-art-${index}" href="${esc(link)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(s.title || '행사')} 원문 보기">${art}</a>`:`<div class="ed-art ed-art-${index}">${art}</div>`}</li>`;
     }
-    const key=registerItem({url:s.url,source_url:s.source_url,title:s.title,published_at:s.published_at,author:s.author,content:s.content},'event',link);
-    return `<li class="ed-card${readClass(key)}" data-key="${esc(key)}">
-      <div class="ed-card-body"><div class="ed-tags">${tagsHtml(s)} ${eventSrcBadge(s)}</div>
-      <h3>${esc(s.title || '제목 없음')}</h3>
-      <p class="ed-facts">📅 ${esc(eventDateBadge(s))}${eventPlace(s)?`<br>📍 ${esc(eventPlace(s))}`:''}</p>
-      ${s.end_date && s.start_date && s.end_date!==s.start_date?'<span class="ed-range">여러 날 진행하는 행사</span>':''}
-      <div class="ed-actions">${scrapBtnHtml(key)}${link?`<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">행사 원문 보기 ↗</a>`:''}</div></div></li>`;
+    return eventAlbumCard({...s,url:safeLink(s.url),source_url:link,image_url:image}).outerHTML;
   }
   let month=null,selected=null,expanded=false,todayPulse=false,calendarItems=[];
   function calendar(list) {
@@ -54,7 +47,7 @@
       ${!expanded?'<p class="ed-hint">진한 색일수록 행사가 많아요.<br>날짜를 누르면 아래에 상세 목록을 보여줘요.</p>':''}
       <div class="ed-agenda-head"><h3>${esc(title)} <small>${chosen.length}개 행사</small></h3><button type="button" data-cal="expand">${expanded?'달력 펼치기 ↓':'목록 크게 보기 ↑'}</button></div>
       <p class="ed-hint">선택한 날짜에 진행 중인 여러 날 행사도 포함해요.</p>
-      <ul class="ed-feed">${chosen.length?chosen.map(s=>eventCard(s)).join(''):'<li class="ed-empty">이 날짜에는 선택 분야의 수집 행사가 없어요.</li>'}</ul>
+      <ul class="list album-grid ed-agenda-list">${chosen.length?chosen.map(s=>eventCard(s)).join(''):'<li class="ed-empty">이 날짜에는 선택 분야의 수집 행사가 없어요.</li>'}</ul>
       ${list.some(s=>!s.start_date)?'<p class="ed-hint">일정 미정 행사는 앨범에서 확인할 수 있어요.</p>':''}`;
     root.onclick=e=>{
       const b=e.target.closest('button[data-date],button[data-cal]');if(!b)return;
