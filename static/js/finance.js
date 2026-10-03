@@ -181,6 +181,8 @@
   });
   document.addEventListener('click',closeTips);
   $('finance-search').addEventListener('input',renderNews);
+  const dartNc=document.getElementById('finance-dart-nc');   // (주)엔씨 공시 단축키(고유번호는 내부 상수로 사용)
+  if(dartNc) dartNc.addEventListener('click',()=>loadDart());
   $('finance-business-form').addEventListener('submit',async event=>{
     event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true;
     $('finance-business-result').textContent='국세청 사업자 상태를 확인하고 있습니다.';
