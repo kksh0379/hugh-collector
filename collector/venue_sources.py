@@ -139,7 +139,15 @@ def _collect_one(source, today):
                 if page_key:
                     params[page_key] = page
                 try:
-                    response = session.get(fetch_url, params=params, timeout=(8, 20))
+                    if source == '수원메쎄':
+                        # Its WordPress listing is large and an uncached date
+                        # search can exceed 20s. Retry a transient timeout once.
+                        try:
+                            response = session.get(fetch_url, params=params, timeout=(8, 35))
+                        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+                            response = session.get(fetch_url, params=params, timeout=(10, 50))
+                    else:
+                        response = session.get(fetch_url, params=params, timeout=(8, 20))
                 except (requests.exceptions.SSLError, requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                     if source != '대전컨벤션센터':
                         raise

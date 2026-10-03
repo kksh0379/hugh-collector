@@ -65,6 +65,17 @@ class VenueTests(unittest.TestCase):
         self.assertTrue(session.get.call_args_list[1].args[0].startswith('http://www.dcckorea.or.kr/'))
         self.assertTrue(all('verify' not in call.kwargs for call in session.get.call_args_list))
 
+    def test_suwon_transient_timeout_retries_once_and_keeps_complete_dates(self):
+        response = Mock(status_code=200, content=self.fixture('suwonwide'))
+        session = Mock(); session.get.side_effect = [requests.exceptions.ReadTimeout(), response]
+        session.__enter__ = Mock(return_value=session); session.__exit__ = Mock(return_value=False)
+        with patch.object(venues.requests, 'Session', return_value=session):
+            rows = venues._collect_one('수원메쎄', dt.date(2026, 10, 4))
+        self.assertEqual(rows[0]['end_date'], '2026-11-01')
+        self.assertEqual(session.get.call_count, 2)
+        self.assertEqual(session.get.call_args.kwargs['timeout'], (10, 50))
+        self.assertTrue(venues.diagnose()['수원메쎄']['ok'])
+
     def test_error_page_is_reported_and_other_sources_continue(self):
         response = Mock(status_code=200, content=b'<html>Unexpected page</html>')
         session = Mock(); session.get.return_value = response
