@@ -26,6 +26,9 @@ DEFAULT_HEADERS = {
     "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",
+    # 구글 뉴스 등은 데이터센터 IP에 동의(consent) 페이지를 띄워 RSS 대신 HTML을 준다 →
+    # 동의 쿠키로 바로 콘텐츠를 받게 한다(다른 사이트는 무시). 뉴스가 0건 수집되던 원인.
+    "Cookie": "CONSENT=YES+",
 }
 
 # (연결+읽기) 타임아웃. 국내 기관 사이트는 응답이 느린 편이라 너무 짧으면
