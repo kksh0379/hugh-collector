@@ -75,3 +75,14 @@
 .tabs .tab-icon {width:19px;height:19px;flex:0 0 19px;display:block;}
 
 .ed-recharge {color:var(--primary);font-weight:700;text-decoration:none;white-space:nowrap;display:inline-block;padding:4px 0;}.ed-recharge:hover {text-decoration:underline;}
+
+/* Collection timestamp belongs to album/calendar browsing, not curation. */
+#panel-event:has(#event-curation:not([hidden])) #last-event {display:none;}
+.tabs .tab[data-tab="cat"] {--tab-icon-color:#cf4e86;--tab-icon-active:#ff9dc9;}
+.tabs .tab[data-tab="game"] {--tab-icon-color:#7653c7;--tab-icon-active:#c0a4ff;}
+.tabs .tab[data-tab="news"] {--tab-icon-color:#2465b9;--tab-icon-active:#8dbdff;}
+.tabs .tab[data-tab="biz"] {--tab-icon-color:#258365;--tab-icon-active:#7bd7b6;}
+.tabs .tab[data-tab="security"] {--tab-icon-color:#a76b16;--tab-icon-active:#f3ca77;}
+.tabs .tab[data-tab="event"] {--tab-icon-color:#c65c43;--tab-icon-active:#ffa78e;}
+.tabs .tab-icon {color:var(--tab-icon-color);}
+.tabs .tab.active .tab-icon {color:var(--tab-icon-active);}
