@@ -1288,7 +1288,7 @@ body.tab-report .viewbar { display: none; }
 .lcat-chip.lcat-star.on { background: #f2b60c; border-color: #f2b60c; color: #3a2c00; }
 .lcat-chip.lcat-star.on b { color: #5a4600; }
 /* 추천 방식(점수 구성) 토글·패널 */
-.aipick-recipe-btn { display: inline-block; margin-left: 6px; padding: 2px 9px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.aipick-recipe-btn { display: inline-block; margin-left: 6px; padding: 2px 9px; border: 1px solid var(--border); border-radius: var(--r-xs); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
 .aipick-recipe-btn[aria-expanded="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
 /* 추천 방식 — 별도 레이어(모달) */
 .recipe-modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; padding-top: calc(20px + var(--sat)); background: rgba(20,30,45,.45); }
@@ -1300,17 +1300,23 @@ body.tab-report .viewbar { display: none; }
 .recipe-active span { background: #fff; border: 1px solid #bfe0c6; border-radius: var(--r-pill); padding: 3px 9px; }
 .recipe-active-none { background: var(--bg); border-color: var(--border); color: var(--muted); font-weight: 600; }
 .recipe-active-none b { color: var(--primary); }
-.recipe-lead { margin: 0 0 10px; font-size: 12.5px; color: var(--text); }
+.recipe-lead { margin: 0 0 12px; font-size: 12.5px; color: var(--text); }
 .recipe-foot { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
 .recipe-lead b, .recipe-foot b { color: var(--primary); }
-.recipe-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
-.recipe-label { flex: 0 0 38%; font-size: 12px; font-weight: 700; color: var(--text); }
-.recipe-track { flex: 1; height: 8px; border-radius: var(--r-pill); background: #e6e9ef; overflow: hidden; }
-.recipe-bar { display: block; height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--primary), #5b8def); }
-.recipe-pct { flex: 0 0 auto; width: 34px; text-align: right; font-size: 11px; font-weight: 800; color: var(--muted); }
-.recipe-note { margin: 2px 0 0 38%; font-size: 11px; color: var(--muted); line-height: 1.4; }
+/* 추천 방식: 바 그래프 대신 '순서대로' 보여주는 프로세스 흐름 */
+.recipe-flow { display: flex; flex-direction: column; }
+.recipe-step { display: flex; gap: 11px; align-items: flex-start; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); }
+.recipe-step-no { flex: 0 0 24px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--primary); color: #fff; font-size: 12px; font-weight: 800; }
+.recipe-step-main { flex: 1; min-width: 0; }
+.recipe-step-t { font-size: 13.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.recipe-step-ic { font-size: 15px; }
+.recipe-step-d { margin-top: 3px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.recipe-step-d b { color: var(--primary); }
+.recipe-step-tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+.recipe-step-tags span { font-size: 11px; font-weight: 700; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 3px 9px; }
+.recipe-step-arrow { align-self: center; color: var(--muted); font-size: 14px; line-height: 1; margin: 4px 0; }
 /* 검증된 곳 우선 — 추천 화면 맨 위 전용 토글 */
-.aipick-trusted { padding: 12px 14px; border: 1px solid #f0d98a; border-radius: var(--r-md); background: #fffbe9; }
+.aipick-trusted { padding: 0; border: 0; background: none; }
 .trusted-toggle { display: inline-flex; align-items: center; gap: 4px; padding: 9px 14px; border: 1px solid #e9c24b; border-radius: var(--r-pill); background: #fff; color: #8a6d00; font-size: 14px; font-weight: 800; cursor: pointer; }
 .trusted-toggle.on { background: #f2b60c; border-color: #f2b60c; color: #3a2c00; }
 .aipick-sub2 { margin-top: 8px; font-size: 12px; color: #8a7320; line-height: 1.5; }

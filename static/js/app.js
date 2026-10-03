@@ -2995,23 +2995,25 @@ async function loadReport(id) {
   }
   // 추천 점수 구성(시각화) — _lunch_score 기본 가중치와 동일.
   function recipeHtml() {
-    const rows = [
-      ["다양성 (안 겹치게)", 18, "최근 먹은 종류는 ↓"],
-      ["거리 (가까움)", 16, "‘가까이’·‘빨리’에서 ↑"],
-      ["상황 (요일·시간)", 16, "늦은 점심=가까운 곳 등"],
-      ["탐색 (안 가본 곳)", 14, "‘모험’·‘숨은맛집’에서 ↑"],
-      ["무작위 (재미)", 14, "매번 결과가 조금씩 달라져요"],
-      ["팀 선호 (많이 간 곳)", 12, ""],
-      ["리뷰·평점 (검증)", 10, "평소엔 낮게 — ‘⭐ 검증된 곳 우선’을 켜면 크게 ↑"],
+    // 바 그래프 대신 '순서대로' 흐르는 프로세스로 설명(알기 쉽게).
+    const steps = [
+      ["🍱", "후보 모으기", "고른 위치의 식당 전체에서 시작해요."],
+      ["🎯", "조건 반영", "‘○○ 말고’는 빼고, 고른 <b>성향·기분</b>은 점수에 반영해요."],
+      ["🧮", "점수 매기기", "아래 기준의 비중을 더해 식당마다 점수를 내요.",
+        ["다양성", "거리", "상황", "탐색", "팀 선호", "리뷰·평점"]],
+      ["🎲", "한 곳 뽑기", "점수 상위 5곳 중 <b>비중대로 랜덤</b>으로 — 그래서 매번 달라져요."],
     ];
-    const maxW = Math.max(...rows.map((r) => r[1]));
-    const bars = rows.map(([l, w, note]) =>
-      `<div class="recipe-row"><span class="recipe-label">${l}</span>`
-      + `<span class="recipe-track"><span class="recipe-bar" style="width:${Math.round(w / maxW * 100)}%"></span></span>`
-      + `<span class="recipe-pct">${w}%</span></div>`
-      + (note ? `<div class="recipe-note">${note}</div>` : "")).join("");
-    return `<p class="recipe-lead">상위 후보 5곳 중 <b>점수 비중대로</b> 뽑아요(가중 랜덤).</p>${bars}`
-      + `<p class="recipe-foot">고른 <b>성향·기분</b>에 따라 위 비중이 자동 조정됩니다.</p>`;
+    const flow = steps.map(([ic, title, desc, tags], i) =>
+      `<div class="recipe-step">
+         <div class="recipe-step-no">${i + 1}</div>
+         <div class="recipe-step-main">
+           <div class="recipe-step-t"><span class="recipe-step-ic">${ic}</span>${title}</div>
+           <div class="recipe-step-d">${desc}</div>
+           ${tags ? `<div class="recipe-step-tags">${tags.map((t) => `<span>${t}</span>`).join("")}</div>` : ""}
+         </div>
+       </div>`).join('<div class="recipe-step-arrow">↓</div>');
+    return `<p class="recipe-lead">이런 <b>순서</b>로 골라줘요.</p><div class="recipe-flow">${flow}</div>`
+      + `<p class="recipe-foot">고른 <b>성향·기분</b>에 따라 ③의 비중이 자동 조정됩니다.</p>`;
   }
   // 추천 방식 설명을 별도 레이어(모달)로. 현재 고른 옵션의 효과도 함께 보여준다(배리에이션).
   function closeRecipeModal() { const m = document.getElementById("recipe-modal"); if (m) m.remove(); }
@@ -3052,7 +3054,7 @@ async function loadReport(id) {
       <div class="aipick-grp aipick-trusted">
         <button type="button" class="trusted-toggle${LUNCH.aiSel['trusted'] ? ' on' : ''}" data-mood="trusted">⭐ 검증된 곳(평점·리뷰) 우선</button>
       </div>
-      <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
+      <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(1개만 선택)</span></div><div class="mood-row">${personaChips}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🫠 지금 기분·상황</div><div class="mood-row">${moodChips}</div></div>
       <div class="aipick-btns">
