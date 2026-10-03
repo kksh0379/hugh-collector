@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.14") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.15") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -47,7 +47,7 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.14") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.15") }}">
 </head>
 <body>
   <header class="app-header">
@@ -93,9 +93,6 @@
           <path d="M15 23.4v-.7a1 1 0 0 1 2 0v.7" fill="none" stroke="currentColor" stroke-width="1"/>
         </svg>보안뉴스</button>
       <button class="tab" data-tab="event">📅 행사일정</button>
-      <button class="tab" data-tab="boards">📋 재단게시판</button>
-      <button class="tab" data-tab="social" aria-label="비영리재단">
-        <img class="yt-ci" src="{{ url_for('static', filename='youtube-tab.png', v='227') }}" alt="" aria-hidden="true" />비영리재단</button>
     </nav>
   </div>
 
@@ -186,11 +183,19 @@
     <ul class="list" id="list-news"></ul>
   </section>
 
-  <!-- 탭: 업계동향 -->
+  <!-- 탭: 비영리재단 동향 (동향 뉴스 + 재단게시판 + 재단영상 통합) -->
   <section class="panel" id="panel-biz">
     <div class="toolbar">
+      <div class="checkbar" id="biz-cats" role="group" aria-label="소스 선택">
+        <label><input type="checkbox" data-cat="all" checked /> 전체</label>
+        <label><input type="checkbox" data-cat="동향" checked /> 동향</label>
+        <label><input type="checkbox" data-cat="게시판" checked /> 게시판</label>
+        <label><input type="checkbox" data-cat="영상" checked /> 영상</label>
+      </div>
       <button class="btn-status admin-only" id="status-biz-btn">상태 확인</button>
-      <button class="btn-collect admin-only" id="collect-biz">수집 실행</button>
+      <button class="btn-collect admin-only" id="collect-biz">동향 수집</button>
+      <button class="btn-collect admin-only" id="collect-boards">게시판 수집</button>
+      <button class="btn-collect admin-only" id="collect-social">영상 수집</button>
     </div>
     <div class="legend admin-only">
       <span class="chip chip-done">업계 키워드(문화재단·공익법인 등) 또는 주요 재단</span>
@@ -251,47 +256,7 @@
     </div>
   </section>
 
-  <!-- 탭2: 게시판 -->
-  <section class="panel" id="panel-boards">
-    <div class="toolbar">
-      <div class="checkbar" id="board-cats" role="group" aria-label="서비스 선택">
-        <label><input type="checkbox" data-cat="all" checked /> 전체</label>
-        {% for s in services %}
-        <label><input type="checkbox" data-cat="{{ s }}" checked /> {{ s }}</label>
-        {% endfor %}
-      </div>
-      <button class="btn-status admin-only" id="status-boards-btn">상태 확인</button>
-      <button class="btn-collect admin-only" id="collect-boards">수집 실행</button>
-    </div>
-    <div class="legend">
-      {% for s in board_status %}
-      <span class="chip chip-{{ 'done' if s.status=='완료' else ('wip' if s.status=='구현 중' else 'plan') }}">{{ s.name }} · {{ s.status }}</span>
-      {% endfor %}
-    </div>
-    <div class="last-crawl" id="last-boards"></div>
-    <div class="result-msg" id="msg-boards"></div>
-    <ul class="list" id="list-boards"></ul>
-  </section>
-
-  <!-- 탭: 재단YT(유튜브) -->
-  <section class="panel" id="panel-social">
-    <div class="toolbar">
-      <div class="checkbar" id="social-cats" role="group" aria-label="유튜브 분류 선택">
-        <label><input type="checkbox" data-cat="all" checked /> 전체</label>
-        <label><input type="checkbox" data-cat="재단" checked /> 재단</label>
-        <label><input type="checkbox" data-cat="주요재단" checked /> 주요 재단</label>
-      </div>
-      <button class="btn-status admin-only" id="status-social-btn">상태 확인</button>
-      <button class="btn-collect admin-only" id="collect-social">수집 실행</button>
-    </div>
-    <div class="legend admin-only">
-      <span class="chip chip-done">재단 · NC문화재단 유튜브 채널</span>
-      <span class="chip chip-plan">주요 재단 · 기관명 유튜브 검색(업계동향 목록)</span>
-    </div>
-    <div class="last-crawl" id="last-social"></div>
-    <div class="result-msg" id="msg-social"></div>
-    <ul class="list" id="list-social"></ul>
-  </section>
+  <!-- (재단게시판·재단영상은 '비영리재단 동향' 탭으로 통합 — 위 panel-biz의 소스 체크박스로 조회) -->
   </main><!-- /view-collector -->
 
   <!-- 대메뉴 2: 점심 맛집 -->
@@ -458,8 +423,6 @@
           <label><input type="checkbox" data-feat="biz"> 비영리재단 동향</label>
           <label><input type="checkbox" data-feat="security"> 보안뉴스</label>
           <label><input type="checkbox" data-feat="event"> 행사일정</label>
-          <label><input type="checkbox" data-feat="boards"> 재단게시판</label>
-          <label><input type="checkbox" data-feat="social"> 재단YT</label>
         </div>
         <div class="feat-group-title">기능</div>
         <div class="feat-list">
@@ -489,7 +452,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.14 · build 261003</span>
+    <span class="ver">v3.15 · build 261003</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -517,8 +480,8 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.14") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.14") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.15") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.15") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>

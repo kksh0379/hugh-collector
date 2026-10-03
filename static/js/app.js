@@ -1070,17 +1070,60 @@ async function loadGame() {
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
 
+// ===== 비영리재단 동향: 동향(뉴스)+게시판+영상 통합 피드 + 소스 체크박스 필터(전체/동향/게시판/영상) =====
+let bizSrc = new Set(["news", "board", "video"]);   // 기본 전체 선택
+function filterBizBySrc(items) {
+  if (bizSrc.size >= 3) return items;
+  if (bizSrc.size === 0) return [];
+  return items.filter((it) => bizSrc.has(it._src));
+}
+function bizBadge(it) {
+  if (it._src === "board") return it.service ? `게시판 · ${it.service}` : "게시판";
+  if (it._src === "video") return it.account ? `영상 · ${it.account}` : "영상";
+  return (it.category && it.category !== "전체" && it.category !== "all") ? `동향 · ${it.category}` : "동향";
+}
+function renderBizCombined(el, list) {
+  renderInfinite(el, list,
+    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab }),
+    "표시할 소식이 아직 없어요.");
+}
 async function loadBiz() {
   const el = document.getElementById("list-biz");
   showLoading(el);
   try {
-    const EP = "/api/biznews";
-    const { data, full } = await fetchTabData(EP);
-    setTabData("biz", el, data, (list) => renderNewsGroups(el, list));
-    markTabEndpoint("biz", EP);
-    if (full) TAB_DATA.biz.fullLoaded = true;
+    // 세 소스를 한 번에 받아 하나의 피드로 합친다(각 항목에 _src/_tab 표시). 보드·소셜은 전체,
+    // 동향 뉴스도 전체로 받아 검색이 전체 대상이 되게 한다(fullLoaded=true로 재조회 생략).
+    const [biz, boards, social] = await Promise.all([
+      fetchData("/api/biznews").then((r) => r.json()).catch(() => []),
+      fetchData("/api/boards?service=all").then((r) => r.json()).catch(() => []),
+      fetchData("/api/social?channel=all").then((r) => r.json()).catch(() => []),
+    ]);
+    const tag = (arr, src, tab) => (Array.isArray(arr) ? arr : []).map((it) => ({ ...it, _src: src, _tab: tab }));
+    const merged = [...tag(biz, "news", "biz"), ...tag(boards, "board", "boards"), ...tag(social, "video", "social")]
+      .sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
+    setTabData("biz", el, merged, (list) => renderBizCombined(el, list));
+    TAB_DATA.biz.prefilter = filterBizBySrc;
+    TAB_DATA.biz.fullLoaded = true;
+    renderTab("biz");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
+// 소스 체크박스(전체/동향/게시판/영상) — 뉴스 .checkbar와 동일 동작
+(function initBizCats() {
+  const box = document.getElementById("biz-cats"); if (!box) return;
+  const map = { "동향": "news", "게시판": "board", "영상": "video" };
+  const srcs = ["news", "board", "video"];
+  const sync = () => box.querySelectorAll("[data-cat]").forEach((cb) => {
+    cb.checked = cb.dataset.cat === "all" ? srcs.every((s) => bizSrc.has(s)) : bizSrc.has(map[cb.dataset.cat]);
+  });
+  box.addEventListener("change", (e) => {
+    const cat = e.target.dataset.cat;
+    if (cat === "all") bizSrc = e.target.checked ? new Set(srcs) : new Set();
+    else { const s = map[cat]; if (e.target.checked) bizSrc.add(s); else bizSrc.delete(s); }
+    sync();
+    if (TAB_DATA.biz) renderTab("biz");
+  });
+  sync();
+})();
 
 // 뉴스 카드 썸네일 HTML. 대표 이미지가 있을 때만 표시(없으면 아무것도 안 보임).
 // proxy=true(뉴스류)면 언론사 핫링크 차단 우회를 위해 서버 프록시(/api/img)로 불러온다.
@@ -1552,8 +1595,8 @@ document.getElementById("status-news-btn").addEventListener("click", () => runSt
 document.getElementById("status-biz-btn").addEventListener("click", () => runStatus("biz"));
 document.getElementById("status-security-btn").addEventListener("click", () => runStatus("security"));
 document.getElementById("status-event-btn").addEventListener("click", () => runStatus("event"));
-document.getElementById("status-boards-btn").addEventListener("click", () => runStatus("boards"));
-document.getElementById("status-social-btn").addEventListener("click", () => runStatus("social"));
+document.getElementById("status-boards-btn")?.addEventListener("click", () => runStatus("boards"));
+document.getElementById("status-social-btn")?.addEventListener("click", () => runStatus("social"));
 
 // ----------------------------- 수집 실행 -----------------------------
 // 수집은 서버 백그라운드 작업으로 돌고, 프론트는 상태를 폴링해 진행률/결과를 보여준다.
@@ -1566,8 +1609,8 @@ const CRAWL_UI = {
   biz: { btn: "collect-biz", msg: "msg-biz", reload: () => loadBiz() },
   security: { btn: "collect-security", msg: "msg-security", reload: () => loadSecurity() },
   event: { btn: "collect-event", msg: "msg-event", reload: () => loadEvent() },
-  boards: { btn: "collect-boards", msg: "msg-boards", reload: () => loadBoards() },
-  social: { btn: "collect-social", msg: "msg-social", reload: () => loadSocial() },
+  boards: { btn: "collect-boards", msg: "msg-biz", reload: () => loadBiz() },
+  social: { btn: "collect-social", msg: "msg-biz", reload: () => loadBiz() },
 };
 const _pollTimers = {};
 
@@ -1656,13 +1699,13 @@ document.getElementById("collect-news").addEventListener("click", (e) =>
   runCrawl(e.currentTarget, "news", document.getElementById("msg-news"), loadNews)
 );
 document.getElementById("collect-boards").addEventListener("click", (e) =>
-  runCrawl(e.currentTarget, "boards", document.getElementById("msg-boards"), loadBoards)
+  runCrawl(e.currentTarget, "boards", document.getElementById("msg-biz"), loadBiz)
 );
 document.getElementById("collect-social").addEventListener("click", (e) =>
-  runCrawl(e.currentTarget, "social", document.getElementById("msg-social"), loadSocial)
+  runCrawl(e.currentTarget, "social", document.getElementById("msg-biz"), loadBiz)
 );
 // ----------------------------- DB 비우기(관리자, 현재 탭만) -----------------------------
-const TAB_KO = { cat: "냥정보", game: "게임정보", news: "NC뉴스", biz: "업계동향", security: "보안뉴스", event: "행사일정", boards: "재단게시판", social: "재단YT", report: "리포트", food: "맛집" };
+const TAB_KO = { cat: "냥정보", game: "게임정보", news: "NC뉴스", biz: "비영리재단 동향", security: "보안뉴스", event: "행사일정", boards: "재단게시판", social: "재단영상", report: "AI리포트", food: "맛집" };
 function activeTab() {
   const t = document.querySelector(".tab.active");
   return (t && t.dataset.tab) || "cat";
@@ -3305,9 +3348,7 @@ loadMeta();
 loadCat();
 loadGame();
 loadNews();
-loadBiz();
+loadBiz();   // 동향 뉴스 + 재단게시판 + 재단영상 통합 로드
 loadSecurity();
 loadEvent();
-loadBoards();
-loadSocial();
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
