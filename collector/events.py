@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from bs4 import BeautifulSoup
 
-from . import extractor, fetcher, google_news
+from . import event_sources, extractor, fetcher, google_news
 
 # 국내 행사 후보 검색어(검색어 자체가 1차 조건 → keyword_filter=False).
 # 국내 전반 행사를 폭넓게 모으려고 '행사장·지역 앵커 + 일반 행사어'로 확장.
@@ -343,5 +343,18 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
         })
         if max_items and len(out) >= max_items:
             break
+    # 구조화 소스(관광공사 축제·문화행사 등) 병합 — 설정된 것만, 실패는 자동 제외(날조 없음).
+    try:
+        for s in event_sources.collect(progress):
+            st = s.get("start_date")
+            if not st or not (s.get("title") or "").strip():
+                continue
+            key = _norm_title(s.get("title", "")) + "|" + st
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s)
+    except Exception:  # noqa: BLE001
+        pass
     progress(f"국내 행사 {len(out)}건")
     return out
