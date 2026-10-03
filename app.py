@@ -387,6 +387,38 @@ def dbcheck():
     return jsonify(db.diagnose())
 
 
+@app.get("/api/newscheck")
+def newscheck():
+    """뉴스 목록 조회가 왜 비는지(‘불러오지 못했어요’) 진단한다.
+    각 섹션 쿼리를 '캐시를 거치지 않고 직접' 실행해 건수/소요시간/실제 예외를 그대로 보여준다.
+    + 읽기 캐시에 남은 최근 실패 사유도 함께 반환. 비밀·본문은 노출하지 않는다(건수/에러 종류만).
+    DB 진단이 핵심이라 /api/dbcheck처럼 로그인 없이도 열 수 있게 둔다."""
+    ready = _ensure_db(force=True)
+    checks = {}
+    probes = [
+        ("news_nc_3mo", dict(section="nc", months=3)),
+        ("news_nc_full", dict(section="nc", months=None)),
+        ("cat_3mo", dict(section="cat", months=3)),
+        ("game_3mo", dict(section="game", months=3)),
+        ("biz_3mo", dict(section="biz", months=3)),
+        ("sec_3mo", dict(section="sec", months=3)),
+    ]
+    for name, kw in probes:
+        t0 = time.time()
+        try:
+            rows = db.list_news(**kw)
+            checks[name] = {"ok": True, "count": len(rows), "ms": int((time.time() - t0) * 1000)}
+        except Exception as e:  # noqa: BLE001
+            checks[name] = {"ok": False, "error": f"{type(e).__name__}: {e}",
+                            "ms": int((time.time() - t0) * 1000)}
+    return jsonify({
+        "db_ready": bool(ready),
+        "backend": db.BACKEND,
+        "checks": checks,
+        "cache_last_errors": _PUBLIC_READS.last_errors(),
+    })
+
+
 @app.get("/api/runlog")
 def runlog():
     """수집 실행 로그(관리자 전용): 언제·무엇·성공/실패."""
