@@ -1864,15 +1864,11 @@ async function loadMeta() {
   try {
     const r = await fetchData("/api/meta");
     const m = await r.json();
-    document.getElementById("last-cat").textContent = fmtLast(m.cat);
-    document.getElementById("last-game").textContent = fmtLast(m.game);
-    document.getElementById("last-news").textContent = fmtLast(m.news);
-    document.getElementById("last-biz").textContent = fmtLast(m.biz);
-    document.getElementById("last-security").textContent = fmtLast(m.security);
-    document.getElementById("last-event").textContent = fmtLast(m.event);
-    document.getElementById("last-boards").textContent = fmtLast(m.boards);
-    document.getElementById("last-social").textContent = fmtLast(m.social);
     updateStorageBadge(m);
+    for (const key of ["cat", "game", "news", "biz", "security", "event", "boards", "social"]) {
+      const label = document.getElementById("last-" + key);
+      if (label) label.textContent = fmtLast(m[key]);
+    }
   } catch (e) { updateStorageBadge(null); }
 }
 

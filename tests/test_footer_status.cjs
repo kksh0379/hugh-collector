@@ -26,3 +26,12 @@ test('metadata fetch failure replaces a previous healthy status with unknown',as
   assert.equal(badge.dataset.state,'unknown');
   assert.equal(badge.textContent,'DB 상태 확인 불가');
 });
+test('merged feed without board and social labels still shows healthy database status',async()=>{
+  const {ctx,badge}=setup(async()=>({json:async()=>({storage:'postgres',biz:'2026.10.04 04:02:28'})}));
+  const labels = {'last-biz': {textContent:''}};
+  ctx.document.getElementById = id => id === 'storage-badge' ? badge : (labels[id] || null);
+  ctx.fmtLast = ts => ts || '';
+  await ctx.loadMeta();
+  assert.equal(badge.dataset.state,'connected');
+  assert.equal(labels['last-biz'].textContent,'2026.10.04 04:02:28');
+});
