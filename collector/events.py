@@ -340,6 +340,7 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
             "region": _first_hit(f"{title} {fulltext}", DOMESTIC_REGIONS),
             "start_date": start,
             "end_date": end,
+            "source": "뉴스",
         })
         if max_items and len(out) >= max_items:
             break

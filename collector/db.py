@@ -157,7 +157,7 @@ _DDL = [
     f"""CREATE TABLE IF NOT EXISTS events (
         id {_AUTO_PK}, title TEXT, published_at TEXT, author TEXT, content TEXT,
         url TEXT UNIQUE, source_url TEXT, venue TEXT, region TEXT,
-        start_date TEXT, end_date TEXT, image_url TEXT, collected_at TEXT
+        start_date TEXT, end_date TEXT, image_url TEXT, source TEXT, collected_at TEXT
     )""",
     # 아이디별 개인 상태(스크랩/읽음). kind='scrap'|'read', snapshot=스크랩 스냅샷 JSON.
     """CREATE TABLE IF NOT EXISTS user_state (
@@ -225,6 +225,7 @@ def init_db():
             conn.execute("ALTER TABLE report_snapshot ADD COLUMN IF NOT EXISTS kind TEXT")
             conn.execute("ALTER TABLE boards ADD COLUMN IF NOT EXISTS image_url TEXT")
             conn.execute("ALTER TABLE social ADD COLUMN IF NOT EXISTS image_url TEXT")
+            conn.execute("ALTER TABLE events ADD COLUMN IF NOT EXISTS source TEXT")
         else:
             cols = {r["name"] for r in conn.execute("PRAGMA table_info(news)").fetchall()}
             if "group_key" not in cols:
@@ -251,6 +252,9 @@ def init_db():
             scols = {r["name"] for r in conn.execute("PRAGMA table_info(social)").fetchall()}
             if "image_url" not in scols:
                 conn.execute("ALTER TABLE social ADD COLUMN image_url TEXT")
+            ecols = {r["name"] for r in conn.execute("PRAGMA table_info(events)").fetchall()}
+            if "source" not in ecols:
+                conn.execute("ALTER TABLE events ADD COLUMN source TEXT")
 
         for stmt in perf_indexes:
             conn.execute(stmt)
@@ -332,7 +336,7 @@ _BOARD_COLS = ("service", "category", "title", "published_at", "author",
                "content", "url", "image_url", "collected_at")
 _SOCIAL_COLS = ("channel", "account", "title", "published_at", "content", "url", "image_url", "collected_at")
 _EVENT_COLS = ("title", "published_at", "author", "content", "url", "source_url",
-               "venue", "region", "start_date", "end_date", "image_url", "collected_at")
+               "venue", "region", "start_date", "end_date", "image_url", "source", "collected_at")
 
 
 def _upsert_many(table, cols, items):

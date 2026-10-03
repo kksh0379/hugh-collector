@@ -37,6 +37,7 @@ def _item(title, start, end, venue="", region="", url="", content="", image="", 
         "region": region or "",
         "start_date": start,
         "end_date": end or start,
+        "source": source or "",
     }
 
 
@@ -67,7 +68,7 @@ def tour_festivals(progress=None):
                          "https://apis.data.go.kr/B551011/KorService2/searchFestival2")
         start = (datetime.date.today() - datetime.timedelta(days=14)).strftime("%Y%m%d")
         params = {"serviceKey": key, "MobileOS": "ETC", "MobileApp": "hscope",
-                  "_type": "json", "listYN": "Y", "arrange": "A",
+                  "_type": "json", "arrange": "A",
                   "eventStartDate": start, "numOfRows": 300, "pageNo": 1}
         data = requests.get(base, params=params, timeout=(3, 12)).json()
         for it in _rows(data):
@@ -80,7 +81,7 @@ def tour_festivals(progress=None):
                 it.get("title", ""), sd, _fmt8(it.get("eventenddate")) or sd,
                 venue=addr, region=(addr.split()[0] if addr else ""),
                 url=(f"https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid={cid}" if cid else ""),
-                image=it.get("firstimage") or "", source="한국관광공사"))
+                image=it.get("firstimage") or "", source="관광공사"))
     except Exception:
         return out
     if progress:
@@ -159,7 +160,7 @@ def diagnose():
         row["raw"] = _probe(os.getenv("TOURAPI_FESTIVAL_URL",
                                       "https://apis.data.go.kr/B551011/KorService2/searchFestival2"),
                             {"serviceKey": key, "MobileOS": "ETC", "MobileApp": "hscope",
-                             "_type": "json", "listYN": "Y", "arrange": "A",
+                             "_type": "json", "arrange": "A",
                              "eventStartDate": start, "numOfRows": 5, "pageNo": 1})
     out["tour_festivals"] = row
     ckey, curl = os.getenv("CULTURE_API_KEY"), os.getenv("CULTURE_API_URL")

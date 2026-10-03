@@ -1352,6 +1352,12 @@ function eventPlace(s) {
   const p = [s.venue, s.region].filter(Boolean);
   return p.length ? p.join(" · ") : "";
 }
+// 수집구분 딱지: '뉴스'(기사 추출) / '관광공사'·'문화포털'(공식 API) 구분.
+function eventSrcBadge(s) {
+  const src = s.source || "뉴스";
+  const api = src !== "뉴스";
+  return `<span class="ev-src${api ? " ev-src-api" : ""}" title="수집 출처: ${escapeHtml(src)}">${escapeHtml(src)}</span>`;
+}
 function eventAlbumCard(s) {
   const key = registerItem({ url: s.url, source_url: s.source_url, title: s.title, published_at: s.published_at, author: s.author, content: s.content }, "event", s.source_url || s.url);
   const link = s.source_url || s.url;
@@ -1365,7 +1371,7 @@ function eventAlbumCard(s) {
     ${scrapBtnHtml(key)}
     ${s.image_url ? `<div class="card-thumb"><img class="thumb-img" loading="lazy" src="/api/img?u=${encodeURIComponent(s.image_url)}" alt="" onerror="this.closest('.card-thumb').remove()"></div>` : ""}
     <div class="card-body">
-      <div class="event-date">📅 ${escapeHtml(eventDateBadge(s))}</div>
+      <div class="event-date">📅 ${escapeHtml(eventDateBadge(s))} ${eventSrcBadge(s)}</div>
       <h3 class="card-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
       ${place ? `<div class="event-place">📍 ${escapeHtml(place)}</div>` : ""}
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
@@ -1529,7 +1535,7 @@ function renderEventCalendar(list) {
       return `<a class="agenda-item" href="${escapeHtml(link)}" target="_blank" rel="noopener">
         <span class="agenda-date" style="background:${colorOf[s.url]}">${escapeHtml(_mdRange(s))}</span>
         <span class="agenda-main">
-          <span class="agenda-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${escapeHtml(s.title || "(제목 없음)")}</span>
+          <span class="agenda-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${eventSrcBadge(s)} ${escapeHtml(s.title || "(제목 없음)")}</span>
           ${place ? `<span class="agenda-place">📍 ${escapeHtml(place)}</span>` : ""}
         </span>
         <span class="agenda-go">↗</span>

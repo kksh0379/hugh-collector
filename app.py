@@ -1485,6 +1485,20 @@ def diag():
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(check, targets))
+    # 행사 구조화 소스(관광공사·문화포털)도 상태에 반영 — 설정된 것만, 서비스키는 노출하지 않음.
+    if group in ("all", "event"):
+        try:
+            esd = event_sources.diagnose()
+            for kname, label in (("tour_festivals", "관광공사 행사/축제"), ("culture_events", "문화포털 행사")):
+                d = esd.get(kname) or {}
+                if not d.get("configured"):
+                    continue
+                raw = d.get("raw") or {}
+                results.append({"name": label, "url": "공공데이터포털 API", "ok": True,
+                                "status": raw.get("status", 200), "bytes": 0,
+                                "looks_html": True, "items": int(d.get("parsed", 0)), "sec": 0})
+        except Exception:  # noqa: BLE001
+            pass
     return jsonify(results)
 
 
