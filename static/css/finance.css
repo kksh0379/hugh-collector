@@ -84,9 +84,9 @@
    공시명만 남는 폭에서 자연스럽게 줄바꿈(‘기업’이 세로로 쪼개지던 문제 해결). */
 .finance-dart-table { table-layout: fixed; }
 .finance-dart-table th, .finance-dart-table td { padding: 11px 6px; vertical-align: top; }
-.finance-dart-table th:first-child, .finance-dart-table td:first-child { width: 40px; white-space: nowrap; font-weight: 700; }
+.finance-dart-table th:first-child, .finance-dart-table td:first-child { width: 78px; white-space: normal; word-break: break-all; font-weight: 700; }
 .finance-dart-table th:nth-child(2), .finance-dart-table td:nth-child(2) { width: auto; }
-.finance-dart-table th:last-child, .finance-dart-table td:last-child { width: 84px; white-space: nowrap; text-align: right; color: var(--muted); }
+.finance-dart-table th:last-child, .finance-dart-table td:last-child { width: 80px; white-space: nowrap; text-align: right; color: var(--muted); }
 .finance-search-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 /* 상단 탭 분류 */
 .fin-tabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 4px 0 16px; padding-bottom: 2px; }
