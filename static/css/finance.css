@@ -34,6 +34,9 @@
 .finance-quick { margin: 4px 0 2px; }
 .finance-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #a8bfe4; background: #f3f7ff; color: var(--primary-dark); border-radius: var(--r-lg); padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; -webkit-appearance: none; appearance: none; }
 .finance-chip:hover { background: #e8f0ff; border-color: var(--primary); }
+.finance-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.finance-dart-help { margin: 8px 0 0; font-size: 11.5px; line-height: 1.6; }
+.finance-dart-help b { color: var(--text); }
 .finance-indicator h3 { font-size: 13px; font-weight: 700; margin: 10px 0 6px; }
 .finance-indicator strong { font-size: 24px; letter-spacing: -.5px; }
 .finance-indicator .finance-unit { font-size: 12px; margin-left: 5px; color: var(--muted); }

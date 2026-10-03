@@ -184,9 +184,20 @@
   });
   document.addEventListener('click',closeTips);
   $('finance-search').addEventListener('input',renderNews);
-  $('finance-dart-form').addEventListener('submit',event=>{event.preventDefault();loadDart();});  // 입력한 고유번호로 조회(검색)
-  const dartNc=document.getElementById('finance-dart-nc');   // (주)엔씨 공시 단축키(고유번호 노출 없이 내부 상수 사용)
-  if(dartNc) dartNc.addEventListener('click',()=>loadDart(NC_CORP));
+  const dartNc=document.getElementById('finance-dart-nc');   // (주)엔씨 공시 단축키(선택=조회 / 미선택=미조회)
+  const setNc=on=>{ if(!dartNc) return; dartNc.classList.toggle('on',on); dartNc.setAttribute('aria-pressed',String(on)); };
+  if(dartNc) dartNc.addEventListener('click',()=>{
+    const on=!dartNc.classList.contains('on');
+    setNc(on);
+    if(on){ loadDart(NC_CORP); }                               // 선택 → (주)엔씨 공시 조회
+    else { dartVersion++; $('finance-dart-rows').innerHTML=''; $('finance-dart-status').textContent='(주)엔씨 공시를 숨겼어요. 다시 보려면 버튼을 누르세요.'; }  // 미선택 → 미조회
+  });
+  $('finance-dart-form').addEventListener('submit',event=>{   // 입력한 종목코드·고유번호로 조회(검색)
+    event.preventDefault();
+    const v=($('finance-corp-code').value||'').trim();
+    setNc(!v || v===NC_CORP || v==='036570');                 // 엔씨가 아니면 단축키 해제
+    loadDart();
+  });
   $('finance-business-form').addEventListener('submit',async event=>{
     event.preventDefault(); const button=event.currentTarget.querySelector('button'); button.disabled=true;
     $('finance-business-result').textContent='국세청 사업자 상태를 확인하고 있습니다.';
@@ -302,5 +313,6 @@
   { const el=$('calc-loan-type'); if(el)el.addEventListener('change',calcLoan); }
   { const t=$('calc-save-type'); if(t)t.addEventListener('change',()=>{ const lb=$('calc-save-amount-label'); if(lb)lb.textContent = t.value==='lump'?'예치금 (원)':'월 납입액 (원)'; }); }
 
-  window.onShowFinance=()=>{load();loadStock();loadDart();};
+  // 재무세무 진입 시: 엔씨 단축키가 '선택' 상태일 때만 (주)엔씨 공시를 자동 조회.
+  window.onShowFinance=()=>{load();loadStock(); if(!dartNc || dartNc.classList.contains('on')) loadDart();};
 })();

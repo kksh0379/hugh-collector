@@ -1,8 +1,10 @@
 """Finance adapters. Secrets stay server-side; unavailable data is never a verdict."""
 import os
 import re
+import io
 import math
 import time
+import zipfile
 import threading
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit, quote, urlencode
@@ -462,16 +464,55 @@ def private_response(response):
     return response
 
 
+# 종목코드(6자리) → DART 고유번호(8자리) 매핑. DART 공시조회 API는 고유번호만 받기 때문에,
+# 상장사 종목코드로 조회하려면 이 변환표가 필요하다(corpCode.xml, 상장사만 종목코드 보유).
+_corp_map_cache = {'at': 0.0, 'map': {}}
+
+
+def _stock_to_corp():
+    """{종목코드: 고유번호} 매핑을 24시간 캐시로 제공. 실패 시 기존 캐시(없으면 빈 dict)."""
+    key = os.getenv('DART_API_KEY')
+    if not key:
+        return {}
+    if _corp_map_cache['map'] and time.time() - _corp_map_cache['at'] < 86400:
+        return _corp_map_cache['map']
+    try:
+        resp = requests.get('https://opendart.fss.or.kr/api/corpCode.xml',
+                            params={'crtfc_key': key}, timeout=(3, 20))
+        resp.raise_for_status()
+        zf = zipfile.ZipFile(io.BytesIO(resp.content))
+        root = etree.fromstring(zf.read(zf.namelist()[0]), parser=etree.XMLParser(
+            resolve_entities=False, no_network=True, recover=True))
+        m = {}
+        for el in root.findall('.//list'):
+            sc = (el.findtext('stock_code') or '').strip()
+            cc = (el.findtext('corp_code') or '').strip()
+            if len(sc) == 6 and sc.isdigit() and cc:
+                m[sc] = cc
+        if m:
+            _corp_map_cache.update(map=m, at=time.time())
+        return _corp_map_cache['map']
+    except Exception:
+        return _corp_map_cache['map']
+
+
 def disclosures(corp):
     key = os.getenv('DART_API_KEY')
     if not key:
         return dict(mode='unconfigured', items=[], message='공시 서비스 연결 전입니다. Open DART에서 확인할 수 있습니다.')
+    code = (corp or '').strip()
+    if len(code) == 6:   # 종목코드 → 고유번호 변환(상장사만)
+        mapped = _stock_to_corp().get(code)
+        if not mapped:
+            return dict(mode='unavailable', items=[],
+                        message='해당 종목코드의 DART 고유번호를 찾지 못했어요. 상장사가 아니거나 종목코드가 다를 수 있어요.')
+        code = mapped
     end = now().date()
     try:
         params = dict(crtfc_key=key, bgn_de=(end-timedelta(days=90)).strftime('%Y%m%d'),
                       end_de=end.strftime('%Y%m%d'), page_count=30, sort='date', sort_mth='desc')
-        if corp:
-            params['corp_code'] = corp
+        if code:
+            params['corp_code'] = code
         data = get_json('https://opendart.fss.or.kr/api/list.json', params=params)
         if data.get('status') == '013':
             return dict(mode='live', items=[], message='최근 90일 공시가 없습니다.')
@@ -487,7 +528,7 @@ def disclosures(corp):
 @bp.get('/disclosures')
 def disclosures_route():
     corp = request.args.get('corp_code', '').strip()
-    if corp and not re.fullmatch(r'[0-9]{8}', corp):
-        return jsonify(error='DART 고유번호 8자리를 입력해 주세요.'), 400
+    if corp and not re.fullmatch(r'[0-9]{6}|[0-9]{8}', corp):
+        return jsonify(error='종목코드 6자리 또는 DART 고유번호 8자리를 입력해 주세요.'), 400
     data = cache.get('dart:'+corp, lambda: disclosures(corp), ttl=300, wait=0)
     return jsonify(data or dict(mode='loading', pending=True, items=[], message='공시를 불러오고 있습니다.'))
