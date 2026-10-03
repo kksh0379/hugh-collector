@@ -91,6 +91,10 @@ def tour_festivals(progress=None):
 
 
 # ------------------------------ 문화포털/공공데이터: 문화행사 ------------------------------
+# '행사(컨퍼런스·전시·박람)' 탭 성격상 순수 공연류는 제외해 노이즈를 줄인다(전시·축제·행사는 유지).
+_CULTURE_SKIP_REALM = {"연극", "뮤지컬", "무용", "음악", "국악", "클래식", "콘서트", "영화", "대중음악"}
+
+
 def _culture_url():
     """CULTURE_API_URL을 쓰되, B553457 '한눈에보는문화정보' 베이스(.../cultureinfo)만 넣었으면
     기간별 조회 오퍼레이션(/period2)을 자동으로 붙인다. 전체 오퍼레이션 URL이면 그대로 사용."""
@@ -147,31 +151,26 @@ def culture_events(progress=None):
     if not key or not url:
         return []
     out = []
-    try:
-        today = datetime.date.today()
-        frm = (today - datetime.timedelta(days=14)).strftime("%Y%m%d")
-        to = (today + datetime.timedelta(days=180)).strftime("%Y%m%d")
-        # culture.go.kr(from/to/rows/cPage)·KCISA(numOfRows/pageNo) 양쪽 파라미터를 함께 보냄(미사용은 무시됨).
-        params = {"serviceKey": key, "from": frm, "to": to, "rows": 300, "cPage": 1,
-                  "numOfRows": 300, "pageNo": 1}
-        resp = requests.get(url, params=params, timeout=(3, 12))
 
-        def g(it, *names):
-            for n in names:
-                v = it.get(n)
-                if v:
-                    return v
-            return ""
+    def g(it, *names):
+        for n in names:
+            v = it.get(n)
+            if v:
+                return v
+        return ""
 
-        for it in _culture_rows(resp):
+    def parse_rows(rows):
+        for it in rows:
             if not isinstance(it, dict):
+                continue
+            realm = g(it, "realmName", "DESCRIPTION")
+            if realm in _CULTURE_SKIP_REALM:   # 순수 공연류(연극·뮤지컬·음악 등)는 '행사' 탭에서 제외
                 continue
             title = g(it, "title", "TITLE", "fstvlNm")
             sd = _culture_date(g(it, "startDate", "eventstartdate", "STRTDATE"))
             ed = _culture_date(g(it, "endDate", "eventenddate", "END_DATE"))
-            if not sd:  # KCISA는 PERIOD에 'A ~ B'로 합쳐 올 때가 있음
-                per = g(it, "PERIOD", "period")
-                parts = [p.strip() for p in str(per).replace("~", "-#-").split("-#-")]
+            if not sd:   # KCISA는 PERIOD에 'A ~ B'로 합쳐 올 때가 있음
+                parts = [p.strip() for p in str(g(it, "PERIOD", "period")).replace("~", "-#-").split("-#-")]
                 if parts and parts[0]:
                     sd = _culture_date(parts[0])
                     ed = ed or (_culture_date(parts[1]) if len(parts) > 1 else None)
@@ -181,7 +180,27 @@ def culture_events(progress=None):
                                  region=(g(it, "area", "SPATIAL_COVERAGE") or (place.split()[0] if place else "")),
                                  url=g(it, "url", "URL", "REFERENCE_IDENTIFIER", "homepageUrl"),
                                  image=g(it, "thumbnail", "IMAGE_OBJECT", "imageObject"),
-                                 content=g(it, "realmName", "DESCRIPTION"), source="문화포털"))
+                                 content=realm, source="문화포털"))
+
+    try:
+        today = datetime.date.today()
+        frm = (today - datetime.timedelta(days=14)).strftime("%Y%m%d")
+        to = (today + datetime.timedelta(days=180)).strftime("%Y%m%d")
+        try:
+            max_pages = max(1, min(60, int(os.getenv("CULTURE_MAX_PAGES", "20"))))
+        except (TypeError, ValueError):
+            max_pages = 20
+        for page in range(1, max_pages + 1):
+            # 응답은 페이지당 기본 10건. numOfRows가 먹으면 한 번에 더 받고, 아니면 페이지로 넘긴다.
+            params = {"serviceKey": key, "from": frm, "to": to,
+                      "numOfRows": 100, "PageNo": page, "pageNo": page, "rows": 100, "cPage": page}
+            resp = requests.get(url, params=params, timeout=(3, 12))
+            rows = _culture_rows(resp)
+            if not rows:
+                break
+            parse_rows(rows)
+            if len(rows) < 10:   # 마지막 페이지
+                break
     except Exception:
         return out
     if progress:
@@ -243,12 +262,12 @@ def diagnose():
         cx = os.getenv("COEX_SCHEDULE_URL", "https://www.coex.co.kr/event/full-schedules/")
         r = requests.get(cx, timeout=(3, 12), headers={"User-Agent": "Mozilla/5.0"})
         txt = r.text or ""
-        # 날짜 패턴 주변 HTML을 잘라 행(row) 구조를 파악할 수 있게 한다.
-        rm = _re.search(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt)
-        row_sample = txt[max(0, rm.start() - 500): rm.start() + 600] if rm else ""
+        # 상단 필터(숨은 입력)가 아니라 '실제 행사 목록 행'을 보도록, 날짜 매치 중 더 뒤쪽(목록부)을 집는다.
+        ms = list(_re.finditer(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt))
+        pick = ms[min(20, len(ms) - 1)] if ms else None
+        row_sample = txt[max(0, pick.start() - 700): pick.start() + 700] if pick else ""
         out["coex_probe"] = {
-            "status": r.status_code, "bytes": len(r.content),
-            "date_like": len(_re.findall(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt)),
+            "status": r.status_code, "bytes": len(r.content), "date_like": len(ms),
             "spa_hint": ("__NEXT_DATA__" in txt or "/_next/" in txt or "id=\"root\"" in txt or "ng-app" in txt),
             "row_sample": row_sample,
         }
