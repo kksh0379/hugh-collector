@@ -35,9 +35,8 @@
 .finance-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #a8bfe4; background: #f3f7ff; color: var(--primary-dark); border-radius: var(--r-lg); padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; -webkit-appearance: none; appearance: none; }
 .finance-chip:hover { background: #e8f0ff; border-color: var(--primary); }
 .finance-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
-.finance-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text); cursor: pointer; user-select: none; padding: 4px 0; }
-/* 전역 .finance-view input(width:100%·padding·border)을 덮어써서 네이티브 체크박스로 보이게 */
-.finance-check input[type="checkbox"] { -webkit-appearance: checkbox; appearance: checkbox; width: 18px; min-width: 18px; height: 18px; margin: 0; padding: 0; border: 0; background: none; accent-color: var(--primary); cursor: pointer; flex: 0 0 auto; }
+/* 엔씨 공시 체크박스는 뉴스의 .checkbar 컴포넌트를 그대로 사용(style.css). finance-quick은 여백만. */
+.finance-quick.checkbar { margin: 6px 0 2px; }
 .finance-dart-help { margin: 8px 0 0; font-size: 11.5px; line-height: 1.6; }
 .finance-dart-help b { color: var(--text); }
 .finance-indicator h3 { font-size: 13px; font-weight: 700; margin: 10px 0 6px; }
