@@ -2,6 +2,10 @@
 
 ## 2026-10-03
 
+### v3.26 · 261003 — 문화정보 URL 오퍼레이션 자동 보정(B553457/cultureinfo)
+
+- `CULTURE_API_URL`에 '한눈에보는문화정보' **베이스(.../cultureinfo)만 넣어도 기간별 조회 오퍼레이션(/period2)을 자동으로 붙임**. 전체 오퍼레이션 URL이면 그대로 사용. 진단에 `resolved_url` 표시(실제 호출 주소 확인용).
+
 ### v3.25 · 261003 — 문화 API URL 필수화 + 코엑스 SSR 확인(행 구조 진단)
 
 - 진단 결과 기본 culture.go.kr 엔드포인트가 **에러/coming-soon 페이지**를 반환(폐지) → **죽은 기본 URL 제거, `CULTURE_API_URL` 필수화**. 진단에 `key_set`/`url_set` 분리 표시로 뭐가 빠졌는지 바로 보이게.

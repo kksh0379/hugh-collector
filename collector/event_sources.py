@@ -91,6 +91,15 @@ def tour_festivals(progress=None):
 
 
 # ------------------------------ 문화포털/공공데이터: 문화행사 ------------------------------
+def _culture_url():
+    """CULTURE_API_URL을 쓰되, B553457 '한눈에보는문화정보' 베이스(.../cultureinfo)만 넣었으면
+    기간별 조회 오퍼레이션(/period2)을 자동으로 붙인다. 전체 오퍼레이션 URL이면 그대로 사용."""
+    url = (os.getenv("CULTURE_API_URL") or "").strip().rstrip("/")
+    if url.endswith("cultureinfo"):
+        url += "/period2"
+    return url
+
+
 def _culture_date(s):
     """'YYYY.MM.DD'·'YYYY-MM-DD'·'YYYYMMDD' → YYYY-MM-DD."""
     s = str(s or "").strip().replace(".", "").replace("-", "")
@@ -134,7 +143,7 @@ def culture_events(progress=None):
     CULTURE_API_KEY(디코딩 서비스키) + CULTURE_API_URL(해당 API '요청주소') 둘 다 필요.
     응답이 XML/JSON, KCISA <col name> 형식 모두 처리한다."""
     key = os.getenv("CULTURE_API_KEY")
-    url = os.getenv("CULTURE_API_URL")
+    url = _culture_url()
     if not key or not url:
         return []
     out = []
@@ -218,9 +227,9 @@ def diagnose():
                              "_type": "json", "arrange": "A",
                              "eventStartDate": start, "numOfRows": 5, "pageNo": 1})
     out["tour_festivals"] = row
-    ckey, curl = os.getenv("CULTURE_API_KEY"), os.getenv("CULTURE_API_URL")
+    ckey, curl = os.getenv("CULTURE_API_KEY"), _culture_url()
     crow = {"configured": bool(ckey and curl), "key_set": bool(ckey), "url_set": bool(curl),
-            "parsed": len(culture_events()) if (ckey and curl) else 0}
+            "resolved_url": curl, "parsed": len(culture_events()) if (ckey and curl) else 0}
     if ckey and curl:
         today = datetime.date.today()
         crow["raw"] = _probe(curl, {"serviceKey": ckey,
