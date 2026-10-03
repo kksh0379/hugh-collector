@@ -4,7 +4,7 @@
   const esc = value => escapeHtml(String(value || ''));
   const isoToday = () => new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Seoul'}).format(new Date());
   const isoDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-  const dayEvents = (list, iso) => list.filter(s => s.start_date && s.start_date <= iso && (s.end_date || s.start_date) >= iso);
+  const dayEvents = (list, iso) => list.filter(s => s.start_date && s.start_date <= iso && (s.end_date || s.start_date) >= iso).sort((a,b)=>(b.start_date||'').localeCompare(a.start_date||''));
   function safeLink(value) { try {const u=new URL(value);return /^https?:$/.test(u.protocol)?u.href:'';}catch(_){return ''; } }
   const tagsHtml = s => eventCategories(s).map(t => `<span class="ed-tag">${esc(t)}</span>`).join('');
   function eventCard(s, banner=false) {
@@ -82,7 +82,7 @@
     const version=++requestVersion;busy=true;renderResult();
     const snapshot=JSON.parse(JSON.stringify(prefs));
     try{
-      for(let i=0;i<30;i++){
+      for(let i=0;i<50;i++){
         if(version!==requestVersion)return;
         const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
         let r;try{r=await fetch('/api/events/recommend',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot),signal:controller.signal});}finally{clearTimeout(timer);}
