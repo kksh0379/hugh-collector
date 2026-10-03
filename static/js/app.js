@@ -673,8 +673,13 @@ function markTabEndpoint(tab, endpoint) {
 // 검색 시 전체 데이터를 1회 받아 캐시(이후 검색은 캐시 사용). 동시 호출은 한 번만.
 async function ensureFullData(tab) {
   const d = TAB_DATA[tab];
-  if (!d || d.fullLoaded || !d.endpoint) return;
+  if (!d || d.fullLoaded) return;
   if (d._fullPromise) return d._fullPromise;
+  if (typeof d.fullLoad === "function") {   // 탭 고유 전체 로드(예: 동향 통합 피드: 동향 전체+게시판+영상 재병합)
+    d._fullPromise = Promise.resolve(d.fullLoad()).catch(() => {}).finally(() => { d._fullPromise = null; });
+    return d._fullPromise;
+  }
+  if (!d.endpoint) return;
   d._fullPromise = (async () => {
     try { const r = await fetchData(d.endpoint); d.items = await r.json(); d.fullLoaded = true; }
     catch (e) { /* 실패 시 부분(3개월) 데이터 유지 */ }
@@ -844,7 +849,7 @@ async function doSearch() {
   if (!TAB_DATA[tab]) return;
   TAB_DATA[tab].query = v;
   // 검색은 전체(최대 5천)에서 — 아직 3개월만 로드됐으면 전체를 1회 받아온 뒤 검색.
-  if (v && !TAB_DATA[tab].fullLoaded && TAB_DATA[tab].endpoint) {
+  if (v && !TAB_DATA[tab].fullLoaded && (TAB_DATA[tab].endpoint || TAB_DATA[tab].fullLoad)) {
     const reqV = v;
     await ensureFullData(tab);
     if ((inp.value || "").trim() !== reqV) return;  // 그사이 입력이 바뀌면 최신 입력이 다시 렌더
@@ -1089,23 +1094,33 @@ function renderBizCombined(el, list) {
     (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab }),
     "표시할 소식이 아직 없어요.");
 }
+function mergeBiz(biz, boards, social) {
+  const tag = (arr, src, tab) => (Array.isArray(arr) ? arr : []).map((it) => ({ ...it, _src: src, _tab: tab }));
+  return [...tag(biz, "news", "biz"), ...tag(boards, "board", "boards"), ...tag(social, "video", "social")]
+    .sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
+}
+let _bizBoards = [], _bizSocial = [];
 async function loadBiz() {
   const el = document.getElementById("list-biz");
   showLoading(el);
   try {
-    // 세 소스를 한 번에 받아 하나의 피드로 합친다(각 항목에 _src/_tab 표시). 보드·소셜은 전체,
-    // 동향 뉴스도 전체로 받아 검색이 전체 대상이 되게 한다(fullLoaded=true로 재조회 생략).
-    const [biz, boards, social] = await Promise.all([
-      fetchData("/api/biznews").then((r) => r.json()).catch(() => []),
+    // 동향 뉴스는 다른 탭처럼 최근 3개월만 초기 로드(카운트·속도 일관). 게시판·영상은 양이 적어 전체.
+    // 검색하면 동향 뉴스 전체를 받아 게시판·영상과 다시 합친다(fullLoad).
+    const [bizPart, boards, social] = await Promise.all([
+      fetchTabData("/api/biznews"),
       fetchData("/api/boards?service=all").then((r) => r.json()).catch(() => []),
       fetchData("/api/social?channel=all").then((r) => r.json()).catch(() => []),
     ]);
-    const tag = (arr, src, tab) => (Array.isArray(arr) ? arr : []).map((it) => ({ ...it, _src: src, _tab: tab }));
-    const merged = [...tag(biz, "news", "biz"), ...tag(boards, "board", "boards"), ...tag(social, "video", "social")]
-      .sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
-    setTabData("biz", el, merged, (list) => renderBizCombined(el, list));
+    _bizBoards = Array.isArray(boards) ? boards : [];
+    _bizSocial = Array.isArray(social) ? social : [];
+    setTabData("biz", el, mergeBiz(bizPart.data, _bizBoards, _bizSocial), (list) => renderBizCombined(el, list));
     TAB_DATA.biz.prefilter = filterBizBySrc;
-    TAB_DATA.biz.fullLoaded = true;
+    if (bizPart.full) TAB_DATA.biz.fullLoaded = true;   // 폴백으로 이미 전체를 받았으면 재조회 불필요
+    TAB_DATA.biz.fullLoad = async () => {
+      const bizFull = await fetchData("/api/biznews").then((r) => r.json()).catch(() => []);
+      TAB_DATA.biz.items = mergeBiz(bizFull, _bizBoards, _bizSocial);
+      TAB_DATA.biz.fullLoaded = true;
+    };
     renderTab("biz");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
