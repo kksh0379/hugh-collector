@@ -110,7 +110,7 @@
   }
   async function load() {
     if (loading) return;
-    loading=true; $('finance-refresh').disabled=true;
+    loading=true;
     if (!data || !data.items || !data.items.length) $('finance-news').innerHTML = loadingHtml();  // 즉시 로딩 표시
     try {
       for (let attempt=0; attempt<12; attempt++) {
@@ -120,7 +120,7 @@
       }
       $('finance-status').textContent='연결 확인이 지연되고 있습니다. 잠시 후 새로고침해 주세요. 표시된 숫자는 예시입니다.';
     } catch { $('finance-status').textContent='정보를 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.'; }
-    finally { loading=false; $('finance-refresh').disabled=false; }
+    finally { loading=false; }
   }
   async function loadStock() {
     const spin = add => { const b=document.querySelector('.finance-stock-refresh'); if(b) b.classList.toggle('spin', add); };
@@ -180,7 +180,6 @@
   });
   document.addEventListener('click',closeTips);
   $('finance-search').addEventListener('input',renderNews);
-  $('finance-refresh').addEventListener('click',()=>{load();loadStock();loadDart();});
   $('finance-dart-form').addEventListener('submit',event=>{event.preventDefault();loadDart();});
   const dartNc=document.getElementById('finance-dart-nc');
   if(dartNc) dartNc.addEventListener('click',()=>{ $('finance-corp-code').value=dartNc.dataset.corp||''; loadDart(); });
