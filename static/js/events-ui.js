@@ -75,6 +75,9 @@
     if(busy){notice.textContent='추천 불러오는 중…';notice.hidden=false;if(!result)target.innerHTML='';return;}
     if(!result){notice.textContent='';notice.hidden=true;target.innerHTML='';return;}
     notice.textContent=result.ai_error || !result.items?.length ? result.notice||'' : '';notice.hidden=!notice.textContent;notice.dataset.aiError=result.ai_error||'';
+    if(result.ai_error==='credit_balance'){
+      const recharge=document.createElement('a');recharge.href='https://platform.claude.com/settings/billing';recharge.target='_blank';recharge.rel='noopener noreferrer';recharge.className='ed-recharge';recharge.textContent='[충전하기]';notice.append(' ',recharge);
+    }
     const keys=new Set(available.map(s=>s.url));
     const items=(result.items||[]).filter(s=>keys.has(s.url));
     target.innerHTML=items.length?items.map((s,i)=>eventCard(s,true,i)).join(''):'<li class="ed-empty">표시할 추천이 없어요. 관심사나 검색어를 바꿔 보세요.</li>';
