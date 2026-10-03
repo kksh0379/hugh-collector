@@ -54,7 +54,7 @@
 #ed-results {gap:10px;}
 .ed-banner {border:0;}
 .ed-banner .ed-art {text-decoration:none;min-height:160px;padding:22px 24px;box-sizing:border-box;gap:12px;}
-.ed-banner .ed-art::before {background:linear-gradient(90deg,#081c39ed,#081c39a6);}
+.ed-banner .ed-art::before {background:linear-gradient(110deg,var(--ed-shade),var(--ed-tint));}
 .ed-banner-category {opacity:.85;}
 .ed-banner-facts {display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;line-height:1.6;opacity:.95;}
 .ed-banner-arrow {position:absolute;right:18px;top:18px;font-size:20px;}
@@ -62,3 +62,14 @@
 .ed-banner a:focus-visible {outline:3px solid var(--primary);outline-offset:-3px;}
 #ed-status[hidden] {display:none;}
 @media(max-width:600px){.ed-banner .ed-art {padding:18px;min-height:150px;}.ed-art h3 {font-size:19px;}#ed-dialog .ed-preferences {padding:18px;}}
+
+/* Six palettes also distinguish consecutive events in the same interest field. */
+.ed-banner .ed-art {background:linear-gradient(120deg,var(--ed-base),var(--ed-accent));}
+.ed-art-0 {--ed-base:#123752;--ed-accent:#297bad;--ed-shade:#10334aed;--ed-tint:#286a9299;}
+.ed-art-1 {--ed-base:#24483b;--ed-accent:#598957;--ed-shade:#1c4136ed;--ed-tint:#4c804b99;}
+.ed-art-2 {--ed-base:#50385b;--ed-accent:#92639b;--ed-shade:#45304fed;--ed-tint:#86578f99;}
+.ed-art-3 {--ed-base:#623c2b;--ed-accent:#b07848;--ed-shade:#523222ed;--ed-tint:#a16a3899;}
+.ed-art-4 {--ed-base:#205253;--ed-accent:#4c9a95;--ed-shade:#184545ed;--ed-tint:#36888099;}
+.ed-art-5 {--ed-base:#593c50;--ed-accent:#ab6b84;--ed-shade:#4e3044ed;--ed-tint:#96556f99;}
+.tabs .tab {display:inline-flex;align-items:center;justify-content:center;gap:7px;}
+.tabs .tab-icon {width:19px;height:19px;flex:0 0 19px;display:block;}
