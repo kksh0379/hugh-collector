@@ -717,28 +717,22 @@ def existing_board_titles(service):
 
 
 def list_news(limit=5000, category=None, section="nc", months=None):
-    """뉴스 목록(최신순). months를 주면 최근 N개월(발행일 기준)만 반환 — 초기 로딩 가속용.
-    검색은 months 없이 전체(최대 limit)를 받아 클라이언트에서 수행한다."""
-    from datetime import timedelta as _td
+    """뉴스 목록(최신순). months가 있으면 초기 로딩 가속을 위해 '최신 일부'만 반환한다.
+    날짜 비교 대신 개수로 제한(발행일 형식/누락과 무관하게 안전) — 검색 시 전체를 받아 수행한다."""
     cond, cargs = _section_cond(section)
-    extra, eargs = "", []
     if months:
-        cutoff = (datetime.now() - _td(days=int(months) * 31)).strftime("%Y-%m-%d")
-        # 날짜 형식·누락에 견고하게: 앞 10자(YYYY-MM-DD)로 비교하고, 날짜 없는 항목은 제외하지 않음
-        # (그래야 published_at이 비어 있어도 뉴스가 통째로 사라지지 않음).
-        extra = " AND (published_at IS NULL OR published_at = '' OR substr(published_at,1,10) >= ?)"
-        eargs = [cutoff]
+        limit = min(limit, 800)   # 초기엔 최신 800건만(≈ 최근 몇 개월), 검색은 전체
     with get_conn() as conn:
         if category and category != "all":
             rows = conn.execute(
-                _q(f"SELECT * FROM news WHERE {cond} AND category = ?{extra} "
+                _q(f"SELECT * FROM news WHERE {cond} AND category = ? "
                    "ORDER BY published_at DESC, id DESC LIMIT ?"),
-                (*cargs, category, *eargs, limit),
+                (*cargs, category, limit),
             ).fetchall()
         else:
             rows = conn.execute(
-                _q(f"SELECT * FROM news WHERE {cond}{extra} ORDER BY published_at DESC, id DESC LIMIT ?"),
-                (*cargs, *eargs, limit),
+                _q(f"SELECT * FROM news WHERE {cond} ORDER BY published_at DESC, id DESC LIMIT ?"),
+                (*cargs, limit),
             ).fetchall()
         return [dict(r) for r in rows]
 
