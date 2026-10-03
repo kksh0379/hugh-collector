@@ -240,6 +240,44 @@ def _num(value):
         return None
 
 
+def _parse_fchart_series(content):
+    """네이버 fchart XML(일별 시세)에서 (날짜, 종가) 리스트를 뽑는다.
+    data="날짜|시가|고가|저가|종가|거래량". 외부 엔티티·네트워크 차단, 손상 복구 허용."""
+    root = etree.fromstring(content, parser=etree.XMLParser(
+        resolve_entities=False, no_network=True, recover=True))
+    values = []
+    for item in root.xpath('//item'):
+        parts = (item.get('data') or '').split('|')
+        close = _num(parts[4]) if len(parts) >= 5 else None
+        if parts and parts[0].isdigit() and close is not None and math.isfinite(close):
+            values.append((parts[0], close))
+    return values
+
+
+def _series_quote(url, result, digits=0):
+    """fchart형 일별 종가 시계열을 받아 값·등락·6개월 추이로 result를 채운다.
+    실패하면 값을 지어내지 않고 mode='unavailable'로 둔다."""
+    try:
+        if urlsplit(url).scheme != 'https':
+            raise ValueError('HTTPS required')
+        response = requests.get(url, timeout=(3, 7), allow_redirects=False,
+                                headers={'User-Agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+        values = _parse_fchart_series(response.content)
+        if len(values) < 2:
+            raise ValueError('No series')
+        values.sort()
+        last, prev = values[-1][1], values[-2][1]
+        change = last - prev
+        rnd = (lambda x: round(x, digits)) if digits else round
+        result.update(mode='live', value=rnd(last), date=values[-1][0],
+                      change=rnd(change), ratio=round(change / prev * 100, 2) if prev else None,
+                      history=sample_history(values))
+    except Exception:
+        result.update(mode='unavailable', value=None, change=None, ratio=None, history=[])
+    return result
+
+
 def nc_stock():
     """(주)엔씨 주가와 추이. 일별 종가 시계열로 값·등락·6개월 추이를 만든다. 실패 시 값을 지어내지 않는다."""
     code = os.getenv('NC_STOCK_CODE', '036570')
@@ -249,31 +287,20 @@ def nc_stock():
     # 네이버 일별 시세(종가 시계열) XML. requestType=0 → data="날짜|시가|고가|저가|종가|거래량".
     url = os.getenv('NC_STOCK_URL') or ('https://fchart.stock.naver.com/sise.nhn?symbol='
                                         + quote(code, safe='') + '&timeframe=day&count=140&requestType=0')
-    try:
-        if urlsplit(url).scheme != 'https':
-            raise ValueError('HTTPS required')
-        response = requests.get(url, timeout=(3, 7), allow_redirects=False,
-                                headers={'User-Agent': 'Mozilla/5.0'})
-        response.raise_for_status()
-        root = etree.fromstring(response.content, parser=etree.XMLParser(
-            resolve_entities=False, no_network=True, recover=True))
-        values = []
-        for item in root.xpath('//item'):
-            parts = (item.get('data') or '').split('|')
-            close = _num(parts[4]) if len(parts) >= 5 else None
-            if parts and parts[0].isdigit() and close is not None and math.isfinite(close):
-                values.append((parts[0], close))
-        if len(values) < 2:
-            raise ValueError('No series')
-        values.sort()
-        last, prev = values[-1][1], values[-2][1]
-        change = last - prev
-        result.update(mode='live', value=round(last), date=values[-1][0],
-                      change=round(change), ratio=round(change / prev * 100, 2) if prev else None,
-                      history=sample_history(values))
-    except Exception:
-        result.update(mode='unavailable', value=None, change=None, ratio=None, history=[])
-    return result
+    return _series_quote(url, result)
+
+
+def gold_price():
+    """국내 금 시세(KRX 금시장, 원/g)와 6개월 추이. 실패 시 값을 지어내지 않는다.
+    출처는 GOLD_PRICE_URL(네이버 fchart형 XML)로 교체 가능. 기본값은 best-effort이며
+    응답이 없으면 '일시 중단'으로만 표시한다(숫자 추측 금지)."""
+    symbol = os.getenv('GOLD_PRICE_SYMBOL', 'M04020000')  # KRX 금 현물 1g (네이버)
+    result = dict(code='GOLD/KRX', name='국내 금(KRX)', unit='원/g', value=None,
+                  change=None, ratio=None, date=None, mode='unavailable', history=[],
+                  desc='한국거래소(KRX) 금시장 1g 종가입니다. 한 돈(3.75g) 환산은 값×3.75. 실제 매매가·수수료는 다를 수 있습니다.')
+    url = os.getenv('GOLD_PRICE_URL') or ('https://fchart.stock.naver.com/sise.nhn?symbol='
+                                          + quote(symbol, safe='') + '&timeframe=day&count=140&requestType=0')
+    return _series_quote(url, result, digits=2)
 
 
 def next_business_day(day):
@@ -317,8 +344,11 @@ def tax_calendar(today=None):
 
 def dashboard():
     # 엔씨 주가는 자주 바뀌므로 대시보드 캐시와 분리(/stock 엔드포인트, 짧은 캐시)해 방문마다 갱신한다.
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    # 금 시세(일 1회 종가)는 변동이 느려 대시보드 캐시(15분)에 함께 담는다.
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        gold = executor.submit(gold_price)
         indicators = list(executor.map(indicator, INDICATORS))
+        indicators.append(gold.result())
     data = news()
     data.update(indicators=indicators, calendar=tax_calendar())
     return data

@@ -95,9 +95,14 @@ class FinanceTests(unittest.TestCase):
             self.assertTrue(finance.disclosures('')['items'][0]['url'].endswith('20261002000001'))
 
     def test_dashboard_partial_sources_and_statutory_calendar(self):
-        with patch.object(finance,'collect_source',return_value=([],{'name':'source','mode':'unavailable'})):
+        with patch.object(finance,'collect_source',return_value=([],{'name':'source','mode':'unavailable'})), \
+             patch.object(finance.requests,'get',side_effect=Exception('offline')):
             result=finance.dashboard()
-            self.assertEqual(len(result['indicators']),3)  # 3 ECOS (엔씨 주가는 /stock로 분리)
+            self.assertEqual(len(result['indicators']),4)  # 3 ECOS + 국내 금(KRX). 엔씨 주가는 /stock로 분리
+            gold=[i for i in result['indicators'] if i['code']=='GOLD/KRX']
+            self.assertEqual(len(gold),1)
+            self.assertEqual(gold[0]['mode'],'unavailable')  # 조회 실패 시 값 미표시(숫자 날조 금지)
+            self.assertIsNone(gold[0]['value'])
             self.assertEqual(len(result['sources']),6)
             cal=result['calendar']
             self.assertEqual(cal['mode'],'reference')
