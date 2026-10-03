@@ -274,6 +274,8 @@ document.addEventListener("click", (e) => {
   copyToClipboard(url).then((ok) => toast(ok ? "링크를 복사했어요" : "복사 실패 — 원문을 길게 눌러 복사해 주세요"));
 });
 
+// Only UI notices: preserve dates, decimals, URLs and source article text.
+function uiNoticeText(value) { return String(value || "").replace(/([가-힣][.!?]) +(?=[가-힣])/g, "$1\n"); }
 // 짧은 토스트 메시지
 let _toastTimer = null;
 function toast(msg) {
@@ -1548,7 +1550,7 @@ function renderEventCalendar(list) {
   // 아젠다(이번 달 행사 상세 — 날짜·행사명·장소 모두 표시)
   let agenda;
   if (!monthEvents.length) {
-    agenda = `<div class="agenda-empty">이 달에는 표시할 행사가 없어요. ${dated.length ? "‹ › 로 다른 달을 보세요." : "<button type=\"button\" class=\"retry-btn\" data-reload=\"event\">↻ 다시 불러오기</button>"}</div>`;
+    agenda = `<div class="agenda-empty">이 달에는 표시할 행사가 없어요.<br>${dated.length ? "‹ › 로 다른 달을 보세요." : "<button type=\"button\" class=\"retry-btn\" data-reload=\"event\">↻ 다시 불러오기</button>"}</div>`;
   } else {
     agenda = monthEvents.map((s) => {
       const link = s.source_url || s.url;
@@ -1575,7 +1577,7 @@ function renderEventCalendar(list) {
     <p class="cal-tap-hint">날짜를 누르면 그날의 행사 요약을 볼 수 있어요.</p>
     <div id="cal-day-preview" class="cal-preview" popover="auto" role="dialog" aria-labelledby="cal-preview-title">
       <div class="cal-preview-head"><h3 id="cal-preview-title"></h3><button type="button" class="cal-preview-close" aria-label="행사 요약 닫기">×</button></div>
-      <p class="cal-preview-note">수집된 정보 기준이에요. 참여 전 원문·공식 채널을 확인해 주세요.</p>
+      <p class="cal-preview-note">수집된 정보 기준이에요.<br>참여 전 원문·공식 채널을 확인해 주세요.</p>
       <ul class="cal-preview-list"></ul>
     </div>
     <div class="agenda">${agenda}</div>
@@ -1969,7 +1971,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   try {
     const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     res = await r.json();
-  } catch (err) { loginErr.textContent = "로그인 요청 실패. 잠시 후 다시 시도해 주세요."; return; }
+  } catch (err) { loginErr.textContent = "로그인 요청 실패.\n잠시 후 다시 시도해 주세요."; return; }
   if (res && res.ok) {
     applyAuthUI(res.user, res.admin);
     await loadMyData();
@@ -2776,7 +2778,7 @@ async function loadReport(id) {
   function isAdmin() { return document.body.classList.contains("is-admin"); }
   function msg(t, err) {
     const m = $("lunch-msg"); if (!m) return;
-    m.textContent = t || ""; m.style.color = err ? "#dc2626" : "var(--muted)";
+    m.textContent = uiNoticeText(t); m.style.color = err ? "#dc2626" : "var(--muted)";
   }
 
   async function getJSON(url) {
@@ -3228,7 +3230,7 @@ async function loadReport(id) {
     const body = $("lunch-ai-body"); if (!body) return;
     const backBtn = `<button type="button" class="airec-edit" id="lunch-ai-edit">‹ 조건 바꾸기</button>`;
     if (!res || !res.ok) {
-      body.innerHTML = `${backBtn}<div class="airec-empty">${escapeHtml((res && res.error) || "추천 실패")}</div>`;
+      body.innerHTML = `${backBtn}<div class="airec-empty">${escapeHtml(uiNoticeText((res && res.error) || "추천 실패"))}</div>`;
       return;
     }
     const p = res.pick;
@@ -3245,7 +3247,7 @@ async function loadReport(id) {
       <div class="airec-cat">${escapeHtml(p.sub_cat || p.cat_norm || "")}</div>
       <div class="airec-rate">${rate}</div>
       ${meta ? `<div class="airec-meta">📍 ${escapeHtml(meta)}</div>` : ""}
-      ${p.reason ? `<div class="airec-why"><b>왜 여기?</b> ${escapeHtml(p.reason)}</div>` : ""}
+      ${p.reason ? `<div class="airec-why"><b>왜 여기?</b> ${escapeHtml(uiNoticeText(p.reason))}</div>` : ""}
       <div class="airec-acts">${kakao}
         <button type="button" class="lbtn rev" data-rev="${p.id}">평점·후기</button>
         <button type="button" class="btn-collect retry" id="lunch-ai-retry">🔄 다시</button>

@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.37") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.38") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -48,7 +48,8 @@
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.37") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.38") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
 </head>
 <body>
   <header class="app-header">
@@ -244,7 +245,7 @@
       <span class="chip chip-plan">앨범/캘린더 · 날짜·장소 자동추출(구글 뉴스)</span>
     </div>
     <div class="event-note">
-      ⚠️ <b>뉴스</b> 딱지 행사는 기사에서 <b>자동 추출</b>해 날짜·장소·개최 여부가 실제와 다르거나 누락·오류가 있을 수 있어요. <b>관광공사·문화포털</b> 딱지는 공식 기관 정보지만 일정이 변경될 수 있어요. 참여·신청 전 반드시 <b>원문·공식 채널</b>에서 확인해 주세요.
+      ⚠️ <b>뉴스</b> 딱지 행사는 기사에서 <b>자동 추출</b>해 날짜·장소·개최 여부가 실제와 다르거나 누락·오류가 있을 수 있어요.<br><b>관광공사·문화포털</b> 딱지는 공식 기관 정보지만 일정이 변경될 수 있어요.<br>참여·신청 전 반드시 <b>원문·공식 채널</b>에서 확인해 주세요.
     </div>
     <div class="last-crawl" id="last-event"></div>
     <div class="result-msg" id="msg-event"></div>
@@ -315,12 +316,12 @@
         <button class="btn-status admin-only" id="report-purge" title="전체 리포트 스냅샷 삭제">전체 초기화</button>
       </div>
       <div class="report-note" id="report-note-foundation">
-        뉴스·재단YT 데이터로 <b>NC문화재단</b>과 동종 재단의 변화·추세·신규신호를 AI가 <b>제3자 관점</b>으로 비교 분석해요.
-        결과는 실행 시점별로 저장되어 <b>지난 리포트와 비교</b>됩니다. (열람은 누구나 · 분석 실행은 관리자)
+        뉴스·재단YT 데이터로 <b>NC문화재단</b>과 동종 재단의 변화·추세·신규신호를 AI가 <b>제3자 관점</b>으로 비교 분석해요.<br>
+        결과는 실행 시점별로 저장되어 <b>지난 리포트와 비교</b>됩니다.<br>(열람은 누구나 · 분석 실행은 관리자)
       </div>
       <div class="report-note" id="report-note-security" hidden>
-        보안뉴스 데이터로 <b>정보보안·개인정보보호 담당자</b>를 위한 <b>월간 보안 브리핑</b>을 AI가 만들어요.
-        주요 사고·취약점(CVE)·<b>개보위·공정위 처분</b>·트렌드와 <b>담당자 점검 권고</b>를 제공합니다. (기본 대상: <b>지난달</b> · 월 단위)
+        보안뉴스 데이터로 <b>정보보안·개인정보보호 담당자</b>를 위한 <b>월간 보안 브리핑</b>을 AI가 만들어요.<br>
+        주요 사고·취약점(CVE)·<b>개보위·공정위 처분</b>·트렌드와 <b>담당자 점검 권고</b>를 제공합니다.<br>(기본 대상: <b>지난달</b> · 월 단위)
       </div>
       <div class="result-msg" id="msg-report"></div>
       <div class="print-only report-print-head" id="report-print-head"></div>
@@ -413,7 +414,7 @@
         <button class="modal-close" id="features-close" aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
-        <p class="feat-note">끈 항목은 <b>일반 사용자·방문자에게 숨겨져요</b>. 관리자는 항상 보입니다. (변경 즉시 저장)</p>
+        <p class="feat-note">끈 항목은 <b>일반 사용자·방문자에게 숨겨져요</b>.<br>관리자는 항상 보입니다. (변경 즉시 저장)</p>
         <div class="feat-group-title">탭</div>
         <div class="feat-list">
           <label class="feat-locked"><input type="checkbox" data-feat="cat" checked disabled> 냥정보 <span class="feat-tag">기본</span></label>
@@ -451,7 +452,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.37 · build 261004</span>
+    <span class="ver">v3.38 · build 261004</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -480,8 +481,8 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.37") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.37") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.38") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.38") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>

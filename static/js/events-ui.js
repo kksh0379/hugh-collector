@@ -51,7 +51,7 @@
     root.innerHTML=`<div class="ed-cal-head"><button type="button" data-cal="prev" aria-label="이전 달">‹</button><h3>${y}년 ${m}월 <small>${monthList.length}개 행사</small></h3><button type="button" data-cal="next" aria-label="다음 달">›</button><button type="button" data-cal="today">오늘</button></div>
       ${!expanded?'<div class="ed-dows">'+['일','월','화','수','목','금','토'].map(d=>`<span>${d}</span>`).join('')+'</div>':''}
       <div class="ed-month-grid${expanded?' ed-week':''}">${grid}</div>
-      ${!expanded?'<p class="ed-hint">진한 색일수록 행사 많음 · 날짜를 누르면 아래에 상세 목록을 보여줘요.</p>':''}
+      ${!expanded?'<p class="ed-hint">진한 색일수록 행사가 많아요.<br>날짜를 누르면 아래에 상세 목록을 보여줘요.</p>':''}
       <div class="ed-agenda-head"><h3>${esc(title)} <small>${chosen.length}개 행사</small></h3><button type="button" data-cal="expand">${expanded?'달력 펼치기 ↓':'목록 크게 보기 ↑'}</button></div>
       <p class="ed-hint">선택한 날짜에 진행 중인 여러 날 행사도 포함해요.</p>
       <ul class="ed-feed">${chosen.length?chosen.map(s=>eventCard(s)).join(''):'<li class="ed-empty">이 날짜에는 선택 분야의 수집 행사가 없어요.</li>'}</ul>
@@ -74,13 +74,13 @@
     const notice=document.getElementById('ed-status');
     if(busy){notice.textContent='추천 불러오는 중…';notice.hidden=false;if(!result)target.innerHTML='';return;}
     if(!result){notice.textContent='';notice.hidden=true;target.innerHTML='';return;}
-    notice.textContent=result.ai_error || !result.items?.length ? result.notice||'' : '';notice.hidden=!notice.textContent;notice.dataset.aiError=result.ai_error||'';
+    notice.textContent=(result.ai_error || !result.items?.length ? result.notice||'' : '').replace(/([가-힣][.!?]) +(?=[가-힣])/g,'$1\n');notice.hidden=!notice.textContent;notice.dataset.aiError=result.ai_error||'';
     if(result.ai_error==='credit_balance'){
       const recharge=document.createElement('a');recharge.href='https://platform.claude.com/settings/billing';recharge.target='_blank';recharge.rel='noopener noreferrer';recharge.className='ed-recharge';recharge.textContent='[충전하기]';notice.append(' ',recharge);
     }
     const keys=new Set(available.map(s=>s.url));
     const items=(result.items||[]).filter(s=>keys.has(s.url));
-    target.innerHTML=items.length?items.map((s,i)=>eventCard(s,true,i)).join(''):'<li class="ed-empty">표시할 추천이 없어요. 관심사나 검색어를 바꿔 보세요.</li>';
+    target.innerHTML=items.length?items.map((s,i)=>eventCard(s,true,i)).join(''):'<li class="ed-empty">표시할 추천이 없어요.<br>관심사나 검색어를 바꿔 보세요.</li>';
     document.getElementById('ed-mode').textContent=result.mode==='ai'?'AI 추천':result.mode==='rules'?'관심사 기반 추천':'';
   }
   async function recommend(){

@@ -79,7 +79,7 @@
     }
     const note = document.createElement('p');
     note.className = 'reader-summary-note';
-    note.textContent = notice;
+    note.textContent = String(notice || '').replace(/([가-힣][.!?]) +(?=[가-힣])/g, '$1\n');
     status.append(note);
   }
 
@@ -126,7 +126,7 @@
           return;
         }
         if (data.status !== 'pending') {
-          showSummary(null, typeof data.notice === 'string' ? data.notice : '지금은 요약을 만들지 못했어요. 본문은 아래에서 읽을 수 있어요.');
+          showSummary(null, typeof data.notice === 'string' ? data.notice : '지금은 요약을 만들지 못했어요.\n본문은 아래에서 읽을 수 있어요.');
           return;
         }
         await new Promise(resolve => setTimeout(resolve, 1500));

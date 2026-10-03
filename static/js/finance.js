@@ -53,7 +53,7 @@
         ? `<span class="finance-pc-only" title="이 출처는 모바일에서 원문이 메인 페이지로 이동합니다. PC에서 원문을 열어 주세요.">💻 PC에서 원문 열람</span>${copy}`
         : `<a class="read-action reader-open" href="${esc(r.url)}" target="_blank" rel="noopener noreferrer" data-reader>본문 읽기(앱)</a>${copy}`;
       return `<article class="finance-news-item card${read}" data-key="${esc(key)}">${scrap}<span class="finance-mode">${esc(labels[r.category])}</span><h3 class="card-title">${titleLink}</h3><p class="card-summary">${esc(r.description)}</p><p class="finance-news-meta">${esc(r.source)}${r.pub_date ? ' · '+esc(fmtDate(r.pub_date)) : ''}</p><div class="card-actions">${actions}</div></article>`;
-    }).join('') : '<p class="finance-empty">표시할 소식이 없습니다. 검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
+    }).join('') : '<p class="finance-empty">표시할 소식이 없습니다.<br>검색 조건 또는 아래 출처의 연결 상태를 확인해 주세요.</p>';
   }
   function renderCalendar() {
     const cal = data && data.calendar, list = $('finance-calendar-list');
@@ -119,8 +119,8 @@
         if (!result.pending) return;
         await pause(2000);
       }
-      $('finance-status').textContent='연결 확인이 지연되고 있습니다. 잠시 후 새로고침해 주세요. 표시된 숫자는 예시입니다.';
-    } catch { $('finance-status').textContent='정보를 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.'; }
+      $('finance-status').textContent='연결 확인이 지연되고 있습니다.\n잠시 후 새로고침해 주세요.\n표시된 숫자는 예시입니다.';
+    } catch { $('finance-status').textContent='정보를 불러오지 못했습니다.\n새로고침으로 다시 시도해 주세요.'; }
     finally { loading=false; }
   }
   async function loadStock() {
@@ -151,8 +151,8 @@
         $('finance-dart-rows').innerHTML=result.items.length ? result.items.map(r=>`<tr><td>${esc(r.company)}</td><td>${link(r.url,r.title)}</td><td>${esc(fmtDate(r.date))}</td></tr>`).join('') : '<tr><td colspan="3">표시할 공시가 없습니다.</td></tr>';
         return;
       }
-      $('finance-dart-status').textContent='조회가 지연되고 있습니다. 다시 조회해 주세요.';
-    } catch(e) { if(version===dartVersion) $('finance-dart-status').textContent=e.name==='AbortError' ? '조회 시간이 초과되었습니다. 다시 시도해 주세요.' : e.message; }
+      $('finance-dart-status').textContent='조회가 지연되고 있습니다.\n다시 조회해 주세요.';
+    } catch(e) { if(version===dartVersion) $('finance-dart-status').textContent=e.name==='AbortError' ? '조회 시간이 초과되었습니다.\n다시 시도해 주세요.' : e.message; }
   }
   $('finance-filters').addEventListener('click',event=>{
     const button=event.target.closest('[data-category]'); if(!button) return;
@@ -199,7 +199,7 @@
     try {
       const r=await json('/api/finance/business-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:$('finance-business-number').value.trim()})});
       $('finance-business-result').textContent=r.mode==='live' ? [r.status,r.tax_type,r.end_date ? '폐업일 '+r.end_date : '',r.checked_at ? '조회 '+new Date(r.checked_at).toLocaleString('ko-KR') : ''].filter(Boolean).join(' · ') : r.message;
-    } catch(e) { $('finance-business-result').textContent=e.name==='AbortError' ? '조회 시간이 초과되었습니다. 다시 시도해 주세요.' : e.message; }
+    } catch(e) { $('finance-business-result').textContent=e.name==='AbortError' ? '조회 시간이 초과되었습니다.\n다시 시도해 주세요.' : e.message; }
     finally {button.disabled=false;}
   });
   // ===== 상단 탭 분류(지표/계산기/세무·공시/브리핑) — 보기 전환만, 데이터는 그대로 로드 =====
