@@ -58,6 +58,7 @@
 - [국세기본법 제5조(기한의 특례)](https://www.law.go.kr/법령/국세기본법/제5조)
 - [ECOS Open API](https://ecos.bok.or.kr/api/)
 - [Open DART 개발가이드](https://opendart.fss.or.kr/guide/main.do)
+- [전자공시 고유번호 조회(filer)](https://filer.fss.or.kr/raaa001/goIndex.do) — 사용자용 고유번호 확인(API 신청 사이트와 별개)
 
 ## 검증
 
