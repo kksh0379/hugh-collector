@@ -16,6 +16,7 @@ import os
 import datetime
 
 import requests
+from lxml import etree
 
 
 def _fmt8(s):
@@ -90,30 +91,68 @@ def tour_festivals(progress=None):
 
 
 # ------------------------------ 문화포털/공공데이터: 문화행사 ------------------------------
-def culture_events(progress=None):
-    """문화행사 API. 제공처별 응답 구조가 달라 URL은 CULTURE_API_URL, 키는 CULTURE_API_KEY로
-    받는다(둘 다 있어야 동작). 흔한 필드명을 넓게 시도하고, 미스는 진단으로 보정한다."""
-    key = os.getenv("CULTURE_API_KEY")
-    url = os.getenv("CULTURE_API_URL")
-    if not key or not url:
+CULTURE_URL = "http://www.culture.go.kr/openapi/rest/publicperformancedisplays/period"
+
+
+def _culture_date(s):
+    """'YYYY.MM.DD'·'YYYY-MM-DD'·'YYYYMMDD' → YYYY-MM-DD."""
+    s = str(s or "").strip().replace(".", "").replace("-", "")
+    return _fmt8(s)
+
+
+def _culture_rows(resp):
+    """culture.go.kr는 XML(perforInfo), 일부 제공처는 JSON(items.item). 둘 다 처리."""
+    try:
+        rows = _rows(resp.json())
+        if rows:
+            return rows
+    except Exception:
+        pass
+    try:
+        root = etree.fromstring(resp.content, parser=etree.XMLParser(
+            resolve_entities=False, no_network=True, recover=True))
+        nodes = root.xpath("//perforInfo") or root.xpath("//item") or root.xpath("//perforList/*")
+        out = []
+        for node in nodes:
+            d = {}
+            for ch in node:
+                d[etree.QName(ch).localname] = (ch.text or "").strip()
+            if d:
+                out.append(d)
+        return out
+    except Exception:
         return []
+
+
+def culture_events(progress=None):
+    """문화포털(culture.go.kr) 공연·전시정보 API — 국내 전시·공연·행사를 날짜·장소 구조화로.
+    CULTURE_API_KEY(디코딩 서비스키) 필요. URL은 CULTURE_API_URL로 교체 가능(기본: culture.go.kr).
+    응답이 XML이라 XML/JSON 모두 처리한다."""
+    key = os.getenv("CULTURE_API_KEY")
+    if not key:
+        return []
+    url = os.getenv("CULTURE_API_URL", CULTURE_URL)
     out = []
     try:
-        params = {"serviceKey": key, "numOfRows": 300, "pageNo": 1, "_type": "json"}
-        data = requests.get(url, params=params, timeout=(3, 12)).json()
-        for it in _rows(data):
+        today = datetime.date.today()
+        params = {"serviceKey": key,
+                  "from": (today - datetime.timedelta(days=14)).strftime("%Y%m%d"),
+                  "to": (today + datetime.timedelta(days=180)).strftime("%Y%m%d"),
+                  "rows": 300, "cPage": 1}
+        resp = requests.get(url, params=params, timeout=(3, 12))
+        for it in _culture_rows(resp):
             if not isinstance(it, dict):
                 continue
-            title = it.get("title") or it.get("fstvlNm") or it.get("TITLE") or ""
-            sd = _fmt8(it.get("eventstartdate") or it.get("startDate") or it.get("STRTDATE"))
-            # 날짜가 YYYY-MM-DD로 올 수도 있어 그대로도 허용
-            sd = sd or (str(it.get("startDate") or "")[:10] or None if (it.get("startDate") or "")[:4].isdigit() else None)
-            ed = _fmt8(it.get("eventenddate") or it.get("endDate") or it.get("END_DATE"))
-            place = it.get("addr1") or it.get("place") or it.get("rdnmadr") or it.get("PLACE") or ""
-            link = it.get("url") or it.get("homepageUrl") or it.get("HMPG_ADDR") or ""
+            title = it.get("title") or it.get("fstvlNm") or ""
+            sd = _culture_date(it.get("startDate") or it.get("eventstartdate"))
+            ed = _culture_date(it.get("endDate") or it.get("eventenddate"))
+            place = it.get("place") or it.get("addr1") or it.get("rdnmadr") or ""
             if title and sd:
                 out.append(_item(title, sd, ed or sd, venue=place,
-                                 region=(place.split()[0] if place else ""), url=link, source="문화포털"))
+                                 region=(it.get("area") or (place.split()[0] if place else "")),
+                                 url=it.get("url") or it.get("homepageUrl") or "",
+                                 image=it.get("thumbnail") or it.get("imageObject") or "",
+                                 content=it.get("realmName") or "", source="문화포털"))
     except Exception:
         return out
     if progress:
@@ -137,11 +176,7 @@ def _probe(url, params):
     """원응답 상태·행수·첫 항목 키·본문 일부를 돌려준다(키는 노출하지 않음)."""
     try:
         r = requests.get(url, params=params, timeout=(3, 12))
-        try:
-            data = r.json()
-        except Exception:
-            data = None
-        rows = _rows(data) if data else []
+        rows = _culture_rows(r)   # JSON(items.item)·XML(perforInfo) 모두 처리
         first = rows[0] if rows and isinstance(rows[0], dict) else None
         return {"status": r.status_code, "rows": len(rows),
                 "first_keys": (list(first.keys())[:40] if first else None),
@@ -163,9 +198,14 @@ def diagnose():
                              "_type": "json", "arrange": "A",
                              "eventStartDate": start, "numOfRows": 5, "pageNo": 1})
     out["tour_festivals"] = row
-    ckey, curl = os.getenv("CULTURE_API_KEY"), os.getenv("CULTURE_API_URL")
-    crow = {"configured": bool(ckey and curl), "parsed": len(culture_events()) if (ckey and curl) else 0}
-    if ckey and curl:
-        crow["raw"] = _probe(curl, {"serviceKey": ckey, "numOfRows": 5, "pageNo": 1, "_type": "json"})
+    ckey = os.getenv("CULTURE_API_KEY")
+    crow = {"configured": bool(ckey), "parsed": len(culture_events()) if ckey else 0}
+    if ckey:
+        today = datetime.date.today()
+        crow["raw"] = _probe(os.getenv("CULTURE_API_URL", CULTURE_URL),
+                             {"serviceKey": ckey,
+                              "from": (today - datetime.timedelta(days=14)).strftime("%Y%m%d"),
+                              "to": (today + datetime.timedelta(days=180)).strftime("%Y%m%d"),
+                              "rows": 5, "cPage": 1})
     out["culture_events"] = crow
     return out

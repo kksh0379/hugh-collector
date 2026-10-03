@@ -14,13 +14,16 @@
   - (선택) `TOURAPI_FESTIVAL_URL` — 기본값 `https://apis.data.go.kr/B551011/KorService2/searchFestival2`. 서비스 버전이 다르면(KorService1 등) 이 값으로 교체.
 - 매핑: `eventstartdate/eventenddate`(YYYYMMDD) → 시작/종료일, `addr1` → 장소·지역, `firstimage` → 이미지, `contentid` → 상세 링크.
 
-## 2) 문화포털/공공 문화행사 API (선택)
+## 2) 문화포털 공연·전시정보 API — 국내 전시·공연 (추천)
 
-제공처마다 응답 필드가 달라 **URL과 키를 모두 env로** 받는다(둘 다 있어야 동작).
+문화포털(culture.go.kr) 공연·전시정보 API. 국내 **전시·공연·행사**를 날짜·장소 구조화로 제공
+(코엑스·벡스코 등의 문화 전시 포함). 응답이 **XML**이라 XML/JSON 모두 처리한다.
 
-- `CULTURE_API_KEY = <서비스키>`
-- `CULTURE_API_URL = <문화행사 목록 JSON 엔드포인트>`
-- 흔한 필드명(title/startDate/endDate/place/url 등)을 넓게 시도하며, 안 맞으면 진단으로 보정.
+- 발급: [공공데이터포털](https://www.data.go.kr) 또는 [문화포털 Open API](https://www.culture.go.kr)에서 **공연전시정보** 서비스키(디코딩) 발급.
+- Render env: `CULTURE_API_KEY = <디코딩 서비스키>` (URL 기본값: `http://www.culture.go.kr/openapi/rest/publicperformancedisplays/period`, 다르면 `CULTURE_API_URL`로 교체)
+- 매핑: `title`, `startDate/endDate`, `place`, `realmName`(전시/공연 분류), `area`, `thumbnail`, `url`.
+
+> 참고: **GEP(gep.or.kr)는 ‘해외 전시’ 포털**이라 국내 행사엔 쓰지 않는다. 국내 B2B 산업 전시(코엑스·킨텍스 전시회)는 위 문화포털로 일부만 잡히며, 완전 커버는 전시장 캘린더/AKEI 크롤이 필요하다(추후, 진단으로 안전하게).
 
 ## 확인 · 진단
 

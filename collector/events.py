@@ -35,6 +35,10 @@ EVENT_CATEGORIES = {
         "(2026 OR 2027) (국제 OR 대한민국 OR 코리아) (컨퍼런스 OR 박람회 OR 엑스포 OR 포럼 OR 전시회) 개최",
         "(의료 OR 헬스케어 OR 금융 OR 물류 OR 뷰티 OR 식품 OR 교육 OR 관광 OR 건설 OR 로봇 OR 모빌리티) (박람회 OR 전시회 OR 컨퍼런스 OR 포럼) 개최",
         "(채용박람회 OR 취업박람회 OR 창업 OR 벤처 OR 투자) (박람회 OR 포럼 OR 데모데이 OR 페어) 개최",
+        # IT/AI/AI윤리 특화 — 기사화된 전문 행사까지 더 폭넓게
+        "(AI 윤리 OR 인공지능 윤리 OR 신뢰할 수 있는 AI OR 책임있는 AI OR 생성형 AI OR LLM OR 초거대 AI) (컨퍼런스 OR 세미나 OR 포럼 OR 심포지엄) 개최",
+        "(개발자 OR 데이터 OR 클라우드 OR 사이버보안 OR 소프트웨어 OR 오픈소스 OR 블록체인) (컨퍼런스 OR 세미나 OR 밋업 OR 테크 포럼) 개최",
+        "(학회 OR 학술대회 OR 춘계 OR 추계 OR 정기학술) (컨퍼런스 OR 심포지엄 OR 학술대회) 개최",
     ],
 }
 

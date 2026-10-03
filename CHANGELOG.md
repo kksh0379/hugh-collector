@@ -2,6 +2,12 @@
 
 ## 2026-10-03
 
+### v3.22 · 261003 — 행사 커버리지 확대(IT/AI 검색어 + 문화포털 전시 API)
+
+- **구글 뉴스 행사 검색어 확장**: AI윤리·신뢰/책임있는 AI·생성형AI·LLM·개발자/데이터/클라우드/보안·학회·학술대회 쿼리 추가(외부 연동 없이 기사화된 전문 행사 커버리지↑).
+- **문화포털(culture.go.kr) 공연·전시정보 API 어댑터 구현**: 국내 전시·공연·행사를 날짜·장소 구조화로 수집(`CULTURE_API_KEY`). 응답 XML/JSON 모두 처리(날짜 `YYYY.MM.DD`·`YYYYMMDD` 대응). 진단(`/api/eventcheck`)도 XML 인식.
+- **정정**: GEP(gep.or.kr)는 ‘해외 전시’ 포털이라 제외. 국내 전시·공연은 문화포털 API로, B2B 산업전시 완전 커버는 전시장/AKEI 크롤(추후).
+
 ### v3.21 · 261003 — TourAPI 연결 수정 + 행사 수집구분 딱지·주의안내·상태확인 정비
 
 - **TourAPI `listYN` 파라미터 제거** — KorService2 searchFestival2가 안 받는 값이라 `INVALID_REQUEST_PARAMETER_ERROR`가 났음(키는 정상 등록 확인). 제거 후 정상 조회.
