@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.86") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v2.87") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -47,7 +47,7 @@
     })();
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.86") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v2.87") }}">
 </head>
 <body>
   <header class="app-header">
@@ -302,7 +302,6 @@
     <div class="lunch-loc" id="lunch-loc"><button class="lunch-loc-btn" id="lunch-loc-btn">📍 <b id="lunch-loc-name">위치</b> · <span id="lunch-loc-radius">500m</span> ▾</button>
       <div class="lunch-loc-menu" id="lunch-loc-menu" hidden></div>
     </div>
-      <label class="lunch-reviewed-toggle"><input type="checkbox" id="lunch-reviewed-only" aria-label="리뷰 있는 식당만 보기"><span>리뷰</span></label>
     </div>
     <div class="viewbar" style="border:0;padding-top:0">
       <div class="search-box">
@@ -490,7 +489,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v2.86 · build 261002</span>
+    <span class="ver">v2.87 · build 261002</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -518,8 +517,8 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.86") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.86") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v2.87") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v2.87") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>

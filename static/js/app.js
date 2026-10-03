@@ -531,7 +531,8 @@ function fallbackLunchRecommendation(rows, conditions, persona, previousId) {
     const rating = finite(r.avg_rating) ? Math.max(0, Math.min(5, Number(r.avg_rating))) : 0;
     const count = finite(r.review_count) ? Math.max(0, Number(r.review_count)) : 0;
     const distance = finite(r.dist_m) ? Math.max(0, Number(r.dist_m)) : null;
-    let score = 4 + rating * (moods.has('trusted') || persona === 'safe' ? 2 : 1) + Math.min(3, Math.log1p(count));
+    const trustBoost = moods.has('trusted') || persona === 'safe';   // 검증된 곳 우선일 때만 리뷰 비중 ↑
+    let score = 4 + rating * (trustBoost ? 2.5 : 0.6) + Math.min(trustBoost ? 3 : 1.2, Math.log1p(count)) * (trustBoost ? 1 : 0.5);
     if (distance != null) score += (moods.has('near') || moods.has('quick') || persona === 'fast' ? 5 : 2) / (1 + distance / 400);
     if (moods.has('explore') || persona === 'adventure' || persona === 'hidden') score += 2 / (1 + Math.max(0, Number(r.visit_count) || 0));
     const category = [r.cat_norm, r.sub_cat, r.category].filter(Boolean).join(' ');
@@ -2967,7 +2968,6 @@ async function loadReport(id) {
     { key: "sweet", label: "🍰 단 거 당겨" },
     { key: "no_oily", label: "🤢 느끼한 건 싫어" },
     { key: "explore", label: "✨ 안 가본 데" },
-    { key: "trusted", label: "⭐ 검증된 데" },
   ];
   LUNCH.aiSel = LUNCH.aiSel || {};       // 회피/기분 다중선택 상태 유지
   LUNCH.aiPersona = LUNCH.aiPersona || "";  // AI 성향(단일선택)
@@ -2981,17 +2981,18 @@ async function loadReport(id) {
   // 추천 점수 구성(시각화) — _lunch_score 기본 가중치와 동일.
   function recipeHtml() {
     const rows = [
-      ["리뷰·평점 (검증)", 25, "‘검증된 곳 우선’·‘안전’ 성향에서 ↑"],
-      ["거리 (가까움)", 15, "‘가까이’·‘빨리’에서 ↑"],
-      ["상황 (요일·시간)", 15, "월요일=검증된 곳, 늦은 점심=가까운 곳"],
-      ["다양성 (안 겹치게)", 15, "최근 먹은 종류는 ↓"],
-      ["탐색 (안 가본 곳)", 10, "‘모험’·‘숨은맛집’에서 ↑"],
-      ["팀 선호 (많이 간 곳)", 10, ""],
-      ["무작위 (재미)", 10, "매번 결과가 조금씩 달라져요"],
+      ["다양성 (안 겹치게)", 18, "최근 먹은 종류는 ↓"],
+      ["거리 (가까움)", 16, "‘가까이’·‘빨리’에서 ↑"],
+      ["상황 (요일·시간)", 16, "늦은 점심=가까운 곳 등"],
+      ["탐색 (안 가본 곳)", 14, "‘모험’·‘숨은맛집’에서 ↑"],
+      ["무작위 (재미)", 14, "매번 결과가 조금씩 달라져요"],
+      ["팀 선호 (많이 간 곳)", 12, ""],
+      ["리뷰·평점 (검증)", 10, "평소엔 낮게 — ‘⭐ 검증된 곳 우선’을 켜면 크게 ↑"],
     ];
+    const maxW = Math.max(...rows.map((r) => r[1]));
     const bars = rows.map(([l, w, note]) =>
       `<div class="recipe-row"><span class="recipe-label">${l}</span>`
-      + `<span class="recipe-track"><span class="recipe-bar" style="width:${Math.round(w / 25 * 100)}%"></span></span>`
+      + `<span class="recipe-track"><span class="recipe-bar" style="width:${Math.round(w / maxW * 100)}%"></span></span>`
       + `<span class="recipe-pct">${w}%</span></div>`
       + (note ? `<div class="recipe-note">${note}</div>` : "")).join("");
     return `<p class="recipe-lead">상위 후보 5곳 중 <b>점수 비중대로</b> 뽑아요(가중 랜덤).</p>${bars}`
@@ -3012,6 +3013,10 @@ async function loadReport(id) {
       <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).
         <button type="button" class="aipick-recipe-btn" id="lunch-recipe-toggle" aria-expanded="false">ⓘ 추천 방식</button></div>
       <div class="aipick-recipe" id="lunch-recipe" hidden>${recipeHtml()}</div>
+      <div class="aipick-grp aipick-trusted">
+        <button type="button" class="trusted-toggle${LUNCH.aiSel['trusted'] ? ' on' : ''}" data-mood="trusted">⭐ 검증된 곳(평점·리뷰) 우선</button>
+        <div class="aipick-sub2">켜면 평점·리뷰 있는 곳 비중 ↑ · 끄면 평소대로(리뷰 비중 낮게)</div>
+      </div>
       <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🫠 지금 기분·상황</div><div class="mood-row">${moodChips}</div></div>

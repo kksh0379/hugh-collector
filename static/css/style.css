@@ -1300,6 +1300,11 @@ body.tab-report .viewbar { display: none; }
 .recipe-bar { display: block; height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--primary), #5b8def); }
 .recipe-pct { flex: 0 0 auto; width: 34px; text-align: right; font-size: 11px; font-weight: 800; color: var(--muted); }
 .recipe-note { margin: 2px 0 0 38%; font-size: 11px; color: var(--muted); line-height: 1.4; }
+/* 검증된 곳 우선 — 추천 화면 맨 위 전용 토글 */
+.aipick-trusted { padding: 12px 14px; border: 1px solid #f0d98a; border-radius: var(--r-md); background: #fffbe9; }
+.trusted-toggle { display: inline-flex; align-items: center; gap: 4px; padding: 9px 14px; border: 1px solid #e9c24b; border-radius: var(--r-pill); background: #fff; color: #8a6d00; font-size: 14px; font-weight: 800; cursor: pointer; }
+.trusted-toggle.on { background: #f2b60c; border-color: #f2b60c; color: #3a2c00; }
+.aipick-sub2 { margin-top: 8px; font-size: 12px; color: #8a7320; line-height: 1.5; }
 
 /* 식당 카드 리스트 */
 #lunch-list { list-style: none; margin: 0; display: flex; flex-direction: column; gap: 10px; }

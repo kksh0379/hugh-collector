@@ -1010,11 +1010,12 @@ def _lunch_score(cands, avoid_ids, all_visited, recent3, recent7, avoid_cats, mo
         pool = [c for c in cands if c.get("cat_norm") not in avoid_cats] or list(cands)
         relaxed = True
     # 기본 가중치(합 100) — 기분/페르소나로 조정
-    W = {"trust": 25.0, "dist": 15.0, "situ": 15.0, "variety": 15.0, "explore": 10.0, "team": 10.0, "rand": 10.0}
+    # 기본값에서 리뷰·평점(trust) 비중은 낮게. '검증된 곳 우선'(trusted)/안전 성향에서만 크게 올린다.
+    W = {"trust": 10.0, "dist": 16.0, "situ": 16.0, "variety": 18.0, "explore": 14.0, "team": 12.0, "rand": 14.0}
     if "near" in moods: W["dist"] *= 1.8
-    if "trusted" in moods: W["trust"] *= 1.6
+    if "trusted" in moods: W["trust"] *= 4.0   # 검증된 곳 우선 → 리뷰·평점 비중 크게
     if "explore" in moods: W["explore"] *= 2.0
-    if persona == "safe": W["trust"] *= 1.9; W["explore"] *= 0.4; W["rand"] *= 0.6
+    if persona == "safe": W["trust"] *= 3.0; W["explore"] *= 0.4; W["rand"] *= 0.6
     elif persona == "adventure": W["explore"] *= 2.4; W["trust"] *= 0.5; W["team"] *= 0.6
     elif persona == "premium": W["trust"] *= 1.7; W["dist"] *= 0.4; W["rand"] *= 0.6
     elif persona == "fast": W["dist"] *= 2.2
