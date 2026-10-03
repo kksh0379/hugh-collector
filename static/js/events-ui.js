@@ -9,16 +9,18 @@
   const tagsHtml = s => eventCategories(s).map(t => `<span class="ed-tag">${esc(t)}</span>`).join('');
   function eventCard(s, banner=false) {
     const link=safeLink(s.source_url || s.url);
-    const key=registerItem({url:s.url,source_url:s.source_url,title:s.title,published_at:s.published_at,author:s.author,content:s.content},'event',link);
     const image=safeLink(s.image_url);
     const index=Math.max(0,topics.indexOf(eventCategories(s)[0]));
-    return `<li class="ed-card${banner?' ed-banner':''}${readClass(key)}" data-key="${esc(key)}">
-      ${banner ? `<div class="ed-art ed-art-${index}">${image?`<img loading="lazy" src="/api/img?u=${encodeURIComponent(image)}" alt="" onerror="this.remove()">`:''}<span>${esc(eventCategories(s)[0])}</span><strong>${esc(s.title || '행사')}</strong></div>`:''}
+    if(banner){
+      const art=`${image?`<img loading="lazy" src="/api/img?u=${encodeURIComponent(image)}" alt="" onerror="this.remove()">`:''}<span class="ed-banner-category">${esc(eventCategories(s)[0])}</span><h3>${esc(s.title || '행사')}</h3><div class="ed-banner-facts"><span>${esc(eventDateBadge(s))}</span>${eventPlace(s)?`<span>${esc(eventPlace(s))}</span>`:''}</div>${link?'<span class="ed-banner-arrow" aria-hidden="true">↗</span>':''}`;
+      return `<li class="ed-card ed-banner">${link?`<a class="ed-art ed-art-${index}" href="${esc(link)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(s.title || '행사')} 원문 보기">${art}</a>`:`<div class="ed-art ed-art-${index}">${art}</div>`}</li>`;
+    }
+    const key=registerItem({url:s.url,source_url:s.source_url,title:s.title,published_at:s.published_at,author:s.author,content:s.content},'event',link);
+    return `<li class="ed-card${readClass(key)}" data-key="${esc(key)}">
       <div class="ed-card-body"><div class="ed-tags">${tagsHtml(s)} ${eventSrcBadge(s)}</div>
       <h3>${esc(s.title || '제목 없음')}</h3>
       <p class="ed-facts">📅 ${esc(eventDateBadge(s))}${eventPlace(s)?`<br>📍 ${esc(eventPlace(s))}`:''}</p>
       ${s.end_date && s.start_date && s.end_date!==s.start_date?'<span class="ed-range">여러 날 진행하는 행사</span>':''}
-      ${banner?`<p class="ed-reason">✦ ${esc(s.recommend_reason)}</p>`:''}
       <div class="ed-actions">${scrapBtnHtml(key)}${link?`<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">행사 원문 보기 ↗</a>`:''}</div></div></li>`;
   }
   let month=null,selected=null,expanded=false,calendarItems=[];
@@ -70,9 +72,9 @@
   function renderResult(){
     const target=document.getElementById('ed-results');if(!target)return;
     const notice=document.getElementById('ed-status');
-    if(busy){notice.textContent='관심사에 맞는 행사를 추천하고 있어요…';target.innerHTML='<li class="ed-empty">수집된 행사에서 추천할 목록을 고르고 있어요.</li>';return;}
-    if(!result){notice.textContent='관심 분야와 키워드를 선택해 추천받으세요.';target.innerHTML='';return;}
-    notice.textContent=result.notice||'';notice.dataset.aiError=result.ai_error||'';
+    if(busy){notice.textContent='추천 불러오는 중…';notice.hidden=false;if(!result)target.innerHTML='';return;}
+    if(!result){notice.textContent='';notice.hidden=true;target.innerHTML='';return;}
+    notice.textContent=result.ai_error || !result.items?.length ? result.notice||'' : '';notice.hidden=!notice.textContent;notice.dataset.aiError=result.ai_error||'';
     const keys=new Set(available.map(s=>s.url));
     const items=(result.items||[]).filter(s=>keys.has(s.url));
     target.innerHTML=items.length?items.map(s=>eventCard(s,true)).join(''):'<li class="ed-empty">표시할 추천이 없어요. 관심사나 검색어를 바꿔 보세요.</li>';
@@ -103,18 +105,21 @@
     if(initialized){renderResult();if(activeTab()==='event' && !result && !busy && list.length)recommend();return;}
     initialized=true;
     const root=document.getElementById('event-curation');
-    root.innerHTML=`<section class="ed-preferences"><h3>어떤 행사에 관심 있어요?</h3><p>관심 분야와 키워드로 추천받으세요. 미선택 시 전체에서 추천해요.</p>
+    root.innerHTML=`<div class="ed-curation-toolbar"><span id="ed-mode" class="ed-mode"></span><button type="button" id="ed-settings">관심사 설정</button></div><p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기">×</button></div><p>미선택 시 전체 행사에서 추천해요.</p>
       <fieldset><legend>관심 분야 · 여러 개 선택</legend><div class="ed-topics">${topics.map(t=>`<label><input type="checkbox" value="${esc(t)}" ${prefs.topics.includes(t)?'checked':''}>${esc(t)}</label>`).join('')}</div></fieldset>
       <label for="ed-keyword-input" class="ed-label">관심 키워드</label><div id="ed-keywords" class="ed-chips"></div>
       <form id="ed-keyword-form"><input id="ed-keyword-input" maxlength="40" placeholder="키워드 직접 입력" aria-label="관심 키워드"><button type="submit">추가</button></form>
       <div class="ed-chips ed-suggestions">${['AI 거버넌스','정보보안','생성형 AI','접근성','클라우드','개발자'].map(k=>`<button type="button" class="ed-chip" data-keyword="${esc(k)}">${esc(k)}</button>`).join('')}</div>
-      <button type="button" class="ed-primary" id="ed-recommend">✦ 맞춤 행사 추천받기</button><p class="ed-hint">수집된 행사에서 추천해요. 참여 전 원문·공식 채널을 확인해 주세요.</p></section>
-      <div class="ed-agenda-head"><h3>관심사에 맞는 행사</h3><span id="ed-mode" class="ed-tag"></span></div><p id="ed-status" role="status" aria-live="polite"></p><ul id="ed-results" class="ed-feed"></ul>`;
+      <button type="button" class="ed-primary" id="ed-recommend">적용하고 추천받기</button></section></dialog>`;
     const addKeyword=k=>{k=k.trim();if(!k)return;if(prefs.keywords.length>=8){toast('키워드는 8개까지 선택할 수 있어요.');return;}if(!prefs.keywords.includes(k))prefs.keywords.push(k);persist();chips();};
     root.querySelector('.ed-topics').onchange=()=>{prefs.topics=Array.from(root.querySelectorAll('.ed-topics input:checked')).map(b=>b.value);persist();};
     root.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.keyword)addKeyword(b.dataset.keyword);if(b.dataset.remove!==undefined){prefs.keywords.splice(+b.dataset.remove,1);persist();chips();}};
     root.querySelector('#ed-keyword-form').onsubmit=e=>{e.preventDefault();const input=root.querySelector('#ed-keyword-input');addKeyword(input.value);input.value='';};
-    root.querySelector('#ed-recommend').onclick=recommend;
+    const dialog=root.querySelector('#ed-dialog');
+    root.querySelector('#ed-settings').onclick=()=>dialog.showModal();
+    root.querySelector('#ed-close').onclick=()=>dialog.close();
+    dialog.onclick=e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}};
+    root.querySelector('#ed-recommend').onclick=()=>{dialog.close();recommend();};
     chips();renderResult();if(activeTab()==='event' && list.length)recommend();
   }
   window.EventDiscovery={calendar,curation};

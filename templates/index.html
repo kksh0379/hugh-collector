@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.33") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.34") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -48,7 +48,7 @@
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.33") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.34") }}">
 </head>
 <body>
   <header class="app-header">
@@ -254,7 +254,6 @@
       <span class="chip chip-plan">앨범/캘린더 · 날짜·장소 자동추출(구글 뉴스)</span>
     </div>
     <div class="event-note">
-      분야는 제목·소개를 기준으로 자동 분류하며, 한 행사가 여러 분야에 포함될 수 있어요. 여러 항목을 선택하면 선택 분야의 행사를 함께 보여줘요.<br>
       ⚠️ <b>뉴스</b> 딱지 행사는 기사에서 <b>자동 추출</b>해 날짜·장소·개최 여부가 실제와 다르거나 누락·오류가 있을 수 있어요. <b>관광공사·문화포털</b> 딱지는 공식 기관 정보지만 일정이 변경될 수 있어요. 참여·신청 전 반드시 <b>원문·공식 채널</b>에서 확인해 주세요.
     </div>
     <div class="last-crawl" id="last-event"></div>
@@ -462,7 +461,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.33 · build 261004</span>
+    <span class="ver">v3.34 · build 261004</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -491,8 +490,8 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.33") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.33") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.34") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.34") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>
