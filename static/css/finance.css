@@ -36,7 +36,11 @@
 .finance-chip:hover { background: #e8f0ff; border-color: var(--primary); }
 .finance-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
 /* 엔씨 공시 체크박스는 뉴스의 .checkbar 컴포넌트를 그대로 사용(style.css). finance-quick은 여백만. */
-.finance-quick.checkbar { margin: 6px 0 2px; }
+.finance-quick.checkbar { margin: 6px 0 2px; align-items: center; }
+/* 전역 .finance-view input(width:100%·padding·border·background)이 체크박스에 남아 세로 정렬이
+   틀어지던 문제 → 박스 속성을 리셋하고 네이티브 체크박스로 고정(글자와 가운데 정렬). */
+.finance-view .checkbar input[type="checkbox"] { -webkit-appearance: checkbox; appearance: checkbox; box-sizing: border-box; width: 16px; min-width: 16px; height: 16px; margin: 0; padding: 0; border: 0; background: none; border-radius: 0; vertical-align: middle; accent-color: var(--primary); cursor: pointer; }
+.finance-view .checkbar label { line-height: 1; }
 .finance-dart-help { margin: 8px 0 0; font-size: 11.5px; line-height: 1.6; }
 .finance-dart-help b { color: var(--text); }
 .finance-indicator h3 { font-size: 13px; font-weight: 700; margin: 10px 0 6px; }
