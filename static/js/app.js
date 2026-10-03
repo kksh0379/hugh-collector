@@ -633,7 +633,9 @@ function renderCard(item, opts) {
     ? `<p class="card-summary">${escapeHtml(item.content)}</p>`
     : (item.image_url ? "" : `<p class="card-summary">요약 없음</p>`);
   const li = document.createElement("li");
-  li.className = "card card-news" + readClass(key);
+  // 통합 피드(비영리재단 동향)에서 게시판·영상은 넓은 미디어 카드로(데스크톱). _src로 구분.
+  const srcCls = item._src === "board" ? " card-board" : item._src === "video" ? " card-video" : "";
+  li.className = "card card-news" + srcCls + readClass(key);
   li.dataset.key = key;
   li.innerHTML = `
     ${scrapBtnHtml(key)}
