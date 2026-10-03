@@ -32,7 +32,7 @@
     const counts=Array.from({length:last},(_,i)=>dayEvents(monthList,`${month}-${String(i+1).padStart(2,'0')}`).length);
     const max=Math.max(1,...counts);
     function cell(iso,day,label='') {
-      const n=dayEvents(monthList,iso).length,level=n?Math.ceil(n/max*4):0;
+      const n=dayEvents(list,iso).length,level=n?Math.ceil(n/max*4):0;
       return `<button type="button" class="ed-day ed-heat-${level}${iso===selected?' selected':''}${iso===today?' today':''}" data-date="${iso}" aria-pressed="${iso===selected}" aria-label="${esc(iso)} 행사 ${n}건"><strong>${day}</strong>${label?`<small>${label}</small>`:''}<span>${n?n+'건':'—'}</span></button>`;
     }
     let grid='';
@@ -72,7 +72,7 @@
     const notice=document.getElementById('ed-status');
     if(busy){notice.textContent='관심사에 맞는 행사를 추천하고 있어요…';target.innerHTML='<li class="ed-empty">수집된 행사에서 추천할 목록을 고르고 있어요.</li>';return;}
     if(!result){notice.textContent='관심 분야와 키워드를 선택해 추천받으세요.';target.innerHTML='';return;}
-    notice.textContent=result.notice||'';
+    notice.textContent=result.notice||'';notice.dataset.aiError=result.ai_error||'';
     const keys=new Set(available.map(s=>s.url));
     const items=(result.items||[]).filter(s=>keys.has(s.url));
     target.innerHTML=items.length?items.map(s=>eventCard(s,true)).join(''):'<li class="ed-empty">표시할 추천이 없어요. 관심사나 검색어를 바꿔 보세요.</li>';
