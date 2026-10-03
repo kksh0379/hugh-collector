@@ -1062,7 +1062,10 @@ function makeCheckFilter(tab, boxId, bucketFn) {
   return (items) => {
     if (selected.size >= cats.length) return items;   // 전부 선택 = 전체
     if (selected.size === 0) return [];                // 모두 해제 = 없음
-    return items.filter((it) => selected.has(bucketFn(it)));
+    return items.filter((it) => {
+      const buckets = bucketFn(it);
+      return (Array.isArray(buckets) ? buckets : [buckets]).some((cat) => selected.has(cat));
+    });
   };
 }
 const filterCatByCat = makeCheckFilter("cat", "cat-cats", (it) => it.category || "");
@@ -1333,6 +1336,21 @@ async function loadSocial() {
 })();
 
 // ----------------------------- 행사일정(앨범 / 캘린더) -----------------------------
+// 제목·소개에 있는 분야 단서로 다중 분류. 출처/장소는 분야 근거로 사용하지 않는다.
+function eventCategories(item) {
+  const text = [item.title, item.content, item.category].filter(Boolean).join(" ")
+    .replace(/<[^>]*>/g, " ").normalize("NFKC");
+  const tags = [];
+  const ai = /\b(?:AI|LLM|GPT|GenAI)\b|인공지능|머신러닝|딥러닝|생성형\s*(?:AI|인공지능)/i.test(text);
+  if (/\b(?:IT|ICT|SW|SaaS|IoT)\b|정보기술|정보통신|소프트웨어|개발자|프로그래밍|오픈소스|클라우드|사이버\s*보안|정보\s*보안|반도체|로봇|디지털|테크|블록체인/i.test(text)) tags.push("IT·기술");
+  if (ai || /빅데이터|데이터\s*(?:분석|과학|산업|엔지니어링|컨퍼런스)|data\s*(?:science|analytics)/i.test(text)) tags.push("AI·데이터");
+  if (ai && /윤리|거버넌스|책임\s*(?:있는|있는AI|AI|인공지능)|신뢰|공정성|안전성|기본법|규제|ethic|governance|responsible|trustworthy|AI\s*safety/i.test(text)) tags.push("AI 윤리");
+  if (/산업|비즈니스|스타트업|창업|벤처|투자|경제|금융|무역|물류|제조|모빌리티|헬스케어|바이오|의료|뷰티|식품|건설|채용|취업|business|startup/i.test(text)) tags.push("산업·비즈니스");
+  if (/문화|예술|미술|전시|박물관|축제|페스티벌|문학|도서|출판|디자인|공예|관광|게임|콘텐츠|아트|exhibition|festival/i.test(text)) tags.push("문화·전시");
+  if (/교육|학습|청소년|어린이|아동|학교|공익|비영리|사회적\s*가치|사회적\s*경제|복지|장애|접근성|포용|환경|기후|탄소|지속가능|\bESG\b|봉사|시민/i.test(text)) tags.push("교육·공익");
+  return tags.length ? tags : ["기타"];
+}
+const filterEventsByCategory = makeCheckFilter("event", "event-cats", eventCategories);
 let eventView = "album";                 // album | calendar
 let eventCalYM = null;                    // 캘린더가 보는 [year, month(0-11)]
 async function loadEvent() {
@@ -1341,6 +1359,8 @@ async function loadEvent() {
   try {
     const res = await fetchData("/api/events");
     setTabData("event", el, await res.json(), renderEvents);
+    TAB_DATA.event.prefilter = filterEventsByCategory;
+    renderTab("event");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
 function eventDateBadge(s) {

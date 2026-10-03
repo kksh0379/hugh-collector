@@ -6,7 +6,7 @@ const source=fs.readFileSync('static/js/app.js','utf8');
 const helpers=source.slice(source.indexOf('const CAL_COLORS'),source.indexOf('function renderEvents'));
 const facts=source.slice(source.indexOf('function eventDateBadge'),source.indexOf('function eventAlbumCard'));
 const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function context(extra={}){const c=vm.createContext({URL,Date,AbortController,escapeHtml,...extra});vm.runInContext(facts+helpers,c);return c;}
+function context(extra={}){const c=vm.createContext({URL,Date,AbortController,escapeHtml,NEWS_NEW_DATE:'',...extra});vm.runInContext(facts+helpers,c);return c;}
 const list=[{title:'월 경계 행사',start_date:'2026-09-29',end_date:'2026-10-03',url:'https://news.example/1'},
 {title:'당일 행사',start_date:'2026-10-02',url:'https://news.example/2'},
 {title:'예정 행사',start_date:'2026-10-04',url:'https://news.example/3'},
