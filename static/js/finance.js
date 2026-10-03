@@ -184,5 +184,111 @@
     } catch(e) { $('finance-business-result').textContent=e.name==='AbortError' ? '조회 시간이 초과되었습니다. 다시 시도해 주세요.' : e.message; }
     finally {button.disabled=false;}
   });
+  // ===== 상단 탭 분류(지표/계산기/세무·공시/브리핑) — 보기 전환만, 데이터는 그대로 로드 =====
+  const fintabs=$('fin-tabs');
+  if(fintabs){
+    fintabs.addEventListener('click',event=>{
+      const b=event.target.closest('[data-fintab]'); if(!b) return;
+      const key=b.dataset.fintab;
+      fintabs.querySelectorAll('[data-fintab]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-selected',String(on));});
+      document.querySelectorAll('#view-finance .fin-panel').forEach(p=>{p.hidden=p.dataset.panel!==key;});
+    });
+  }
+
+  // ===== 돈 계산기 (순수 계산 — 외부 데이터 없음) =====
+  const won=n=>Math.round(n).toLocaleString('ko-KR')+'원';
+  const man=n=>{ const v=Math.round(n/10000); return v.toLocaleString('ko-KR')+'만원'; };
+  // 결과를 정의목록(dl)로. rows: [라벨, 값, 강조?]
+  const dlHtml=rows=>`<dl>${rows.map(([l,v,hl])=>`<dt>${esc(l)}</dt><dd${hl?' class="calc-hl"':''}>${esc(v)}</dd>`).join('')}</dl>`;
+  const num=id=>{ const el=$(id); return el?Number(el.value):0; };
+
+  // 근로소득공제(2025)
+  function earnedDeduction(g){
+    let d;
+    if(g<=5000000) d=g*0.7;
+    else if(g<=15000000) d=3500000+(g-5000000)*0.4;
+    else if(g<=45000000) d=7500000+(g-15000000)*0.15;
+    else if(g<=100000000) d=12000000+(g-45000000)*0.05;
+    else d=14750000+(g-100000000)*0.02;
+    return Math.min(d,20000000);
+  }
+  // 종합소득세 산출세액(2025 세율·누진공제)
+  function progressiveTax(b){
+    const t=[[14000000,0.06,0],[50000000,0.15,1260000],[88000000,0.24,5760000],[150000000,0.35,15440000],[300000000,0.38,19940000],[500000000,0.40,25940000],[1000000000,0.42,35940000],[Infinity,0.45,65940000]];
+    for(const [lim,rate,ded] of t){ if(b<=lim) return Math.max(0,b*rate-ded); }
+    return 0;
+  }
+  function calcSalary(){
+    const out=$('calc-salary-out'); if(!out) return;
+    const annual=(num('calc-salary-annual')||0)*10000;
+    if(annual<=0){ out.innerHTML=''; return; }
+    const family=Math.max(1, Math.floor(num('calc-salary-family'))||1);
+    const monthly=annual/12;
+    const nontax=Math.min(Math.max(0,num('calc-salary-nontax')), monthly);
+    const taxable=Math.max(0, monthly-nontax);
+    // 4대보험(근로자 부담, 2025 요율)
+    const pension=taxable*0.045, health=taxable*0.03545, care=health*0.1295, employ=taxable*0.009;
+    const insurance=pension+health+care+employ;
+    // 소득세(근사 — 연 산출세액 ÷ 12)
+    const gross=taxable*12;
+    const base=Math.max(0, gross-earnedDeduction(gross) - 1500000*family - pension*12);
+    const calc=progressiveTax(base);
+    let credit=calc<=1300000 ? calc*0.55 : 715000+(calc-1300000)*0.30;
+    let cap; if(gross<=33000000) cap=740000; else if(gross<=70000000) cap=Math.max(660000,740000-(gross-33000000)*0.008); else cap=Math.max(500000,660000-(gross-70000000)*0.5);
+    credit=Math.min(credit,cap);
+    const incomeTax=Math.max(0,calc-credit)/12, localTax=incomeTax*0.1;
+    const take=monthly-insurance-incomeTax-localTax;
+    out.innerHTML=dlHtml([
+      ['월 실수령액', won(take)+' (약 '+man(take)+')', true],
+      ['월 급여 (세전)', won(monthly)],
+      ['4대보험', '−'+won(insurance)],
+      ['소득세+지방세', '−'+won(incomeTax+localTax)],
+      ['연 실수령 (대략)', won(take*12)],
+    ]);
+  }
+  function calcSave(){
+    const out=$('calc-save-out'); if(!out) return;
+    const type=$('calc-save-type').value, amount=Math.max(0,num('calc-save-amount')), rate=Math.max(0,num('calc-save-rate'))/100, n=Math.max(0,Math.floor(num('calc-save-months'))), comp=$('calc-save-comp').value;
+    if(amount<=0||n<=0){ out.innerHTML=''; return; }
+    const i=rate/12; let principal, interest;
+    if(type==='lump'){
+      principal=amount;
+      interest = comp==='monthly' ? amount*(Math.pow(1+i,n)-1) : amount*rate*(n/12);
+    } else {
+      principal=amount*n;
+      if(comp==='monthly'){ let fv=0; for(let k=1;k<=n;k++) fv+=amount*Math.pow(1+i,n-k+1); interest=fv-principal; }
+      else interest=amount*i*(n*(n+1)/2);
+    }
+    const tax=interest*0.154, net=interest-tax;
+    out.innerHTML=dlHtml([
+      ['만기 수령액', won(principal+net), true],
+      ['원금 합계', won(principal)],
+      ['세전 이자', won(interest)],
+      ['이자소득세 (15.4%)', '−'+won(tax)],
+      ['세후 이자', won(net)],
+    ]);
+  }
+  function calcLoan(){
+    const out=$('calc-loan-out'); if(!out) return;
+    const P=Math.max(0,num('calc-loan-amount')), rate=Math.max(0,num('calc-loan-rate'))/100, n=Math.max(0,Math.floor(num('calc-loan-months'))), type=$('calc-loan-type').value;
+    if(P<=0||n<=0){ out.innerHTML=''; return; }
+    const i=rate/12;
+    if(type==='annuity'){
+      const pay = i>0 ? P*i*Math.pow(1+i,n)/(Math.pow(1+i,n)-1) : P/n;
+      const total=pay*n;
+      out.innerHTML=dlHtml([['월 상환액', won(pay), true],['총 상환액', won(total)],['총 이자', won(total-P)]]);
+    } else {
+      const part=P/n; let bal=P, totInt=0, first=0, last=0;
+      for(let k=0;k<n;k++){ const int=bal*i, pay=part+int; if(k===0)first=pay; if(k===n-1)last=pay; totInt+=int; bal-=part; }
+      out.innerHTML=dlHtml([['첫 달 상환액', won(first), true],['마지막 달', won(last)],['총 이자', won(totInt)],['총 상환액', won(P+totInt)]]);
+    }
+  }
+  ['calc-salary-annual','calc-salary-family','calc-salary-nontax'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcSalary);});
+  ['calc-save-amount','calc-save-rate','calc-save-months'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcSave);});
+  ['calc-save-type','calc-save-comp'].forEach(id=>{const el=$(id); if(el)el.addEventListener('change',calcSave);});
+  ['calc-loan-amount','calc-loan-rate','calc-loan-months'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcLoan);});
+  { const el=$('calc-loan-type'); if(el)el.addEventListener('change',calcLoan); }
+  { const t=$('calc-save-type'); if(t)t.addEventListener('change',()=>{ const lb=$('calc-save-amount-label'); if(lb)lb.textContent = t.value==='lump'?'예치금 (원)':'월 납입액 (원)'; }); }
+
   window.onShowFinance=()=>{load();loadStock();loadDart();};
 })();

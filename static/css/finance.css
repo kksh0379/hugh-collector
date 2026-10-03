@@ -77,6 +77,27 @@
 .finance-view th { color: var(--muted); background: var(--bg); }
 .finance-view td:last-child { white-space: nowrap; }
 .finance-search-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* 상단 탭 분류 */
+.fin-tabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 4px 0 16px; padding-bottom: 2px; }
+.fin-tabs::-webkit-scrollbar { display: none; }
+.fin-tab { flex: 0 0 auto; padding: 8px 15px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--card); color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.fin-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.fin-panel[hidden] { display: none; }
+
+/* 돈 계산기 */
+.calc-card { margin-bottom: 14px; }
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 12px 0; }
+.calc-grid label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.calc-grid label.calc-full { grid-column: 1 / -1; }
+.calc-grid input, .calc-grid select { padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg); color: var(--text); font-size: 15px; font-weight: 600; font-family: inherit; width: 100%; box-sizing: border-box; }
+.calc-grid input:focus, .calc-grid select:focus { outline: none; border-color: var(--primary); }
+.calc-out:empty { display: none; }
+.calc-out dl { display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; margin: 4px 0 0; padding: 13px 15px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); }
+.calc-out dt { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.calc-out dd { margin: 0; text-align: right; font-size: 13.5px; font-weight: 800; color: var(--text); }
+.calc-out dd.calc-hl { color: var(--primary); font-size: 16px; }
+.calc-note { margin-top: 9px; font-size: 11px; line-height: 1.5; }
+
 @media (max-width: 600px) {
   .finance-view { padding: 20px 12px; }
   .finance-tools { grid-template-columns: 1fr; gap: 0; }
