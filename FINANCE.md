@@ -22,7 +22,6 @@
 | NTS_API_KEY | 국세청 사업자등록 상태조회, 디코딩된 서비스키 | 조회 불가 안내, 사업자 상태를 추측하지 않음 |
 | DART_API_KEY | Open DART 최근 90일 공시, 선택한 8자리 고유번호 | 연결 준비 안내와 공식 사이트 링크 |
 | NC_STOCK_CODE / NC_STOCK_NAME / NC_STOCK_URL | (주)엔씨 주가 종목코드(기본 036570)·표기명(기본 (주)엔씨)·조회 URL(선택) | 일별 종가 시계열로 값·등락·6개월 추이 수집, 실패 시 값 미표시 |
-| GOLD_XAU_URL / GOLD_FX_URL | 금 시세(원/g) 환산용 국제 금(XAU/USD)·원달러(USDKRW) 일별 CSV 출처(기본: stooq) | 국제 금×환율÷31.1035로 1g 환산해 값·등락·추이 수집(국제 기준, KRX 현물가와 다를 수 있음). **응답이 없으면 ‘일시 중단’으로만 표시(숫자 추측 금지)**. 진단: `/api/finance/goldcheck`. 네이버 국내 금(원/g) 페이지는 2026년 폐지(HTTP 410)되어 환산 방식으로 전환 |
 | FINANCE_RSS_MOEF/NTS/PWC/KPMG/JOSEILBO/ASSEMBLY | 출처별 공식 HTTPS RSS URL(선택) | 지정 시 구글 뉴스 기본값 대신 해당 공식 RSS 사용 |
 
 - 지원사업(기업마당/BIZINFO) 출처와 분류는 v2.58에서 제거했습니다. 관련 환경변수(`BIZINFO_API_KEY`, `FINANCE_RSS_BIZINFO`)는 더 이상 사용하지 않습니다.

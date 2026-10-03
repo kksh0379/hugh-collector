@@ -84,7 +84,7 @@
     if (r.change == null) changeLine = r.mode === 'loading' ? '주가를 불러오고 있습니다.' : '비교 데이터 없음';
     else if (r.ratio != null) changeLine = `전일 종가 대비 ${r.change>0?'+':''}${esc(Number(r.change).toLocaleString('ko-KR'))}원 (${r.ratio>0?'+':''}${esc(r.ratio)}%)`;
     else changeLine = `직전 관측 대비 ${r.change>0?'+':''}${esc(r.change)}${r.unit==='%'?'%p':esc(r.unit)}`;
-    const isNc = String(r.code||'') === 'KRX/'+NC_CODE;  // 엔씨 주가 카드만 ↻·id 부여(금 등 다른 KRX 코드와 구분)
+    const isNc = String(r.code||'').startsWith('KRX');
     const idAttr = isNc ? ' id="finance-nc"' : '';
     const refresh = isNc ? `<button type="button" class="finance-stock-refresh" aria-label="주가 새로고침" title="주가 새로고침">↻</button>` : '';
     return `<article class="finance-indicator"${idAttr}><span class="finance-mode ${r.mode === 'live' ? 'live' : ''}">${esc(modes[r.mode])}</span>${refresh}<h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;

@@ -290,57 +290,6 @@ def nc_stock():
     return _series_quote(url, result)
 
 
-# 네이버 국내 금(원/g) 일별 페이지는 2026년 폐지(HTTP 410). 대신 국제 금(XAU/USD)을
-# 원/달러 환율로 환산해 원/g을 만든다(네이버가 쓰던 환산 방식과 동일). stooq 무료 CSV 사용.
-GOLD_XAU_URL = 'https://stooq.com/q/d/l/?s=xauusd&i=d'   # 국제 금, USD/트로이온스(일별 종가)
-GOLD_FX_URL = 'https://stooq.com/q/d/l/?s=usdkrw&i=d'    # 원/달러 환율(일별 종가)
-OZ_TO_GRAM = 31.1034768                                   # 1 트로이온스 = 31.1034768 g
-
-
-def _stooq_series(url, days=200):
-    """stooq 일별 CSV(Date,Open,High,Low,Close,Volume)에서 최근 days일 {YYYYMMDD: 종가}."""
-    resp = requests.get(url, timeout=(3, 7), headers={'User-Agent': 'Mozilla/5.0'})
-    resp.raise_for_status()
-    out = {}
-    for line in (resp.text or '').strip().splitlines()[1:]:  # 헤더 제외
-        parts = line.split(',')
-        if len(parts) < 5:
-            continue
-        d = parts[0].replace('-', '')
-        c = _num(parts[4])
-        if len(d) == 8 and d.isdigit() and c and c > 0:
-            out[d] = c
-    keys = sorted(out)[-days:]
-    return {k: out[k] for k in keys}
-
-
-def gold_price():
-    """금 시세(원/g). 국제 금(XAU/USD)×원달러 환율÷31.1035로 환산한 1g 가격과 추이.
-    국제 기준 환산값이라 KRX 현물 매매가와는 다를 수 있다. 실패 시 값을 지어내지 않는다.
-    출처는 GOLD_XAU_URL·GOLD_FX_URL로 교체 가능."""
-    result = dict(code='GOLD/KRX', name='금 시세(원/g)', unit='원/g', value=None,
-                  change=None, ratio=None, date=None, mode='unavailable', history=[],
-                  desc='국제 금 시세(XAU/USD)를 원/달러 환율로 환산한 1g 가격입니다(국제 기준). '
-                       'KRX 금시장·금은방 실매매가는 수수료·프리미엄으로 다를 수 있어요. 한 돈(3.75g) = 값×3.75.')
-    try:
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            fx_future = ex.submit(_stooq_series, os.getenv('GOLD_FX_URL') or GOLD_FX_URL)
-            xau = _stooq_series(os.getenv('GOLD_XAU_URL') or GOLD_XAU_URL)
-            fx = fx_future.result()
-        common = sorted(set(xau) & set(fx))
-        series = [(d, xau[d] * fx[d] / OZ_TO_GRAM) for d in common]
-        if len(series) < 2:
-            raise ValueError('No series')
-        last, prev = series[-1][1], series[-2][1]
-        change = last - prev
-        result.update(mode='live', value=round(last), date=series[-1][0],
-                      change=round(change), ratio=round(change / prev * 100, 2) if prev else None,
-                      history=sample_history(series))
-    except Exception:
-        result.update(mode='unavailable', value=None, change=None, ratio=None, history=[])
-    return result
-
-
 def next_business_day(day):
     # 주말이면 다음 영업일(월요일)로 이동. 공휴일은 안내 문구로만 처리한다.
     while day.weekday() >= 5:
@@ -382,11 +331,8 @@ def tax_calendar(today=None):
 
 def dashboard():
     # 엔씨 주가는 자주 바뀌므로 대시보드 캐시와 분리(/stock 엔드포인트, 짧은 캐시)해 방문마다 갱신한다.
-    # 금 시세(일 1회 종가)는 변동이 느려 대시보드 캐시(15분)에 함께 담는다.
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        gold = executor.submit(gold_price)
+    with ThreadPoolExecutor(max_workers=3) as executor:
         indicators = list(executor.map(indicator, INDICATORS))
-        indicators.append(gold.result())
     data = news()
     data.update(indicators=indicators, calendar=tax_calendar())
     return data
@@ -425,35 +371,6 @@ def stock_route():
             name=os.getenv('NC_STOCK_NAME', '(주)엔씨'), unit='원', value=None, change=None,
             ratio=None, date=None, mode='loading', history=[], desc=''))
     return jsonify(dict(data, pending=False))
-
-
-@bp.get('/goldcheck')
-def goldcheck():
-    """금 시세 출처 진단: 후보 URL을 서버에서 직접 받아 상태·원문 일부를 보여준다.
-    어떤 엔드포인트가 실제로 되는지 확인용(숫자 추측 없음, 본문 일부만 노출)."""
-    candidates = [
-        ('GET', os.getenv('GOLD_XAU_URL') or GOLD_XAU_URL, None),
-        ('GET', os.getenv('GOLD_FX_URL') or GOLD_FX_URL, None),
-        # KRX 금시장 일별시세(대안 원천, 원/g). 작동 시 라이브 출처를 이쪽으로 교체 검토.
-        ('POST', 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd',
-         {'bld': 'dbms/MDC/STAT/standard/MDCSTAT13101', 'trdDd': now().strftime('%Y%m%d')}),
-    ]
-    out = []
-    for method, url, data in candidates:
-        row = {'method': method, 'url': url}
-        try:
-            if method == 'POST':
-                resp = requests.post(url, data=data, timeout=(3, 7),
-                                     headers={'User-Agent': 'Mozilla/5.0',
-                                              'Referer': 'https://data.krx.co.kr/'})
-            else:
-                resp = requests.get(url, timeout=(3, 7), headers={'User-Agent': 'Mozilla/5.0'})
-            row.update(status=resp.status_code, final_url=resp.url,
-                       bytes=len(resp.content), sample=(resp.text or '')[:1200])
-        except Exception as e:  # noqa: BLE001
-            row.update(error=f'{type(e).__name__}: {e}')
-        out.append(row)
-    return jsonify(dict(live=gold_price(), candidates=out))
 
 
 @bp.post('/business-status')
