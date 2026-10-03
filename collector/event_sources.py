@@ -231,4 +231,18 @@ def diagnose():
                               "to": (today + datetime.timedelta(days=180)).strftime("%Y%m%d"),
                               "rows": 5, "cPage": 1})
     out["culture_events"] = crow
+    # 코엑스 행사 일정 페이지 구조 확인(어댑터 붙이기 전 SSR/SPA·HTML 구조 파악용)
+    import re as _re
+    try:
+        cx = os.getenv("COEX_SCHEDULE_URL", "https://www.coex.co.kr/event/full-schedules/")
+        r = requests.get(cx, timeout=(3, 12), headers={"User-Agent": "Mozilla/5.0"})
+        txt = r.text or ""
+        out["coex_probe"] = {
+            "status": r.status_code, "bytes": len(r.content),
+            "date_like": len(_re.findall(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", txt)),
+            "spa_hint": ("__NEXT_DATA__" in txt or "/_next/" in txt or "id=\"root\"" in txt or "ng-app" in txt),
+            "sample": txt[:1200],
+        }
+    except Exception as e:  # noqa: BLE001
+        out["coex_probe"] = {"error": f"{type(e).__name__}: {e}"}
     return out

@@ -39,6 +39,9 @@ EVENT_CATEGORIES = {
         "(AI 윤리 OR 인공지능 윤리 OR 신뢰할 수 있는 AI OR 책임있는 AI OR 생성형 AI OR LLM OR 초거대 AI) (컨퍼런스 OR 세미나 OR 포럼 OR 심포지엄) 개최",
         "(개발자 OR 데이터 OR 클라우드 OR 사이버보안 OR 소프트웨어 OR 오픈소스 OR 블록체인) (컨퍼런스 OR 세미나 OR 밋업 OR 테크 포럼) 개최",
         "(학회 OR 학술대회 OR 춘계 OR 추계 OR 정기학술) (컨퍼런스 OR 심포지엄 OR 학술대회) 개최",
+        # AI 거버넌스/신뢰·책임 AI/서울 AI — '개최' 없이도(열린다/주최/주제로) 폭넓게
+        "(AI 거버넌스 OR 인공지능 거버넌스 OR 신뢰 AI OR 신뢰할 수 있는 AI OR 책임있는 AI OR AI 윤리) (포럼 OR 컨퍼런스 OR 서밋 OR 세미나 OR 심포지엄)",
+        "(코엑스 OR 킨텍스 OR 벡스코 OR 세텍 OR DDP) (AI OR 인공지능 OR 포럼 OR 서밋 OR 컨퍼런스 OR 세미나)",
     ],
 }
 
