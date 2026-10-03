@@ -208,10 +208,57 @@ def culture_events(progress=None):
     return out
 
 
+# ------------------------------------ 코엑스 행사 일정 ------------------------------------
+COEX_URL = "https://www.coex.co.kr/event/full-schedules/"
+
+
+def coex_events(progress=None):
+    """코엑스 행사 일정(SSR HTML) — 전시·컨벤션·행사를 직접 수집(기사 없이도). 기본 1개월 창.
+    COEX_OFF=1이면 비활성, COEX_SCHEDULE_URL로 교체 가능. 구조:
+    <a class='BlogEventItem-link'> … .BlogEventItemCont-tit/-date/-hall/-cate, img.BlogEventItemHover-img."""
+    if os.getenv("COEX_OFF"):
+        return []
+    url = os.getenv("COEX_SCHEDULE_URL", COEX_URL)
+    out = []
+    try:
+        import re as _re
+        r = requests.get(url, timeout=(3, 12), headers={"User-Agent": "Mozilla/5.0"})
+        root = etree.HTML(r.content, etree.HTMLParser(encoding="utf-8"))
+        if root is None:
+            return out
+        seen = set()
+        for a in root.xpath("//a[contains(@class,'BlogEventItem-link')]"):
+            def first(cls):
+                nodes = a.xpath(f".//*[contains(@class,'{cls}')]")
+                return "".join(nodes[0].itertext()).strip() if nodes else ""
+            title = first("BlogEventItemCont-tit")
+            if not title or title in seen:
+                continue
+            dates = _re.findall(r"20\d{2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2}", first("BlogEventItemCont-date"))
+            sd = _culture_date(dates[0]) if dates else None
+            if not sd:
+                continue
+            seen.add(title)
+            ed = _culture_date(dates[1]) if len(dates) > 1 else sd
+            hall = first("BlogEventItemCont-hall")
+            cate = first("BlogEventItemCont-cate")
+            hrefs = a.get("href") or url
+            imgs = a.xpath(".//img[contains(@class,'BlogEventItemHover-img')]/@src")
+            out.append(_item(title, sd, ed or sd,
+                             venue=("코엑스" + (" " + hall if hall else "")), region="서울",
+                             url=hrefs, image=(imgs[0] if imgs else ""),
+                             content=cate, source="코엑스"))
+    except Exception:
+        return out
+    if progress:
+        progress(f"코엑스 행사 {len(out)}건")
+    return out
+
+
 def collect(progress=None):
     """설정된 구조화 소스를 모두 모아 반환(미설정/실패는 자동 제외)."""
     items = []
-    for fn in (tour_festivals, culture_events):
+    for fn in (tour_festivals, culture_events, coex_events):
         try:
             items.extend(fn(progress) or [])
         except Exception:
@@ -269,10 +316,9 @@ def diagnose():
         cont_m = _re.search(r'<[^>]+class="[^"]*(?:List|Schedule|Event|Exhibition)[^"]*"', txt)
         out["coex_probe"] = {
             "status": r.status_code, "bytes": len(r.content), "date_like": len(ms),
+            "parsed": len(coex_events()),
             "spa_hint": ("__NEXT_DATA__" in txt or "/_next/" in txt or "id=\"root\"" in txt or "ng-app" in txt),
             "row_sample": (txt[max(0, pick.start() - 700): pick.start() + 700] if pick else ""),
-            "link_sample": (txt[link_m.start(): link_m.start() + 900] if link_m else ""),
-            "cont_sample": (txt[cont_m.start(): cont_m.start() + 900] if cont_m else ""),
         }
     except Exception as e:  # noqa: BLE001
         out["coex_probe"] = {"error": f"{type(e).__name__}: {e}"}

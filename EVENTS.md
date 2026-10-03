@@ -23,7 +23,14 @@
 - Render env: `CULTURE_API_KEY = <디코딩 서비스키>` (URL 기본값: `http://www.culture.go.kr/openapi/rest/publicperformancedisplays/period`, 다르면 `CULTURE_API_URL`로 교체)
 - 매핑: `title`, `startDate/endDate`, `place`, `realmName`(전시/공연 분류), `area`, `thumbnail`, `url`.
 
-> 참고: **GEP(gep.or.kr)는 ‘해외 전시’ 포털**이라 국내 행사엔 쓰지 않는다. 국내 B2B 산업 전시(코엑스·킨텍스 전시회)는 위 문화포털로 일부만 잡히며, 완전 커버는 전시장 캘린더/AKEI 크롤이 필요하다(추후, 진단으로 안전하게).
+> 참고: **GEP(gep.or.kr)는 ‘해외 전시’ 포털**이라 국내 행사엔 쓰지 않는다.
+
+## 3) 코엑스 행사 일정 (B2B 전시·컨벤션·포럼)
+
+코엑스(coex.co.kr/event/full-schedules/)는 **SSR HTML**이라 직접 파싱한다. `<a class='BlogEventItem-link'>` 안의
+제목(`.BlogEventItemCont-tit`)·기간(`.BlogEventItemCont-date`)·장소(`.BlogEventItemCont-hall`)·분류(Convention/Exhibition 등)를 추출.
+**별도 키 불필요**(공개 페이지). `COEX_OFF=1`로 끄거나 `COEX_SCHEDULE_URL`로 교체 가능. 기본 **1개월 창**(코엑스가 보여주는 범위).
+Convention 카테고리도 포함돼 AI 윤리 포럼 같은 **학술·B2B 행사도 잡힌다**. (전시장 캘린더가 깨지면 `/api/eventcheck`의 `coex_probe.row_sample`로 구조 재확인.)
 
 ## 확인 · 진단
 
