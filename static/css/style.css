@@ -1290,7 +1290,16 @@ body.tab-report .viewbar { display: none; }
 /* 추천 방식(점수 구성) 토글·패널 */
 .aipick-recipe-btn { display: inline-block; margin-left: 6px; padding: 2px 9px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
 .aipick-recipe-btn[aria-expanded="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
-.aipick-recipe { margin: -6px 0 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg); }
+/* 추천 방식 — 별도 레이어(모달) */
+.recipe-modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; padding-top: calc(20px + var(--sat)); background: rgba(20,30,45,.45); }
+.recipe-modal-card { width: 100%; max-width: 420px; max-height: 85dvh; overflow: auto; background: var(--card); border-radius: var(--r-lg); box-shadow: 0 24px 80px rgba(7,27,70,.3); }
+.recipe-modal-head { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--border); background: var(--card); font-size: 16px; }
+.recipe-modal-x { width: 34px; height: 34px; min-width: 34px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg); color: var(--muted); font-size: 15px; cursor: pointer; }
+.recipe-modal-body { padding: 16px 18px 20px; }
+.recipe-active { margin-top: 14px; padding: 10px 12px; border-radius: var(--r-md); background: #eef5ee; border: 1px solid #cfe6d3; font-size: 12px; font-weight: 700; color: #2b6a3a; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.recipe-active span { background: #fff; border: 1px solid #bfe0c6; border-radius: var(--r-pill); padding: 3px 9px; }
+.recipe-active-none { background: var(--bg); border-color: var(--border); color: var(--muted); font-weight: 600; }
+.recipe-active-none b { color: var(--primary); }
 .recipe-lead { margin: 0 0 10px; font-size: 12.5px; color: var(--text); }
 .recipe-foot { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
 .recipe-lead b, .recipe-foot b { color: var(--primary); }

@@ -2998,6 +2998,28 @@ async function loadReport(id) {
     return `<p class="recipe-lead">상위 후보 5곳 중 <b>점수 비중대로</b> 뽑아요(가중 랜덤).</p>${bars}`
       + `<p class="recipe-foot">고른 <b>성향·기분</b>에 따라 위 비중이 자동 조정됩니다.</p>`;
   }
+  // 추천 방식 설명을 별도 레이어(모달)로. 현재 고른 옵션의 효과도 함께 보여준다(배리에이션).
+  function closeRecipeModal() { const m = document.getElementById("recipe-modal"); if (m) m.remove(); }
+  function openRecipeModal() {
+    closeRecipeModal();
+    const sel = LUNCH.aiSel || {}, persona = LUNCH.aiPersona || "";
+    const active = [];
+    if (sel.trusted || persona === "safe") active.push("리뷰·평점 ↑ (검증된 곳)");
+    if (sel.near || sel.quick || persona === "fast") active.push("거리 ↑ (가까운 곳)");
+    if (sel.explore || persona === "adventure" || persona === "hidden") active.push("탐색 ↑ (안 가본 곳)");
+    if (persona === "premium") active.push("리뷰·평점 ↑ (제대로)");
+    const note = active.length
+      ? `<div class="recipe-active">지금 적용 중 ${active.map((a) => `<span>${a}</span>`).join("")}</div>`
+      : `<div class="recipe-active recipe-active-none">지금은 <b>기본 비중</b>이에요 — 옵션을 고르면 바뀌어요.</div>`;
+    const ov = document.createElement("div");
+    ov.className = "recipe-modal"; ov.id = "recipe-modal";
+    ov.innerHTML = `<div class="recipe-modal-card" role="dialog" aria-modal="true" aria-label="추천 방식">
+      <div class="recipe-modal-head"><b>🍽️ 이렇게 골라줘요</b><button type="button" class="recipe-modal-x" aria-label="닫기">✕</button></div>
+      <div class="recipe-modal-body">${recipeHtml()}${note}</div></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest(".recipe-modal-x")) closeRecipeModal(); });
+    document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { closeRecipeModal(); document.removeEventListener("keydown", esc); } });
+  }
   function renderPicker() {
     recommendationRequest++;
     const body = $("lunch-ai-body"); if (!body) return;
@@ -3011,11 +3033,9 @@ async function loadReport(id) {
     const moodChips = MOOD_CHIPS.map((m) => chip(m.key, m.label)).join("");
     body.innerHTML = `<div class="aipick">
       <div class="aipick-lead">오늘 <b>AI 성향</b> 하나 고르고, 지금 <b>느끼는 대로</b> 눌러봐요<br>고른 조건을 <b>피해·맞춰</b> 상위 후보 중에서 뽑아줘요(매번 달라져요).
-        <button type="button" class="aipick-recipe-btn" id="lunch-recipe-toggle" aria-expanded="false">ⓘ 추천 방식</button></div>
-      <div class="aipick-recipe" id="lunch-recipe" hidden>${recipeHtml()}</div>
+        <button type="button" class="aipick-recipe-btn" id="lunch-recipe-toggle">ⓘ 추천 방식</button></div>
       <div class="aipick-grp aipick-trusted">
         <button type="button" class="trusted-toggle${LUNCH.aiSel['trusted'] ? ' on' : ''}" data-mood="trusted">⭐ 검증된 곳(평점·리뷰) 우선</button>
-        <div class="aipick-sub2">켜면 평점·리뷰 있는 곳 비중 ↑ · 끄면 평소대로(리뷰 비중 낮게)</div>
       </div>
       <div class="aipick-grp"><div class="aipick-h">🎭 오늘 AI 성향 <span class="aipick-sub">(하나)</span></div><div class="mood-row">${personaChips}</div></div>
       <div class="aipick-grp"><div class="aipick-h">🙅 이건 빼줘</div><div class="mood-row">${avoidChips || '<span class="mood-none">수집된 카테고리 없음</span>'}</div></div>
@@ -3207,11 +3227,7 @@ async function loadReport(id) {
       }
       const chip = e.target.closest("[data-mood]");
       if (chip) { const k = chip.dataset.mood; LUNCH.aiSel[k] = !LUNCH.aiSel[k]; chip.classList.toggle("on", LUNCH.aiSel[k]); return; }
-      const recipeBtn = e.target.closest("#lunch-recipe-toggle");
-      if (recipeBtn) {   // 추천 방식(점수 구성) 펼치기/접기
-        const panel = $("lunch-recipe"); if (panel) { panel.hidden = !panel.hidden; recipeBtn.setAttribute("aria-expanded", String(!panel.hidden)); }
-        return;
-      }
+      if (e.target.closest("#lunch-recipe-toggle")) { openRecipeModal(); return; }   // 추천 방식 → 별도 레이어
       if (e.target.closest("#lunch-ai-dice")) { randomizeAndRecommend(); return; }
       if (e.target.closest("#lunch-ai-go")) { runRecommend(); return; }
       if (e.target.closest("#lunch-ai-retry")) { runRecommend(); return; }

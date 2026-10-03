@@ -724,7 +724,9 @@ def list_news(limit=5000, category=None, section="nc", months=None):
     extra, eargs = "", []
     if months:
         cutoff = (datetime.now() - _td(days=int(months) * 31)).strftime("%Y-%m-%d")
-        extra = " AND published_at >= ?"
+        # 날짜 형식·누락에 견고하게: 앞 10자(YYYY-MM-DD)로 비교하고, 날짜 없는 항목은 제외하지 않음
+        # (그래야 published_at이 비어 있어도 뉴스가 통째로 사라지지 않음).
+        extra = " AND (published_at IS NULL OR published_at = '' OR substr(published_at,1,10) >= ?)"
         eargs = [cutoff]
     with get_conn() as conn:
         if category and category != "all":
