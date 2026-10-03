@@ -2769,6 +2769,13 @@ async function loadReport(id) {
 // 카카오 로컬로 주변 식당을 수집(관리자) → 목록/검색/카테고리 필터 → 카드에서 카카오맵 링크랜딩.
 // 상세정보는 우리가 만들지 않고(원칙: 메뉴·가격·영업시간 지어내지 않음) 카카오맵으로 넘긴다.
 // 이용자 평점/후기는 우리 앱에 직접 누적, AI가 '오늘 뭐 먹지?'를 추천.
+function lunchLocationLabel(location) {
+  if (!location) return "위치";
+  if (/개발자/.test(location.name || "")) return "개발자집";
+  const address = location.address || "";
+  if (/성남문화예술교육센터/.test(address) || /프로젝토리.*성남/.test(location.name || "")) return "경기 성남시 수정구 수정로 386";
+  return address || location.name || "위치";
+}
 (function initLunch() {
   let recommendationRequest = 0;
   let previousRecommendationId = null;
@@ -2785,8 +2792,8 @@ async function loadReport(id) {
     return (await fetchData(url)).json();
   }
 
-  // Persist only public picker labels/IDs, never addresses, coordinates or user data.
-  const LOC_STORAGE = "huscope-locations-v1";
+  // Persist display labels/IDs only; the developer home stays a nickname, with no address or coordinates.
+  const LOC_STORAGE = "huscope-locations-v2";
   let locPending = null, restaurantSequence = 0;
   const restaurantCache = new Map();
   try {
@@ -2799,7 +2806,7 @@ async function loadReport(id) {
   function rememberLocations() {
     try {
       localStorage.setItem(LOC_STORAGE, JSON.stringify({at: Date.now(), selected: LUNCH.curLoc?.id,
-        locations: LUNCH.locs.map(({id, name, radius}) => ({id, name, radius}))}));
+        locations: LUNCH.locs.map(l => ({id:l.id, name:lunchLocationLabel(l), radius:l.radius}))}));
     } catch (_) {}
   }
 
@@ -2844,7 +2851,7 @@ async function loadReport(id) {
   }
   function renderLocBar() {
     const nameEl = $("lunch-loc-name"), radEl = $("lunch-loc-radius"), menu = $("lunch-loc-menu");
-    if (nameEl) nameEl.textContent = LUNCH.curLoc ? (LUNCH.curLoc.name || "위치") : (LUNCH.locLoading ? "불러오는 중…" : (LUNCH.locFailed ? "연결 실패" : "위치"));
+    if (nameEl) nameEl.textContent = LUNCH.curLoc ? lunchLocationLabel(LUNCH.curLoc) : (LUNCH.locLoading ? "불러오는 중…" : (LUNCH.locFailed ? "연결 실패" : "위치"));
     if (radEl) radEl.textContent = LUNCH.curLoc ? ((LUNCH.curLoc.radius || 500) + "m") : "";
     if (!menu) return;
     if (!LUNCH.locs.length) {   // 빈 메뉴가 '펴지다 마는' 것처럼 보이지 않게 안내 표시
@@ -2853,11 +2860,11 @@ async function loadReport(id) {
       menu.innerHTML = `<div class="lunch-loc-empty">${LUNCH.locLoading ? catRunInline("위치 불러오는 중…") : escapeHtml(txt)}</div>`;
       return;
     }
-    // 실제 주소는 노출하지 않음(개인정보). 이름 + 반경만 표시.
+    // Address labels for public locations; keep the developer home as a nickname.
     menu.innerHTML = LUNCH.locs.map((l) => {
       const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;
       return `<button type="button" class="lunch-loc-item${on ? " on" : ""}" data-id="${l.id}">`
-        + `📍 ${escapeHtml(l.name)}<span class="lli-sub">반경 ${l.radius || 500}m${on ? " · 선택됨" : ""}</span></button>`;
+        + `📍 ${escapeHtml(lunchLocationLabel(l))}<span class="lli-sub">반경 ${l.radius || 500}m${on ? " · 선택됨" : ""}</span></button>`;
     }).join("");
   }
   function closeLocMenu() { const m = $("lunch-loc-menu"); if (m) m.hidden = true; }
@@ -3384,10 +3391,10 @@ async function loadReport(id) {
   // 맛집 메뉴 초기화(헤더 🗑 버튼이 현재 대메뉴에 맞춰 호출) — 현재 위치의 식당/후기/방문 삭제
   async function lunchPurge() {
     if (!LUNCH.curLoc) { toast("위치를 먼저 선택해 주세요"); return; }
-    msg(`[${LUNCH.curLoc.name}] 맛집 데이터 초기화 중…`);
+    msg(`[${lunchLocationLabel(LUNCH.curLoc)}] 맛집 데이터 초기화 중…`);
     try {
       const d = await api("/api/lunch/purge", { loc_id: LUNCH.curLoc.id });
-      msg(`🗑 [${LUNCH.curLoc.name}] 식당 ${d.deleted || 0}곳 삭제 완료`);
+      msg(`🗑 [${lunchLocationLabel(LUNCH.curLoc)}] 식당 ${d.deleted || 0}곳 삭제 완료`);
       loadRestaurants();
     } catch (e) { msg("초기화 실패(권한 확인)", true); }
   }
@@ -3405,7 +3412,7 @@ async function loadReport(id) {
   // 헤더 🗑 초기화 버튼의 대메뉴별 분기용(맛집 화면일 때 이 컨텍스트로 동작)
   window.lunchPurgeCtx = {
     active: function () { const v = document.getElementById("view-food"); return !!(v && !v.hidden); },
-    label: function () { return LUNCH.curLoc ? ("맛집: " + LUNCH.curLoc.name) : "맛집"; },
+    label: function () { return LUNCH.curLoc ? ("맛집: " + lunchLocationLabel(LUNCH.curLoc)) : "맛집"; },
     run: lunchPurge,
   };
 })();

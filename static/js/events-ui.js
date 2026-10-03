@@ -23,7 +23,7 @@
       ${s.end_date && s.start_date && s.end_date!==s.start_date?'<span class="ed-range">여러 날 진행하는 행사</span>':''}
       <div class="ed-actions">${scrapBtnHtml(key)}${link?`<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">행사 원문 보기 ↗</a>`:''}</div></div></li>`;
   }
-  let month=null,selected=null,expanded=false,calendarItems=[];
+  let month=null,selected=null,expanded=false,todayPulse=false,calendarItems=[];
   function calendar(list) {
     calendarItems=list;
     const today=isoToday();
@@ -35,7 +35,7 @@
     const max=Math.max(1,...counts);
     function cell(iso,day,label='') {
       const n=dayEvents(list,iso).length,level=n?Math.ceil(n/max*4):0;
-      return `<button type="button" class="ed-day ed-heat-${level}${iso===selected?' selected':''}${iso===today?' today':''}" data-date="${iso}" aria-pressed="${iso===selected}" aria-label="${esc(iso)} 행사 ${n}건"><strong>${day}</strong>${label?`<small>${label}</small>`:''}<span>${n?n+'건':'—'}</span></button>`;
+      return `<button type="button" class="ed-day ed-heat-${level}${iso===selected?' selected':''}${iso===today?' today':''}${iso===today&&todayPulse?' ed-today-highlight':''}" data-date="${iso}" aria-pressed="${iso===selected}" aria-label="${esc(iso)} 행사 ${n}건"><strong>${day}</strong>${label||iso===today?`<small>${label || '오늘'}</small>`:''}<span>${n?n+'건':'—'}</span></button>`;
     }
     let grid='';
     if(!expanded){
@@ -58,12 +58,14 @@
       ${list.some(s=>!s.start_date)?'<p class="ed-hint">일정 미정 행사는 앨범에서 확인할 수 있어요.</p>':''}`;
     root.onclick=e=>{
       const b=e.target.closest('button[data-date],button[data-cal]');if(!b)return;
+      todayPulse=b.dataset.cal==='today';
       if(b.dataset.date){selected=b.dataset.date;month=selected.slice(0,7);}
       if(b.dataset.cal==='expand')expanded=!expanded;
       if(b.dataset.cal==='today'){month=today.slice(0,7);selected=today;}
       if(['prev','next'].includes(b.dataset.cal)){month=isoDate(new Date(y,m-1+(b.dataset.cal==='next'?1:-1),1)).slice(0,7);selected=null;}
       calendar(calendarItems);
-      const focus=root.querySelector(b.dataset.date?`[data-date="${selected}"]`:`[data-cal="${b.dataset.cal}"]`);focus?.focus({preventScroll:true});
+      const focus=root.querySelector(b.dataset.cal==='today'?`[data-date="${today}"]`:b.dataset.date?`[data-date="${selected}"]`:`[data-cal="${b.dataset.cal}"]`);focus?.focus({preventScroll:true});
+      if(b.dataset.cal==='today')focus?.scrollIntoView?.({block:'nearest',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
     };
   }
   let prefs={topics:[],keywords:[]},initialized=false,available=[],result=null,busy=false,requestVersion=0;

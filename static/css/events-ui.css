@@ -86,3 +86,10 @@
 .tabs .tab[data-tab="event"] {--tab-icon-color:#c65c43;--tab-icon-active:#ffa78e;}
 .tabs .tab-icon {color:var(--tab-icon-color);}
 .tabs .tab.active .tab-icon {color:var(--tab-icon-active);}
+
+.ed-day.today {border-width:2px;border-radius:14px;}
+.ed-day.today strong {font-weight:900;}
+.ed-day.ed-today-highlight {border-radius:16px;border:3px solid #2f6cdb;animation:ed-today-pulse 1.8s ease-in-out 3;box-shadow:0 0 0 3px #2f6cdb35;}
+.ed-day.ed-today-highlight strong {font-size:18px;font-weight:900;}
+@keyframes ed-today-pulse {0%,100% {box-shadow:0 0 0 3px #2f6cdb35;border-color:#2f6cdb;}50% {box-shadow:0 0 0 5px #efb64375;border-color:#f7cb66;}}
+@media(prefers-reduced-motion:reduce){.ed-day.ed-today-highlight {animation:none;}}
