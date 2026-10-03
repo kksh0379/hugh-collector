@@ -54,10 +54,18 @@ CATEGORIES = {'policy': '세법·보도자료', 'guide': '회계·세무 가이�
 # 리더 본문 추출이 어려운 출처는 리더뷰 대신 원문으로 연다(재정경제부 등).
 ORIGINAL_SOURCES = {'MOEF'}
 INDICATORS = [('731Y001', '0000001', '원/달러 환율', '원', 1350.0, ''),
+              ('731Y001', '0000002', '원/엔(100엔)', '원', 900.0,
+               '원·엔 재정환율입니다. 100엔당 원화 값으로, 일본 여행·엔화 거래의 기준이 됩니다.'),
+              ('731Y001', '0000003', '원/유로', '원', 1450.0, '원·유로 재정환율입니다. 유로화 1단위당 원화 값입니다.'),
+              ('731Y001', '0000053', '원/위안', '원', 190.0, '원·위안 재정환율입니다. 위안화 1단위당 원화 값입니다.'),
+              ('722Y001', '0101000', '한국은행 기준금리', '%', 3.0,
+               '한국은행 금융통화위원회가 정하는 정책금리입니다. 예금·대출 등 시중금리의 기준이 됩니다.'),
               ('817Y002', '010502000', 'CD 91일', '%', 3.0,
                'CD(양도성예금증서) 91일물 금리입니다. 은행이 발행하는 단기 예금증서의 금리로, 단기 시장금리·대출금리의 기준으로 쓰입니다.'),
               ('817Y002', '010200000', '국고채 3년', '%', 2.8,
-               '정부가 발행하는 만기 3년 국고채의 유통수익률입니다. 시장금리 수준과 채권시장을 보는 대표 지표입니다.')]
+               '정부가 발행하는 만기 3년 국고채의 유통수익률입니다. 시장금리 수준과 채권시장을 보는 대표 지표입니다.'),
+              ('901Y009', '0', '소비자물가(지수)', '', 115.0,
+               '소비자물가지수(2020=100)입니다. 전월 대비 증감을 함께 표시하며, 물가 상승 흐름을 봅니다.', 'M')]
 # 국세 법정 신고·납부 기한. 모두 세법에 명시된 고정 기한이며, 추측이 아닌 확정 규칙입니다.
 # 기한이 주말이면 다음 영업일로 조정합니다(국세기본법 제5조). 공휴일이 겹치면 추가 연장되나,
 # 공휴일(특히 음력 명절) 날짜는 검증 없이 하드코딩하지 않고 안내 문구로만 처리합니다.
@@ -209,7 +217,9 @@ def sample_history(values, points=26):
 
 
 def indicator(spec):
-    table, code, name, unit, sample, desc = spec
+    # spec: (table, code, name, unit, sample, desc[, freq]) — freq 생략 시 일(D).
+    table, code, name, unit, sample, desc = spec[:6]
+    freq = spec[6] if len(spec) > 6 else 'D'
     result = dict(code=f'{table}/{code}', name=name, unit=unit, value=sample,
                   change=None, ratio=None, date=None, mode='demo', history=[], desc=desc)
     key = os.getenv('ECOS_API_KEY')
@@ -217,15 +227,25 @@ def indicator(spec):
         return result
     try:
         end = now().date()
-        start = end - timedelta(days=190)  # 최근 약 6개월
+        # ECOS는 주기별로 날짜 형식이 다르다: 일 YYYYMMDD, 월 YYYYMM, 년 YYYY.
+        if freq == 'M':
+            s, e = (end - timedelta(days=430)).strftime('%Y%m'), end.strftime('%Y%m')
+        elif freq == 'A':
+            s, e = (end - timedelta(days=1830)).strftime('%Y'), end.strftime('%Y')
+        else:
+            s, e = (end - timedelta(days=190)).strftime('%Y%m%d'), end.strftime('%Y%m%d')
         url = (f'https://ecos.bok.or.kr/api/StatisticSearch/{quote(key, safe="")}/json/kr/1/700/'
-               f'{table}/D/{start:%Y%m%d}/{end:%Y%m%d}/{code}')
+               f'{table}/{freq}/{s}/{e}/{code}')
         rows = get_json(url)['StatisticSearch']['row']
         rows = sorted(rows, key=lambda x: x['TIME'])
         values = [(r['TIME'], float(r['DATA_VALUE'])) for r in rows if r.get('DATA_VALUE') not in (None, '')]
         if not values or not all(math.isfinite(v) for _, v in values):
             raise ValueError('No observations')
-        result.update(value=values[-1][1], date=values[-1][0], mode='live',
+        last_time = values[-1][0]
+        # 월/년 주기는 기준일 표기를 '2025.09'·'2025'처럼 다듬는다(일 주기는 YYYYMMDD 그대로 → 프론트에서 변환).
+        disp = (f'{last_time[:4]}.{last_time[4:6]}' if freq == 'M' and len(last_time) >= 6
+                else last_time[:4] if freq == 'A' else last_time)
+        result.update(value=values[-1][1], date=disp, mode='live',
                       change=round(values[-1][1]-values[-2][1], 4) if len(values)>1 else None,
                       history=sample_history(values))
     except Exception:
@@ -371,6 +391,43 @@ def stock_route():
             name=os.getenv('NC_STOCK_NAME', '(주)엔씨'), unit='원', value=None, change=None,
             ratio=None, date=None, mode='loading', history=[], desc=''))
     return jsonify(dict(data, pending=False))
+
+
+@bp.get('/ecoscheck')
+def ecoscheck():
+    """지표(ECOS) 출처 진단: 각 통계코드를 직접 조회해 건수·최신값 또는 ECOS 에러 원문을 보여준다.
+    어떤 코드가 실제로 되는지 확인용(API 키는 노출하지 않음)."""
+    key = os.getenv('ECOS_API_KEY')
+    end = now().date()
+    out = []
+    for spec in INDICATORS:
+        table, code, name = spec[0], spec[1], spec[2]
+        freq = spec[6] if len(spec) > 6 else 'D'
+        row = {'name': name, 'table': table, 'code': code, 'freq': freq}
+        if not key:
+            row['note'] = 'ECOS_API_KEY 미설정'
+            out.append(row)
+            continue
+        try:
+            if freq == 'M':
+                s, e = (end - timedelta(days=430)).strftime('%Y%m'), end.strftime('%Y%m')
+            elif freq == 'A':
+                s, e = (end - timedelta(days=1830)).strftime('%Y'), end.strftime('%Y')
+            else:
+                s, e = (end - timedelta(days=190)).strftime('%Y%m%d'), end.strftime('%Y%m%d')
+            url = (f'https://ecos.bok.or.kr/api/StatisticSearch/{quote(key, safe="")}/json/kr/1/5/'
+                   f'{table}/{freq}/{s}/{e}/{code}')
+            payload = get_json(url)
+            ss = payload.get('StatisticSearch') if isinstance(payload, dict) else None
+            if ss and ss.get('row'):
+                r = ss['row']
+                row.update(ok=True, count=len(r), latest=r[-1].get('DATA_VALUE'), time=r[-1].get('TIME'))
+            else:  # ECOS 에러 블록(RESULT.CODE/MESSAGE 등)만 노출(키 제외)
+                row.update(ok=False, response=str(payload)[:300])
+        except Exception as ex:  # noqa: BLE001
+            row.update(ok=False, error=f'{type(ex).__name__}: {ex}')
+        out.append(row)
+    return jsonify(dict(has_key=bool(key), indicators=out))
 
 
 @bp.post('/business-status')
