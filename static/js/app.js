@@ -465,6 +465,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
     if (typeof syncSearchInput === "function") syncSearchInput();
     if (typeof updateCount === "function") updateCount(tab.dataset.tab);
     if (tab.dataset.tab === "report" && typeof loadReport === "function") loadReport();
+    if (tab.dataset.tab === "event") renderTab("event");
   });
 });
 
@@ -823,7 +824,7 @@ function setTabData(tab, el, items, render) {
 function renderTab(tab) {
   const d = TAB_DATA[tab];
   if (!d) return;
-  const base = d.prefilter ? d.prefilter(d.items) : d.items;  // 탭 고유 사전필터(예: 뉴스 분류 체크박스)
+  const base = tab === "event" && eventView === "curation" ? d.items : (d.prefilter ? d.prefilter(d.items) : d.items);  // 탭 고유 사전필터(예: 뉴스 분류 체크박스)
   NEWS_NEW_DATE = computeNewDate(base);                        // 현재 탭의 '신규(N)' 기준일
   const list = d.query ? smartFilter(base, d.query) : base;
   d.count = list.length;
@@ -1351,7 +1352,7 @@ function eventCategories(item) {
   return tags.length ? tags : ["기타"];
 }
 const filterEventsByCategory = makeCheckFilter("event", "event-cats", eventCategories);
-let eventView = "album";                 // album | calendar
+let eventView = "curation";                 // album | calendar
 let eventCalYM = null;                    // 캘린더가 보는 [year, month(0-11)]
 async function loadEvent() {
   const el = document.getElementById("list-event");
@@ -1587,17 +1588,24 @@ function renderEvents(list) {
   closeEventCalendarPopover();
   const albumEl = document.getElementById("list-event");
   const calEl = document.getElementById("cal-event");
-  const isCal = eventView === "calendar";
-  albumEl.hidden = isCal;
+  const isCal = eventView === "calendar", isCurated = eventView === "curation";
+  albumEl.hidden = isCal || isCurated;
   calEl.hidden = !isCal;
-  if (isCal) renderEventCalendar(list); else renderEventAlbum(list);
+  document.getElementById("event-curation").hidden = !isCurated;
+  document.getElementById("event-cats").hidden = isCurated;
+  document.querySelector("#panel-event .event-note").hidden = isCurated;
+  if (window.EventDiscovery) {
+    if (isCal) window.EventDiscovery.calendar(list);
+    if (isCurated) window.EventDiscovery.curation(list);
+  }
+  if (!isCal && !isCurated) renderEventAlbum(list);
 }
 // 앨범/캘린더 토글
 (function initEventView() {
   const seg = document.getElementById("event-view-toggle");
   if (!seg) return;
   seg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
-    eventView = b.dataset.eview === "calendar" ? "calendar" : "album";
+    eventView = ["calendar", "curation"].includes(b.dataset.eview) ? b.dataset.eview : "album";
     seg.querySelectorAll("button").forEach((x) => x.classList.toggle("active", x.dataset.eview === eventView));
     if (eventView === "calendar") eventCalYM = null;  // 열 때 다가오는 달로 재설정
     renderTab("event");

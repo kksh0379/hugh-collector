@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, g, jsonify, render_template, request, session
 
-from collector import (analysis, boards, db, dedup, event_sources, events, fetcher,
+from collector import (analysis, boards, db, dedup, event_curation, event_sources, events, fetcher,
                        google_news, lunch, security_ai, security_report, social)
 
 from collector.reader import bp as reader_bp
@@ -1208,7 +1208,7 @@ def _asset_ver():
     base = os.path.dirname(os.path.abspath(__file__))
     try:
         mt = max(os.path.getmtime(os.path.join(base, "static", path))
-                 for path in ("js/app.js", "css/style.css", "js/reader.js", "css/reader.css", "js/finance.js", "css/finance.css"))
+                 for path in ("js/app.js", "css/style.css", "js/reader.js", "css/reader.css", "js/finance.js", "css/finance.css", "js/events-ui.js", "css/events-ui.css"))
         return str(int(mt))
     except Exception:  # noqa: BLE001
         return "1"
@@ -1321,6 +1321,17 @@ def get_secnews():
 @app.get("/api/events")
 def get_events():
     return _safe_list(lambda: db.list_events())
+
+
+@app.post("/api/events/recommend")
+def recommend_events():
+    try:
+        prefs = event_curation.preferences(request.get_json(silent=True))
+    except ValueError as error:
+        return jsonify({"notice": str(error)}), 400
+    response = jsonify(event_curation.recommend(prefs))
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/api/img")
