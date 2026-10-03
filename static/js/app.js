@@ -680,6 +680,16 @@ async function ensureFullData(tab) {
   })();
   return d._fullPromise;
 }
+// 초기엔 최근 일부만 받되, 비어 있으면(어떤 이유로든) 전체로 자동 폴백 → 뉴스가 절대 비지 않게.
+async function fetchTabData(endpoint) {
+  let data = [];
+  try { data = await (await fetchData(withMonths(endpoint, INITIAL_MONTHS))).json(); } catch (e) { data = []; }
+  if (!Array.isArray(data) || data.length === 0) {
+    const full = await (await fetchData(endpoint)).json();   // 전체(최대 5천)로 폴백
+    return { data: Array.isArray(full) ? full : [], full: true };
+  }
+  return { data, full: false };
+}
 
 // 검색어를 토큰으로 분해. 조사(은/는/이/가…)는 떼어내 어간으로도 매칭(자연어 입력 대응).
 // ===== 한글 자모 유사 검색: 단어가 정확하지 않아도(부분·초성·오타·받침차이) 매칭 =====
@@ -887,10 +897,11 @@ async function loadNews() {
   const el = document.getElementById("list-news");
   showLoading(el);
   try {
-    const EP = "/api/news?category=all";   // 분류는 클라이언트에서. 초기 3개월, 검색 시 전체.
-    const res = await fetchData(withMonths(EP, INITIAL_MONTHS));
-    setTabData("news", el, await res.json(), (list) => renderNewsGroups(el, list));
+    const EP = "/api/news?category=all";   // 분류는 클라이언트에서. 초기 일부, 검색 시 전체.
+    const { data, full } = await fetchTabData(EP);
+    setTabData("news", el, data, (list) => renderNewsGroups(el, list));
     markTabEndpoint("news", EP);
+    if (full) TAB_DATA.news.fullLoaded = true;
     TAB_DATA.news.prefilter = filterNewsByCat;
     renderTab("news");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
@@ -953,9 +964,10 @@ async function loadSecurity() {
   showLoading(el);
   try {
     const EP = "/api/secnews?category=all";
-    const res = await fetchData(withMonths(EP, INITIAL_MONTHS));
-    setTabData("security", el, await res.json(), (list) => renderNewsGroups(el, list));
+    const { data, full } = await fetchTabData(EP);
+    setTabData("security", el, data, (list) => renderNewsGroups(el, list));
     markTabEndpoint("security", EP);
+    if (full) TAB_DATA.security.fullLoaded = true;
     TAB_DATA.security.prefilter = filterSecByCat;
     renderTab("security");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
@@ -1035,9 +1047,10 @@ async function loadCat() {
   showLoading(el);
   try {
     const EP = "/api/catnews?category=all";
-    const res = await fetchData(withMonths(EP, INITIAL_MONTHS));
-    setTabData("cat", el, await res.json(), (list) => renderNewsGroups(el, list));
+    const { data, full } = await fetchTabData(EP);
+    setTabData("cat", el, data, (list) => renderNewsGroups(el, list));
     markTabEndpoint("cat", EP);
+    if (full) TAB_DATA.cat.fullLoaded = true;
     TAB_DATA.cat.prefilter = filterCatByCat;
     renderTab("cat");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
@@ -1048,9 +1061,10 @@ async function loadGame() {
   showLoading(el);
   try {
     const EP = "/api/gamenews?category=all";
-    const res = await fetchData(withMonths(EP, INITIAL_MONTHS));
-    setTabData("game", el, await res.json(), (list) => renderNewsGroups(el, list));
+    const { data, full } = await fetchTabData(EP);
+    setTabData("game", el, data, (list) => renderNewsGroups(el, list));
     markTabEndpoint("game", EP);
+    if (full) TAB_DATA.game.fullLoaded = true;
     TAB_DATA.game.prefilter = filterGameByCat;
     renderTab("game");
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
@@ -1061,9 +1075,10 @@ async function loadBiz() {
   showLoading(el);
   try {
     const EP = "/api/biznews";
-    const res = await fetchData(withMonths(EP, INITIAL_MONTHS));
-    setTabData("biz", el, await res.json(), (list) => renderNewsGroups(el, list));
+    const { data, full } = await fetchTabData(EP);
+    setTabData("biz", el, data, (list) => renderNewsGroups(el, list));
     markTabEndpoint("biz", EP);
+    if (full) TAB_DATA.biz.fullLoaded = true;
   } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
 }
 
