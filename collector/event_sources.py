@@ -101,7 +101,10 @@ def _culture_date(s):
 
 
 def _culture_rows(resp):
-    """culture.go.kr는 XML(perforInfo), 일부 제공처는 JSON(items.item). 둘 다 처리."""
+    """응답 형태가 제공처마다 달라 모두 처리:
+    - JSON items.item (data.go.kr 공통)
+    - XML <perforInfo> (culture.go.kr 공연전시)
+    - XML <item><col name="TITLE">값</col>… (한국문화정보원/KCISA '한눈에보는문화정보')"""
     try:
         rows = _rows(resp.json())
         if rows:
@@ -115,8 +118,13 @@ def _culture_rows(resp):
         out = []
         for node in nodes:
             d = {}
-            for ch in node:
-                d[etree.QName(ch).localname] = (ch.text or "").strip()
+            cols = node.xpath("./col[@name]")
+            if cols:  # KCISA: <col name="...">값</col>
+                for c in cols:
+                    d[(c.get("name") or "").strip()] = (c.text or "").strip()
+            else:
+                for ch in node:
+                    d[etree.QName(ch).localname] = (ch.text or "").strip()
             if d:
                 out.append(d)
         return out
@@ -135,24 +143,39 @@ def culture_events(progress=None):
     out = []
     try:
         today = datetime.date.today()
-        params = {"serviceKey": key,
-                  "from": (today - datetime.timedelta(days=14)).strftime("%Y%m%d"),
-                  "to": (today + datetime.timedelta(days=180)).strftime("%Y%m%d"),
-                  "rows": 300, "cPage": 1}
+        frm = (today - datetime.timedelta(days=14)).strftime("%Y%m%d")
+        to = (today + datetime.timedelta(days=180)).strftime("%Y%m%d")
+        # culture.go.kr(from/to/rows/cPage)·KCISA(numOfRows/pageNo) 양쪽 파라미터를 함께 보냄(미사용은 무시됨).
+        params = {"serviceKey": key, "from": frm, "to": to, "rows": 300, "cPage": 1,
+                  "numOfRows": 300, "pageNo": 1}
         resp = requests.get(url, params=params, timeout=(3, 12))
+
+        def g(it, *names):
+            for n in names:
+                v = it.get(n)
+                if v:
+                    return v
+            return ""
+
         for it in _culture_rows(resp):
             if not isinstance(it, dict):
                 continue
-            title = it.get("title") or it.get("fstvlNm") or ""
-            sd = _culture_date(it.get("startDate") or it.get("eventstartdate"))
-            ed = _culture_date(it.get("endDate") or it.get("eventenddate"))
-            place = it.get("place") or it.get("addr1") or it.get("rdnmadr") or ""
+            title = g(it, "title", "TITLE", "fstvlNm")
+            sd = _culture_date(g(it, "startDate", "eventstartdate", "STRTDATE"))
+            ed = _culture_date(g(it, "endDate", "eventenddate", "END_DATE"))
+            if not sd:  # KCISA는 PERIOD에 'A ~ B'로 합쳐 올 때가 있음
+                per = g(it, "PERIOD", "period")
+                parts = [p.strip() for p in str(per).replace("~", "-#-").split("-#-")]
+                if parts and parts[0]:
+                    sd = _culture_date(parts[0])
+                    ed = ed or (_culture_date(parts[1]) if len(parts) > 1 else None)
+            place = g(it, "place", "EVENT_SITE", "SPATIAL_COVERAGE", "addr1", "rdnmadr")
             if title and sd:
                 out.append(_item(title, sd, ed or sd, venue=place,
-                                 region=(it.get("area") or (place.split()[0] if place else "")),
-                                 url=it.get("url") or it.get("homepageUrl") or "",
-                                 image=it.get("thumbnail") or it.get("imageObject") or "",
-                                 content=it.get("realmName") or "", source="문화포털"))
+                                 region=(g(it, "area", "SPATIAL_COVERAGE") or (place.split()[0] if place else "")),
+                                 url=g(it, "url", "URL", "REFERENCE_IDENTIFIER", "homepageUrl"),
+                                 image=g(it, "thumbnail", "IMAGE_OBJECT", "imageObject"),
+                                 content=g(it, "realmName", "DESCRIPTION"), source="문화포털"))
     except Exception:
         return out
     if progress:
