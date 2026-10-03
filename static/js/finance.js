@@ -87,7 +87,9 @@
     const isNc = String(r.code||'').startsWith('KRX');
     const idAttr = isNc ? ' id="finance-nc"' : '';
     const refresh = isNc ? `<button type="button" class="finance-stock-refresh" aria-label="주가 새로고침" title="주가 새로고침">↻</button>` : '';
-    return `<article class="finance-indicator"${idAttr}><span class="finance-mode ${r.mode === 'live' ? 'live' : ''}">${esc(modes[r.mode])}</span>${refresh}<h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;
+    // '실데이터' 딱지는 숨기고(요청), '예시 데이터·일시 중단·불러오는 중'만 경고로 표시(데이터 정직성).
+    const badge = r.mode === 'live' ? '' : `<span class="finance-mode">${esc(modes[r.mode])}</span>`;
+    return `<article class="finance-indicator"${idAttr}>${badge}${refresh}<h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;
   }
   function render(result) {
     data = result;
@@ -96,7 +98,14 @@
     renderCalendar();
     $('finance-sources').innerHTML = data.sources.map(s => `<div class="finance-source">${link(s.url,s.name)}<span class="finance-mode">${esc(modes[s.mode])}${s.mode==='live' ? ' · '+s.count+'건' : ''}</span></div>`).join('');
     const hasDemo = data.indicators.some(r => r.mode==='demo');
-    $('finance-status').textContent = data.pending ? '연결 상태를 확인하고 있습니다. 아래 숫자는 화면 예시입니다.' : (hasDemo ? '예시 데이터가 포함되어 있습니다. 실제 시세·판단 근거로 사용할 수 없습니다. ' : '지표별 기준일과 출처별 연결 상태를 확인하세요. ') + (data.fetched_at ? '확인: '+new Date(data.fetched_at).toLocaleString('ko-KR') : '');
+    $('finance-status').textContent = data.pending ? '연결 상태를 확인하고 있습니다. 아래 숫자는 화면 예시입니다.' : (hasDemo ? '예시 데이터가 포함되어 있습니다. 실제 시세·판단 근거로 사용할 수 없습니다.' : '지표별 기준일과 출처별 연결 상태를 확인하세요.');
+    // 데이터를 가져온 시점(연·월·일 시:분)을 표기. 초는 생략.
+    const fe = $('finance-fetched');
+    if (fe) {
+      const ft = (!data.pending && data.fetched_at) ? new Date(data.fetched_at) : null;
+      const p2 = n => String(n).padStart(2, '0');
+      fe.textContent = ft && !isNaN(ft) ? `불러온 시각 ${ft.getFullYear()}.${p2(ft.getMonth()+1)}.${p2(ft.getDate())} ${p2(ft.getHours())}:${p2(ft.getMinutes())}` : '';
+    }
     renderNews();
   }
   async function load() {
