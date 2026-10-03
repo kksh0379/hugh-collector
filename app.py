@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from flask import Flask, Response, g, jsonify, render_template, request, session
 
 from collector import (analysis, boards, db, dedup, event_curation, event_sources, events, fetcher,
-                       google_news, lunch, security_ai, security_report, social)
+                       google_news, lunch, security_ai, security_report, social, venue_sources)
 
 from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
@@ -33,6 +33,7 @@ app.register_blueprint(finance_bp)
 @app.before_request
 def _start_request_timer():
     g.request_started = time.perf_counter()
+    _start_worker_jobs()
     _start_read_prewarm()
 
 
@@ -392,7 +393,6 @@ def eventcheck():
     """행사 구조화 소스(관광공사 축제·문화행사) 진단: 소스별 설정·응답상태·행수·첫항목 키·
     원문 일부를 보여준다. 서비스키는 요청 파라미터로만 쓰여 응답에 노출되지 않으므로
     dbcheck/newscheck처럼 로그인 없이도 열 수 있게 둔다."""
-    from collector import venue_sources
     result = ({'venue_schedules': venue_sources.diagnose()}
               if request.args.get('venues') == '1' else event_sources.diagnose())
     # A completed initial import survives worker restarts in DB metadata.
@@ -2244,13 +2244,13 @@ def _bootstrap_venue_schedules():
             or os.environ.get('VENUE_SOURCES_OFF') == '1'):
         return
     try:
-        from collector import venue_sources
         if not _ensure_db(force=True) or db.get_meta('venue_sources_version') == '1':
             return
         items = venue_sources.collect(lambda message: print('[venue] ' + message, flush=True))
         status = venue_sources.diagnose()
         if items:
             counts = _save_event(items)
+            db.set_meta('last_crawl_event', _now_kst())
             _invalidate_read_cache()
             print(f"[venue] 공식 일정 저장 {len(items)}건 · 신규 {counts['new']}건", flush=True)
         db.set_meta('venue_sources_status', json.dumps(status, ensure_ascii=False))
@@ -2302,12 +2302,28 @@ def _start_read_prewarm():
         _prewarm_started = True
     threading.Thread(target=_prewarm_reads, daemon=True).start()
 
-_start_scheduler()
-# 백필은 DB를 건드리므로(cold start로 느릴 수 있음) 백그라운드 스레드에서 돌려
-# import(부팅)를 절대 막지 않게 한다. → Render 배포가 DB 상태와 무관하게 성공.
-threading.Thread(target=_auto_backfill, daemon=True).start()
-threading.Thread(target=_bootstrap_venue_schedules, daemon=True).start()
-threading.Thread(target=_db_keepalive, daemon=True).start()
+_worker_jobs_pid = None
+_worker_jobs_lock = threading.Lock()
+
+
+def _start_worker_jobs():
+    """Start once on a worker request, never in the pre-fork import process.
+
+    Starting imports/DB connections in master threads can leave module locks and
+    unfinished transactions in forked workers. Render's first health request
+    starts these jobs without waiting for any collection or database operation.
+    """
+    global _worker_jobs_pid
+    pid = os.getpid()
+    if _worker_jobs_pid == pid:
+        return
+    with _worker_jobs_lock:
+        if _worker_jobs_pid == pid:
+            return
+        _worker_jobs_pid = pid
+        _start_scheduler()
+        for target in (_auto_backfill, _bootstrap_venue_schedules, _db_keepalive):
+            threading.Thread(target=target, daemon=True).start()
 
 
 if __name__ == "__main__":

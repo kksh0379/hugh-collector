@@ -82,7 +82,7 @@ class VenueTests(unittest.TestCase):
         import json
         database = Mock(); database.get_meta.return_value = None
         save = Mock(return_value={'new': 1}); invalidate = Mock()
-        scope = dict(os=os, db=database, json=json, _ensure_db=lambda **kw: True,
+        scope = dict(os=os, db=database, json=json, venue_sources=venues, _now_kst=lambda: 'now', _ensure_db=lambda **kw: True,
                      _save_event=save, _invalidate_read_cache=invalidate, print=lambda *a, **kw: None)
         exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
         good = {source: {'ok': True} for source in venues.SOURCES}
@@ -99,6 +99,25 @@ class VenueTests(unittest.TestCase):
             good['세텍'] = {'ok': False}
             scope['_bootstrap_venue_schedules']()
             self.assertNotIn('venue_sources_version', [call.args[0] for call in database.set_meta.call_args_list])
+
+    def test_worker_jobs_start_once_after_fork_and_no_thread_starts_at_import(self):
+        tree = ast.parse(Path('app.py').read_text())
+        for node in tree.body:
+            if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+                self.assertNotIn('.start()', ast.unparse(node))
+                self.assertNotEqual(ast.unparse(node.value.func), '_start_scheduler')
+        fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == '_start_worker_jobs')
+        scheduler = Mock(); thread = Mock()
+        targets = [Mock(), Mock(), Mock()]
+        import threading
+        scope = dict(os=os, threading=Mock(Thread=thread), _worker_jobs_pid=None,
+                     _worker_jobs_lock=threading.Lock(), _start_scheduler=scheduler,
+                     _auto_backfill=targets[0], _bootstrap_venue_schedules=targets[1], _db_keepalive=targets[2])
+        exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
+        scope['_start_worker_jobs'](); scope['_start_worker_jobs']()
+        scheduler.assert_called_once()
+        self.assertEqual(thread.call_count, 3)
+        self.assertEqual([call.kwargs['target'] for call in thread.call_args_list], targets)
 
 
 if __name__ == '__main__':
