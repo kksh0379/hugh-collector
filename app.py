@@ -1273,33 +1273,41 @@ def _months_arg():
         return None
 
 
+# 주의: months/category 등 request 의존 값은 '요청 스레드'에서 미리 읽어 캡처한다.
+# _safe_list의 로드는 백그라운드 워커 스레드에서 돌 수 있어, 람다 안에서 request를
+# 건드리면 "Working outside of request context."로 매번 실패 → 영구 pending([]) → '불러오지 못했어요'.
 @app.get("/api/news")
 def get_news():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="nc", months=_months_arg()))
+    months = _months_arg()
+    return _safe_list(lambda: db.list_news(category=category, section="nc", months=months))
 
 
 @app.get("/api/catnews")
 def get_catnews():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="cat", months=_months_arg()))
+    months = _months_arg()
+    return _safe_list(lambda: db.list_news(category=category, section="cat", months=months))
 
 
 @app.get("/api/gamenews")
 def get_gamenews():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="game", months=_months_arg()))
+    months = _months_arg()
+    return _safe_list(lambda: db.list_news(category=category, section="game", months=months))
 
 
 @app.get("/api/biznews")
 def get_biznews():
-    return _safe_list(lambda: db.list_news(section="biz", months=_months_arg()))
+    months = _months_arg()
+    return _safe_list(lambda: db.list_news(section="biz", months=months))
 
 
 @app.get("/api/secnews")
 def get_secnews():
     category = request.args.get("category", "all")
-    return _safe_list(lambda: db.list_news(category=category, section="sec", months=_months_arg()))
+    months = _months_arg()
+    return _safe_list(lambda: db.list_news(category=category, section="sec", months=months))
 
 
 @app.get("/api/events")

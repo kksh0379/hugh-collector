@@ -144,6 +144,31 @@ class DatabasePerformanceTests(unittest.TestCase):
             self.assertEqual(query.call_count, 1)
             self.assertLess(elapsed, 1)
 
+    def test_news_endpoint_loads_with_months_in_background_worker(self):
+        # 회귀 방지: months/category 등 request 의존 값을 람다 '안'에서 읽으면
+        # 캐시가 백그라운드 워커에서 로드할 때 "Working outside of request context."로
+        # 매번 실패 → 영구 pending([]) → '불러오지 못했어요'. (v2.93에서 발생했던 버그)
+        db.upsert_news_many([{
+            "title": "엔씨 소식", "published_at": "2026-10-03T09:00:00", "author": "",
+            "content": "요약", "url": "https://example.com/a", "content_hash": "h1",
+            "group_key": "g1", "source_url": "https://example.com/a", "category": "all",
+            "image_url": "", "section": "nc", "collected_at": "2026-10-03T09:00:00",
+        }])
+        # months를 붙여야(초기 로딩 경로) 과거 버그가 재현되는 조건이 된다.
+        resp = self.client.get("/api/news?months=3")
+        # 백그라운드 로드가 끝나도록 한 번 더(캐시 pending 완료 대기 후 재조회).
+        for _ in range(8):
+            if resp.headers.get("X-Data-Pending") != "1" and resp.get_json():
+                break
+            time.sleep(0.3)
+            resp = self.client.get("/api/news?months=3")
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotEqual(resp.headers.get("X-Data-Pending"), "1")
+        data = resp.get_json()
+        self.assertTrue(data and data[0]["title"] == "엔씨 소식")
+        # 캐시에 '요청 컨텍스트' 관련 실패가 남아서는 안 된다.
+        self.assertFalse(any("request context" in v for v in web._PUBLIC_READS.last_errors().values()))
+
     def test_metadata_and_features_share_one_read(self):
         with patch.object(db, "get_all_meta", wraps=db.get_all_meta) as query:
             self.client.get("/api/meta")
