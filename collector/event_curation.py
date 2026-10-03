@@ -91,7 +91,18 @@ def generate(rows, prefs):
     if response.status_code == 400 and 'thinking' in response.text:
         body.pop('thinking', None)
         response = requests.post(analysis.API_URL, headers={'x-api-key': key, 'anthropic-version': '2023-06-01'}, json=body, timeout=(5, 35))
-    response.raise_for_status()
+    if response.status_code >= 400:
+        try:
+            message = str(response.json().get('error', {}).get('message', '')).lower()
+        except Exception:
+            message = ''
+        reason = ('credit_balance' if 'credit' in message or 'balance' in message else
+                  'model_unavailable' if 'model' in message else
+                  'authentication' if 'api key' in message or 'authentication' in message else
+                  'provider_error_' + str(response.status_code))
+        error = RuntimeError('AI provider unavailable')
+        error.curation_reason = reason
+        raise error
     data = analysis._extract_json(analysis._text_from_response(response.json()))
     selected, seen = [], set()
     for pick in data.get('picks', []) if isinstance(data, dict) else []:
@@ -133,9 +144,9 @@ def recommend(prefs):
                     result.update(items=generate(rows, prefs), mode='ai', notice='AI가 수집된 행사에서 관심사와의 관련성을 분석했어요.')
                 except Exception as error:
                     status = getattr(getattr(error, 'response', None), 'status_code', None)
-                    result['ai_error'] = str(status) if isinstance(status, int) else type(error).__name__
+                    result['ai_error'] = getattr(error, 'curation_reason', None) or (str(status) if isinstance(status, int) else type(error).__name__)
                     logging.getLogger(__name__).warning('Event curation AI unavailable: %s', result['ai_error'])
-                    result['notice'] = 'AI 연결이 지연돼 관심 분야·키워드 일치 기준으로 추천했어요.'
+                    result['notice'] = ('AI API 잔액이 부족해 관심 분야·키워드 일치 기준으로 추천했어요.' if result['ai_error'] == 'credit_balance' else 'AI 연결이 지연돼 관심 분야·키워드 일치 기준으로 추천했어요.')
             if not rows:
                 result['notice'] = '관심사에 맞는 수집 행사가 없어요. 분야나 키워드를 바꿔 보세요.'
         except Exception:

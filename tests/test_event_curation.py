@@ -27,7 +27,7 @@ class CurationTests(unittest.TestCase):
 
     def test_model_output_cannot_create_new_events_or_duplicates(self):
         rows=[{'title':'Collected event','url':'known','curation_tags':['IT·기술']}]
-        response=Mock();response.json.return_value={}
+        response=Mock(status_code=200);response.json.return_value={}
         picks={'picks':[{'id':100,'reason':'fake'},{'id':False,'reason':'fake'},{'id':0,'reason':'관련 분야'},{'id':0,'reason':'duplicate'}]}
         with patch.dict(os.environ,{'ANTHROPIC_API_KEY':'test','EVENT_CURATION_MODEL':'test'}),patch('requests.post',return_value=response),patch.object(cur.analysis,'_text_from_response',return_value=''),patch.object(cur.analysis,'_extract_json',return_value=picks):
             result=cur.generate(rows,self.prefs())
@@ -47,3 +47,12 @@ class CurationTests(unittest.TestCase):
                 if result['status']!='pending':break
                 time.sleep(.01)
             self.assertEqual(result['mode'],'rules');self.assertEqual(result['items'][0]['url'],'known');self.assertEqual(dbread.call_count,1)
+
+    def test_provider_credit_error_is_identified_without_exposing_message(self):
+        response=Mock(status_code=400, text='credit balance too low')
+        response.json.return_value={'error': {'message': 'Your credit balance is too low'}}
+        with patch.dict(os.environ,{'ANTHROPIC_API_KEY':'test','EVENT_CURATION_MODEL':'test'}),patch('requests.post',return_value=response):
+            with self.assertRaises(RuntimeError) as error:
+                cur.generate([],self.prefs())
+        self.assertEqual(error.exception.curation_reason,'credit_balance')
+        self.assertEqual(str(error.exception),'AI provider unavailable')
