@@ -1,10 +1,7 @@
 <main class="view-body" id="view-videos" hidden>
   <section class="videos-shell" aria-labelledby="videos-heading">
+    <section id="videos-browse">
     <header><h2 id="videos-heading">영상</h2><p>작품과 회차를 선택해 감상하세요.</p></header>
-    <form id="videos-add" class="videos-add">
-      <label for="videos-url">작품 추가</label>
-      <div><input id="videos-url" type="url" inputmode="url" placeholder="영상 페이지 주소 붙여 넣기" required><button type="submit">추가</button></div>
-    </form>
     <p id="videos-status" role="status" aria-live="polite" hidden></p>
     <div class="videos-discovery">
       <label class="sr-only" for="videos-search">애니메이션 검색</label>
@@ -14,14 +11,19 @@
     </div>
     <div id="videos-library" class="videos-library" aria-label="작품 목록"></div>
     <button type="button" id="videos-more" hidden>더 보기</button>
+    </section>
     <section id="videos-detail" hidden aria-label="선택한 작품">
+      <div class="videos-detail-nav"><button type="button" id="videos-back">← 뒤로가기</button><button type="button" id="videos-detail-save" aria-pressed="false">내 목록에 추가</button></div>
       <h3 id="videos-title"></h3>
+      <p id="videos-detail-status" role="status" aria-live="polite" hidden></p>
+      <div id="videos-detail-body" hidden>
       <label class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label>
       <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div>
       <div class="videos-watch-head"><strong id="videos-selected"></strong><a id="videos-original" target="_blank" rel="noopener noreferrer">원본 사이트에서 보기 ↗</a></div>
       <div id="videos-player" class="videos-player"><p>회차를 선택한 뒤 재생을 눌러 주세요.</p></div>
       <div class="videos-controls"><button type="button" id="videos-prev">이전 화</button><button type="button" id="videos-play">재생</button><button type="button" id="videos-next">다음 화</button></div>
       <p class="videos-help">재생 화면은 원본 사이트에서 제공해요. 앱 안에서 재생되지 않으면 원본 사이트에서 열어 주세요.</p>
+      </div>
     </section>
   </section>
 </main>
