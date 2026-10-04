@@ -2799,7 +2799,7 @@ async function loadReport(id) {
 // 이용자 평점/후기는 우리 앱에 직접 누적, AI가 '오늘 뭐 먹지?'를 추천.
 function lunchLocationLabel(location) {
   if (!location) return "위치";
-  if (location.id === "gps") return location.source === "address" ? (location.address || location.name) : "내 위치";
+  if (location.id === "gps") return location.address || (location.source === "address" ? location.name : (location.addressStatus === "failed" ? "내 위치 · 주소 확인 불가" : "내 위치 · 주소 확인 중…"));
   if (/개발자/.test(location.name || "")) return "개발자집";
   const address = location.address || "";
   if (/성남문화예술교육센터/.test(address) || /프로젝토리.*성남/.test(location.name || "")) return "경기 성남시 수정구 수정로 386";
@@ -2842,6 +2842,46 @@ function lunchLocationLabel(location) {
       && typeof location.name === "string" && ["gps", "address"].includes(location.source))
       .sort((a, b) => b.usedAt - a.usedAt).slice(0, 20);
   } catch (_) {}
+
+  const addressLookups = new Map();
+  let historyAddressLoading = false;
+  async function resolveGpsAddress(location) {
+    if (location?.id !== "gps" || location.source === "address" || location.address) return;
+    const key = recentLocationKey(location);
+    if (addressLookups.has(key)) return addressLookups.get(key);
+    const lookup = (async () => {
+      let address = "", failed = false;
+      try {
+        const data = await gpsApi("/api/lunch/address/reverse", gpsPayload(location));
+        address = data.address || ""; failed = !address;
+      } catch (_) { failed = true; }
+      // Only enrich records still in the list: deletion must not recreate a record.
+      recentLocations = recentLocations.map((item) => recentLocationKey(item) === key
+        ? {...item, address, addressStatus: failed ? "failed" : "ready"} : item);
+      if (LUNCH.curLoc?.id === "gps" && recentLocationKey(LUNCH.curLoc) === key) {
+        LUNCH.curLoc.address = address;
+        LUNCH.curLoc.addressStatus = failed ? "failed" : "ready";
+      }
+      saveRecentLocations(); renderLocBar();
+      const confirmation = $("lunch-download-dialog");
+      if (confirmation?.open && LUNCH.curLoc?.id === "gps" && recentLocationKey(LUNCH.curLoc) === key) {
+        $("lunch-download-desc").textContent = `${lunchLocationLabel(LUNCH.curLoc)} 반경 ${LUNCH.curLoc.radius}m의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 그대로 유지하고, 없는 맛집만 추가해요.`;
+      }
+    })();
+    addressLookups.set(key, lookup);
+    try { await lookup; } finally { addressLookups.delete(key); }
+  }
+  async function resolveHistoryAddresses() {
+    if (historyAddressLoading) return;
+    historyAddressLoading = true;
+    try {
+      for (const location of [...recentLocations]) {
+        if (recentLocations.some((item) => recentLocationKey(item) === recentLocationKey(location)))
+          await resolveGpsAddress(location);
+      }
+    } finally { historyAddressLoading = false; }
+  }
+
   function saveRecentLocations() {
     try { localStorage.setItem(RECENT_LOC_STORAGE, JSON.stringify(recentLocations)); } catch (_) {}
   }
@@ -2850,7 +2890,7 @@ function lunchLocationLabel(location) {
     const key = recentLocationKey(location);
     recentLocations = recentLocations.filter((item) => recentLocationKey(item) !== key);
     recentLocations.unshift({id: "gps", source: location.source === "address" ? "address" : "gps",
-      name: location.name || "내 위치", address: location.address || "",
+      name: location.name || "내 위치", address: location.address || "", addressStatus: location.addressStatus || "",
       lat: location.lat, lng: location.lng, radius: location.radius || 500, usedAt: Date.now()});
     recentLocations = recentLocations.slice(0, 20);
     saveRecentLocations();
@@ -2863,7 +2903,7 @@ function lunchLocationLabel(location) {
       const label = lunchLocationLabel(location);
       const time = new Intl.DateTimeFormat("ko-KR", {month:"numeric", day:"numeric",
         hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Asia/Seoul"}).format(new Date(location.usedAt));
-      return `<div class="lunch-recent-row"><button type="button" class="lunch-loc-item${on ? " on" : ""}" data-recent-key="${escapeHtml(key)}">${uiIcon("pin")} ${escapeHtml(label)}<span class="lli-sub">${escapeHtml(time)} · 반경 ${location.radius}m${on ? " · 선택됨" : ""}</span></button><button type="button" class="lunch-recent-delete" data-delete-recent="${escapeHtml(key)}" aria-label="${escapeHtml(label)} 최근 위치 삭제" title="최근 위치 삭제">×</button></div>`;
+      return `<div class="lunch-recent-row"><button type="button" class="lunch-loc-item${on ? " on" : ""}" data-recent-key="${escapeHtml(key)}">${uiIcon("pin")} ${escapeHtml(label)}<span class="lli-sub">${location.source === "address" ? "주소 지정" : "GPS"} · ${escapeHtml(time)} · 반경 ${location.radius}m${on ? " · 선택됨" : ""}</span></button><button type="button" class="lunch-recent-delete" data-delete-recent="${escapeHtml(key)}" aria-label="${escapeHtml(label)} 최근 위치 삭제" title="최근 위치 삭제">×</button></div>`;
     }).join("");
   }
   async function selectRecentLocation(location) {
@@ -2872,7 +2912,7 @@ function lunchLocationLabel(location) {
     LUNCH.curLoc = {...location};
     LUNCH.cat = "전체"; LUNCH.q = ""; LUNCH.reviewedOnly = false; LUNCH.downloadNeeded = false;
     const search = $("lunch-search"); if (search) search.value = "";
-    rememberRecentLocation(); closeLocMenu(); renderLocBar(); await loadNearby(true);
+    rememberRecentLocation(); closeLocMenu(); renderLocBar(); resolveGpsAddress(LUNCH.curLoc); await loadNearby(true);
   }
 
   try {
@@ -3075,6 +3115,7 @@ function lunchLocationLabel(location) {
       const search = $("lunch-search"); if (search) search.value = "";
       LUNCH.downloadNeeded = false;
       rememberRecentLocation(); renderLocBar();
+      resolveGpsAddress(LUNCH.curLoc);
       await loadNearby(true);
     }, (error) => {
       if (sequence !== gpsSequence) return;
@@ -3705,7 +3746,7 @@ function lunchLocationLabel(location) {
   loadLocations();
   window.onShowLunch = function () {
     LUNCH.inited = true;
-    renderLocBar();
+    renderLocBar(); resolveHistoryAddresses();
     if (LUNCH.curLoc) loadRestaurants(true);
     loadLocations();
   };

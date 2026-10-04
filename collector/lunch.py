@@ -90,6 +90,29 @@ def _headers():
 LAST_GEO = {}
 
 
+
+def reverse_address(lat, lng):
+    """Resolve GPS coordinates to a road address, falling back to a lot address."""
+    if not has_key():
+        raise RuntimeError("주소 확인을 현재 이용할 수 없어요.")
+    try:
+        response = fetcher.get("https://dapi.kakao.com/v2/local/geo/coord2address.json",
+                               params={"x": lng, "y": lat, "input_coord": "WGS84"},
+                               headers=_headers(), retries=1, timeout=8, raise_status=False)
+        if response.status_code != 200:
+            raise RuntimeError("현재 위치의 주소를 확인하지 못했어요.")
+        for document in response.json().get("documents") or []:
+            for kind in ("road_address", "address"):
+                address = (document.get(kind) or {}).get("address_name")
+                if address:
+                    return address
+        return None
+    except RuntimeError:
+        raise
+    except Exception:
+        raise RuntimeError("현재 위치의 주소를 확인하지 못했어요.") from None
+
+
 def search_locations(query):
     """Return selectable domestic addresses/places without exposing the API key."""
     if not has_key():

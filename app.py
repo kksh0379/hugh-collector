@@ -901,6 +901,20 @@ def _lunch_gps_input(data):
         raise ValueError("국내 위치와 검색 반경을 확인해 주세요.") from None
 
 
+@app.post("/api/lunch/address/reverse")
+def lunch_address_reverse():
+    try:
+        location = _lunch_gps_input(request.get_json(silent=True) or {})
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    try:
+        response = jsonify({"address": lunch.reverse_address(location["lat"], location["lng"])})
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+    except RuntimeError as error:
+        return jsonify({"error": str(error)}), 503
+
+
 @app.post("/api/lunch/address/search")
 def lunch_address_search():
     data = request.get_json(silent=True) or {}
