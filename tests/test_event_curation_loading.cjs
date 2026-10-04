@@ -8,6 +8,7 @@ function setup(saved={topics:[],keywords:[]}) {
  const elements=new Map(),el=id=>{if(!elements.has(id))elements.set(id,{innerHTML:'',textContent:'',hidden:false,dataset:{},append(){},showModal(){},close(){},querySelector:sel=>el(sel),querySelectorAll:()=>[]});return elements.get(id);};
  let requests=0;const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const c=vm.createContext({Date,Intl,URL,AbortController,setTimeout,clearTimeout,escapeHtml,eventDateBadge:s=>s.start_date||'',eventPlace:s=>s.venue||'',localStorage:{getItem:()=>JSON.stringify(saved),setItem(){}},window:{},document:{getElementById:el},fetch:()=>{requests++;return Promise.reject(Error('unexpected network'));}});
+ vm.runInContext(app.slice(app.indexOf('function thumbnailFallback('),app.indexOf('// 보안뉴스 AI 후처리')),c);
  vm.runInContext(app.slice(app.indexOf('function eventCategories'),app.indexOf('const filterEventsByCategory'))+script,c);
  return {api:c.window.EventDiscovery,el,requests:()=>requests};
 }

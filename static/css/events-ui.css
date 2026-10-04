@@ -120,13 +120,11 @@ body.view-list #list-event .event-card .event-place {margin-bottom:0;}
 .ed-curation-toolbar {gap:8px;justify-content:flex-end;}
 .ed-curation-toolbar button {white-space:nowrap;}
 
-/* The shared fallback stays readable beside or above the event copy. */
+/* Desktop keeps the fallback; mobile uses a compact text-only banner. */
 .ed-banner-visual.is-no-image img {object-fit:contain;padding:0;}
 @media(max-width:767px){
-  .ed-banner .ed-art:has(.ed-banner-visual.is-no-image) {padding:0;gap:0;}
+  .ed-banner .ed-art:has(.ed-banner-visual.is-no-image) {padding:18px 20px;gap:0;min-height:0;}
   .ed-banner .ed-art:has(.ed-banner-visual.is-no-image)::before,
   .ed-banner .ed-art:has(.ed-banner-visual.is-no-image)::after {display:none;}
-  .ed-banner-visual.is-no-image {position:relative;inset:auto;z-index:0;height:120px;flex:none;}
-  .ed-banner-visual.is-no-image img {position:static;width:100%;height:100%;}
-  .ed-banner .ed-art:has(.ed-banner-visual.is-no-image) .ed-banner-copy {padding:18px 20px;}
+  .ed-banner-visual.is-no-image {display:none;}
 }
