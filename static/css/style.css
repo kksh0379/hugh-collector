@@ -230,36 +230,15 @@ body.is-loggedin .loggedout-only { display: none !important; }
   transition: top 0.25s ease, transform 0.25s ease;
 }
 .tabs {
-  display: flex;
-  gap: 8px;                    /* 칩 사이 간격 */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 8px;
   padding: 9px 12px;
-  overflow-x: auto;            /* 탭이 많아 좁으면 가로 스크롤 */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
 }
-.tabs::-webkit-scrollbar { display: none; }
-/* 스크롤 가능한 쪽 끝을 블러(페이드) 처리 */
-.tabs-wrap::before, .tabs-wrap::after {
-  content: ""; position: absolute; top: 0; bottom: 0; width: 40px;
-  pointer-events: none; z-index: 2; opacity: 0; transition: opacity 0.2s ease;
-  backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px);
-}
-.tabs-wrap::before {
-  left: 0;
-  background: linear-gradient(to right, var(--card) 30%, rgba(255, 255, 255, 0));
-  -webkit-mask: linear-gradient(to right, #000, transparent); mask: linear-gradient(to right, #000, transparent);
-}
-.tabs-wrap::after {
-  right: 0;
-  background: linear-gradient(to left, var(--card) 30%, rgba(255, 255, 255, 0));
-  -webkit-mask: linear-gradient(to left, #000, transparent); mask: linear-gradient(to left, #000, transparent);
-}
-.tabs-wrap.fade-left::before { opacity: 1; }
-.tabs-wrap.fade-right::after { opacity: 1; }
 .tab {
-  flex: 0 0 auto;              /* 칩: 내용 폭만, 넘치면 가로 스크롤 */
+  min-width: 0;               /* 화면 폭에 맞춰 균등한 열로 배치 */
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  padding: 8px 14px;
+  padding: 8px 10px;
   border: none;
   background: #eef0f3;         /* 비활성 칩: 연회색 */
   border-radius: var(--r-pill);

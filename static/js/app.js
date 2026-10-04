@@ -463,7 +463,6 @@ document.querySelectorAll(".tab").forEach((tab) => {
     if (panel) panel.classList.add("active");
     document.body.classList.toggle("tab-event", tab.dataset.tab === "event");
     document.body.classList.toggle("tab-report", tab.dataset.tab === "report");
-    try { tab.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); } catch (e) { /* 무시 */ }
     if (typeof syncSearchInput === "function") syncSearchInput();
     if (typeof updateCount === "function") updateCount(tab.dataset.tab);
     if (tab.dataset.tab === "report" && typeof loadReport === "function") loadReport();
@@ -2694,21 +2693,6 @@ async function loadReport(id) {
         .catch(() => {});
     }
   };
-})();
-
-// ----------------------------- 탭바 가로 스크롤 + 끝 블러(페이드) -----------------------------
-(function initTabsFade() {
-  const wrap = document.getElementById("tabs-wrap");
-  const tabs = document.getElementById("tabs");
-  if (!wrap || !tabs) return;
-  const update = () => {
-    const max = tabs.scrollWidth - tabs.clientWidth;
-    wrap.classList.toggle("fade-left", tabs.scrollLeft > 4);
-    wrap.classList.toggle("fade-right", tabs.scrollLeft < max - 4);
-  };
-  tabs.addEventListener("scroll", update, { passive: true });
-  window.addEventListener("resize", update);
-  setTimeout(update, 0);
 })();
 
 // 분류 체크바: 스크롤 가능한 쪽 끝을 페이드(마스크)로 흐리게 → '더 있다'는 걸 명확히 인지.
