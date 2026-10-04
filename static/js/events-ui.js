@@ -11,7 +11,7 @@
     const image=safeLink(s.image_url);
     const index=position%6;
     if(banner){
-      const art=`<div class="ed-banner-visual" aria-hidden="true">${image?`<img loading="lazy" src="/api/img?u=${encodeURIComponent(image)}" alt="" onerror="this.remove()">`:''}</div><div class="ed-banner-copy"><span class="ed-banner-category">${esc(eventCategories(s)[0])}</span><h3>${esc(s.title || '행사')}</h3><div class="ed-banner-facts"><span>${esc(eventDateBadge(s))}</span>${eventPlace(s)?`<span>${esc(eventPlace(s))}</span>`:''}</div></div>${link?'<span class="ed-banner-arrow" aria-hidden="true">↗</span>':''}`;
+      const art=`${newsThumb({image_url:image}, true, "ed-banner-visual")}<div class="ed-banner-copy"><span class="ed-banner-category">${esc(eventCategories(s)[0])}</span><h3>${esc(s.title || '행사')}</h3><div class="ed-banner-facts"><span>${esc(eventDateBadge(s))}</span>${eventPlace(s)?`<span>${esc(eventPlace(s))}</span>`:''}</div></div>${link?'<span class="ed-banner-arrow" aria-hidden="true">↗</span>':''}`;
       return `<li class="ed-card ed-banner">${link?`<a class="ed-art ed-art-${index}" href="${esc(link)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(s.title || '행사')} 원문 보기">${art}</a>`:`<div class="ed-art ed-art-${index}">${art}</div>`}</li>`;
     }
     return eventAlbumCard({...s,url:safeLink(s.url),source_url:link,image_url:image}).outerHTML;

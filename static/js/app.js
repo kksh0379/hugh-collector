@@ -1184,13 +1184,17 @@ async function loadBiz() {
   sync();
 })();
 
-// 뉴스 카드 썸네일 HTML. 대표 이미지가 있을 때만 표시(없으면 아무것도 안 보임).
-// proxy=true(뉴스류)면 언론사 핫링크 차단 우회를 위해 서버 프록시(/api/img)로 불러온다.
-function newsThumb(rep, proxy) {
-  if (!rep.image_url) return "";
-  const src = proxy ? ("/api/img?u=" + encodeURIComponent(rep.image_url)) : rep.image_url;
-  return `<div class="card-thumb"><img class="thumb-img" loading="lazy" src="${escapeHtml(src)}" alt=""
-    onerror="this.closest('.card-thumb').remove()"></div>`;
+// Shared thumbnail fallback for missing URLs and failed image loads.
+function thumbnailFallback(image) {
+  image.onerror = null;
+  image.closest("[data-thumbnail]")?.classList.add("is-no-image");
+  image.alt = "이미지 없음";
+  image.src = "/static/no-image.svg";
+}
+function newsThumb(rep, proxy, containerClass = "card-thumb") {
+  const image = typeof rep?.image_url === "string" ? rep.image_url.trim() : "";
+  const src = image ? (proxy ? "/api/img?u=" + encodeURIComponent(image) : image) : "/static/no-image.svg";
+  return `<div class="${escapeHtml(containerClass)}${image ? "" : " is-no-image"}" data-thumbnail><img class="thumb-img" loading="lazy" src="${escapeHtml(src)}" alt="${image ? "" : "이미지 없음"}" onerror="thumbnailFallback(this)"></div>`;
 }
 
 // 보안뉴스 AI 후처리(태깅·중요도·시사점) → 카드에 얹을 HTML. ai 필드 없으면 "".
@@ -1414,7 +1418,7 @@ function eventAlbumCard(s) {
   li.dataset.key = key;
   li.innerHTML = `
     ${scrapBtnHtml(key)}
-    ${s.image_url ? `<div class="card-thumb"><img class="thumb-img" loading="lazy" src="/api/img?u=${encodeURIComponent(s.image_url)}" alt="" onerror="this.closest('.card-thumb').remove()"></div>` : ""}
+    ${newsThumb(s, true)}
     <div class="card-body">
       <div class="event-date">${uiIcon("calendar")} ${escapeHtml(eventDateBadge(s))} ${eventSrcBadge(s)}</div>
       <h3 class="card-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>

@@ -2,7 +2,7 @@
 
 김상화가 생활과 업무에 필요한 정보를 모아 쓰기 위해 제작·개선하는 개인 서비스입니다.
 
-**현재 버전: v3.65 · build 261004**
+**현재 버전: v3.66 · build 261004**
 
 - 서비스: https://hscope.onrender.com/
 - 소개: https://hscope.onrender.com/intro
