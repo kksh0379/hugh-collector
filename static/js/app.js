@@ -2800,7 +2800,6 @@ async function loadReport(id) {
 function lunchLocationLabel(location) {
   if (!location) return "위치";
   if (location.id === "gps") return location.address || (location.source === "address" ? location.name : (location.addressStatus === "failed" ? "내 위치 · 주소 확인 불가" : "내 위치 · 주소 확인 중…"));
-  if (/개발자/.test(location.name || "")) return "개발자집";
   const address = location.address || "";
   if (/성남문화예술교육센터/.test(address) || /프로젝토리.*성남/.test(location.name || "")) return "경기 성남시 수정구 수정로 386";
   return address || location.name || "위치";
@@ -2918,7 +2917,8 @@ function lunchLocationLabel(location) {
   try {
     const saved = JSON.parse(localStorage.getItem(LOC_STORAGE) || "null");
     if (saved && Date.now() - saved.at < 86400000 && Array.isArray(saved.locations)) {
-      LUNCH.locs = saved.locations.filter((l) => Number.isInteger(l.id) && typeof l.name === "string");
+      LUNCH.locs = saved.locations.filter((l) => Number.isInteger(l.id) && typeof l.name === "string"
+        && !["개발자 동네", "개발자집"].includes(l.name));
       LUNCH.curLoc = LUNCH.locs.find((l) => l.id === saved.selected) || LUNCH.locs[0] || null;
     }
   } catch (_) {}
@@ -2945,7 +2945,7 @@ function lunchLocationLabel(location) {
       LUNCH.kakao = !!d.kakao;
       waiting = !!d.db_waking;
       if (!waiting && Array.isArray(d.locations)) {
-        LUNCH.locs = d.locations;
+        LUNCH.locs = d.locations.filter((l) => !["개발자 동네", "개발자집"].includes(l.name));
         if (LUNCH.curLoc?.id !== "gps") LUNCH.curLoc = LUNCH.locs.find((l) => l.id === previous) || LUNCH.locs[0] || null;
         rememberLocations();
       }
@@ -3007,7 +3007,7 @@ function lunchLocationLabel(location) {
       menu.innerHTML = gpsItem + renderRecentLocations() + `<div class="lunch-loc-empty">${LUNCH.locLoading ? catRunInline("위치 불러오는 중…") : escapeHtml(txt)}</div>`;
       return;
     }
-    // Address labels for public locations; keep the developer home as a nickname.
+    // Display address labels for the available fixed locations.
     menu.innerHTML = gpsItem + renderRecentLocations() + `<div class="lunch-loc-heading">기본 위치</div>` + LUNCH.locs.map((l) => {
       const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;
       return `<button type="button" class="lunch-loc-item${on ? " on" : ""}" data-id="${l.id}">`

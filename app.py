@@ -759,7 +759,6 @@ LUNCH_OFFICES = [
     {"name": "NC문화재단 사옥", "address": "서울 종로구 이화장길 100", "radius": 500},
     {"name": "NC 판교R&D센터", "address": "경기 성남시 분당구 대왕판교로644번길 12", "radius": 500},
     {"name": "프로젝토리 성남지점", "address": "성남문화예술교육센터", "radius": 700},
-    {"name": "개발자 동네", "address": "서울 강동구 양재대로110길 37-10", "radius": 500},
 ]
 _LUNCH_JOB = {"running": False, "progress": "", "result": None, "started_ts": 0, "loc": None}
 
@@ -841,7 +840,8 @@ def _load_lunch_locations():
             rewrite_varied_history(conn, db._q)
         _invalidate_lunch_cache()
         _lunch_synced = True
-    return db.lunch_list_locations()
+    return [loc for loc in db.lunch_list_locations()
+            if loc.get("name") not in {"개발자 동네", "개발자집"}]
 
 
 def _invalidate_lunch_cache():
