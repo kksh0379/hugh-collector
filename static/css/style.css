@@ -231,11 +231,11 @@ body.is-loggedin .loggedout-only { display: none !important; }
 }
 .tabs {
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
-  gap:8px;
+  gap:6px;
   padding:7px 12px;
 }
-.tabs-row { display:contents; }
 .tab {
   min-width: 0;               /* 버튼 폭은 탭명 길이에 맞춤 */
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
@@ -249,13 +249,9 @@ body.is-loggedin .loggedout-only { display: none !important; }
   cursor: pointer;
   white-space: nowrap;
 }
-.tabs .tab { height:32px; box-sizing:border-box; padding:4px 10px; flex:0 0 auto; }
-@media (max-width:959px) {
-  .tabs { flex-direction:column; align-items:flex-start; gap:5px; }
-  .tabs-row { display:flex; align-items:center; gap:6px; }
-  .tabs .tabs-row > .tab { height:30px; padding:3px 6px; font-size:12px; line-height:1; white-space:nowrap; gap:4px; }
-  .tabs .tabs-row > .tab .tab-icon { width:16px; height:16px; flex-basis:16px; }
-}
+/* Each button keeps its intrinsic width; available space alone determines rows. */
+.tabs > .tab { height:30px; box-sizing:border-box; padding:3px 6px; flex:0 0 auto; font-size:12px; line-height:1; white-space:nowrap; gap:4px; }
+.tabs > .tab .tab-icon { width:16px; height:16px; flex-basis:16px; }
 .tab:active { transform: scale(0.97); }
 .tab .nc-ci, .tab .cat-ci, .tab .yt-ci, .tab .security-ci { flex: 0 0 auto; display: block; }
 .tab .yt-ci { width:24px; height:17px; object-fit:contain; }
