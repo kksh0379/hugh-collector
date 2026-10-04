@@ -37,12 +37,12 @@ async function fetchData(url) {
 // ===== 인증 상태(아이디 기반) =====
 let CURRENT_USER = null;      // null=미로그인, "admin" 또는 "tester1"…
 function isLoggedIn() { return !!CURRENT_USER; }
-function applyAuthUI(user, admin) {
+function applyAuthUI(user, admin, displayName) {
   CURRENT_USER = user || null;
   document.body.classList.toggle("is-admin", !!admin);
   document.body.classList.toggle("is-loggedin", !!user);
   const fu = document.getElementById("foot-user");
-  if (fu) fu.textContent = user ? (user === "admin" ? "관리자" : user) + " 님" : "";
+  if (fu) fu.textContent = user ? (displayName || (user === "admin" ? "관리자" : user)) + " 님" : "";
   applyFeatures();  // 로그인/로그아웃 시 표시 설정 재적용(관리자는 전체 노출)
 }
 
@@ -89,7 +89,7 @@ async function loadFeatures() {
 async function initAuth() {
   let me = { user: null, admin: false };
   try { me = await (await fetch("/api/me")).json(); } catch (e) { /* 무시 */ }
-  applyAuthUI(me.user, me.admin);
+  applyAuthUI(me.user, me.admin, me.display_name);
   if (me.user) { await loadMyData(); }
 }
 
@@ -1981,7 +1981,7 @@ function setLoginRole(role, manual = false) {
 function loginRequestBody() {
   if (loginRole === "admin") return {role: "admin", pw: document.getElementById("login-pw").value};
   if (loginManual) return {role: "user", username: document.getElementById("login-id").value.trim(), pw: document.getElementById("login-pw").value};
-  return {role: "user", username: "test1", pw: "1234"};
+  return {role: "user", username: "tester1", pw: "1234"};
 }
 function openLogin() {
   setLoginRole("user");                 // test account without password fields
@@ -2006,7 +2006,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     res = await r.json();
   } catch (err) { loginErr.textContent = "로그인 요청 실패.\n잠시 후 다시 시도해 주세요."; return; }
   if (res && res.ok) {
-    applyAuthUI(res.user, res.admin);
+    applyAuthUI(res.user, res.admin, res.display_name);
     await loadMyData();
     loginModal.hidden = true;
     document.getElementById("login-fields").replaceChildren();
@@ -3058,7 +3058,7 @@ function lunchLocationLabel(location) {
     const kakao = r.place_url ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>${copyBtnHtml(r.place_url)}` : "";
     const list = revs.length
       ? revs.map((v) => `<div class="lrev">
-          <div class="lrev-t"><span class="lrev-u">${escapeHtml(v.username || "익명")}</span> ${stars(v.rating)}
+          <div class="lrev-t"><span class="lrev-u">${escapeHtml(v.display_name || v.username || "익명")}</span> ${stars(v.rating)}
             <span class="lrev-d">${escapeHtml(fmtDate(v.created_at))}</span></div>
           ${v.comment ? `<div class="lrev-c">${escapeHtml(v.comment)}</div>` : ""}
         </div>`).join("")

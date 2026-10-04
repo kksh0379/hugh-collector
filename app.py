@@ -18,6 +18,7 @@ from flask import Flask, Response, g, jsonify, render_template, request, session
 from collector import (analysis, boards, db, dedup, event_curation, event_sources, events, fetcher,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
 
+from collector.identity import canonical_user, display_name, public_author
 from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
 from collector.read_cache import ReadCache
@@ -51,7 +52,7 @@ KST = timezone(timedelta(hours=9))  # 마지막 수집 일시는 서버에서 KS
 
 # 관리자 로그인: 로그인해야 상태확인/수집 실행이 보이고 동작한다(뷰어는 조회만).
 ADMIN_PW = os.environ.get("ADMIN_PW", "rlatkdghk12#")
-# 일반 사용자(테스트용) 계정: tester1~tester10 / 비번 1234
+# 일반 테스트 계정: test1(로그인 별칭 tester1), 표시 이름 김테스터
 TEST_USERS = {"test1": "1234"}   # 일반 테스트 계정 1개(로그인창 자동입력)
 
 
@@ -60,7 +61,7 @@ def _admin_ok():
 
 
 def _current_user():
-    return session.get("user")
+    return canonical_user(session.get("user"))
 
 
 def _now_kst():
@@ -141,7 +142,7 @@ def healthz():
 
 @app.get("/api/me")
 def me():
-    return jsonify({"user": session.get("user"), "admin": _admin_ok(),
+    return jsonify({"user": _current_user(), "display_name": display_name(_current_user()) if _current_user() else None, "admin": _admin_ok(),
                     "logged_in": bool(session.get("user"))})
 
 
@@ -172,13 +173,13 @@ def login():
         if pw == ADMIN_PW:
             session["user"] = "admin"
             session["admin"] = True
-            return jsonify({"ok": True, "user": "admin", "admin": True})
+            return jsonify({"ok": True, "user": "admin", "display_name": display_name("admin"), "admin": True})
         return jsonify({"ok": False, "error": "비밀번호가 올바르지 않습니다."}), 401
-    username = (data.get("username") or "").strip().lower()
+    username = canonical_user((data.get("username") or "").strip().lower())
     if username in TEST_USERS and pw == TEST_USERS[username]:
         session["user"] = username
         session["admin"] = False
-        return jsonify({"ok": True, "user": username, "admin": False})
+        return jsonify({"ok": True, "user": username, "display_name": display_name(username), "admin": False})
     return jsonify({"ok": False, "error": "아이디 또는 비밀번호가 올바르지 않습니다."}), 401
 
 
@@ -763,7 +764,7 @@ _LUNCH_JOB = {"running": False, "progress": "", "result": None, "started_ts": 0,
 
 
 def _cur_user():
-    return session.get("user")
+    return canonical_user(session.get("user"))
 
 
 def _lunch_geocode_if_needed(loc):
@@ -992,7 +993,7 @@ def lunch_exclude():
 @app.get("/api/lunch/reviews")
 def lunch_reviews():
     rid = request.args.get("rid", type=int)
-    return _safe_list(lambda: db.lunch_list_reviews(rid), ttl=30)
+    return _safe_list(lambda: [public_author(row) for row in db.lunch_list_reviews(rid)], ttl=30)
 
 
 @app.post("/api/lunch/review")
