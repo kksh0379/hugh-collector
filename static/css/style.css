@@ -231,7 +231,7 @@ body.is-loggedin .loggedout-only { display: none !important; }
 }
 .tabs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   padding: 9px 12px;
 }
@@ -247,6 +247,13 @@ body.is-loggedin .loggedout-only { display: none !important; }
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
+}
+.tabs > .tab { height:40px; box-sizing:border-box; }
+@media (max-width:959px) {
+  .tabs { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .tabs > .tab { height:44px; padding:4px; font-size:12px; line-height:1.25; white-space:normal; }
+  .tabs > .tab { gap:4px; }
+  .tabs > .tab .tab-icon { width:16px; height:16px; flex-basis:16px; }
 }
 .tab:active { transform: scale(0.97); }
 .tab .nc-ci, .tab .cat-ci, .tab .yt-ci, .tab .security-ci { flex: 0 0 auto; display: block; }
