@@ -48,7 +48,7 @@
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.80') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.80') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.80") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
 </head>
@@ -527,7 +527,7 @@
   <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.80") }}"></script>
   <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.80") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.80') }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>

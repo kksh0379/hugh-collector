@@ -44,6 +44,6 @@ test('episode jump validates availability and next episode continues an active p
  assert.equal(s.el('videos-jump-status').hidden,true);assert.equal(s.el('videos-next').disabled,false);
  s.el('videos-play').onclick();s.el('videos-next').onclick();
  assert.match(s.el('videos-player').children[0].src,/\/k8\/$/);
- assert.equal(s.el('videos-play').disabled,true);assert.equal(s.el('videos-play').textContent,'재생 중');
+ assert.equal(s.el('videos-play').disabled,false);assert.equal(s.el('videos-play').textContent,'다시 불러오기');
  assert.equal(s.el('videos-next').disabled,true);
 });

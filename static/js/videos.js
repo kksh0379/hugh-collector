@@ -142,7 +142,7 @@
     frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
     frame.setAttribute('allow', 'fullscreen; autoplay; encrypted-media; picture-in-picture'); frame.allowFullscreen = true;
     frame.referrerPolicy = 'no-referrer'; $('videos-player').replaceChildren(frame);
-    $('videos-play').textContent = '재생 중'; $('videos-play').disabled = true;
+    $('videos-play').textContent = '다시 불러오기';
   }
   $('videos-jump-form').onsubmit = event => {
     event.preventDefault(); if (!catalog) return;
