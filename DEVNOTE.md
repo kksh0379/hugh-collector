@@ -326,3 +326,6 @@ flowchart TB
 
 ### v3.42 행사일정 표시
 - 두 콘텐츠 탭: 일반 일정 / AI 큐레이션(기본). 일반 일정 아이콘: 리스트 / 앨범 / 캘린더. `eventScheduleView` localStorage로 일반 일정 보기만 기억하고, 다른 뉴스의 `nvView`와 분리. 활성 탭에 맞춰 body 보기 클래스를 투영하므로 캘린더 하단 앨범과 큐레이션 썸네일도 유지.
+
+### v3.43 추천 호출
+- EventDiscovery.curation은 로드된 목록을 localRecommendations로 즉시 순위화. 초기 진입·탭 이동·검색·관심사 적용은 AI/추가 추천 API 호출 없음. [AI 추천받기]만 기존 POST 추천 작업을 요청하며 진행 중 중복 클릭 차단·기존 배너 유지.
