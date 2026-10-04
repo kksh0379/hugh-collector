@@ -30,6 +30,7 @@ def parse_page(html, title_id, series, episode, include_requested=True):
     soup = BeautifulSoup(html, 'html.parser')
     meta = soup.find('meta', property='og:title')
     title = meta.get('content', '') if meta else ''
+    title = re.sub(r'\s+-\s+Anime\s+-\s+Linkkf.*$', '', title, flags=re.IGNORECASE)
     title = re.sub(r'\s+\d+화(?:\s.*)?$', '', title).strip() or f'작품 {title_id}'
     title = TITLE_NAMES.get(title_id, title)
     found = {}

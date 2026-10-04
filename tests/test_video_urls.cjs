@@ -16,3 +16,11 @@ test('search spans the full catalog beyond the visible batch, deduplicates saved
  assert.equal(c.discoveryRows(saved,works,'saved','찾을').length,0);
  assert.equal(c.discoveryRows(saved,works,'saved','내 제목').length,1);
 });
+test('literal title results precede fuzzy fallback and allow omitted spaces',()=>{
+ c.koreanMatchAll=()=>true;
+ const works=[{id:'1',title:'나루토 극장판'},{id:'2',title:'기어와라 나루코 양'}];
+ assert.equal(c.discoveryRows([],works,'all','나루토').length,1);
+ assert.equal(c.discoveryRows([],works,'all','나루토극장판').length,1);
+ assert.equal(c.discoveryRows([],works,'all','ㄴㄹㅌ').length,2);
+ delete c.koreanMatchAll;
+});

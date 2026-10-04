@@ -53,6 +53,10 @@ class VideoLibraryTests(unittest.TestCase):
     def test_detail_pages_do_not_invent_unreleased_episodes(self):
         self.assertEqual(parse_page('<meta property="og:title" content="미방영 작품">', '123', '1', '1', include_requested=False)['series'], [])
 
+    def test_detail_title_drops_site_branding_without_removing_movie_name(self):
+        result = parse_page('<meta property="og:title" content="나루토 - 극장판2 - Anime - Linkkf 애니 TV (자막 - 더빙)">', '430', '1', '1')
+        self.assertEqual(result['title'], '나루토 - 극장판2')
+
     @patch('collector.video_library.load_catalog', return_value={'id': '123', 'series': []})
     def test_unreleased_title_returns_clear_message(self, load):
         response = self.client.get('/api/videos/catalog?id=123')

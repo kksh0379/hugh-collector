@@ -13,7 +13,10 @@
   function discoveryRows(saved, works, scope, query) {
     const ids = new Set(saved.map(x => x.id));
     const candidates = scope === 'saved' ? saved : saved.concat(works.filter(x => !ids.has(x.id)));
-    return candidates.filter(item => !query || (typeof koreanMatchAll === 'function' ? koreanMatchAll(item.title, query) : item.title.toLowerCase().includes(query.toLowerCase())));
+    if (!query) return candidates;
+    const normalize = value => value.toLowerCase().replace(/\s+/g, '');
+    const exact = candidates.filter(item => normalize(item.title).includes(normalize(query)));
+    return exact.length ? exact : candidates.filter(item => typeof koreanMatchAll === 'function' && koreanMatchAll(item.title, query));
   }
   const DEFAULT_LIBRARY = [
     {id:'19240', series:1, episode:8, title:'강철의 연금술사'},
