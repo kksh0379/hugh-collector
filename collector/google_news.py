@@ -55,7 +55,7 @@ STRONG_HQ = ["엔씨소프트", "ncsoft", "엔씨에이아이", "nc ai", "엔씨
 CONTEXT_HQ = ["게임", "게임즈", "소프트", "리니지", "아이온", "블레이드", "블소",
               "쓰론", "throne", "tl", "김택진", "판교", "mmorpg", "신작", "게임사",
               "게임업계", "게임주", "엔터", "ip", "출시", "앱마켓", "모바일게임", "pc게임"]
-NEWS_TIMEOUT = 6  # 뉴스 원문 해석은 빨리 실패시켜(스냅샷 폴백) 전체 수집을 지연시키지 않음
+NEWS_TIMEOUT = 10  # 뉴스 원문 해석은 빨리 실패시켜(스냅샷 폴백) 전체 수집을 지연시키지 않음
 FULLBODY_MAX = 150  # 새 기사가 이보다 많으면 원문 해석 생략(스냅샷만) → 대량 백필 폭주 방지
 # 진단 등 호환용 평면 키워드 목록
 KEYWORDS = [kw for kws in CATEGORIES.values() for kw in kws]
@@ -169,9 +169,10 @@ def _decode_via_batchexecute(token):
     기사 페이지에서 서명(data-n-a-sg)/타임스탬프(data-n-a-ts)를 읽어
     내부 RPC(Fbv4je/garturlreq)를 호출한다."""
     try:
-        page = fetcher.get(f"https://news.google.com/rss/articles/{token}",
+        page = fetcher.get(f"https://news.google.com/articles/{token}",
+                           params={"hl": "ko", "gl": "KR", "ceid": "KR:ko"},
                            retries=0, timeout=NEWS_TIMEOUT)
-        div = BeautifulSoup(page.text, "lxml").select_one("c-wiz > div")
+        div = BeautifulSoup(page.text, "lxml").select_one("[data-n-a-sg][data-n-a-ts]")
         if not div:
             return None
         sig, ts = div.get("data-n-a-sg"), div.get("data-n-a-ts")
@@ -216,7 +217,7 @@ def _summary_from_article(entry):
             if final:
                 entry["source_url"] = final
             page_soup = BeautifulSoup(resp.text, "lxml")
-            img = extractor.extract_image(page_soup)
+            img = extractor.extract_image(page_soup, final)
             if img:
                 entry["image_url"] = img  # 기사 대표 이미지(og:image)
             art = extractor.extract_article(page_soup, final)
@@ -245,7 +246,7 @@ def _enrich_one(row):
         if final and not row.get("source_url"):
             out["source_url"] = final
         soup = BeautifulSoup(resp.text, "lxml")
-        img = extractor.extract_image(soup)
+        img = extractor.extract_image(soup, final)
         if img:
             out["image_url"] = img
         # 요약: og:description 우선, 없으면 본문에서 요약
@@ -261,7 +262,7 @@ def _enrich_one(row):
     return out
 
 
-def enrich_articles(rows, max_workers=12, progress=None):
+def enrich_articles(rows, max_workers=4, progress=None):
     """이미지/요약이 부실한 뉴스들의 원문을 열어 og:image·요약을 채운다.
     반환: {url: {image_url?, content?, source_url?}} (실제로 얻은 값만)."""
     progress = progress or (lambda m: None)
@@ -549,3 +550,4 @@ def crawl_security(max_workers=24, max_items=0, progress=None, known_urls=None, 
     return crawl(max_workers=max_workers, max_items=max_items, progress=progress,
                  known_urls=known_urls, days=days, categories=SECURITY_CATEGORIES,
                  keyword_filter=False, title_exclude=SEC_EXCLUDE_TITLE)
+

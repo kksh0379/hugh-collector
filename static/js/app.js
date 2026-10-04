@@ -678,7 +678,7 @@ function renderCard(item, opts) {
   li.innerHTML = `
     ${scrapBtnHtml(key)}
     <div class="card-main">
-      ${newsThumb(item)}
+      ${newsThumb(item, !srcCls)}
       <div class="card-body">
         <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
         <div class="card-meta">${meta.join(" · ")}</div>
@@ -3773,3 +3773,4 @@ loadBiz();   // 동향 뉴스 + 재단게시판 + 재단영상 통합 로드
 loadSecurity();
 loadEvent();
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
+

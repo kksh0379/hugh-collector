@@ -1758,21 +1758,50 @@ def _purge_news_noise(progress=None):
 IMG_ENRICH_MAX = int(os.environ.get("IMG_ENRICH_MAX", "200"))  # 수집 1회당 보강 개수 상한
 
 
-def _enrich_news_images(progress=None):
-    """이미지가 없거나 본문이 짧은(=RSS 요약뿐) 최근 뉴스 일부의 원문을 열어
-    대표 이미지(og:image)와 실제 요약(og:description/본문)을 함께 채운다.
-    대량 백필은 속도 때문에 원문을 안 여니, 수집 때마다 최근 것부터 조금씩 보강한다."""
+_news_image_lock = threading.Lock()
+
+
+def _enrich_news_images(progress=None, section="nc"):
+    """탭별 후보를 순차 보강하고 커서를 저장해 과거 누락까지 이어 처리한다."""
+    if IMG_ENRICH_MAX <= 0 or not _news_image_lock.acquire(blocking=False):
+        return
     try:
-        rows = db.news_needs_enrich(limit=IMG_ENRICH_MAX)
+        key = f"news_image_cursor_v368_{section}"
+        cursor = db.get_meta(key)
+        before_id = int(cursor) if cursor and str(cursor).isdigit() else None
+        rows = db.news_needs_enrich(limit=IMG_ENRICH_MAX, section=section, before_id=before_id)
+        if not rows and before_id is not None:
+            rows = db.news_needs_enrich(limit=IMG_ENRICH_MAX, section=section)
         if not rows:
             return
         if progress:
             progress(f"본문·이미지 보강 0/{len(rows)}")
-        data = google_news.enrich_articles(rows, progress=progress)
-        n = db.apply_news_enrich(data)
-        print(f"[crawl] 본문·이미지 보강 {n}건", flush=True)
+        n = 0
+        # 20건 단위로 저장해 원문 조회가 모두 끝나기 전에 확보한 사진부터 표시한다.
+        for offset in range(0, len(rows), 20):
+            chunk = rows[offset:offset + 20]
+            data = google_news.enrich_articles(chunk, progress=progress)
+            updated = db.apply_news_enrich(data)
+            n += updated
+            db.set_meta(key, str(chunk[-1]["id"]))
+            if updated:
+                _invalidate_read_cache()
+        print(f"[crawl] {section} 본문·이미지 보강 {n}/{len(rows)}건", flush=True)
     except Exception as e:  # noqa: BLE001
         print(f"[crawl] 보강 실패: {e}", flush=True)
+    finally:
+        _news_image_lock.release()
+
+
+def _bootstrap_biz_images():
+    """배포 후 기존 동향의 누락 이미지부터 한 묶음 보강. 요청 처리는 기다리지 않는다."""
+    if os.environ.get("ENABLE_SCHEDULER", "1") != "1":
+        return
+    try:
+        if _ensure_db(force=True):
+            _enrich_news_images(section="biz")
+    except Exception as e:
+        print(f"[images] 동향 이미지 초기 보강 실패: {type(e).__name__}", flush=True)
 
 
 def _save_boards(items):
@@ -1823,7 +1852,8 @@ def _do_crawl(group, progress=None, days=None):
         if group == "biz":
             _purge_biz_nc(progress)  # 업계동향에 섞인 NC 기사 정리(NC뉴스와 분리)
         if group in ("news", "cat", "game", "biz", "security"):
-            _enrich_news_images(progress)  # 이미지 없는 최근 기사에 대표 이미지(og:image) 보강
+            _enrich_news_images(progress, section={"news": "nc", "cat": "cat", "game": "game",
+                                                 "biz": "biz", "security": "sec"}[group])
         if group == "security":
             _run_security_ai(progress)  # 보안뉴스는 수집 직후 AI 분석(태깅·중요도·시사점) 자동 실행
         _invalidate_read_cache()  # 새로 수집됐으니 조회 캐시 갱신(다음 조회에 즉시 반영)
@@ -2456,7 +2486,7 @@ def _start_worker_jobs():
             return
         _worker_jobs_pid = pid
         _start_scheduler()
-        for target in (_auto_backfill, _bootstrap_venue_schedules, _db_keepalive):
+        for target in (_auto_backfill, _bootstrap_venue_schedules, _bootstrap_biz_images, _db_keepalive):
             threading.Thread(target=target, daemon=True).start()
 
 
@@ -2464,3 +2494,4 @@ if __name__ == "__main__":
     # 로컬 실행. 호스팅 환경은 gunicorn이 app 객체를 직접 띄운다(Procfile 참고).
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
+

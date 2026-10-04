@@ -4,7 +4,9 @@
 구조가 달라서, 사이트별 선택자 대신 "가장 본문다운 영역"을 추정해 텍스트를 뽑는
 가벼운 readability 방식을 쓴다.
 """
+import json
 import re
+from urllib.parse import urljoin, urlsplit
 from datetime import datetime
 
 # 본문이 아닌 영역(메뉴/광고/댓글 등)
@@ -93,18 +95,88 @@ def _meta(soup, *names):
     return None
 
 
-def extract_image(soup):
-    """기사 대표 이미지(og:image 등)를 추출. 없으면 None."""
-    img = _meta(soup, "og:image", "og:image:url", "og:image:secure_url",
-                "twitter:image", "twitter:image:src")
-    if img:
-        img = img.strip()
-        if img.startswith("//"):
-            img = "https:" + img
-        elif img.startswith("http://"):
-            img = "https://" + img[len("http://"):]  # 혼합콘텐츠 차단 방지: https로 승격
-        if img.startswith("https://"):
-            return img
+def extract_image(soup, url=None):
+    """대표 메타 → 기사 구조화 데이터 → 본문 사진. 상대경로와 지연 로딩도 지원."""
+    def normalize(value):
+        if not isinstance(value, str) or not value.strip():
+            return None
+        value = value.strip()
+        if value.startswith("//"):
+            value = "https:" + value
+        elif url:
+            value = urljoin(url, value)
+        try:
+            parts = urlsplit(value)
+        except ValueError:
+            return None
+        # HTTP 원본은 그대로 보관하고 화면의 이미지 프록시로 전달한다.
+        if parts.scheme in ("http", "https") and parts.hostname:
+            return value
+        return None
+
+    for name in ("og:image:secure_url", "og:image", "og:image:url",
+                 "twitter:image", "twitter:image:src"):
+        for node in soup.select(f'meta[property="{name}"], meta[name="{name}"]'):
+            image = normalize(node.get("content"))
+            if image:
+                return image
+
+    def structured_images(value):
+        if isinstance(value, str):
+            yield value
+        elif isinstance(value, list):
+            for item in value:
+                yield from structured_images(item)
+        elif isinstance(value, dict):
+            for key in ("contentUrl", "url", "thumbnailUrl"):
+                if value.get(key):
+                    yield from structured_images(value[key])
+
+    def article_images(value):
+        if isinstance(value, list):
+            for item in value:
+                yield from article_images(item)
+        elif isinstance(value, dict):
+            kinds = value.get("@type", [])
+            kinds = [kinds] if isinstance(kinds, str) else kinds
+            if any(kind in ("Article", "NewsArticle", "BlogPosting", "ReportageNewsArticle")
+                   for kind in kinds or []):
+                yield from structured_images(value.get("image"))
+                yield from structured_images(value.get("thumbnailUrl"))
+            for key in ("@graph", "mainEntity"):
+                yield from article_images(value.get(key))
+
+    for script in soup.select('script[type="application/ld+json"]'):
+        try:
+            for candidate in article_images(json.loads(script.get_text())):
+                image = normalize(candidate)
+                if image:
+                    return image
+        except (ValueError, TypeError):
+            continue
+
+    selectors = ("[itemprop=articleBody]", "#article-view-content-div", "#newsct_article",
+                 "#dic_area", "#articleBodyContents", ".article-body", ".article_body",
+                 ".news-body", ".view_content", ".view-content", ".article-content", "article")
+    for selector in selectors:
+        for container in soup.select(selector):
+            for node in container.select("img"):
+                if node.find_parent(["nav", "header", "footer", "aside"]):
+                    continue
+                hint = " ".join(str(node.get(key) or "") for key in ("src", "id", "class", "alt"))
+                if re.search(r"logo|icon|avatar|banner|advert|tracking|pixel|spacer", hint, re.I):
+                    continue
+                if any(str(node.get(key, "")).isdigit() and int(node[key]) <= 80
+                       for key in ("width", "height")):
+                    continue
+                candidates = [node.get(key) for key in ("data-original", "data-src", "data-lazy-src")]
+                srcset = node.get("data-srcset") or node.get("srcset") or ""
+                candidates.extend(part.strip().split()[0] for part in reversed(srcset.split(",")) if part.strip())
+                candidates.append(node.get("src"))
+                for candidate in candidates:
+                    image = normalize(candidate)
+                    if image:
+                        return image
     return None
 
 
@@ -142,3 +214,4 @@ def extract_article(soup, url):
 
     content = clean_text(extract_main_text(soup))
     return {"title": clean_text(title), "published_at": published, "author": author, "content": content}
+

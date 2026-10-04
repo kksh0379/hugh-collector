@@ -535,14 +535,21 @@ def all_news_urls():
         return {r["url"] for r in rows}
 
 
-def news_needs_enrich(limit=200):
-    """이미지가 없거나 본문이 너무 짧은(=RSS 요약뿐) 뉴스를 최근순으로 로드. 보강 대상."""
+def news_needs_enrich(limit=200, section=None, before_id=None):
+    """섹션별 보강 후보. ID 커서로 실패한 동일 최신 기사만 반복하지 않는다."""
+    where = ["(image_url IS NULL OR image_url = '' OR content IS NULL OR LENGTH(content) < 80)"]
+    params = []
+    if section:
+        where.append("section = ?")
+        params.append(section)
+    if before_id is not None:
+        where.append("id < ?")
+        params.append(before_id)
+    params.append(limit)
     with get_conn() as conn:
         rows = conn.execute(
-            _q("SELECT url, source_url, content FROM news "
-               "WHERE image_url IS NULL OR image_url = '' OR image_url LIKE 'http://%' "
-               "OR content IS NULL OR LENGTH(content) < 80 "
-               "ORDER BY published_at DESC, id DESC LIMIT ?"), (limit,)
+            _q("SELECT id, url, source_url, content, image_url FROM news WHERE "
+               + " AND ".join(where) + " ORDER BY id DESC LIMIT ?"), tuple(params)
         ).fetchall()
         return [dict(r) for r in rows]
 
@@ -1182,3 +1189,4 @@ def lunch_all_visited_ids(username):
         rows = conn.execute(_q("SELECT DISTINCT restaurant_id FROM lunch_visit WHERE username=?"),
                             (username,)).fetchall()
         return {dict(r)["restaurant_id"] for r in rows}
+
