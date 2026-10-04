@@ -46,7 +46,7 @@ body.view-list #list-event .event-card .event-place {margin-bottom:0;}
 
 .ed-preferences {max-width:820px;margin:0 auto;}
 #event-curation>.ed-agenda-head,#event-curation>#ed-status {max-width:820px;margin-left:auto;margin-right:auto;}
-@media(max-width:600px){body.tab-event .viewbar {flex-wrap:wrap;} body.tab-event #event-mode-toggle {flex:1;display:flex;} body.tab-event #event-mode-toggle button {flex:1;} body.tab-event #event-view-toggle {display:inline-flex;}}
+@media(max-width:600px){body.tab-event .viewbar {flex-wrap:wrap;} body.tab-event #event-mode-toggle {flex:0 0 auto;display:flex;} body.tab-event #event-mode-toggle button {flex:0 0 auto;} body.tab-event #event-view-toggle {display:inline-flex;}}
 
 .ed-curation-toolbar {max-width:820px;margin:0 auto 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .ed-mode {color:var(--muted);font-size:12px;}
