@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>휴 스코프 — 소식을 모으고, AI로 핵심을 읽다</title>
-  <meta name="description" content="뉴스·행사·재단 게시판·유튜브를 모으고, AI 핵심 요약·보안 분류·분기 동향·월간 브리핑으로 흐름을 읽는 개인용 서비스. 스크랩·그룹과 주변 맛집 추천까지." />
+  <title>휴 스코프 — 나의 일상과 업무를 더 가볍게</title>
+  <meta name="description" content="개인이 실생활과 업무에 유용하게 쓰려고 만든 서비스. 관심 소식·행사·점심·재무세무 정보를 모으고, AI 요약·분류·리포트·큐레이션으로 확인과 선택에 드는 시간을 줄입니다." />
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}" />
-  <meta property="og:title" content="휴 스코프 — 뉴스·행사·동향을 한눈에" />
-  <meta property="og:description" content="관심 소식 수집부터 AI 핵심 요약·보안 분류·동향 리포트, 스크랩 정리까지 한 흐름으로." />
+  <meta property="og:title" content="휴 스코프 — 개인의 일상과 업무를 돕는 도구" />
+  <meta property="og:description" content="내가 매일 확인하는 정보와 반복하는 선택을 한곳에. 개인 사용을 위해 직접 만들고 개선하는 생활·업무 도구입니다." />
   <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}" />
   <meta property="og:type" content="website" />
   <style>
@@ -172,164 +172,67 @@
     footer{text-align:center;color:var(--muted);font-size:12px;padding:34px 20px 10px}
     .disc{font-size:11.5px;color:#9aa1ac;margin-top:6px}
   p,.access-note {word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty;} h1,h2,h3 {word-break:keep-all;overflow-wrap:anywhere;text-wrap:balance;}
+    .purpose{background:#fff;border:1px solid var(--border);border-radius:20px;padding:24px;margin-top:8px}.purpose p{font-size:15px;line-height:1.9;margin:10px 0;color:#506076}.purpose strong{color:var(--text)}
+    .use-cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}.use-case{padding:20px;border-radius:14px;background:#edf3ff}.use-case h3{font-size:16px;margin:0 0 8px}.use-case p{font-size:13px;margin:0}
+    .section-nav{display:flex;flex-wrap:wrap;gap:8px;padding:20px 0 0}.section-nav a{padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:12px;text-decoration:none}
+    .details{padding:18px 20px;background:#fff;border:1px solid var(--border);border-radius:16px;margin:10px 0}.details summary{font-size:14px;font-weight:700;cursor:pointer}.details p{font-size:13px;color:var(--muted);margin:12px 0 0;line-height:1.8}
+    .ai-item .auto.local{color:#d3deff;background:#ffffff12}.shot .frame{border-radius:12px}.shot h3{line-height:1.5}
+    @media(max-width:540px){.purpose{padding:20px}.use-cases{grid-template-columns:minmax(0,1fr)}.purpose p{font-size:14px}}
   </style>
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-in">
-      <div class="hero-copy">
-        <p class="logo">휴 스코프 <span class="private-tag">개인용 · 비공식 서비스</span></p>
-        <h1 class="hero-title">흩어진 소식은 한곳에,<br><span class="hero-accent">AI로 핵심은 더 빠르게.</span></h1>
-        <p class="sub">뉴스·행사·재단 게시판·유튜브를 모으고,<br>AI 요약과 리포트로 살펴본 뒤 필요한 자료를 정리하세요.</p><div class="hero-ai-tags"><span>AI 핵심 요약</span><span>보안 분류·중요도</span><span>동향 리포트</span></div>
-        <p class="hero-note"><span>설치 없이 브라우저에서</span><span>모바일 · 태블릿 · PC</span></p>
-        <a class="hero-cta" href="{{ url_for('index') }}">휴 스코프 열기 →</a><a class="hero-more" href="#ai">AI 기능 살펴보기 ↓</a>
-      </div>
-      <div class="scope-visual" role="group" aria-label="휴 스코프의 주요 기능 구성">
-        <div class="scope-head"><span class="scope-brand"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" />휴 스코프</span><span class="scope-label">모으고 · 살펴보고 · 정리하기</span></div>
-        <div class="scope-grid"><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></span><h2>소식 모아보기</h2><p><span>뉴스 · 재단 게시판</span><span>유튜브 · 업계동향</span></p></div><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2"/></svg></span><h2>일정 확인</h2><p><span>국내 행사</span><span>앨범 · 캘린더</span></p></div><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 16v-4M12 16V5M17 16V9"/></svg></span><h2>흐름 읽기</h2><p><span>재단동향(분기)</span><span>보안(월간)</span></p></div><div class="scope-tile"><span class="scope-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span><h2>내 자료로 저장</h2><p><span>관심 글 스크랩</span><span>그룹으로 정리</span></p></div></div>
-        <div class="scope-extra"><span>냥정보 · 게임정보</span><span>주변 맛집 · 점심 추천</span><span>리더뷰 · AI 핵심 요약</span></div><div class="scope-ai"><b>AI가 도와주는 읽기</b><span>핵심 2~3문장 · 중요한 구절 강조 · 원문 확인</span></div>
-      </div>
-    </div>
-  </header>
-
-  <div class="wrap">
-    <section id="features">
-      <p class="kicker">주요 기능</p>
-      <h2>모으고, 읽고, 내 자료로 정리하기</h2>
-      <p class="lead">소식과 일정, 동향과 일상의 선택을 한곳에서 살펴보세요.<br>네 개의 하단 메뉴로 쉽게 오갈 수 있어요.</p>
-      <div class="feats">
-        <div class="feat"><div class="feature-tag">소식</div><h3>관심 분야별 피드</h3><p>NC 뉴스·업계동향·보안뉴스·냥정보·게임정보를 탭과 분류, 검색으로 골라 읽어요.</p></div>
-        <div class="feat"><div class="feature-tag">원문</div><h3>재단 게시판 · 유튜브</h3><p>재단 공지와 최신 영상을 모아 보고, 원문 보기 버튼으로 원래 사이트에 바로 연결해요.</p></div>
-        <div class="feat"><div class="feature-tag">일정</div><h3>국내 행사 · 캘린더</h3><p>행사명·날짜·장소를 앨범과 캘린더로 확인하고 관심 행사를 살펴봐요.</p></div>
-        <div class="feat"><div class="feature-tag ai-tag">AI 읽기</div><h3>본문 요약 · 동향 리포트</h3><p>기사의 핵심을 먼저 읽고, 재단동향(분기)·보안(월간) 리포트로 공개 자료의 흐름을 정리해요.</p></div>
-        <div class="feat"><div class="feature-tag">내 자료</div><h3>스크랩 · 그룹 · 검색</h3><p>필요한 글과 맛집을 계정에 저장하고 그룹으로 모아둬요.<br>저장한 자료 안에서도 검색할 수 있어요.</p></div>
-        <div class="feat"><div class="feature-tag">일상</div><h3>주변 맛집 · 점심 추천</h3><p>거리·평점·후기를 살펴보고 성향·기분·제외 조건에 맞는 한 곳을 골라요.<br>추천 결과는 슬롯 애니메이션으로 만나보세요.</p></div>
-      </div>
-    </section>
-
-
-    <section id="ai">
-      <div class="ai-hero">
-        <div class="in">
-          <span class="ai-badge">AI로 읽고 정리하기</span>
-          <h2>긴 글의 핵심부터, 여러 자료의 흐름까지</h2>
-          <p class="lead">기사를 짧게 읽고, 보안 소식을 분류하고, 기간별 자료를 종합하는 데 AI를 활용해요.</p>
-          <div class="ai-stats">
-            <div class="ai-stat"><b>핵심 2~3문장</b><span>지원되는 기사 본문 요약</span></div>
-            <div class="ai-stat"><b>분류 · 중요도</b><span>보안 소식에서 먼저 볼 내용</span></div>
-            <div class="ai-stat"><b>분기 · 월간</b><span>흩어진 자료를 기간별로 정리</span></div>
-          </div>
-          <div class="ai-capabilities">
-            <div class="ai-item"><div><h3>01 · 기사 핵심 요약 <span class="auto">리더뷰</span></h3><p>추출한 본문을 핵심 2~3문장으로 정리하고, 중요한 사실·수치·조치 구절은 <strong>볼드와 밑줄</strong>로 강조해요.<br>요약을 기다리는 동안 본문부터 읽을 수 있어요.</p></div></div>
-            <div class="ai-item"><div><h3>02 · 보안 소식 분류 <span class="auto">수집 후 처리</span></h3><p>개인정보유출·해킹·취약점·규제기관 처분을 분류하고 중요도를 정리해요.<br>관련 기관·CVE·규모·조치와 담당자 확인사항도 살펴볼 수 있어요.</p></div></div>
-            <div class="ai-item"><div><h3>03 · 재단동향(분기) <span class="auto">자료 종합</span></h3><p>뉴스·유튜브 등 공개 자료에서 변화·추세·새로운 신호를 정리하고 지난 리포트와 비교해요.<br>기관의 성과나 우열을 평가하는 자료가 아닙니다.</p></div></div>
-            <div class="ai-item"><div><h3>04 · 보안(월간) <span class="auto">매월 생성</span></h3><p>지난달 사고·취약점·규제기관 처분과 점검 권고를 브리핑으로 묶어요.<br>개별 기사를 넘어 한 달의 주요 이슈를 훑어볼 수 있어요.</p></div></div>
-          </div>
-          <div class="ai-demo">
-            <div class="ai-demo-copy"><span class="ai-badge">이렇게 보여요</span><h3>읽는 화면에서도<br>중요한 부분이 먼저 보여요.</h3><p>요약의 핵심 구절을 눈으로 짚고, 본문과 원문에서 자세한 맥락을 확인하세요.<br>리포트에서도 연결된 근거 자료를 함께 살펴볼 수 있어요.</p><p class="ai-boundary">AI 결과는 참고용이며 오류나 맥락 누락이 있을 수 있어요.<br>원문을 확보하지 못하면 수집된 정보만 정리하고, 요약에 근거 범위를 표시해요.<br>정보가 부족한 경우에는 요약을 제공하지 않아요.</p></div>
-            <div class="reader-preview" role="group" aria-label="AI 핵심 요약 표시 예시">
-              <div class="reader-preview-head"><b>AI 핵심 요약</b><span>표시 예시 · 실제 기사 요약 아님</span></div>
-              <ul>
-                <li>지원되는 기사 본문을 <strong>핵심 2~3문장</strong>으로 정리해 전체 흐름을 먼저 보여줘요.</li>
-                <li>요약 중 <strong>중요한 사실·수치·조치</strong>를 선별해 볼드와 은은한 밑줄로 표시해요.</li>
-                <li>요약을 읽은 뒤 <strong>본문과 원문</strong>에서 맥락과 자세한 내용을 확인할 수 있어요.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="updates">
-      <p class="kicker">사용하는 순간까지</p>
-      <h2>작은 동작도 분명하고 편하게</h2>
-      <div class="feats">
-        <div class="feat"><div class="feature-tag">화면</div><h3>모바일부터 넓은 화면까지</h3><p>통일된 하단 메뉴와 읽기 버튼으로 이동해요. PC·태블릿에서는 이미지와 본문을 나란히 배치하고 이미지 없는 카드도 정렬해요.</p></div>
-        <div class="feat"><div class="feature-tag">저장</div><h3>저장과 취소를 눈에 보이게</h3><p>맛집은 ‘리뷰 있는 식당만’ 필터로 골라볼 수 있어요.<br>빈 북마크와 채워진 북마크로 저장 상태를 구분해요.<br>스크랩함에서 취소한 글은 부드럽게 사라져 목록 변화를 알아보기 쉬워요.</p></div>
-        <div class="feat"><div class="feature-tag">추천</div><h3>조건에 맞추는 점심 선택</h3><p>맛집 추천은 거리·평점·방문 이력 등을 반영하는 조건 기반 추천이에요.<br>친칠라 슬롯 애니메이션으로 선택을 즐겁게 만들고 움직임 감소 설정도 지원해요.</p></div>
-      </div>
-    </section>
-
-    <section id="screens">
-      <p class="kicker">Screens</p>
-      <h2>기능별 화면 미리보기</h2>
-      <p class="lead">현재 서비스에서 직접 촬영한 화면이에요.<br>새 하단 메뉴·읽기 버튼·스크랩 상태와 AI 요약을 확인해 보세요.</p>
-      <p class="capture-note">2026.10.02 촬영 · v2.49 서비스 화면 · 스크랩은 테스트 계정 예시 · 이미지를 누르면 크게 볼 수 있어요.</p>
-      <div class="shots">
-        <div class="shot">
-          <div class="cap"><span class="n">01</span><h3>탭별 피드 + 스마트 검색</h3></div>
-          <p>냥정보·게임·뉴스·업계동향을 탭으로 넘겨보고, 카드마다 본문 읽기 또는 원문 보기, 링크 복사·스크랩을 선택해요.<br>노출 게시물 수도 바로 표시돼요.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-feed-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-feed-v2.50.jpg') }}" alt="메인 피드 화면" width="1348" height="926" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-feed-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-        <div class="shot">
-          <div class="cap"><span class="n">02</span><h3>행사일정 — 캘린더</h3></div>
-          <p>국내 문화행사를 앨범형과 캘린더형으로. 날짜·행사명·장소를 한눈에 보고, 날짜를 누르면 그날의 행사 요약을 말풍선으로 볼 수 있어요.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-calendar-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-calendar-v2.50.jpg') }}" alt="행사 캘린더 화면" width="1348" height="926" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-calendar-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-        <div class="shot">
-          <div class="cap"><span class="n">03</span><h3>재단동향(분기)</h3></div>
-          <p>뉴스·유튜브 데이터로 NC문화재단과 동종 재단의 변화·추세·신규 신호를 AI가 요약. 로그인 없이도 열람 가능해요.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-report-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-report-v2.50.jpg') }}" alt="AI 동향 리포트 화면" width="1348" height="926" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-report-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-        <div class="shot">
-          <div class="cap"><span class="n">04</span><h3>보안(월간) <span style="font-size:12px;color:var(--muted);font-weight:600">담당자용</span></h3></div>
-          <p>정보보안·개인정보보호 담당자를 위한 지난달 보안 브리핑. 주요 사고·취약점(CVE)·<b>개보위·공정위 처분</b>·트렌드와 담당자 점검 권고까지, 매월 자동으로 만들어져요.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-secreport-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-secreport-v2.50.jpg') }}" alt="월간 보안 리포트 화면" width="1348" height="926" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-secreport-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-        <div class="shot">
-          <div class="cap"><span class="n">05</span><h3>나의 스크랩 + 그룹핑</h3></div>
-          <p>관심 글을 계정에 저장하고, 원하는 이름의 그룹으로 분류. 스크랩 안에서 검색도 됩니다.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-scraps-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-scraps-v2.50.jpg') }}" alt="스크랩·그룹 화면" width="1348" height="926" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-scraps-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-        <div class="shot">
-          <div class="cap"><span class="n">06</span><h3>맛집 · 오늘 점심 <span style="font-size:12px;color:var(--muted);font-weight:600">NEW</span></h3></div>
-          <p>내 주변 점심을 위치별로 찾아보세요.<br>카테고리·검색·거리(도보)에 <b>이용자 평점·후기</b>가 쌓이고, 상세는 카카오맵으로 바로 이동해요.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-lunch-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-lunch-v2.50.jpg') }}" alt="맛집 목록 화면" width="1348" height="926" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-lunch-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-        <div class="shot">
-          <div class="cap"><span class="n">07</span><h3>맛집 · 점심 추천 <span style="font-size:12px;color:var(--muted);font-weight:600">NEW</span></h3></div>
-          <p>성향·기분·제외 조건에 맞춰 한 곳을 골라줘요.<br>조건 기반으로 선택한 결과를 슬롯 애니메이션으로 소개해요.<br>서버 응답이 늦어도 이미 불러온 지역 맛집이 있으면 대체 추천으로 이어져요.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-lunch-ai-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-lunch-ai-v2.50.jpg') }}" alt="맛집 AI 추천 화면" width="1363" height="936" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-lunch-ai-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-
-        <div class="shot">
-          <div class="cap"><span class="n">08</span><h3>AI 핵심 요약 · 본문 읽기</h3></div>
-          <p>본문 위에서 AI 요약을 먼저 읽고, 핵심 구절은 볼드와 밑줄로 확인해요.<br>글자 크기·다크 모드·원문 보기로 이어집니다.</p>
-          <div class="frame"><a href="{{ url_for('static', filename='intro/shot-reader-v2.50.jpg') }}" target="_blank" rel="noopener" aria-label="화면 미리보기 원본 이미지 크게 보기"><img src="{{ url_for('static', filename='intro/shot-reader-v2.50.jpg') }}" alt="실제 기사 AI 요약·강조 구절과 본문 읽기 화면" width="1363" height="936" decoding="async" loading="lazy" /></a></div>
-          <a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-reader-v2.50.jpg') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a>
-        </div>
-
-      </div>
-    </section>
-
-    <section id="try">
-      <div class="try">
-        <p class="kicker" style="color:#7fa5ff">시작하기</p>
-        <h2>읽어보고, 필요한 자료를 모아보세요</h2>
-        <p class="lead">소식 열람·검색·리포트는 로그인 없이 살펴볼 수 있어요.<br>스크랩·그룹은 로그인 후 이용하세요.</p>
-        <ol class="steps">
-          <li><b>휴 스코프 열기</b>로 접속하고 개인용 서비스 안내 확인</li>
-          <li>관심 소식을 찾고 <b>본문 읽기·AI 요약</b> 또는 <b>원문 보기</b> 선택</li>
-          <li>저장이 필요하면 <b>로그인 → 일반 사용자 → 테스트 계정으로 로그인</b> 선택</li>
-        </ol>
-        <p class="access-note">일반 테스트 계정은 test1이며 비밀번호 입력 없이 버튼으로 로그인해요.<br>관리자·다른 계정은 별도로 선택할 수 있어요.</p>
-        <a class="try-cta" href="{{ url_for('index') }}">휴 스코프 열기 →</a>
-      </div>
-    </section>
-  </div>
-
-  <footer>
-    <span class="phrase">휴 스코프 · 소식을 모으고 흐름을 읽다</span> <span class="phrase">· v3.33</span>
-    <div class="disc">개인용 비공식 서비스입니다. AI 요약·리포트는 공개 자료를 살펴보기 위한 참고 정보이며 공식 입장·평가 자료가 아닙니다.</div>
-    <div class="disc">서체: KoddiUD 온고딕 (한국장애인개발원, CC BY-SA)</div>
-  </footer>
-</body>
-</html>
-
+<header class="hero"><div class="hero-in"><div class="hero-copy">
+<p class="logo">휴 스코프 <span class="private-tag">개인이 만든 생활·업무 도구</span></p>
+<h1 class="hero-title">내가 매일 쓰려고 만들었어요.<br><span class="hero-accent">일상과 업무를 더 가볍게.</span></h1>
+<p class="sub">관심 소식을 찾고, 업무 흐름을 확인하고,<br>갈 만한 행사와 오늘 점심을 고르는 일까지.<br>개인적인 필요를 한곳에 모아 직접 만든 서비스예요.</p>
+<div class="hero-ai-tags"><span>찾는 시간 줄이기</span><span>AI로 핵심 파악</span><span>선택과 정리 간편하게</span></div>
+<p class="hero-note"><span>개인 사용 · 비공식 서비스</span><span>모바일 · 태블릿 · PC</span></p>
+<a class="hero-cta" href="{{ url_for('index') }}">휴 스코프 열기 →</a><a class="hero-more" href="#screens">실제 화면 보기 ↓</a>
+</div><div class="scope-visual" role="group" aria-label="생활과 업무에서 활용하는 기능">
+<div class="scope-head"><span class="scope-brand"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" />휴 스코프</span><span class="scope-label">나에게 필요한 정보와 선택</span></div>
+<div class="scope-grid">
+<div class="scope-tile"><span class="scope-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg></span><h2>관심 소식 읽기</h2><p>뉴스 · 보안 · 냥정보 · 게임<br>리더뷰 · AI 핵심 요약</p></div>
+<div class="scope-tile"><span class="scope-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/></svg></span><h2>갈 만한 행사 찾기</h2><p>리스트 · 앨범 · 캘린더<br>관심사 큐레이션</p></div>
+<div class="scope-tile"><span class="scope-icon"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 16v-4M12 16V5M17 16V9"/></svg></span><h2>업무 흐름 확인</h2><p>동향 · 보안 리포트<br>재무세무 beta</p></div>
+<div class="scope-tile"><span class="scope-icon"><svg viewBox="0 0 24 24"><path d="M4 3v5a3 3 0 0 0 6 0V3M7 3v18M18 3c-3 3-3 7 0 9h2M20 3v18"/></svg></span><h2>일상의 선택 돕기</h2><p>주변 맛집 · 점심 추천<br>스크랩 · 그룹 정리</p></div>
+</div><div class="scope-ai"><b>AI는 효율을 높이는 도구로</b><span>핵심을 먼저 읽고, 반복하는 확인과 선택을 줄여요.</span></div></div></div></header>
+<div class="wrap"><nav class="section-nav" aria-label="소개페이지 목차"><a href="#why">만든 이유</a><a href="#features">주요 기능</a><a href="#ai">AI 활용</a><a href="#screens">실제 화면</a><a href="#try">시작하기</a></nav>
+<section id="why"><p class="kicker">왜 만들었나요?</p><h2>개인적인 필요에서 시작했어요.</h2>
+<div class="purpose"><p>실생활과 업무에서 유용하게 쓰기 위해 <strong>개인 사용을 목적으로 직접 만들어 본 서비스</strong>예요. 관심 정보를 여러 사이트에서 찾고, 긴 글을 읽고, 필요한 내용을 다시 정리하는 데 드는 시간을 줄이고 싶었어요.</p>
+<p>그래서 소식 수집과 저장뿐 아니라 <strong>AI 요약·분류·리포트·행사 추천</strong>을 반영했어요. 매일 쓰면서 불편한 부분을 고치고, 실제로 필요한 기능을 조금씩 더하고 있어요.</p>
+<div class="use-cases"><div class="use-case"><h3>일상에서는</h3><p>고양이·게임 소식을 읽고, 반려동물 행사와 전시를 찾아봐요. 주변 식당과 오늘 점심을 고르고, 마음에 드는 정보를 저장해 둬요.</p></div><div class="use-case"><h3>업무에서는</h3><p>보안 이슈와 재단 동향을 훑고, 관련 기사와 근거를 모아봐요. 재무세무 소식·지표·일정도 함께 확인해요.</p></div></div>
+<p class="capture-note">개인이 만드는 비공식 서비스예요. 특정 회사나 기관이 제공하는 공식 업무 시스템은 아닙니다.</p></div></section>
+<section id="features"><p class="kicker">현재 할 수 있는 일</p><h2>다섯 개의 메뉴, 하나의 사용 흐름</h2><p class="lead">뉴스 · 맛집 · 재무세무 · AI리포트 · 스크랩.<br>정보를 찾고, 핵심을 확인하고, 필요한 자료를 남겨요.</p><div class="feats"><div class="feat"><span class="feature-tag">관심 소식</span><h3>필요한 분야만 골라 읽기</h3><p>냥정보·게임정보·NC 뉴스·비영리재단 동향·보안뉴스를 탭으로 구분해요. 검색과 분류 필터, 리스트·앨범 전환으로 찾는 내용을 빠르게 좁혀요.</p></div>
+<div class="feat"><span class="feature-tag">읽기</span><h3>본문 읽기 · AI 핵심 요약</h3><p>지원되는 기사는 화면 안에서 본문을 읽고 핵심 요약을 확인해요. 글자 크기·다크 모드·원문 링크로 읽는 방식을 바꿀 수 있어요.</p></div>
+<div class="feat"><span class="feature-tag">일정</span><h3>국내 행사 · 세 가지 보기</h3><p>일반 일정은 리스트·앨범·캘린더로 전환해요. 날짜를 골라 세부 행사를 보고, 오늘 버튼으로 현재 날짜를 찾을 수 있어요.</p></div>
+<div class="feat"><span class="feature-tag">관심사</span><h3>행사 큐레이션</h3><p>관심 분야와 키워드에 맞는 행사를 배너 목록으로 살펴봐요. IT·기술과 AI 윤리, 반려동물 등 여러 분야를 선택할 수 있어요.</p></div>
+<div class="feat"><span class="feature-tag">업무 흐름</span><h3>AI 동향 · 보안 리포트</h3><p>재단동향은 분기 단위로, 보안 이슈는 월간 브리핑으로 정리해요. 주요 변화·사고·취약점·규제기관 처분과 연결된 근거를 확인해요.</p></div>
+<div class="feat"><span class="feature-tag">점심</span><h3>주변 맛집 · 조건별 추천</h3><p>주소·거리·평점·후기·방문 기록을 보고 식당을 골라요. 성향·기분·제외 조건을 선택하면 조건에 맞는 한 곳을 추천해요.</p></div>
+<div class="feat"><span class="feature-tag">재무세무 beta</span><h3>지표 · 계산기 · 세무·공시</h3><p>경제지표, 연봉·예적금 계산, 신고·납부 일정, 기업 공시와 관련 소식을 한곳에서 확인해요. 계산 결과는 참고용이에요.</p></div>
+<div class="feat"><span class="feature-tag">내 자료</span><h3>스크랩 · 그룹 · 링크 복사</h3><p>관심 글과 식당을 계정에 저장하고 그룹으로 묶어요. 저장한 자료 안에서 검색하고, 원문 링크도 간편하게 복사해요.</p></div>
+</div></section><section id="ai"><div class="ai-hero"><div class="in"><span class="ai-badge">효율을 위한 AI</span><h2>많이 읽기보다, 필요한 내용을 빨리 확인하기</h2><p class="lead">읽기·분류·자료 종합·행사 선택에 AI를 활용해요.<br>기능에 맞는 방식으로 반복하는 수고를 줄이는 데 초점을 두었어요.</p><div class="ai-capabilities"><div class="ai-item"><div><h3>01 · 긴 기사에서 핵심 찾기 <span class="auto">리더뷰</span></h3><p>추출한 기사 본문을 핵심 2~3문장으로 정리하고 중요한 사실·수치·조치 구절을 강조해요. 본문을 읽으며 요약을 확인할 수 있어요.</p></div></div>
+<div class="ai-item"><div><h3>02 · 보안 소식 우선순위 정리 <span class="auto">수집 후 분석</span></h3><p>사고·취약점·처분 등을 분류하고 중요도, 관련 기관·CVE·규모·조치를 정리해요. 먼저 확인할 이슈를 고르는 데 활용해요.</p></div></div>
+<div class="ai-item"><div><h3>03 · 흩어진 공개 자료 종합 <span class="auto">재단동향</span></h3><p>재단 관련 뉴스·영상 등에서 변화와 새로운 신호를 정리해요. 기간별 리포트를 비교하며 자료의 흐름을 살펴볼 수 있어요.</p></div></div>
+<div class="ai-item"><div><h3>04 · 한 달의 보안 이슈 훑기 <span class="auto">월간 브리핑</span></h3><p>주요 사고·취약점·규제기관 처분과 점검 권고를 묶어요. 개별 기사를 다시 찾아가며 맥락과 근거를 확인할 수 있어요.</p></div></div>
+<div class="ai-item"><div><h3>05 · 관심 행사 좁혀 보기 <span class="auto">요청 시 AI 추천</span></h3><p>처음에는 수집된 정보로 관심사에 맞는 행사를 바로 보여줘요. [AI 추천받기]에서 분야·키워드를 설정하고 확인할 때 AI 추천을 요청해요.</p></div></div>
+<div class="ai-item"><div><h3>06 · 오늘 점심 결정하기 <span class="auto">조건 기반 추천</span></h3><p>거리·평점·방문 이력과 성향·기분·제외 조건을 점수에 반영해요. 이 기능은 생성형 AI 호출 없이 조건에 맞는 후보 중 한 곳을 고르는 방식이에요.</p></div></div>
+</div><p class="access-note">행사 큐레이션은 페이지를 열거나 설정 팝업만 여는 것으로 AI를 호출하지 않아요.<br>AI 결과는 참고 자료예요. 중요한 사실과 일정은 연결된 원문에서 확인하세요.</p></div></div></section>
+<section id="screens"><p class="kicker">실제 서비스 화면</p><h2>현재 모습으로 다시 소개해요</h2><p class="lead">새 메뉴와 행사 탐색, 큐레이션, 통일된 아이콘까지.<br>서비스에서 직접 촬영한 화면을 모두 새로 담았어요.</p><p class="capture-note">2026.10.04 촬영 · v3.52 서비스 화면 · 테스트 계정의 저장 상태 예시 · 이미지를 누르면 크게 볼 수 있어요.</p><div class="shots"><article class="shot"><div class="cap"><span class="n">01</span><h3>관심 분야별 뉴스</h3></div><p>검색·분류와 두 가지 보기로 관심 소식을 골라요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-feed-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="관심 분야별 뉴스 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-feed-v3.53.webp') }}" alt="관심 분야별 뉴스 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-feed-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">02</span><h3>본문 읽기 · AI 핵심 요약</h3></div><p>실제 기사 본문과 핵심 요약, 중요한 구절 강조를 함께 확인해요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-reader-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="본문 읽기 · AI 핵심 요약 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-reader-v3.53.webp') }}" alt="본문 읽기 · AI 핵심 요약 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-reader-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">03</span><h3>행사일정 · 앨범</h3></div><p>뉴스와 행사장·공공기관의 일정을 모아 날짜·장소·출처를 확인해요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-events-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="행사일정 · 앨범 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-events-v3.53.webp') }}" alt="행사일정 · 앨범 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-events-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">04</span><h3>행사일정 · 캘린더</h3></div><p>한 달의 일정을 훑고 선택한 날짜의 행사를 카드로 살펴봐요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-calendar-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="행사일정 · 캘린더 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-calendar-v3.53.webp') }}" alt="행사일정 · 캘린더 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-calendar-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">05</span><h3>관심 행사 큐레이션</h3></div><p>관심사에 맞는 행사를 배너로 탐색해요. 화면 예시는 수집 정보 기반 추천이에요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-curation-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="관심 행사 큐레이션 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-curation-v3.53.webp') }}" alt="관심 행사 큐레이션 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-curation-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">06</span><h3>재단동향 리포트</h3></div><p>공개 자료에서 변화·추세·신호와 검토할 내용을 정리해요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-report-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="재단동향 리포트 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-report-v3.53.webp') }}" alt="재단동향 리포트 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-report-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">07</span><h3>월간 보안 리포트</h3></div><p>사고·취약점·규제기관 처분과 담당자 확인사항을 함께 읽어요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-secreport-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="월간 보안 리포트 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-secreport-v3.53.webp') }}" alt="월간 보안 리포트 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-secreport-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">08</span><h3>나의 스크랩 · 그룹</h3></div><p>저장한 뉴스와 식당을 모아 보고 그룹 지정·검색으로 정리해요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-scraps-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="나의 스크랩 · 그룹 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-scraps-v3.53.webp') }}" alt="나의 스크랩 · 그룹 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-scraps-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">09</span><h3>주변 맛집</h3></div><p>주소·도보 거리·별점·후기와 방문 기록을 확인해요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-lunch-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="주변 맛집 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-lunch-v3.53.webp') }}" alt="주변 맛집 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-lunch-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">10</span><h3>점심 추천 설정</h3></div><p>성향·기분·빼고 싶은 음식 종류를 선택해 점심 후보를 좁혀요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-lunch-ai-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="점심 추천 설정 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-lunch-ai-v3.53.webp') }}" alt="점심 추천 설정 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-lunch-ai-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+<article class="shot"><div class="cap"><span class="n">11</span><h3>재무세무 beta</h3></div><p>경제지표와 계산기, 세무·공시·브리핑으로 필요한 정보를 찾아요.</p><div class="frame"><a href="{{ url_for('static', filename='intro/shot-finance-v3.53.webp') }}" target="_blank" rel="noopener" aria-label="재무세무 beta 화면 크게 보기"><img src="{{ url_for('static', filename='intro/shot-finance-v3.53.webp') }}" alt="재무세무 beta 실제 서비스 화면" width="1080" height="742" loading="lazy" decoding="async" /></a></div><a class="shot-zoom" href="{{ url_for('static', filename='intro/shot-finance-v3.53.webp') }}" target="_blank" rel="noopener">전체 화면 보기 ↗</a></article>
+</div></section>
+<section id="usage"><p class="kicker">사용할 때 알아둘 점</p><h2>정보의 출처와 기능의 범위도 함께</h2>
+<details class="details"><summary>행사는 어디에서 가져오나요?</summary><p>뉴스에서 추출한 일정 외에도 킨텍스·벡스코·대전컨벤션센터·aT센터·수원메쎄·세텍 공식 일정과 공공기관 정보를 모아요. 출처 배지를 확인할 수 있고, 뉴스 행사는 오류가 있을 수 있어요. 공식 일정도 변경될 수 있으니 참여 전 원문을 확인하세요.</p></details>
+<details class="details"><summary>기사 본문과 AI 요약이 항상 나오나요?</summary><p>지원되는 원문에서 본문을 추출해 보여줘요. 원문을 확보하지 못하면 수집된 정보 범위를 표시하며, 정보가 부족하면 요약을 제공하지 않아요. 원문 사이트로도 바로 이동할 수 있어요.</p></details>
+<details class="details"><summary>열람·저장·분석은 어떻게 구분되나요?</summary><p>뉴스·행사·리포트 열람과 검색은 로그인 없이 이용할 수 있어요. 스크랩·그룹·후기는 로그인 후 이용하고, 수집과 리포트 생성 등 운영 기능은 관리자가 사용해요. 재무세무는 beta이며 출처와 기준 시점을 확인해 주세요.</p></details>
+</section>
+<section id="try"><div class="try"><p class="kicker" style="color:#7fa5ff">시작하기</p><h2>나에게 필요한 것부터 써보세요.</h2><p class="lead">관심 소식 한 편, 다음에 갈 행사 하나, 오늘 점심 한 곳.<br>필요한 기능부터 가볍게 시작해요.</p><ol class="steps"><li><b>휴 스코프 열기</b>로 들어가 관심 메뉴 선택</li><li>검색·분류로 좁히고 <b>본문·요약·원문</b> 확인</li><li>저장하거나 후기를 남기려면 <b>일반 사용자 → 테스트 계정으로 로그인</b></li></ol><p class="access-note">테스트 계정은 비밀번호 입력 없이 로그인해요. 상단과 후기에는 김테스터로 표시됩니다.<br>관리자와 다른 계정은 별도로 선택할 수 있어요.</p><a class="try-cta" href="{{ url_for('index') }}">휴 스코프 열기 →</a></div></section>
+</div><footer><span class="phrase">휴 스코프 · 개인의 생활과 업무를 돕는 도구</span> <span class="phrase">· v3.53 · 2026.10.04</span><div class="disc">김상화가 개인 사용을 위해 제작·개선하는 비공식 서비스입니다.</div><div class="disc">AI 결과와 계산 정보는 참고용입니다. 중요한 사실은 원문과 공식 출처에서 확인하세요.</div><div class="disc">서체: KoddiUD 온고딕 (한국장애인개발원, CC BY-SA)</div></footer></body></html>
