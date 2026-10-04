@@ -117,8 +117,8 @@ body.view-list #list-event .event-card .event-place {margin-bottom:0;}
 
 /* Schedule navigation sits below the shared search bar. */
 .event-navigation {display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;flex-wrap:wrap;}
-#event-view-toggle button {display:flex;align-items:center;justify-content:center;}
-#event-view-toggle svg,#view-toggle svg {width:19px;height:19px;display:block;}
+#view-toggle,#event-view-toggle {height:36px;box-sizing:border-box;}
+#event-view-toggle svg {width:18px;height:18px;display:block;}
 .ed-curation-toolbar {gap:8px;justify-content:flex-end;}
 .ed-curation-toolbar .ed-mode {margin-right:auto;}
 .ed-curation-toolbar button {white-space:nowrap;}
