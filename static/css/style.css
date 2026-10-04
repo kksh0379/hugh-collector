@@ -1371,6 +1371,10 @@ body.tab-report .viewbar { display: none; }
   font-family:inherit; font-size:13px; font-weight:700; line-height:1;
   white-space:nowrap; text-decoration:none; vertical-align:middle; cursor:pointer;
 }
+/* Keep restaurant actions in a single row, including mobile cards. */
+.lacts { flex-wrap:nowrap; gap:6px; }
+.lacts > .lbtn, .lacts > .copy-btn { flex:1 1 0; min-width:0; padding:0 4px; font-size:12px; gap:4px; }
+.lacts > .lbtn.ex { flex:0 0 auto; }
 /* Fit all three food scrap actions on one row at mobile widths. */
 .card-actions.food-actions { flex-wrap:nowrap; gap:6px; }
 .card-actions.food-actions > .lbtn,

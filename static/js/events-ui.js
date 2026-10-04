@@ -94,7 +94,6 @@
     const keys=new Set(available.map(s=>s.url));
     const items=(result.items||[]).filter(s=>keys.has(s.url));
     target.innerHTML=items.length?items.map((s,i)=>eventCard(s,true,i)).join(''):'<li class="ed-empty">표시할 추천이 없어요.<br>관심사나 검색어를 바꿔 보세요.</li>';
-    document.getElementById('ed-mode').textContent=result.mode==='ai'?'AI 추천':result.mode==='rules'?'관심사 기반 추천':'';
   }
   async function recommend(){
     if(busy)return;
@@ -123,12 +122,12 @@
     if(initialized){renderResult();return;}
     initialized=true;
     const root=document.getElementById('event-curation');
-    root.innerHTML=`<div class="ed-curation-toolbar"><span id="ed-mode" class="ed-mode"></span><button type="button" id="ed-settings">관심사 설정</button><button type="button" id="ed-ai-recommend">AI 추천받기</button></div><p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기">×</button></div><p>미선택 시 전체 행사에서 추천해요.</p>
+    root.innerHTML=`<div class="ed-curation-toolbar"><button type="button" id="ed-settings">AI 추천받기</button></div><p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기">×</button></div><p>미선택 시 전체 행사에서 추천해요.</p>
       <fieldset><legend>관심 분야 · 여러 개 선택</legend><div class="ed-topics">${topics.map(t=>`<label><input type="checkbox" value="${esc(t)}" ${prefs.topics.includes(t)?'checked':''}>${esc(t)}</label>`).join('')}</div></fieldset>
       <label for="ed-keyword-input" class="ed-label">관심 키워드</label><div id="ed-keywords" class="ed-chips"></div>
       <form id="ed-keyword-form"><input id="ed-keyword-input" maxlength="40" placeholder="키워드 직접 입력" aria-label="관심 키워드"><button type="submit">추가</button></form>
       <div class="ed-chips ed-suggestions">${['AI 거버넌스','정보보안','생성형 AI','접근성','클라우드','개발자'].map(k=>`<button type="button" class="ed-chip" data-keyword="${esc(k)}">${esc(k)}</button>`).join('')}</div>
-      <button type="button" class="ed-primary" id="ed-recommend">적용하기</button></section></dialog>`;
+      <button type="button" class="ed-primary" id="ed-recommend">설정하고 추천받기</button></section></dialog>`;
     const addKeyword=k=>{k=k.trim();if(!k)return;if(prefs.keywords.length>=8){toast('키워드는 8개까지 선택할 수 있어요.');return;}if(!prefs.keywords.includes(k))prefs.keywords.push(k);persist();chips();};
     root.querySelector('.ed-topics').onchange=()=>{prefs.topics=Array.from(root.querySelectorAll('.ed-topics input:checked')).map(b=>b.value);persist();};
     root.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.keyword)addKeyword(b.dataset.keyword);if(b.dataset.remove!==undefined){prefs.keywords.splice(+b.dataset.remove,1);persist();chips();}};
@@ -137,8 +136,7 @@
     root.querySelector('#ed-settings').onclick=()=>dialog.showModal();
     root.querySelector('#ed-close').onclick=()=>dialog.close();
     dialog.onclick=e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}};
-    root.querySelector('#ed-recommend').onclick=()=>{dialog.close();requestVersion++;busy=false;result=localRecommendations(available,prefs);renderResult();};
-    root.querySelector('#ed-ai-recommend').onclick=()=>recommend();
+    root.querySelector('#ed-recommend').onclick=()=>{dialog.close();requestVersion++;busy=false;result=localRecommendations(available,prefs);return recommend();};
     chips();renderResult();
   }
   window.EventDiscovery={calendar,curation,localRecommendations};
