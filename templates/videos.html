@@ -6,7 +6,14 @@
       <div><input id="videos-url" type="url" inputmode="url" placeholder="영상 페이지 주소 붙여 넣기" required><button type="submit">추가</button></div>
     </form>
     <p id="videos-status" role="status" aria-live="polite" hidden></p>
+    <div class="videos-discovery">
+      <label class="sr-only" for="videos-search">애니메이션 검색</label>
+      <input id="videos-search" type="search" placeholder="애니메이션 제목 검색" autocomplete="off">
+      <div class="videos-filters" aria-label="작품 범위"><button type="button" id="videos-all" aria-pressed="true">전체 작품</button><button type="button" id="videos-saved" aria-pressed="false">내 목록</button></div>
+      <p id="videos-count" role="status" aria-live="polite"></p>
+    </div>
     <div id="videos-library" class="videos-library" aria-label="작품 목록"></div>
+    <button type="button" id="videos-more" hidden>더 보기</button>
     <section id="videos-detail" hidden aria-label="선택한 작품">
       <h3 id="videos-title"></h3>
       <label class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label>

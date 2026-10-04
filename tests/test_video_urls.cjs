@@ -9,3 +9,10 @@ test('existing browsers gain new default works while retaining saved episodes an
  assert.equal(JSON.stringify(rows.filter(r=>['21707','2010','70867'].includes(r.id)).map(r=>r.title)),JSON.stringify(['나루토','보루토','바람의 검심']));
 });
 test('invalid saved data and duplicates cannot hide default works',()=>{const rows=c.mergeLibrary([{id:'3217',series:1,episode:1},{id:'3217',series:1,episode:2},{id:'x',series:1,episode:1}]);assert.equal(rows.length,5);assert.equal(rows.filter(r=>r.id==='3217').length,1);assert.equal(c.mergeLibrary({}).length,5);});
+test('search spans the full catalog beyond the visible batch, deduplicates saved titles and respects scope',()=>{
+ const works=Array.from({length:500},(_,i)=>({id:String(i+1),title:i===499?'찾을 작품':'작품 '+i})), saved=[{id:'1',title:'내 제목'}];
+ assert.equal(c.discoveryRows(saved,works,'all','').length,500);
+ assert.equal(c.discoveryRows(saved,works,'all','찾을')[0].id,'500');
+ assert.equal(c.discoveryRows(saved,works,'saved','찾을').length,0);
+ assert.equal(c.discoveryRows(saved,works,'saved','내 제목').length,1);
+});

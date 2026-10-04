@@ -10,6 +10,11 @@
     } catch { return null; }
   }
   function watchUrl(item) { return `https://linkani.tv/watch/${item.id}/a${item.series}/k${item.episode}/`; }
+  function discoveryRows(saved, works, scope, query) {
+    const ids = new Set(saved.map(x => x.id));
+    const candidates = scope === 'saved' ? saved : saved.concat(works.filter(x => !ids.has(x.id)));
+    return candidates.filter(item => !query || (typeof koreanMatchAll === 'function' ? koreanMatchAll(item.title, query) : item.title.toLowerCase().includes(query.toLowerCase())));
+  }
   const DEFAULT_LIBRARY = [
     {id:'19240', series:1, episode:8, title:'강철의 연금술사'},
     {id:'3217', series:1, episode:1, title:'원피스'},
@@ -32,18 +37,29 @@
     library = mergeLibrary(JSON.parse(localStorage.getItem(STORE)));
   } catch {}
   let selected = null, catalog = null, requestVersion = 0, initialized = false;
+  let allWorks = [], scope = 'all', visibleCount = 40, indexLoading = false;
   const cache = new Map();
   function save() { try { localStorage.setItem(STORE, JSON.stringify(library)); } catch {} }
   function status(text) { $('videos-status').textContent = text; $('videos-status').hidden = !text; }
   function renderLibrary() {
-    $('videos-library').replaceChildren(...library.map(item => {
+    const query = $('videos-search').value.trim();
+    const rows = discoveryRows(library, allWorks, scope, query);
+    $('videos-count').textContent = `총 ${rows.length.toLocaleString()}개${query ? ' · 검색 결과' : ''}${indexLoading ? ' · 전체 목록 불러오는 중…' : ''}`;
+    $('videos-more').hidden = rows.length <= visibleCount;
+    $('videos-library').replaceChildren(...rows.slice(0, visibleCount).map(item => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'videos-work';
       b.setAttribute('aria-pressed', String(item.id === selected?.id));
-      const image = cache.get(item.id)?.image;
+      const image = cache.get(item.id)?.image || item.image || allWorks.find(x => x.id === item.id)?.image;
       if (image) { const img = document.createElement('img'); img.src = image; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.onerror = () => img.remove(); b.append(img); }
       const name = document.createElement('strong'); name.textContent = item.title; b.append(name);
-      b.onclick = () => selectWork(item); return b;
+      if (item.description) { const info = document.createElement('small'); info.textContent = item.description; b.append(info); }
+      b.onclick = () => {
+        let saved = library.find(x => x.id === item.id);
+        if (!saved) { saved = {...item}; library.push(saved); save(); }
+        selectWork(saved);
+      }; return b;
     }));
+    if (!rows.length) { const p = document.createElement('p'); p.className = 'videos-empty'; p.textContent = '검색 결과가 없어요. 다른 제목으로 찾아보세요.'; $('videos-library').append(p); }
   }
   function stop() { $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); }
   function chooseEpisode(number) {
@@ -64,6 +80,7 @@
   }
   async function selectWork(item) {
     const version = ++requestVersion; selected = item; catalog = null; stop(); $('videos-detail').hidden = true; renderLibrary(); status('작품 정보를 불러오고 있어요…');
+    $('videos-status').scrollIntoView({behavior:'smooth',block:'center'});
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 35000);
     try {
       let data = cache.get(item.id);
@@ -76,6 +93,7 @@
       $('videos-title').textContent = item.title;
       $('videos-series').replaceChildren(...data.series.map(s => { const o = document.createElement('option'); o.value = String(s.id); o.textContent = `시리즈 ${s.id}`; return o; }));
       $('videos-detail').hidden = false; renderSeries(); status(data.stale ? '원본 연결이 지연되어 저장된 회차 목록을 표시했어요.' : '');
+      if (!$('view-videos').hidden) $('videos-detail').scrollIntoView({behavior:'smooth',block:'start'});
     } catch (e) { if (version === requestVersion) status(e.name === 'AbortError' ? '연결이 지연되고 있어요. 작품을 다시 선택해 주세요.' : e.message); }
     finally { clearTimeout(timer); }
   }
@@ -101,6 +119,20 @@
     const eps = catalog.series.find(s => s.id === selected.series).episodes, ep = eps[eps.indexOf(selected.episode)+offset];
     if (ep) chooseEpisode(ep);
   };
-  window.onShowVideos = () => { if (!initialized) { initialized = true; renderLibrary(); selectWork(library[0]); } };
+  async function loadIndex() {
+    indexLoading = true; renderLibrary();
+    try {
+      const response = await fetch('/api/videos/library', {cache:'no-cache'});
+      if (!response.ok) throw Error('전체 작품 목록을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.');
+      const result = await response.json(); allWorks = result.items;
+    } catch (e) { status(e.message); }
+    finally { indexLoading = false; renderLibrary(); }
+  }
+  $('videos-search').oninput = () => { visibleCount = 40; renderLibrary(); };
+  for (const [id, value] of [['videos-all','all'], ['videos-saved','saved']]) $(id).onclick = () => {
+    scope = value; visibleCount = 40; $('videos-all').setAttribute('aria-pressed',String(scope === 'all')); $('videos-saved').setAttribute('aria-pressed',String(scope === 'saved')); renderLibrary();
+  };
+  $('videos-more').onclick = () => { visibleCount += 40; renderLibrary(); };
+  window.onShowVideos = () => { if (!initialized) { initialized = true; renderLibrary(); } if (!allWorks.length && !indexLoading) loadIndex(); };
   window.onHideVideos = () => stop();
 })();

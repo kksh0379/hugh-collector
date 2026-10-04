@@ -2,11 +2,12 @@
 import re
 import time
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 bp = Blueprint('video_library', __name__)
 ORIGIN = 'https://linkani.tv'
@@ -15,7 +16,17 @@ TITLE_NAMES = {'19240': '강철의 연금술사', '3217': '원피스',
 WATCH = re.compile(r'^/watch/([1-9]\d{0,8})/a([1-9]\d{0,3})/k([1-9]\d{0,4})/?$')
 
 
-def parse_page(html, title_id, series, episode):
+@bp.get('/api/videos/library')
+def library():
+    path = Path(__file__).resolve().parent.parent / 'static/data/anime_catalog.json.gz'
+    if not path.exists():
+        return jsonify(error='전체 작품 목록을 준비하고 있어요.'), 503
+    response = send_file(path, mimetype='application/json', conditional=True, max_age=3600)
+    response.headers['Content-Encoding'] = 'gzip'
+    return response
+
+
+def parse_page(html, title_id, series, episode, include_requested=True):
     soup = BeautifulSoup(html, 'html.parser')
     meta = soup.find('meta', property='og:title')
     title = meta.get('content', '') if meta else ''
@@ -30,7 +41,8 @@ def parse_page(html, title_id, series, episode):
         sid, ep = int(m[2]), int(m[3])
         found.setdefault(sid, set()).add(ep)
     # The requested page itself is a valid selection even without navigation.
-    found.setdefault(int(series), set()).add(int(episode))
+    if include_requested:
+        found.setdefault(int(series), set()).add(int(episode))
     poster = soup.find('meta', property='og:image')
     image = poster.get('content', '') if poster else ''
     if urlparse(image).scheme != 'https':
@@ -41,11 +53,11 @@ def parse_page(html, title_id, series, episode):
 
 @lru_cache(maxsize=128)
 def load_catalog(title_id, series, episode, bucket):
-    url = f'{ORIGIN}/watch/{title_id}/a{series}/k{episode}/'
+    url = f'{ORIGIN}/ani/{title_id}/'
     response = requests.get(url, timeout=(10, 15), allow_redirects=False)
     if response.status_code != 200:
         raise requests.RequestException('watch page unavailable')
-    return parse_page(response.text, title_id, series, episode)
+    return parse_page(response.text, title_id, series, episode, include_requested=False)
 
 
 @bp.get('/api/videos/catalog')
@@ -55,7 +67,10 @@ def catalog():
     if not WATCH.fullmatch(f'/watch/{parts[0]}/a{parts[1]}/k{parts[2]}/'):
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
-        return jsonify(load_catalog(*parts, int(time.time() // 3600)))
+        data = load_catalog(*parts, int(time.time() // 3600))
+        if not data.get('series'):
+            return jsonify(error='이 작품은 아직 재생할 수 있는 회차가 등록되지 않았어요.'), 409
+        return jsonify(data)
     except requests.RequestException:
         # Snapshot verified from the supplied page; never invent episode ranges.
         if parts[0] == '19240' and parts[1] == '1' and 1 <= int(parts[2]) <= 68:

@@ -45,10 +45,19 @@ class VideoLibraryTests(unittest.TestCase):
         self.assertTrue(response.json['stale'])
         self.assertEqual(response.json['series'][0]['episodes'], list(range(1, 69)))
 
-    @patch('collector.video_library.load_catalog', return_value={'id': '19240', 'series': []})
+    @patch('collector.video_library.load_catalog', return_value={'id': '19240', 'series': [{'id': 2, 'episodes': [3]}]})
     def test_requested_coordinates_pass_to_catalog(self, load):
         self.assertEqual(self.client.get('/api/videos/catalog?id=19240&series=2&episode=3').status_code, 200)
         self.assertEqual(load.call_args.args[:3], ('19240', '2', '3'))
+
+    def test_detail_pages_do_not_invent_unreleased_episodes(self):
+        self.assertEqual(parse_page('<meta property="og:title" content="미방영 작품">', '123', '1', '1', include_requested=False)['series'], [])
+
+    @patch('collector.video_library.load_catalog', return_value={'id': '123', 'series': []})
+    def test_unreleased_title_returns_clear_message(self, load):
+        response = self.client.get('/api/videos/catalog?id=123')
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('아직', response.json['error'])
 
 
 if __name__ == '__main__':
