@@ -1607,9 +1607,21 @@ body.chrome-hidden .view-head { position: static; }
 .notes-tab, .auth-btn, .pdf-save-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; }
 
 /* GPS nearby discovery */
-.lunch-gps-tools {display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 16px 12px; color:var(--muted); font-size:12px;}
+.lunch-gps-tools {display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:12px 16px 14px; color:var(--muted); font-size:12px;}
 .lunch-gps-tools[hidden], .lunch-gps-tools button[hidden] {display:none;}
-.lunch-gps-tools select {font:inherit; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:7px; padding:5px 8px;}
+.lunch-gps-range {display:inline-flex; align-items:center; gap:6px; flex:none;}
+.lunch-gps-tools select, .lunch-gps-tools button {box-sizing:border-box; height:32px; font-size:12px; line-height:1; border-radius:var(--r-sm);}
+.lunch-gps-tools select {font-family:inherit; color:var(--text); background:var(--card); border:1px solid var(--border); padding:0 8px; min-width:68px;}
+.lunch-gps-tools button {display:inline-flex; align-items:center; justify-content:center; flex:none; padding:0 10px; font-weight:600;}
+.gps-btn-content {display:grid; align-items:center;}
+.gps-btn-idle, .gps-btn-busy {grid-area:1 / 1; white-space:nowrap;}
+.gps-btn-busy {display:inline-flex; align-items:center; justify-content:center; gap:6px; visibility:hidden;}
+.is-loading .gps-btn-idle {visibility:hidden;}
+.is-loading .gps-btn-busy {visibility:visible;}
+.lunch-gps-tools button.is-loading:disabled {opacity:.85; cursor:wait;}
+.gps-btn-spinner {display:inline-block; width:12px; height:12px; box-sizing:border-box; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; flex:none; animation:gps-button-spin .8s linear infinite;}
+@keyframes gps-button-spin {to {transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce) {.gps-btn-spinner {animation:none;}}
 .lunch-download-dialog {box-sizing:border-box; width:min(390px,calc(100% - 32px)); border:1px solid var(--border); border-radius:16px; padding:22px; color:var(--text); background:var(--card); box-shadow:0 16px 48px #0003;}
 .lunch-download-dialog::backdrop {background:#0006;}
 .lunch-download-dialog h2 {font-size:17px; margin:0 0 12px;}

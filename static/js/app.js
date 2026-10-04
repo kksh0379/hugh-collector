@@ -2824,7 +2824,7 @@ function lunchLocationLabel(location) {
   // Persist display labels/IDs only; the developer home stays a nickname, with no address or coordinates.
   const LOC_STORAGE = "huscope-locations-v2";
   let locPending = null, restaurantSequence = 0, gpsSequence = 0;
-  let gpsDownloading = false, gpsJob = null;
+  let gpsDownloading = false, gpsLocating = false, gpsJob = null;
   const restaurantCache = new Map();
   try {
     const saved = JSON.parse(localStorage.getItem(LOC_STORAGE) || "null");
@@ -2880,14 +2880,27 @@ function lunchLocationLabel(location) {
       if (list) list.innerHTML = `<li class="lunch-loading">위치 목록을 불러오지 못했어요.<br><button class="btn-collect" id="lunch-retry">다시 시도</button></li>`;
     }
   }
+  function renderGpsButton(button, label, busy, busyLabel) {
+    if (!button) return;
+    button.disabled = busy;
+    button.classList.toggle("is-loading", busy);
+    button.setAttribute("aria-busy", String(busy));
+    button.setAttribute("aria-label", busy ? busyLabel : label);
+    button.innerHTML = `<span class="gps-btn-content"><span class="gps-btn-idle" aria-hidden="${busy}">${label}</span><span class="gps-btn-busy" aria-hidden="${!busy}"><span class="gps-btn-spinner" aria-hidden="true"></span>${busyLabel}</span></span>`;
+  }
   function renderLocBar() {
     const nameEl = $("lunch-loc-name"), radEl = $("lunch-loc-radius"), menu = $("lunch-loc-menu");
     if (nameEl) nameEl.textContent = LUNCH.curLoc ? lunchLocationLabel(LUNCH.curLoc) : (LUNCH.locLoading ? "불러오는 중…" : (LUNCH.locFailed ? "연결 실패" : "위치"));
     if (radEl) radEl.textContent = LUNCH.curLoc ? ((LUNCH.curLoc.radius || 500) + "m") : "";
     const gps = LUNCH.curLoc?.id === "gps";
     const tools = $("lunch-gps-tools"); if (tools) tools.hidden = !gps;
-    const radius = $("lunch-gps-radius"); if (radius && gps) radius.value = String(LUNCH.curLoc.radius);
-    const download = $("lunch-gps-download"); if (download) { download.hidden = !LUNCH.downloadNeeded; download.disabled = gpsDownloading; }
+    const radius = $("lunch-gps-radius");
+    if (radius) { if (gps) radius.value = String(LUNCH.curLoc.radius); radius.disabled = gpsDownloading || gpsLocating; }
+    renderGpsButton($("lunch-gps-refresh"), "위치 다시 확인", gpsLocating, "위치 확인 중");
+    if (gpsDownloading && $("lunch-gps-refresh")) $("lunch-gps-refresh").disabled = true;
+    const download = $("lunch-gps-download");
+    renderGpsButton(download, "주변 맛집 다운로드", gpsDownloading, "다운로드 중");
+    if (download) { download.hidden = !(LUNCH.downloadNeeded || gpsDownloading); if (gpsLocating) download.disabled = true; }
     const collect = $("lunch-collect"), add = $("lunch-add");
     if (collect) collect.disabled = gps;
     if (add) add.disabled = gps;
@@ -2961,11 +2974,11 @@ function lunchLocationLabel(location) {
     closeLocMenu();
     if (!navigator.geolocation) { toast("이 브라우저에서는 위치를 확인할 수 없어요. 지역을 선택해 주세요."); return; }
     const sequence = ++gpsSequence;
-    const btn = $("lunch-gps-refresh"); if (btn) btn.disabled = true;
+    gpsLocating = true; renderLocBar();
     msg("현재 위치 확인 중…");
     navigator.geolocation.getCurrentPosition(async (position) => {
       if (sequence !== gpsSequence) return;
-      if (btn) btn.disabled = false;
+      gpsLocating = false;
       LUNCH.curLoc = {id: "gps", name: "내 위치", lat: position.coords.latitude,
         lng: position.coords.longitude, radius: LUNCH.curLoc?.id === "gps" ? LUNCH.curLoc.radius : 500};
       LUNCH.cat = "전체"; LUNCH.q = ""; LUNCH.reviewedOnly = false;
@@ -2975,7 +2988,7 @@ function lunchLocationLabel(location) {
       await loadNearby(true);
     }, (error) => {
       if (sequence !== gpsSequence) return;
-      if (btn) btn.disabled = false;
+      gpsLocating = false; renderLocBar();
       const text = error.code === 1 ? "위치 권한이 꺼져 있어요. 브라우저 설정에서 허용하거나 기존 지역을 선택해 주세요."
         : error.code === 3 ? "위치 확인 시간이 길어지고 있어요. 다시 시도하거나 기존 지역을 선택해 주세요."
         : "현재 위치를 확인하지 못했어요. 다시 시도하거나 기존 지역을 선택해 주세요.";
@@ -3024,7 +3037,7 @@ function lunchLocationLabel(location) {
     try {
       const data = await gpsApi("/api/lunch/nearby/download", {...gpsPayload(loc), confirmed: true});
       if (data.error) throw new Error(data.error);
-      if (data.covered) { gpsDownloading = false; if (key === gpsKey()) await loadNearby(); return; }
+      if (data.covered) { gpsDownloading = false; renderLocBar(); if (key === gpsKey()) await loadNearby(); return; }
       gpsJob = data.job_id;
       pollGpsDownload(gpsJob, key);
     } catch (error) {
@@ -3465,7 +3478,7 @@ function lunchLocationLabel(location) {
     if (locMenu) locMenu.addEventListener("click", (e) => {
       const b = e.target.closest(".lunch-loc-item"); if (!b) return;
       if (b.dataset.id === "gps") { requestGps(); return; }
-      ++gpsSequence;
+      ++gpsSequence; gpsLocating = false;
       const dialog = $("lunch-download-dialog"); if (dialog?.open) dialog.close();
       const l = LUNCH.locs.find((x) => String(x.id) === b.dataset.id);
       if (l) { LUNCH.curLoc = l; LUNCH.cat = "전체"; LUNCH.q = ""; const s = $("lunch-search"); if (s) s.value = ""; rememberLocations(); renderLocBar(); loadRestaurants(true); }
