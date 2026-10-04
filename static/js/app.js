@@ -2010,7 +2010,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     await loadMyData();
     loginModal.hidden = true;
     document.getElementById("login-fields").replaceChildren();
-    toast((res.user === "admin" ? "관리자" : res.user) + " 님, 로그인되었어요");
+    toast((res.display_name || (res.user === "admin" ? "관리자" : res.user)) + " 님, 로그인되었어요");
     if (pendingScrapKey) { const k = pendingScrapKey; pendingScrapKey = null; toggleScrap(k); }
   } else {
     loginErr.textContent = (res && res.error) || "로그인에 실패했습니다.";
