@@ -178,12 +178,20 @@ function scrapBtnHtml(key) {
 }
 // '신규(N)' 기준일: 오늘 글이 있으면 오늘, 없으면 가장 최근 일자(그래서 N이 아예 사라지지 않음).
 let NEWS_NEW_DATE = "";
+function publicationDate(value) {
+  const text = String(value || "").trim();
+  const m = text.match(/^(\d{4})(?:[-./]?(\d{2}))[-./]?(\d{2})(?:$|[ T])/);
+  if (!m) return "";
+  const day = `${m[1]}-${m[2]}-${m[3]}`;
+  const parsed = new Date(day + "T00:00:00Z");
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day ? day : "";
+}
 function computeNewDate(items) {
   if (!items || !items.length) return "";
   const today = todayStr();
   let max = "";
   for (const it of items) {
-    const d = String(it.published_at || "").slice(0, 10);
+    const d = publicationDate(it.published_at);
     if (!d) continue;
     if (d === today) return today;      // 오늘 글이 하나라도 있으면 오늘 기준
     if (d > max) max = d;
@@ -191,7 +199,7 @@ function computeNewDate(items) {
   return max;                            // 오늘 글이 없으면 최신 일자 기준
 }
 function newBadgeHtml(iso, newDate) {
-  const d = String(iso || "").slice(0, 10);
+  const d = publicationDate(iso);
   const target = newDate || todayStr();  // newDate 미지정(예: 스크랩)은 '오늘'만
   if (!d || !target || d !== target) return "";
   return `<span class="badge-new" title="${d === todayStr() ? "오늘 등록" : "최근 등록"}">N</span>`;
@@ -680,7 +688,7 @@ function renderCard(item, opts) {
     <div class="card-main">
       ${newsThumb(item, !srcCls)}
       <div class="card-body">
-        <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
+        <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at, opts.newDate ?? NEWS_NEW_DATE)}${titleHtml}</h3>
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
@@ -693,9 +701,10 @@ function renderCard(item, opts) {
 }
 
 function renderList(el, items, opts) {
+  const newDate = computeNewDate(items);
   const tab = (el.id || "").replace(/^list-/, "");
   renderInfinite(el, items,
-    (item) => renderCard(item, { badge: opts.badgeFn ? opts.badgeFn(item) : null, tab }),
+    (item) => renderCard(item, { badge: opts.badgeFn ? opts.badgeFn(item) : null, tab, newDate }),
     `표시할 데이터가 아직 없어요.`);
 }
 
@@ -1132,8 +1141,9 @@ function bizBadge(it) {
   return (it.category && it.category !== "전체" && it.category !== "all") ? `동향 · ${it.category}` : "동향";
 }
 function renderBizCombined(el, list) {
+  const newDate = computeNewDate(list);
   renderInfinite(el, list,
-    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab }),
+    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab, newDate }),
     "표시할 소식이 아직 없어요.");
 }
 function publicationTime(value) {

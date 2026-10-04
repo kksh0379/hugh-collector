@@ -85,7 +85,7 @@ class ControllerTests(unittest.TestCase):
         saved=[]
         self.metadata = {}
         ctx={'json':json,'_CRAWLERS':{'biz':(lambda **kwargs:items,lambda data,**kwargs:saved.append(kwargs) or {'new':len(data),'updated':0})},'_ensure_db':lambda **kw:True,'_purge_biz_nc':lambda *args:None,'_enrich_news_images':lambda *args,**kw:None,'_invalidate_read_cache':lambda:None,'_now_kst':lambda:'now','_last_result':{},'db':SimpleNamespace(set_meta=lambda key,value:self.metadata.update({key:value}),add_run_log=lambda *args:None)}
-        return function('_do_crawl',ctx)('biz',replace=replace),saved
+        return function('_do_crawl',ctx)('biz',days=getattr(self,'days',None),replace=replace),saved
     def test_zero_rebuild_is_failure_and_never_saves(self):
         result,saved=self.crawl([]);self.assertIn('error',result);self.assertEqual(saved,[])
         self.assertNotIn('last_crawl_biz', self.metadata)
@@ -104,8 +104,41 @@ class ControllerTests(unittest.TestCase):
         self.assertFalse(state['running'])
         self.assertEqual(state['result'], result)
 
+    def test_short_recovery_is_not_full_history_complete(self):
+        self.days = 30
+        self.crawl(CollectionItems([{'url': 'a'}]), replace=False)
+        self.assertNotIn('biz_history_recovery_v373', self.metadata)
+
+    def test_complete_five_year_collection_marks_recovery(self):
+        self.days = 1825
+        self.crawl(CollectionItems([{'url': 'a'}]), replace=False)
+        self.assertEqual(self.metadata['biz_history_recovery_v373'], 'complete')
+
+    def test_partial_collection_never_marks_recovery_complete(self):
+        self.days = 1825
+        self.crawl(CollectionItems([{'url': 'a'}], complete=False, warnings=['failed']), replace=False)
+        self.assertNotIn('biz_history_recovery_v373', self.metadata)
+
     def test_background_job_forwards_replace_flag(self):
         calls=[];state={'running':True};ctx={'_JOBS':{'biz':state},'_do_crawl':lambda group,**kw:calls.append(kw) or {'new':1}}
         function('_job_run',ctx)('biz',30,True);self.assertTrue(calls[0]['replace']);self.assertFalse(state['running'])
 
 if __name__=='__main__':unittest.main()
+
+class HistoryBootstrapTests(unittest.TestCase):
+    def run_bootstrap(self, complete=False, busy=False, attempted=0):
+        import os
+        calls=[]
+        meta={'biz_history_recovery_v373': 'complete' if complete else '', 'biz_history_attempt_v373': str(attempted)}
+        ctx={'os':os, 'time':SimpleNamespace(time=lambda:10000), '_ensure_db':lambda **kw:True,
+             'google_news':google_news, '_JOBS':{'biz':{'running':busy}},
+             'db':SimpleNamespace(get_meta=lambda k,d=None:meta.get(k,d),set_meta=lambda k,v:meta.update({k:v})),
+             '_start_job':lambda group,**kw:calls.append((group,kw)) or True,
+             '_enrich_news_images':lambda **kw:None}
+        with patch.dict(os.environ,{'ENABLE_SCHEDULER':'1'}):function('_bootstrap_biz_images',ctx)()
+        return calls
+    def test_history_recovery_requests_five_years_without_replacement(self):
+        self.assertEqual(self.run_bootstrap(), [('biz', {'days':1825})])
+    def test_busy_recent_attempt_or_completed_recovery_does_not_restart(self):
+        for opts in ({'busy':True},{'complete':True},{'attempted':9999}):
+            self.assertEqual(self.run_bootstrap(**opts),[])

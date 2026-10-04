@@ -1806,12 +1806,14 @@ def _bootstrap_biz_images():
         return
     try:
         if _ensure_db(force=True):
-            if db.news_image_counts("biz")["total"] == 0:
-                last = float(db.get_meta("biz_empty_recovery_v371", "0") or 0)
-                if time.time() - last >= 3600 and not _JOBS.get("biz", {}).get("running"):
-                    db.set_meta("biz_empty_recovery_v371", str(time.time()))
-                    _start_job("biz", days=30)
-            else:
+            # 최근 30일 자료가 있어도 과거 5년 복구가 끝난 것으로 보지 않는다.
+            complete = db.get_meta("biz_history_recovery_v373", "") == "complete"
+            last = float(db.get_meta("biz_history_attempt_v373", "0") or 0)
+            if not complete and time.time() - last >= 3600 and not _JOBS.get("biz", {}).get("running"):
+                # replace=False: 기존 자료·사진을 보존하며 빠진 과거 기사만 추가/갱신.
+                if _start_job("biz", days=google_news.RECENT_DAYS):
+                    db.set_meta("biz_history_attempt_v373", str(time.time()))
+            elif not _JOBS.get("biz", {}).get("running"):
                 _enrich_news_images(section="biz", limit=40)
     except Exception as e:
         print(f"[images] 동향 이미지 보강 실패: {type(e).__name__}", flush=True)
@@ -1888,6 +1890,9 @@ def _do_crawl(group, progress=None, days=None, replace=False):
     if not result.get("error"):
         result["last_crawled_at"] = result["attempted_at"]
         db.set_meta(f"last_crawl_{group}", result["last_crawled_at"])
+        if group == "biz" and result.get("crawled", 0) > 0 and not result.get("warning") and (days is None or days >= 1825):
+            db.set_meta("biz_history_recovery_v373", "complete")
+            result["coverage_days"] = 1825
     db.set_meta(f"last_result_{group}", json.dumps(result, ensure_ascii=False))
     _last_result[group] = result
     # 실행 로그 기록(관리자가 언제·성공/실패를 볼 수 있게)
