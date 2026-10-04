@@ -182,7 +182,7 @@
   const themeBtn = document.getElementById("reader-theme");
   function applyReaderTheme(dark) {
     dialog.classList.toggle("dark", dark);
-    if (themeBtn) { themeBtn.textContent = dark ? "☀️" : "🌙"; themeBtn.setAttribute("aria-label", dark ? "라이트 테마 전환" : "다크 테마 전환"); }
+    if (themeBtn) { themeBtn.innerHTML = uiIcon(dark ? "sun" : "moon"); themeBtn.setAttribute("aria-label", dark ? "라이트 테마 전환" : "다크 테마 전환"); }
     try { localStorage.setItem("readerDark", dark ? "1" : "0"); } catch (_) {}
   }
   if (themeBtn) themeBtn.addEventListener("click", () => applyReaderTheme(!dialog.classList.contains("dark")));

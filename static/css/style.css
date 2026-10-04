@@ -230,13 +230,14 @@ body.is-loggedin .loggedout-only { display: none !important; }
   transition: top 0.25s ease, transform 0.25s ease;
 }
 .tabs {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  padding: 9px 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 12px;
 }
+.tabs-row { display:contents; }
 .tab {
-  min-width: 0;               /* 화면 폭에 맞춰 균등한 열로 배치 */
+  min-width: 0;               /* 버튼 폭은 탭명 길이에 맞춤 */
   display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   padding: 8px 10px;
   border: none;
@@ -248,12 +249,12 @@ body.is-loggedin .loggedout-only { display: none !important; }
   cursor: pointer;
   white-space: nowrap;
 }
-.tabs > .tab { height:40px; box-sizing:border-box; }
+.tabs .tab { height:32px; box-sizing:border-box; padding:4px 10px; flex:0 0 auto; }
 @media (max-width:959px) {
-  .tabs { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-  .tabs > .tab { height:44px; padding:4px; font-size:12px; line-height:1.25; white-space:normal; }
-  .tabs > .tab { gap:4px; }
-  .tabs > .tab .tab-icon { width:16px; height:16px; flex-basis:16px; }
+  .tabs { flex-direction:column; align-items:flex-start; gap:5px; }
+  .tabs-row { display:flex; align-items:center; gap:6px; }
+  .tabs .tabs-row > .tab { height:30px; padding:3px 6px; font-size:12px; line-height:1; white-space:nowrap; gap:4px; }
+  .tabs .tabs-row > .tab .tab-icon { width:16px; height:16px; flex-basis:16px; }
 }
 .tab:active { transform: scale(0.97); }
 .tab .nc-ci, .tab .cat-ci, .tab .yt-ci, .tab .security-ci { flex: 0 0 auto; display: block; }
@@ -1601,3 +1602,10 @@ body.chrome-hidden .view-head { position: static; }
 .aipick-dice .ui-icon { width:22px; height:22px; }
 .lunch-loc-item > .ui-icon { margin-right:6px; }
 .copy-btn .ui-icon, .grp-assign .ui-icon { width:16px; height:16px; flex-basis:16px; }
+
+.ai-fact { display:inline-flex; align-items:center; gap:5px; }
+.ai-fact .ui-icon { width:14px; height:14px; flex-basis:14px; color:var(--primary); }
+.event-date .ui-icon { width:15px; height:15px; vertical-align:-3px; }
+.event-place .ui-icon, .agenda-place .ui-icon { color:var(--primary); }
+.scrap-fly .ui-icon { width:100%; height:100%; }
+.notes-tab, .auth-btn, .pdf-save-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; }

@@ -199,11 +199,11 @@ function newBadgeHtml(iso, newDate) {
 function readClass(key) { return isRead(key) ? " is-read" : ""; }
 // Shared 24px outline icons: consistent with the navigation icon family.
 function uiIcon(name, filled = false) {
-  const paths = {"link": "<path d=\"m10 13 4-4M8 16H6a4 4 0 0 1-3-7l4-4a4 4 0 0 1 6 0m-2 3h2a4 4 0 0 1 3 7l-4 4a4 4 0 0 1-6 0\"/>", "group": "<path d=\"M20 13 13 20a2 2 0 0 1-3 0l-7-7V4h9l8 7a2 2 0 0 1 0 2Z\"/><circle cx=\"7.5\" cy=\"8\" r=\"1\"/>", "pin": "<path d=\"M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/>", "food": "<path d=\"M4 3v5a3 3 0 0 0 6 0V3M7 3v18M18 3c-3 3-3 7 0 9h2M20 3v18\"/>", "phone": "<path d=\"m7 3 3 5-2 2c2 3 3 4 6 6l2-2 5 3c0 3-2 5-5 4C9 19 5 15 3 8c-1-3 1-5 4-5Z\"/>", "star": "<path d=\"m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3L3.2 9.7l6.4-.9Z\"/>", "dice": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"4\"/><path d=\"M7 7h.01M17 7h.01M12 12h.01M7 17h.01M17 17h.01\" stroke-width=\"3\"/>", "check": "<path d=\"M20 11v1a8 8 0 1 1-5-7M9 11l3 3 9-10\"/>", "wallet": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"15\" rx=\"3\"/><path d=\"M3 8h18m0 4h-6v4h6M6 5V3h12v2\"/>", "crown": "<path d=\"m3 6 4 4 5-6 5 6 4-4-2 13H5ZM6 22h12\"/>", "fast": "<path d=\"m13 2-9 12h7l-1 8 10-13h-7Z\"/>", "globe": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><ellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\"/><path d=\"M3 12h18\"/>", "search": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m16 16 5 5\"/>", "refresh": "<path d=\"M20 7v5h-5M4 17v-5h5M6 7a8 8 0 0 1 13 3M18 17a8 8 0 0 1-13-3\"/>", "walk": "<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"m8 10 4-3 3 5h4m-7-4-2 7-4 6m4-8 5 3 1 5\"/>", "bowl": "<path d=\"M3 11h18a9 9 0 0 1-18 0Zm4 9h10M8 7c-2-2 2-3 0-5m4 5c-2-2 2-3 0-5m4 5c-2-2 2-3 0-5\"/>", "leaf": "<path d=\"M20 3C9 2 3 7 5 15s14 6 15-12ZM5 20l10-10\"/>", "flame": "<path d=\"M13 3c1 6 6 6 6 12a7 7 0 0 1-14 0c0-3 2-5 4-7l1 4c3-2 3-5 3-9Z\"/>", "rain": "<path d=\"M7 15a5 5 0 1 1 1-10 6 6 0 0 1 11 4 3 3 0 0 1 0 6M7 18l-1 3m7-3-1 3m7-3-1 3\"/>", "user": "<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-2a8 8 0 0 1 16 0v2\"/>", "cake": "<path d=\"M4 12h16v9H4ZM4 16c2 2 3-2 5 0s3-2 5 0 3-2 6 0M12 12V8m0-2c-3-1-1-4 0-5 1 1 3 4 0 5Z\"/>", "ban": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m6 6 12 12\"/>", "spark": "<path d=\"m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5ZM20 3v4m-2-2h4\"/>", "calculator": "<rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2\"/><path d=\"M8 6h8M8 11h1m6 0h1m-8 4h1m6 0h1m-8 4h1m6 0h1\"/>", "info": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v6m0-10h.01\"/>", "sliders": "<path d=\"M4 7h7m4 0h5M4 17h3m4 0h9\"/><circle cx=\"13\" cy=\"7\" r=\"2\"/><circle cx=\"9\" cy=\"17\" r=\"2\"/>", "smile": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 14c2 3 6 3 8 0M8 9h.01M16 9h.01\"/>", "plus": "<path d=\"M12 4v16M4 12h16\"/>", "chevron": "<path d=\"m8 10 4 4 4-4\"/>", "back": "<path d=\"m14 5-7 7 7 7\"/>", "close": "<path d=\"m6 6 12 12M18 6 6 18\"/>", "arrow": "<path d=\"M12 4v16m-6-6 6 6 6-6\"/>"};
+  const paths = {"link": "<path d=\"m10 13 4-4M8 16H6a4 4 0 0 1-3-7l4-4a4 4 0 0 1 6 0m-2 3h2a4 4 0 0 1 3 7l-4 4a4 4 0 0 1-6 0\"/>", "group": "<path d=\"M20 13 13 20a2 2 0 0 1-3 0l-7-7V4h9l8 7a2 2 0 0 1 0 2Z\"/><circle cx=\"7.5\" cy=\"8\" r=\"1\"/>", "pin": "<path d=\"M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/>", "food": "<path d=\"M4 3v5a3 3 0 0 0 6 0V3M7 3v18M18 3c-3 3-3 7 0 9h2M20 3v18\"/>", "phone": "<path d=\"m7 3 3 5-2 2c2 3 3 4 6 6l2-2 5 3c0 3-2 5-5 4C9 19 5 15 3 8c-1-3 1-5 4-5Z\"/>", "star": "<path d=\"m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3L3.2 9.7l6.4-.9Z\"/>", "dice": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"4\"/><path d=\"M7 7h.01M17 7h.01M12 12h.01M7 17h.01M17 17h.01\" stroke-width=\"3\"/>", "check": "<path d=\"M20 11v1a8 8 0 1 1-5-7M9 11l3 3 9-10\"/>", "wallet": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"15\" rx=\"3\"/><path d=\"M3 8h18m0 4h-6v4h6M6 5V3h12v2\"/>", "crown": "<path d=\"m3 6 4 4 5-6 5 6 4-4-2 13H5ZM6 22h12\"/>", "fast": "<path d=\"m13 2-9 12h7l-1 8 10-13h-7Z\"/>", "globe": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><ellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\"/><path d=\"M3 12h18\"/>", "search": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m16 16 5 5\"/>", "refresh": "<path d=\"M20 7v5h-5M4 17v-5h5M6 7a8 8 0 0 1 13 3M18 17a8 8 0 0 1-13-3\"/>", "walk": "<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"m8 10 4-3 3 5h4m-7-4-2 7-4 6m4-8 5 3 1 5\"/>", "bowl": "<path d=\"M3 11h18a9 9 0 0 1-18 0Zm4 9h10M8 7c-2-2 2-3 0-5m4 5c-2-2 2-3 0-5m4 5c-2-2 2-3 0-5\"/>", "leaf": "<path d=\"M20 3C9 2 3 7 5 15s14 6 15-12ZM5 20l10-10\"/>", "flame": "<path d=\"M13 3c1 6 6 6 6 12a7 7 0 0 1-14 0c0-3 2-5 4-7l1 4c3-2 3-5 3-9Z\"/>", "rain": "<path d=\"M7 15a5 5 0 1 1 1-10 6 6 0 0 1 11 4 3 3 0 0 1 0 6M7 18l-1 3m7-3-1 3m7-3-1 3\"/>", "user": "<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-2a8 8 0 0 1 16 0v2\"/>", "cake": "<path d=\"M4 12h16v9H4ZM4 16c2 2 3-2 5 0s3-2 5 0 3-2 6 0M12 12V8m0-2c-3-1-1-4 0-5 1 1 3 4 0 5Z\"/>", "ban": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m6 6 12 12\"/>", "spark": "<path d=\"m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5ZM20 3v4m-2-2h4\"/>", "calculator": "<rect x=\"5\" y=\"2\" width=\"14\" height=\"20\" rx=\"2\"/><path d=\"M8 6h8M8 11h1m6 0h1m-8 4h1m6 0h1m-8 4h1m6 0h1\"/>", "info": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v6m0-10h.01\"/>", "sliders": "<path d=\"M4 7h7m4 0h5M4 17h3m4 0h9\"/><circle cx=\"13\" cy=\"7\" r=\"2\"/><circle cx=\"9\" cy=\"17\" r=\"2\"/>", "smile": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 14c2 3 6 3 8 0M8 9h.01M16 9h.01\"/>", "plus": "<path d=\"M12 4v16M4 12h16\"/>", "chevron": "<path d=\"m8 10 4 4 4-4\"/>", "back": "<path d=\"m14 5-7 7 7 7\"/>", "close": "<path d=\"m6 6 12 12M18 6 6 18\"/>", "arrow": "<path d=\"M12 4v16m-6-6 6 6 6-6\"/>", "calendar": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3m-10 3h3\"/>", "institution": "<path d=\"m3 8 9-5 9 5ZM3 21h18M5 8v10m5-10v10m4-10v10m5-10v10M4 18h16\"/>", "building": "<rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"1\"/><path d=\"M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1M11 21v-3h2v3\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/>", "alert": "<path d=\"m12 3 10 18H2ZM12 9v5m0 3h.01\"/>", "shield": "<path d=\"m12 3 8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6ZM8 12l3 3 5-6\"/>", "chart": "<path d=\"M4 3v18h17M8 16v-4m5 4V7m5 9V4\"/>", "id": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><circle cx=\"8\" cy=\"10\" r=\"2\"/><path d=\"M5 16a3 3 0 0 1 6 0m3-7h4m-4 5h4\"/>", "tool": "<path d=\"M14 5a5 5 0 0 0-6 6l-5 5a3 3 0 0 0 4 4l5-5a5 5 0 0 0 7-6l-4 4-4-4 4-4Z\"/>", "message": "<path d=\"M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6 4V5a2 2 0 0 1 2-2ZM7 8h10M7 12h6\"/>", "trash": "<path d=\"M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7\"/>", "notebook": "<rect x=\"5\" y=\"3\" width=\"15\" height=\"18\" rx=\"2\"/><path d=\"M3 7h4m-4 5h4m-4 5h4M10 7h6m-6 5h6\"/>", "clipboard": "<rect x=\"5\" y=\"4\" width=\"14\" height=\"17\" rx=\"2\"/><rect x=\"9\" y=\"2\" width=\"6\" height=\"4\" rx=\"1\"/><path d=\"M9 11h6m-6 5h6\"/>", "users": "<circle cx=\"9\" cy=\"7\" r=\"3\"/><path d=\"M2 21v-3a7 7 0 0 1 14 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 4 5v2\"/>", "file": "<path d=\"M14 2H5v20h14V7ZM14 2v5h5M8 12h8m-8 4h8\"/>", "bookmark": "<path d=\"M5 3h14v18l-7-4-7 4Z\"/>", "moon": "<path d=\"M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z\"/>", "sun": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1\"/>", "laptop": "<path d=\"M5 16V4h14v12M2 16h20l-2 4H4Z\"/>", "mobile": "<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2\"/><path d=\"M10 18h4\"/>", "edit": "<path d=\"m4 16 12-12 4 4L8 20H4ZM13 7l4 4\"/>"};
   return `<svg class="ui-icon${filled ? ' is-filled' : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.info}</svg>`;
 }
 function iconLabel(label) {
-  const icons = {"🔗": "link", "🏷": "group", "📍": "pin", "🍽️": "food", "🍽": "food", "☎": "phone", "⭐": "star", "🎲": "dice", "🎯": "check", "💸": "wallet", "👑": "crown", "🏃": "fast", "🌏": "globe", "🕵️": "search", "🔄": "refresh", "🚶": "walk", "⚡": "fast", "🍲": "bowl", "😌": "leaf", "🔥": "flame", "🥗": "leaf", "🌶️": "flame", "🌧️": "rain", "🧍": "user", "🍰": "cake", "🤢": "ban", "✨": "spark", "🍱": "food", "🧮": "calculator", "🎭": "sliders", "🙅": "ban", "🫠": "smile", "🍚": "bowl", "🙌": "smile", "ⓘ": "info", "🔍": "search"};
+  const icons = {"🔗": "link", "🏷": "group", "📍": "pin", "🍽️": "food", "🍽": "food", "☎": "phone", "⭐": "star", "🎲": "dice", "🎯": "target", "💸": "wallet", "👑": "crown", "🏃": "fast", "🌏": "globe", "🕵️": "search", "🔄": "refresh", "🚶": "walk", "⚡": "fast", "🍲": "bowl", "😌": "leaf", "🔥": "flame", "🥗": "leaf", "🌶️": "flame", "🌧️": "rain", "🧍": "user", "🍰": "cake", "🤢": "ban", "✨": "spark", "🍱": "food", "🧮": "calculator", "🎭": "sliders", "🙅": "ban", "🫠": "smile", "🍚": "bowl", "🙌": "smile", "ⓘ": "info", "🔍": "search", "📅": "calendar", "🏛": "institution", "🏢": "building", "💥": "alert", "🆔": "id", "📊": "chart", "🛠": "tool", "🛡": "shield", "🧯": "shield", "💰": "wallet", "💬": "message", "⚠️": "alert", "🗑": "trash", "📱": "mobile", "💻": "laptop", "📓": "notebook", "📋": "clipboard", "👥": "users", "📄": "file", "🔖": "bookmark", "🌙": "moon", "☀️": "sun", "🧠": "sliders", "✔": "check", "✎": "edit", "＋": "plus"};
   const prefix = Object.keys(icons).find(key => label.startsWith(key));
   return prefix ? uiIcon(icons[prefix]) + escapeHtml(label.slice(prefix.length).trimStart()) : escapeHtml(label);
 }
@@ -247,7 +247,7 @@ function flyToScrap(fromEl) {
     if (!target || !fromEl) return;
     const a = fromEl.getBoundingClientRect(), b = target.getBoundingClientRect();
     const g = document.createElement("div");
-    g.className = "scrap-fly"; g.textContent = "🔖";
+    g.className = "scrap-fly"; g.innerHTML = uiIcon("bookmark");
     g.style.left = (a.left + a.width / 2) + "px";
     g.style.top = (a.top + a.height / 2) + "px";
     document.body.appendChild(g);
@@ -1218,11 +1218,11 @@ function secAiHtml(rep) {
   if (ins.scale) facts.push(`📊 ${ins.scale}`);
   if (ins.action) facts.push(`🛠 ${ins.action}`);
   const factsHtml = facts.length
-    ? `<div class="ai-facts">${facts.map((f) => `<span class="ai-fact">${escapeHtml(f)}</span>`).join("")}</div>` : "";
+    ? `<div class="ai-facts">${facts.map((f) => `<span class="ai-fact">${iconLabel(f)}</span>`).join("")}</div>` : "";
   const rows = [];
-  if (ins.implication) rows.push(`<div class="ai-row"><b>🛡 시사점</b> ${escapeHtml(ins.implication)}</div>`);
-  if (ins.check) rows.push(`<div class="ai-row"><b>✔ 확인</b> ${escapeHtml(ins.check)}</div>`);
-  if (ins.prevention) rows.push(`<div class="ai-row"><b>🧯 예방</b> ${escapeHtml(ins.prevention)}</div>`);
+  if (ins.implication) rows.push(`<div class="ai-row"><b>${uiIcon("shield")} 시사점</b> ${escapeHtml(ins.implication)}</div>`);
+  if (ins.check) rows.push(`<div class="ai-row"><b>${uiIcon("check")} 확인</b> ${escapeHtml(ins.check)}</div>`);
+  if (ins.prevention) rows.push(`<div class="ai-row"><b>${uiIcon("shield")} 예방</b> ${escapeHtml(ins.prevention)}</div>`);
   const insightHtml = rows.length ? `<div class="ai-insight">${rows.join("")}</div>` : "";
   return tagsHtml + factsHtml + insightHtml;
 }
@@ -1416,9 +1416,9 @@ function eventAlbumCard(s) {
     ${scrapBtnHtml(key)}
     ${s.image_url ? `<div class="card-thumb"><img class="thumb-img" loading="lazy" src="/api/img?u=${encodeURIComponent(s.image_url)}" alt="" onerror="this.closest('.card-thumb').remove()"></div>` : ""}
     <div class="card-body">
-      <div class="event-date">📅 ${escapeHtml(eventDateBadge(s))} ${eventSrcBadge(s)}</div>
+      <div class="event-date">${uiIcon("calendar")} ${escapeHtml(eventDateBadge(s))} ${eventSrcBadge(s)}</div>
       <h3 class="card-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
-      ${place ? `<div class="event-place">📍 ${escapeHtml(place)}</div>` : ""}
+      ${place ? `<div class="event-place">${uiIcon("pin")} ${escapeHtml(place)}</div>` : ""}
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="card-actions">${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${copyBtnHtml(link)}</div>
     </div>`;
@@ -1581,7 +1581,7 @@ function renderEventCalendar(list) {
         <span class="agenda-date" style="background:${colorOf[s.url]}">${escapeHtml(_mdRange(s))}</span>
         <span class="agenda-main">
           <span class="agenda-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${eventSrcBadge(s)} ${escapeHtml(s.title || "(제목 없음)")}</span>
-          ${place ? `<span class="agenda-place">📍 ${escapeHtml(place)}</span>` : ""}
+          ${place ? `<span class="agenda-place">${uiIcon("pin")} ${escapeHtml(place)}</span>` : ""}
         </span>
         <span class="agenda-go">↗</span>
       </a>`;
@@ -1845,7 +1845,7 @@ async function purgeDb() {
     try { j = await r.json(); } catch (_) { /* 응답이 JSON이 아닐 때 대비 */ }
     if (!r.ok || !j.ok) throw new Error(j.error || ("서버 오류 " + r.status));
     const total = Object.values(j.deleted || {}).reduce((a, b) => a + (b || 0), 0);
-    msgEl.innerHTML = `🗑 [${label}] 삭제 완료(${total}건). 새 수집을 시작했어요.`;
+    msgEl.innerHTML = `${uiIcon("trash")} [${label}] 삭제 완료(${total}건). 새 수집을 시작했어요.`;
     const el = document.getElementById("list-" + scope);
     if (el) el.innerHTML = "";
     (j.recollect_started || []).forEach((g) => _startPolling(g));
@@ -2202,7 +2202,7 @@ function scrapCardNode(s) {
       <div class="grp-assign-panel">
         <div class="grp-assign-title">이 글을 넣을 그룹</div>
         <div class="grp-check-list">${checks}</div>
-        <button class="grp-new" type="button" data-key="${escapeHtml(s.key)}">＋ 새 그룹 만들어 넣기</button>
+        <button class="grp-new" type="button" data-key="${escapeHtml(s.key)}">${uiIcon("plus")} 새 그룹 만들어 넣기</button>
       </div>
     </div></div>`;
   return li;
@@ -2214,14 +2214,14 @@ function renderScrapControls() {
   GROUPS.forEach((g) => {
     chips.push(`<button class="scrap-chip${scrapFilterGroup === g.id ? " active" : ""}" data-gid="${g.id}">${escapeHtml(g.name)} <b>${scrapCount(g.id)}</b></button>`);
   });
-  chips.push(`<button class="scrap-chip-add" type="button" title="새 그룹">＋ 그룹</button>`);
+  chips.push(`<button class="scrap-chip-add" type="button" title="새 그룹">${uiIcon("plus")} 그룹</button>`);
   const manage = scrapFilterGroup !== "all"
-    ? `<div class="grp-manage"><button class="grp-rename" type="button" data-gid="${scrapFilterGroup}">✎ 이름변경</button><button class="grp-del" type="button" data-gid="${scrapFilterGroup}">🗑 그룹삭제</button></div>`
+    ? `<div class="grp-manage"><button class="grp-rename" type="button" data-gid="${scrapFilterGroup}">${uiIcon("edit")} 이름변경</button><button class="grp-del" type="button" data-gid="${scrapFilterGroup}">${uiIcon("trash")} 그룹삭제</button></div>`
     : "";
   c.innerHTML = `
     <div class="scrap-search">
       <input type="search" id="scrap-search" class="search-input" placeholder="스크랩에서 검색…" value="${escapeHtml(scrapQuery)}" autocomplete="off" enterkeyhint="search" />
-      <button type="button" class="search-btn" id="scrap-search-btn" aria-label="검색">🔍</button>
+      <button type="button" class="search-btn" id="scrap-search-btn" aria-label="검색">${uiIcon("search")}</button>
     </div>
     <div class="scrap-chips">${chips.join("")}</div>
     ${manage}`;
@@ -2342,7 +2342,7 @@ function uaSummary(ua) {
   else if (/chrome\//i.test(ua) && !/edg\//i.test(ua)) br = "Chrome";
   else if (/firefox\//i.test(ua)) br = "Firefox";
   else if (/safari/i.test(ua) && !/chrome/i.test(ua)) br = "Safari";
-  const dev = /mobile|iphone|android/i.test(ua) ? "📱 모바일" : "💻 PC";
+  const dev = /mobile|iphone|android/i.test(ua) ? "모바일" : "PC";
   return `${dev} · ${os} · ${br}`;
 }
 
@@ -2429,7 +2429,7 @@ function renderReport(payload) {
   const d = payload && payload.data;
   if (!payload || payload.empty || !d || !Object.keys(d).length) {
     el.innerHTML = `<div class="empty"><div class="empty-msg">아직 생성된 리포트가 없어요.</div>`
-      + `<div class="empty-hint">관리자가 '🧠 분석 실행'을 누르면 첫 리포트가 만들어져요.</div></div>`;
+      + `<div class="empty-hint">관리자가 분석 실행을 누르면 첫 리포트가 만들어져요.</div></div>`;
     return;
   }
   const m = d._meta || {}; const c = m.counts || {}; const b = d.brief || {};
@@ -2477,7 +2477,7 @@ function renderReport(payload) {
   // 06 Emerging Signals
   if (d.emerging_signals && d.emerging_signals.length) {
     h += rpSection("06 · Emerging Signals", d.emerging_signals.map((x) =>
-      `<div class="rp-item rp-signal"><b>⚡ ${escapeHtml(x.name || "")}</b>`
+      `<div class="rp-item rp-signal"><b>${uiIcon("fast")} ${escapeHtml(x.name || "")}</b>`
       + `<div class="rp-detail">${escapeHtml(x.desc || "")}</div>`
       + (x.recent_change ? `<div class="rp-sub">최근 변화: ${escapeHtml(x.recent_change)}</div>` : "")
       + (x.foundations && x.foundations.length ? `<div class="rp-sub">관련 재단: ${escapeHtml(x.foundations.join(", "))}</div>` : "")
@@ -2498,7 +2498,7 @@ function renderReport(payload) {
       `<div class="rp-item"><b>${escapeHtml(x.org || "")} · ${escapeHtml(x.name || "")}</b>`
       + `<div class="rp-detail">${escapeHtml(x.summary || "")}</div>`
       + (x.distinct ? `<div class="rp-sub">다른 점: ${escapeHtml(x.distinct)}</div>` : "")
-      + (x.question ? `<div class="rp-q">💬 ${escapeHtml(x.question)}</div>` : "")
+      + (x.question ? `<div class="rp-q">${uiIcon("message")} ${escapeHtml(x.question)}</div>` : "")
       + rpEvidence(x.evidence) + `</div>`).join(""));
   }
   // 09 검토 과제
@@ -2508,9 +2508,9 @@ function renderReport(payload) {
       + (x.background ? `<div class="rp-sub">배경: ${escapeHtml(x.background)}</div>` : "")
       + (x.change ? `<div class="rp-sub">변화: ${escapeHtml(x.change)}</div>` : "")
       + (x.basis ? `<div class="rp-sub">근거: ${escapeHtml(x.basis)}</div>` : "")
-      + `<div class="rp-q">💬 ${escapeHtml(x.question || "")}</div></div>`).join(""));
+      + `<div class="rp-q">${uiIcon("message")} ${escapeHtml(x.question || "")}</div></div>`).join(""));
   }
-  if (d.confidence_note) h += `<div class="rp-note">⚠️ ${escapeHtml(d.confidence_note)}</div>`;
+  if (d.confidence_note) h += `<div class="rp-note">${uiIcon("alert")} ${escapeHtml(d.confidence_note)}</div>`;
   const meta = `분석 시점 ${escapeHtml(payload.created_at || "")} · ${escapeHtml(payload.period || "")}`
     + (m.model ? ` · ${escapeHtml(m.model)}` : "");
   el.innerHTML = `<div class="rp-topmeta">${meta}</div>` + h;
@@ -2541,7 +2541,7 @@ function renderSecurityReport(payload) {
   }
   if (d.vulnerabilities && d.vulnerabilities.length) {
     h += rpSection("03 · 주요 취약점", d.vulnerabilities.map((x) =>
-      `<div class="rp-item"><b>${escapeHtml(x.name || "")}</b>${x.cve ? ` <span class="ai-fact">🆔 ${escapeHtml(x.cve)}</span>` : ""}`
+      `<div class="rp-item"><b>${escapeHtml(x.name || "")}</b>${x.cve ? ` <span class="ai-fact">${uiIcon("id")} ${escapeHtml(x.cve)}</span>` : ""}`
       + `<div class="rp-detail">${escapeHtml(x.note || "")}</div></div>`).join(""));
   }
   if (d.regulatory && d.regulatory.length) {
@@ -2550,7 +2550,7 @@ function renderSecurityReport(payload) {
       if (x.org) facts.push(`🏛 ${x.org}`);
       if (x.penalty) facts.push(`💰 ${x.penalty}`);
       if (x.target) facts.push(`🎯 ${x.target}`);
-      const factsHtml = facts.length ? `<div class="ai-facts">${facts.map((f) => `<span class="ai-fact">${escapeHtml(f)}</span>`).join("")}</div>` : "";
+      const factsHtml = facts.length ? `<div class="ai-facts">${facts.map((f) => `<span class="ai-fact">${iconLabel(f)}</span>`).join("")}</div>` : "";
       return `<div class="rp-item"><b>${escapeHtml(x.title || "")}</b>${factsHtml}`
         + `<div class="rp-detail">${escapeHtml(x.note || "")}</div></div>`;
     }).join(""));
@@ -2561,9 +2561,9 @@ function renderSecurityReport(payload) {
   }
   if (d.actions && d.actions.length) {
     h += rpSection("06 · 담당자 점검·대응 권고", d.actions.map((x) =>
-      `<div class="rp-item rp-task"><b>✔ ${escapeHtml(x.task || "")}</b><div class="rp-detail">${escapeHtml(x.detail || "")}</div></div>`).join(""));
+      `<div class="rp-item rp-task"><b>${uiIcon("check")} ${escapeHtml(x.task || "")}</b><div class="rp-detail">${escapeHtml(x.detail || "")}</div></div>`).join(""));
   }
-  if (d.confidence_note) h += `<div class="rp-note">⚠️ ${escapeHtml(d.confidence_note)}</div>`;
+  if (d.confidence_note) h += `<div class="rp-note">${uiIcon("alert")} ${escapeHtml(d.confidence_note)}</div>`;
   const meta = `대상 ${escapeHtml(m.month || "")} · 생성 ${escapeHtml(payload.created_at || "")}`
     + (m.model ? ` · ${escapeHtml(m.model)}` : "");
   el.innerHTML = `<div class="rp-topmeta">${meta}</div>` + h;
@@ -2619,7 +2619,7 @@ async function loadReport(id) {
   function applyKindUI() {
     if (runBtn) runBtn.textContent = reportKind === "security" ? "지난달 분석" : "분석 실행";
     const title = document.getElementById("report-title");
-    if (title) title.textContent = reportKind === "security" ? "월간 보안 리포트" : "🔍 AI 재단 동향 리포트";
+    if (title) title.textContent = reportKind === "security" ? "월간 보안 리포트" : "AI 재단 동향 리포트";
     const nf = document.getElementById("report-note-foundation");
     const ns = document.getElementById("report-note-security");
     if (nf) nf.hidden = reportKind === "security";
@@ -2645,7 +2645,7 @@ async function loadReport(id) {
       });
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || ("서버 오류 " + r.status));
-      msg.style.color = "#16a34a"; msg.textContent = `🗑 삭제 완료(${j.deleted || 0}건)`;
+      msg.style.color = "#16a34a"; msg.textContent = `삭제 완료(${j.deleted || 0}건)`;
       const el = document.getElementById("report-body"); if (el) delete el.dataset.loaded;
       loadReport();
     } catch (e) { msg.style.color = "#dc2626"; msg.textContent = "삭제 실패: " + e.message; }
@@ -3408,7 +3408,7 @@ function lunchLocationLabel(location) {
       try {
         const d = await getJSON("/api/lunch/diag");
         if (!d.has_key) { msg("KAKAO_REST_KEY 없음 — Render 환경변수 확인", true); return; }
-        const head = `키 ${d.key_len}자(${d.key_head})${d.key_has_space ? " ⚠공백포함" : ""}`;
+        const head = `키 ${d.key_len}자(${d.key_head})${d.key_has_space ? " · 공백 포함" : ""}`;
         const line = `${head} · 상태 ${d.status} · ${d.result || ""}`;
         msg(line, d.status !== 200);
         if (d.body) console.log("[lunch diag] kakao body:", d.body);
