@@ -22,6 +22,7 @@ from collector import (analysis, boards, db, dedup, event_curation, event_source
 from collector.identity import canonical_user, display_name, public_author
 from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
+from collector.video_library import bp as video_library_bp
 from collector.read_cache import ReadCache
 
 _PUBLIC_READS = ReadCache()
@@ -30,6 +31,7 @@ _LOCATION_READS = ReadCache(max_entries=1, workers=1)
 app = Flask(__name__)
 app.register_blueprint(reader_bp)
 app.register_blueprint(finance_bp)
+app.register_blueprint(video_library_bp)
 
 
 @app.before_request
@@ -1365,7 +1367,7 @@ def _asset_ver():
     base = os.path.dirname(os.path.abspath(__file__))
     try:
         mt = max(os.path.getmtime(os.path.join(base, "static", path))
-                 for path in ("js/app.js", "css/style.css", "js/reader.js", "css/reader.css", "js/finance.js", "css/finance.css", "js/events-ui.js", "css/events-ui.css"))
+                 for path in ("js/app.js", "css/style.css", "js/reader.js", "css/reader.css", "js/finance.js", "css/finance.css", "js/events-ui.js", "css/events-ui.css", "css/videos.css", "js/videos.js"))
         return str(int(mt))
     except Exception:  # noqa: BLE001
         return "1"

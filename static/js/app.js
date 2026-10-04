@@ -311,11 +311,13 @@ function toast(msg) {
     collector: document.getElementById("view-collector"),
     food: document.getElementById("view-food"),
     finance: document.getElementById("view-finance"),
+    videos: document.getElementById("view-videos"),
     report: document.getElementById("view-report"),
     scrap: document.getElementById("view-scrap"),
   };
   function switchTo(n) {
     closeEventCalendarPopover();
+    if (n !== "videos" && window.onHideVideos) window.onHideVideos();
     // 스크랩은 로그인 필요 → 미로그인 시 전환하지 않고 로그인 유도
     if (n === "scrap" && !isLoggedIn()) { toast("로그인하면 스크랩을 볼 수 있어요"); if (typeof openLogin === "function") openLogin(); return; }
     nav.querySelectorAll(".fnav").forEach((x) => {
@@ -327,6 +329,7 @@ function toast(msg) {
     Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
     // 맛집 하위 뷰(후기/AI 추천)는 항상 닫고 대메뉴로 복귀
     ["view-lunch-reviews", "view-lunch-ai"].forEach((id) => { const e = document.getElementById(id); if (e) e.hidden = true; });
+    if (n === "videos" && window.onShowVideos) window.onShowVideos();
     if (n === "finance" && window.onShowFinance) window.onShowFinance();
     window.scrollTo(0, 0);
     document.body.classList.remove("chrome-hidden");
