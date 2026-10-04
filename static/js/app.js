@@ -2827,6 +2827,54 @@ function lunchLocationLabel(location) {
   let gpsDownloading = false, gpsLocating = false, gpsJob = null;
   let addressSequence = 0, addressResults = [];
   const restaurantCache = new Map();
+
+  const RECENT_LOC_STORAGE = "hscope-recent-locations-v1";
+  let recentLocations = [];
+  function recentLocationKey(location) {
+    return `${location.source === "address" ? "address" : "gps"}:${Number(location.lat).toFixed(5)}:${Number(location.lng).toFixed(5)}`;
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(RECENT_LOC_STORAGE) || "[]");
+    if (Array.isArray(saved)) recentLocations = saved.filter((location) =>
+      location && Number.isFinite(location.lat) && Number.isFinite(location.lng)
+      && location.lat >= 33 && location.lat <= 39 && location.lng >= 124 && location.lng <= 132
+      && [500, 1000, 2000].includes(location.radius) && Number.isFinite(location.usedAt)
+      && typeof location.name === "string" && ["gps", "address"].includes(location.source))
+      .sort((a, b) => b.usedAt - a.usedAt).slice(0, 20);
+  } catch (_) {}
+  function saveRecentLocations() {
+    try { localStorage.setItem(RECENT_LOC_STORAGE, JSON.stringify(recentLocations)); } catch (_) {}
+  }
+  function rememberRecentLocation(location = LUNCH.curLoc) {
+    if (location?.id !== "gps") return;
+    const key = recentLocationKey(location);
+    recentLocations = recentLocations.filter((item) => recentLocationKey(item) !== key);
+    recentLocations.unshift({id: "gps", source: location.source === "address" ? "address" : "gps",
+      name: location.name || "내 위치", address: location.address || "",
+      lat: location.lat, lng: location.lng, radius: location.radius || 500, usedAt: Date.now()});
+    recentLocations = recentLocations.slice(0, 20);
+    saveRecentLocations();
+  }
+  function renderRecentLocations() {
+    if (!recentLocations.length) return "";
+    return `<div class="lunch-loc-heading">최근 위치</div>` + recentLocations.map((location) => {
+      const key = recentLocationKey(location);
+      const on = LUNCH.curLoc?.id === "gps" && recentLocationKey(LUNCH.curLoc) === key;
+      const label = lunchLocationLabel(location);
+      const time = new Intl.DateTimeFormat("ko-KR", {month:"numeric", day:"numeric",
+        hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Asia/Seoul"}).format(new Date(location.usedAt));
+      return `<div class="lunch-recent-row"><button type="button" class="lunch-loc-item${on ? " on" : ""}" data-recent-key="${escapeHtml(key)}">${uiIcon("pin")} ${escapeHtml(label)}<span class="lli-sub">${escapeHtml(time)} · 반경 ${location.radius}m${on ? " · 선택됨" : ""}</span></button><button type="button" class="lunch-recent-delete" data-delete-recent="${escapeHtml(key)}" aria-label="${escapeHtml(label)} 최근 위치 삭제" title="최근 위치 삭제">×</button></div>`;
+    }).join("");
+  }
+  async function selectRecentLocation(location) {
+    ++gpsSequence; gpsLocating = false;
+    const confirmation = $("lunch-download-dialog"); if (confirmation?.open) confirmation.close();
+    LUNCH.curLoc = {...location};
+    LUNCH.cat = "전체"; LUNCH.q = ""; LUNCH.reviewedOnly = false; LUNCH.downloadNeeded = false;
+    const search = $("lunch-search"); if (search) search.value = "";
+    rememberRecentLocation(); closeLocMenu(); renderLocBar(); await loadNearby(true);
+  }
+
   try {
     const saved = JSON.parse(localStorage.getItem(LOC_STORAGE) || "null");
     if (saved && Date.now() - saved.at < 86400000 && Array.isArray(saved.locations)) {
@@ -2916,11 +2964,11 @@ function lunchLocationLabel(location) {
     if (!LUNCH.locs.length) {   // 빈 메뉴가 '펴지다 마는' 것처럼 보이지 않게 안내 표시
       const txt = LUNCH.locLoading ? "위치 불러오는 중… (DB 연결 확인)"
         : (LUNCH.locFailed ? "데이터 연결 실패 — 아래 ‘다시 시도’" : "위치가 없어요 — 새로고침 해주세요");
-      menu.innerHTML = gpsItem + `<div class="lunch-loc-empty">${LUNCH.locLoading ? catRunInline("위치 불러오는 중…") : escapeHtml(txt)}</div>`;
+      menu.innerHTML = gpsItem + renderRecentLocations() + `<div class="lunch-loc-empty">${LUNCH.locLoading ? catRunInline("위치 불러오는 중…") : escapeHtml(txt)}</div>`;
       return;
     }
     // Address labels for public locations; keep the developer home as a nickname.
-    menu.innerHTML = gpsItem + LUNCH.locs.map((l) => {
+    menu.innerHTML = gpsItem + renderRecentLocations() + `<div class="lunch-loc-heading">기본 위치</div>` + LUNCH.locs.map((l) => {
       const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;
       return `<button type="button" class="lunch-loc-item${on ? " on" : ""}" data-id="${l.id}">`
         + `${uiIcon("pin")} ${escapeHtml(lunchLocationLabel(l))}<span class="lli-sub">반경 ${l.radius || 500}m${on ? " · 선택됨" : ""}</span></button>`;
@@ -3010,7 +3058,7 @@ function lunchLocationLabel(location) {
     LUNCH.curLoc = {...location, id: "gps", source: "address", radius: LUNCH.curLoc?.id === "gps" ? LUNCH.curLoc.radius : 500};
     LUNCH.cat = "전체"; LUNCH.q = ""; LUNCH.reviewedOnly = false; LUNCH.downloadNeeded = false;
     const search = $("lunch-search"); if (search) search.value = "";
-    renderLocBar(); await loadNearby(true);
+    rememberRecentLocation(); renderLocBar(); await loadNearby(true);
   }
   async function requestGps() {
     closeLocMenu();
@@ -3026,7 +3074,7 @@ function lunchLocationLabel(location) {
       LUNCH.cat = "전체"; LUNCH.q = ""; LUNCH.reviewedOnly = false;
       const search = $("lunch-search"); if (search) search.value = "";
       LUNCH.downloadNeeded = false;
-      renderLocBar();
+      rememberRecentLocation(); renderLocBar();
       await loadNearby(true);
     }, (error) => {
       if (sequence !== gpsSequence) return;
@@ -3532,6 +3580,19 @@ function lunchLocationLabel(location) {
       if (locMenu) locMenu.hidden = !locMenu.hidden;   // 토글(열림/닫힘)
     });
     if (locMenu) locMenu.addEventListener("click", (e) => {
+      const remove = e.target.closest("[data-delete-recent]");
+      if (remove) {
+        recentLocations = recentLocations.filter((location) => recentLocationKey(location) !== remove.dataset.deleteRecent);
+        saveRecentLocations(); renderLocBar();
+        const next = locMenu.querySelector(".lunch-recent-delete") || locBtn; if (next) next.focus();
+        return;
+      }
+      const recent = e.target.closest("[data-recent-key]");
+      if (recent) {
+        const location = recentLocations.find((item) => recentLocationKey(item) === recent.dataset.recentKey);
+        if (location) selectRecentLocation(location);
+        return;
+      }
       const b = e.target.closest(".lunch-loc-item"); if (!b) return;
       if (b.dataset.id === "gps") { requestGps(); return; }
       ++gpsSequence; gpsLocating = false;
@@ -3547,6 +3608,7 @@ function lunchLocationLabel(location) {
     $("lunch-gps-radius")?.addEventListener("change", (event) => {
       if (LUNCH.curLoc?.id !== "gps") return;
       LUNCH.curLoc.radius = Number(event.target.value);
+      rememberRecentLocation(); renderLocBar();
       LUNCH.downloadNeeded = false; loadNearby(true);
     });
     $("lunch-gps-download")?.addEventListener("click", confirmGpsDownload);
