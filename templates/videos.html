@@ -17,12 +17,17 @@
       <h3 id="videos-title"></h3>
       <p id="videos-detail-status" role="status" aria-live="polite" hidden></p>
       <div id="videos-detail-body" hidden>
-      <label class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label>
-      <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div>
       <div class="videos-watch-head"><strong id="videos-selected"></strong><a id="videos-original" target="_blank" rel="noopener noreferrer">원본 사이트에서 보기 ↗</a></div>
       <div id="videos-player" class="videos-player"><p>회차를 선택한 뒤 재생을 눌러 주세요.</p></div>
       <div class="videos-controls"><button type="button" id="videos-prev">이전 화</button><button type="button" id="videos-play">재생</button><button type="button" id="videos-next">다음 화</button></div>
       <p class="videos-help">재생 화면은 원본 사이트에서 제공해요. 앱 안에서 재생되지 않으면 원본 사이트에서 열어 주세요.</p>
+      <section class="videos-episode-picker" aria-labelledby="videos-episode-heading">
+        <div class="videos-episode-heading"><h4 id="videos-episode-heading">회차 선택</h4><span id="videos-episode-count"></span></div>
+        <label class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label>
+        <form id="videos-jump-form" class="videos-jump"><label for="videos-jump">회차 바로가기</label><input id="videos-jump" type="number" min="1" step="1" inputmode="numeric" placeholder="회차 번호" required><button type="submit">이동</button></form>
+        <p id="videos-jump-status" role="status" aria-live="polite" hidden></p>
+        <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div>
+      </section>
       </div>
     </section>
   </section>
