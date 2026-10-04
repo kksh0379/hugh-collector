@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.48") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.49") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -48,7 +48,7 @@
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.48") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.49") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
 </head>
 <body>
@@ -272,14 +272,14 @@
   <main id="view-food" hidden>
     <div class="vh"><div class="vt">오늘 점심 <span style="color:var(--accent)">뭐 먹지?</span></div><div class="lunch-sub">내 주변 점심, 지금 바로 골라보세요</div></div>
     <div class="lunch-top-controls">
-    <div class="lunch-loc" id="lunch-loc"><button class="lunch-loc-btn" id="lunch-loc-btn">📍 <b id="lunch-loc-name">위치</b> · <span id="lunch-loc-radius">500m</span> ▾</button>
+    <div class="lunch-loc" id="lunch-loc"><button class="lunch-loc-btn" id="lunch-loc-btn"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/></svg> <b id="lunch-loc-name">위치</b> · <span id="lunch-loc-radius">500m</span> <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m8 10 4 4 4-4"/></svg></button>
       <div class="lunch-loc-menu" id="lunch-loc-menu" hidden></div>
     </div>
     </div>
     <div class="viewbar" style="border:0;padding-top:0">
       <div class="search-box">
         <input type="search" id="lunch-search" class="search-input" placeholder="식당·카테고리 검색…" enterkeyhint="search" autocomplete="off" />
-        <button type="button" class="search-btn" id="lunch-search-btn" aria-label="검색">🔍</button>
+        <button type="button" class="search-btn" id="lunch-search-btn" aria-label="검색"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
       </div>
     </div>
     <div class="lunch-filterbar">
@@ -288,9 +288,9 @@
     <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
     <div class="checkbar lunch-cats" id="lunch-cats" role="group" aria-label="카테고리"></div>
     <div class="toolbar admin-only" style="margin:8px 16px 0">
-      <button class="btn-collect" id="lunch-collect">🔄 주변 식당 수집</button>
-      <button class="btn-status" id="lunch-add">＋ 직접 추가</button>
-      <button class="btn-status" id="lunch-diag">🔍 키 진단</button>
+      <button class="btn-collect" id="lunch-collect"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5M6 7a8 8 0 0 1 13 3M18 17a8 8 0 0 1-13-3"/></svg> 주변 식당 수집</button>
+      <button class="btn-status" id="lunch-add"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></svg> 직접 추가</button>
+      <button class="btn-status" id="lunch-diag"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg> 키 진단</button>
     </div>
     <div class="result-msg admin-only" id="lunch-msg" style="margin:6px 16px 0"></div>
     <ul class="list" id="lunch-list" style="padding:12px 16px 16px"></ul>
@@ -298,13 +298,13 @@
 
   <!-- 맛집: 이용자 평가/후기 (본문 뷰) -->
   <main class="view-body" id="view-lunch-reviews" hidden>
-    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-rev-back" aria-label="뒤로">‹</button><span class="view-title" id="lunch-rev-name">식당</span></div>
+    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-rev-back" aria-label="뒤로"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 5-7 7 7 7"/></svg></button><span class="view-title" id="lunch-rev-name">식당</span></div>
     <div class="view-inner" id="lunch-rev-body"></div>
   </main>
 
   <!-- 맛집: AI 추천 (본문 뷰) -->
   <main class="view-body" id="view-lunch-ai" hidden>
-    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-ai-back" aria-label="뒤로">‹</button><span class="view-title">AI 점심 추천</span></div>
+    <div class="view-head" style="display:flex;align-items:center;gap:8px"><button class="lunch-back" id="lunch-ai-back" aria-label="뒤로"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 5-7 7 7 7"/></svg></button><span class="view-title">AI 점심 추천</span></div>
     <div class="view-inner" id="lunch-ai-body"></div>
   </main>
 
@@ -460,7 +460,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.48 · build 261004</span>
+    <span class="ver">v3.49 · build 261004</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -489,8 +489,8 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.48") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.48") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.49") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.49") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
 </body>

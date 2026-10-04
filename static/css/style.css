@@ -1580,3 +1580,17 @@ body.chrome-hidden .view-head { position: static; }
 .lunch-top-controls .lunch-loc-btn span{flex:none}
 .lunch-top-controls .lunch-reviewed-toggle{flex:none;min-height:36px;border-radius: var(--r-pill)}
 .lunch-top-controls .lunch-loc-menu{left:0;top:calc(100% + 8px);min-width:240px;max-width:calc(100vw - 32px)}
+
+/* Shared outline icons for actions, restaurant metadata and preference controls. */
+.ui-icon { width:18px; height:18px; display:inline-block; flex:0 0 18px; vertical-align:-3px; pointer-events:none; }
+.ui-icon.is-filled { stroke-width:1.4; }
+.lstar { display:inline-flex; align-items:center; gap:2px; vertical-align:middle; }
+.lstar .ui-icon { width:15px; height:15px; flex-basis:15px; }
+.lw-star .ui-icon { width:26px; height:26px; }
+.lvisit, .linfo-tel, .mood-chip, .trusted-toggle, .aipick-recipe-btn, .recipe-step-t, .lunch-loc-btn { display:inline-flex; align-items:center; gap:6px; }
+.mood-chip .ui-icon, .trusted-toggle .ui-icon { width:16px; height:16px; flex-basis:16px; }
+.lmeta > .ui-icon, .airec-meta > .ui-icon { color:var(--primary); }
+.lunch-back, .aipick-dice { display:inline-flex; align-items:center; justify-content:center; }
+.aipick-dice .ui-icon { width:22px; height:22px; }
+.lunch-loc-item > .ui-icon { margin-right:6px; }
+.copy-btn .ui-icon, .grp-assign .ui-icon { width:16px; height:16px; flex-basis:16px; }
