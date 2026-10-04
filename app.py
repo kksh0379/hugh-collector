@@ -360,26 +360,31 @@ def admin_purge():
     scope = data.get("scope", "all")
     groups = ["cat", "game", "news", "biz", "security", "event", "boards", "social"] if scope == "all" else [scope]
     _SEC = {"cat": "cat", "game": "game", "news": "nc", "biz": "biz", "security": "sec"}
+    if scope == "biz-all":
+        groups = ["biz", "boards", "social"]
+    if any(group not in _CRAWLERS for group in groups):
+        return jsonify({"ok": False, "error": "초기화 대상을 확인해 주세요."}), 400
+    # 재수집은 먼저 확보하고 저장 트랜잭션에서 교체. 실패/부분 응답은 기존 자료 보존.
+    if data.get("recollect"):
+        busy = [group for group in groups if _JOBS.get(group, {}).get("running")]
+        if busy:
+            return jsonify({"ok": False, "error": "선택한 출처의 수집이 이미 진행 중이에요."}), 409
+        started = [group for group in groups if _start_job(group, days=data.get("days"), replace=True)]
+        return jsonify({"ok": True, "deleted": {}, "staged": True, "recollect_started": started})
     deleted = {}
     try:
-        for g in groups:
-            if g in _SEC:
-                deleted[g] = db.clear_news_section(_SEC[g])
-            elif g == "event":
-                deleted["event"] = db.clear_events()
-            elif g in ("boards", "social"):
-                deleted.update(db.clear_tables([g]))
-    except Exception as e:  # noqa: BLE001
-        print(f"[purge] 삭제 실패: {e}", flush=True)
-        return jsonify({"ok": False, "error": f"삭제 실패: {e}"}), 500
-    _invalidate_read_cache()  # 비웠으니 조회 캐시도 비움
-    started = []
-    if data.get("recollect"):
-        days = data.get("days")
-        for g in groups:
-            if _start_job(g, days=days if g in ("cat", "game", "news", "biz", "security", "event") else None):
-                started.append(g)
-    return jsonify({"ok": True, "deleted": deleted, "recollect_started": started})
+        for group in groups:
+            if group in _SEC:
+                deleted[group] = db.clear_news_section(_SEC[group])
+            elif group == "event":
+                deleted[group] = db.clear_events()
+            else:
+                deleted.update(db.clear_tables([group]))
+    except Exception as error:
+        return jsonify({"ok": False, "error": "초기화에 실패했어요."}), 500
+    _invalidate_read_cache()
+    return jsonify({"ok": True, "deleted": deleted, "recollect_started": []})
+
 
 
 @app.get("/api/dbcheck")
@@ -1699,11 +1704,11 @@ _last_result = {"news": None, "cat": None, "biz": None, "security": None, "board
 # 저장 정책: 키 = 원문 URL.
 #  - 뉴스는 '동일 기사(여러 매체 배포)'도 전부 저장한다(중복 제거 X). 대신 저장 후
 #    전체를 본문/제목 유사도로 클러스터링해 group_key를 부여 → 화면에서 아코디언 묶음.
-def _save_news(items, section="nc"):
+def _save_news(items, section="nc", replace=False):
     for item in items:
         item["content_hash"] = dedup.content_hash(item.get("content", ""))
         item["section"] = section
-    new, updated = db.upsert_news_many(items)
+    new, updated = db.upsert_news_many(items, replace_section=section if replace else None)
 
     # 같은 섹션(nc/cat) 안에서만 '같은 기사' 그룹화(group_key 부여)
     rows = db.all_news_min(section)
@@ -1714,20 +1719,20 @@ def _save_news(items, section="nc"):
     return {"new": new, "updated": updated, "duplicates": 0, "groups": groups}
 
 
-def _save_cat(items):
-    return _save_news(items, section="cat")
+def _save_cat(items, replace=False):
+    return _save_news(items, section="cat", replace=replace)
 
 
-def _save_game(items):
-    return _save_news(items, section="game")
+def _save_game(items, replace=False):
+    return _save_news(items, section="game", replace=replace)
 
 
-def _save_biz(items):
-    return _save_news(items, section="biz")
+def _save_biz(items, replace=False):
+    return _save_news(items, section="biz", replace=replace)
 
 
-def _save_security(items):
-    return _save_news(items, section="sec")
+def _save_security(items, replace=False):
+    return _save_news(items, section="sec", replace=replace)
 
 
 def _purge_biz_nc(progress=None):
@@ -1801,23 +1806,29 @@ def _bootstrap_biz_images():
         return
     try:
         if _ensure_db(force=True):
-            _enrich_news_images(section="biz", limit=40)
+            if db.news_image_counts("biz")["total"] == 0:
+                last = float(db.get_meta("biz_empty_recovery_v370", "0") or 0)
+                if time.time() - last >= 3600 and not _JOBS.get("biz", {}).get("running"):
+                    db.set_meta("biz_empty_recovery_v370", str(time.time()))
+                    _start_job("biz", days=30)
+            else:
+                _enrich_news_images(section="biz", limit=40)
     except Exception as e:
         print(f"[images] 동향 이미지 보강 실패: {type(e).__name__}", flush=True)
 
 
-def _save_boards(items):
-    new, updated = db.upsert_board_many(items)
+def _save_boards(items, replace=False):
+    new, updated = db.upsert_board_many(items, replace=replace)
     return {"new": new, "updated": updated, "duplicates": 0}
 
 
-def _save_social(items):
-    new, updated = db.upsert_social_many(items)
+def _save_social(items, replace=False):
+    new, updated = db.upsert_social_many(items, replace=replace)
     return {"new": new, "updated": updated, "duplicates": 0}
 
 
-def _save_event(items):
-    new, updated = db.upsert_event_many(items)
+def _save_event(items, replace=False):
+    new, updated = db.upsert_event_many(items, replace=replace)
     return {"new": new, "updated": updated, "duplicates": 0}
 
 
@@ -1833,7 +1844,7 @@ _CRAWLERS = {
 }
 
 
-def _do_crawl(group, progress=None, days=None):
+def _do_crawl(group, progress=None, days=None, replace=False):
     """수집 1회 실행(수동 버튼·배치 공용). 결과 dict 반환.
     progress(msg): 진행상황 콜백(선택). days: 뉴스 수집 기간(최근 N일)."""
     progress = progress or (lambda m: None)
@@ -1847,8 +1858,16 @@ def _do_crawl(group, progress=None, days=None):
         else:
             items = crawl_fn(progress=progress)
         progress("저장·그룹화 중…")
-        counts = save_fn(items)
+        complete = getattr(items, "complete", True)
+        warnings = list(getattr(items, "warnings", []))
+        if not items and (replace or not complete):
+            raise RuntimeError("수집 항목을 확보하지 못했어요. 기존 목록은 유지했어요.")
+        counts = save_fn(items, replace=replace and complete)
         result = {"crawled": len(items), **counts}
+        if warnings or (replace and not complete):
+            result["warning"] = " · ".join(warnings) or "일부 출처에 연결하지 못했어요."
+            if replace:
+                result["warning"] += " · 기존 목록을 보존하고 확보한 항목만 갱신했어요."
         if group == "news":
             _purge_news_noise(progress)  # 기존에 쌓인 본사 노이즈(야구/백화점 등) 정리
         if group == "biz":
@@ -1872,7 +1891,7 @@ def _do_crawl(group, progress=None, days=None):
         if result.get("error"):
             status, detail = "실패", str(result["error"])[:200]
         else:
-            status = "성공"
+            status = "부분 성공" if result.get("warning") else "성공"
             detail = (f"신규 {result.get('new', 0)} · 갱신 {result.get('updated', 0)} "
                       f"· 수집 {result.get('crawled', 0)}")
         db.add_run_log(group, status, detail, result["last_crawled_at"])
@@ -1888,14 +1907,14 @@ def _do_crawl(group, progress=None, days=None):
 _JOBS = {}  # group -> {running, progress, result, started_at}
 
 
-def _job_run(group, days=None):
+def _job_run(group, days=None, replace=False):
     st = _JOBS[group]
 
     def cb(msg):
         st["progress"] = msg
 
     try:
-        st["result"] = _do_crawl(group, progress=cb, days=days)
+        st["result"] = _do_crawl(group, progress=cb, days=days, replace=replace)
         st["progress"] = st["result"].get("error") and f"오류: {st['result']['error']}" or "완료"
     except Exception as e:  # noqa: BLE001
         st["result"] = {"error": str(e), "crawled": 0}
@@ -1907,7 +1926,7 @@ def _job_run(group, days=None):
 _JOB_STALE_SEC = 1800  # 30분 넘게 '실행 중'이면 멈춘 것으로 간주(재시작 허용/UI 해제)
 
 
-def _start_job(group, days=None):
+def _start_job(group, days=None, replace=False):
     """백그라운드 수집 작업 시작. 이미 진행 중이면 False.
     단, 30분 넘게 진행 중(멈춘 것으로 추정)이면 새로 시작한다."""
     st = _JOBS.get(group)
@@ -1915,7 +1934,7 @@ def _start_job(group, days=None):
         return False
     _JOBS[group] = {"running": True, "progress": "수집 대기…", "result": None,
                     "started_at": _now_kst(), "started_ts": time.time()}
-    threading.Thread(target=_job_run, args=(group, days), daemon=True).start()
+    threading.Thread(target=_job_run, args=(group, days, replace), daemon=True).start()
     print(f"[crawl] {group} 백그라운드 수집 시작 (days={days})", flush=True)
     return True
 

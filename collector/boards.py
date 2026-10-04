@@ -25,6 +25,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from . import extractor, fetcher
+from .collection_result import CollectionItems
 
 SOURCES = [
     {
@@ -606,11 +607,19 @@ def crawl_all(max_items=10, progress=None):
     progress = progress or (lambda m: None)
     t0 = time.time()
     results = []
+    warnings = []
     for cfg in SOURCES:
-        items = crawl_source(cfg, max_items=max_items)
+        try:
+            items = crawl_source(cfg, max_items=max_items)
+        except Exception as error:
+            items = []
+        if not items:
+            warnings.append(cfg.get("service") or cfg.get("account") or "출처")
         results.extend(items)
         progress(f"{cfg['service']} · {cfg['category']}: {len(items)}건")
     msg = f"게시판 전체 {len(results)}건 / {time.time() - t0:.1f}s"
     print("[board] " + msg, flush=True)
     progress(msg)
-    return results
+    return CollectionItems(results, complete=not warnings,
+                           warnings=["일부 출처에서 항목을 확보하지 못했어요: " + ", ".join(warnings)] if warnings else [])
+

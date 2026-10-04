@@ -24,6 +24,7 @@ from email.utils import parsedate_to_datetime
 from bs4 import BeautifulSoup
 
 from . import extractor, fetcher
+from .collection_result import CollectionItems
 
 RSS_URL = "https://news.google.com/rss/search"
 BATCH_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
@@ -111,12 +112,13 @@ def _snippet(description_html):
 
 
 def _collect_items(query, after=None, before=None):
-    try:
-        resp = fetcher.get(RSS_URL, params=_feed_params(query, after, before))
-    except Exception as e:  # noqa: BLE001
-        print(f"[google] RSS 요청 실패 ({query} {after}~{before}): {e}", flush=True)
-        return []
+    resp = fetcher.get(RSS_URL, params=_feed_params(query, after, before),
+                       headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
+                                "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8"},
+                       timeout=NEWS_TIMEOUT, retries=1)
     soup = BeautifulSoup(resp.content, "xml")
+    if not soup.find("rss"):
+        raise RuntimeError("뉴스 RSS 대신 다른 응답을 받았어요.")
     out = []
     for it in soup.find_all("item"):
         link = it.find("link")
@@ -356,12 +358,17 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
 
     def _fetch(task):
         cat, kw, af, bf = task
-        return cat, _collect_items(kw, af, bf)
+        try:
+            return cat, _collect_items(kw, af, bf), None
+        except Exception as error:
+            print(f"[google] RSS 요청 실패: {cat} · {type(error).__name__}", flush=True)
+            return cat, [], type(error).__name__
 
     seen, entries = set(), []
-    done_tasks = 0
-    with ThreadPoolExecutor(max_workers=min(max_workers, 12)) as pool:
-        for cat, rows in pool.map(_fetch, tasks):
+    done_tasks, failed_tasks = 0, 0
+    with ThreadPoolExecutor(max_workers=min(max_workers, 4)) as pool:
+        for cat, rows, error in pool.map(_fetch, tasks):
+            failed_tasks += int(error is not None)
             done_tasks += 1
             for e in rows:
                 u = e["url"]
@@ -379,6 +386,8 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
                 progress(f"RSS 수집 {done_tasks}/{len(tasks)} 구간 · 누적 {len(entries)}건")
     print(f"[google] RSS 수집 완료: {len(tasks)}개 요청 → {len(entries)}건", flush=True)
 
+    if failed_tasks == len(tasks) and tasks:
+        raise RuntimeError("뉴스 RSS에 연결하지 못했어요. 기존 목록은 유지했어요. 잠시 후 다시 수집해 주세요.")
     # 이미 저장된 URL은 재해석하지 않는다(증분). 새 기사만 남긴다.
     total = len(entries)
     entries = [e for e in entries if e["url"] not in known_urls]
@@ -427,7 +436,8 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
     msg = f"구글뉴스 수집 {len(items)}건 / {time.time() - t0:.1f}s"
     print("[google] " + msg, flush=True)
     progress(msg)
-    return items
+    warnings = [f"RSS {len(tasks)}개 요청 중 {failed_tasks}개 실패 · 확보한 기사만 반영"] if failed_tasks else []
+    return CollectionItems(items, complete=not failed_tasks, warnings=warnings)
 
 
 # ---- 고양이(반려묘) 뉴스: 별도 카테고리·검색어(구글 불리언 쿼리) ----

@@ -1729,8 +1729,8 @@ const CRAWL_UI = {
   biz: { btn: "collect-biz", msg: "msg-biz", reload: () => loadBiz() },
   security: { btn: "collect-security", msg: "msg-security", reload: () => loadSecurity() },
   event: { btn: "collect-event", msg: "msg-event", reload: () => loadEvent() },
-  boards: { btn: "collect-boards", msg: "msg-biz", reload: () => loadBiz() },
-  social: { btn: "collect-social", msg: "msg-biz", reload: () => loadBiz() },
+  boards: { btn: "collect-boards", msg: "msg-boards", reload: () => loadBiz() },
+  social: { btn: "collect-social", msg: "msg-social", reload: () => loadBiz() },
 };
 const _pollTimers = {};
 
@@ -1750,6 +1750,9 @@ function _renderCrawlState(group, st) {
   if (r.error) {
     msgEl.style.color = "#dc2626";
     msgEl.textContent = "수집 실패: " + r.error;
+  } else if (r.warning) {
+    msgEl.style.color = "#a16207";
+    msgEl.textContent = `일부 수집 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건 · ${r.warning}`;
   } else if (r.new !== undefined || r.crawled !== undefined) {
     msgEl.style.color = "#16a34a";
     const g = r.groups ? ` · 그룹 ${r.groups}개` : "";
@@ -1765,6 +1768,7 @@ async function _pollCrawl(group) {
     if (done && _pollTimers[group]) {
       clearInterval(_pollTimers[group]);
       delete _pollTimers[group];
+      if (!st.result?.error) revealCollectedBizSource(group);
       CRAWL_UI[group].reload();
       loadMeta();
     }
@@ -1777,14 +1781,31 @@ function _startPolling(group) {
   _pollCrawl(group);  // 즉시 1회
 }
 
-function runCrawl(btn, group, msgEl, reload) {
+function revealCollectedBizSource(group) {
+  const source = {biz: "news", boards: "board", social: "video"}[group];
+  if (!source) return;
+  bizSrc.add(source);
+  const map = {"동향": "news", "게시판": "board", "영상": "video"};
+  document.querySelectorAll("#biz-cats [data-cat]").forEach((cb) => {
+    cb.checked = cb.dataset.cat === "all" ? ["news", "board", "video"].every((key) => bizSrc.has(key)) : bizSrc.has(map[cb.dataset.cat]);
+  });
+}
+
+async function runCrawl(btn, group, msgEl, reload) {
   btn.disabled = true;
   msgEl.style.color = "";
   msgEl.innerHTML = catRunInline("수집 시작…");
-  // 뉴스 수집 기간은 서버 기본값(최근 2년)을 사용한다(기간 선택 UI 제거).
-  const url = "/api/crawl/" + group + "/start";
-  fetch(url, { method: "POST" }).catch(() => {});
-  _startPolling(group);
+  try {
+    const response = await fetch("/api/crawl/" + group + "/start", {method: "POST"});
+    const state = await response.json();
+    if (!response.ok || state.error) throw new Error(state.error || "수집을 시작하지 못했어요.");
+    // 시작 응답을 받은 뒤 폴링한다. 이전 실행 결과를 완료로 오인하지 않는다.
+    _startPolling(group);
+  } catch (error) {
+    btn.disabled = false;
+    msgEl.style.color = "#dc2626";
+    msgEl.textContent = "수집 시작 실패: " + error.message;
+  }
 }
 
 // 페이지 로드/복귀 시, 서버에서 진행 중인 수집이 있으면 폴링을 자동 재개한다.
@@ -1819,26 +1840,30 @@ document.getElementById("collect-news").addEventListener("click", (e) =>
   runCrawl(e.currentTarget, "news", document.getElementById("msg-news"), loadNews)
 );
 document.getElementById("collect-boards").addEventListener("click", (e) =>
-  runCrawl(e.currentTarget, "boards", document.getElementById("msg-biz"), loadBiz)
+  runCrawl(e.currentTarget, "boards", document.getElementById("msg-boards"), loadBiz)
 );
 document.getElementById("collect-social").addEventListener("click", (e) =>
-  runCrawl(e.currentTarget, "social", document.getElementById("msg-biz"), loadBiz)
+  runCrawl(e.currentTarget, "social", document.getElementById("msg-social"), loadBiz)
 );
 // ----------------------------- DB 비우기(관리자, 현재 탭만) -----------------------------
-const TAB_KO = { cat: "냥정보", game: "게임정보", news: "NC뉴스", biz: "비영리재단 동향", security: "보안뉴스", event: "행사일정", boards: "재단게시판", social: "재단영상", report: "AI리포트", food: "맛집" };
+const TAB_KO = { "biz-all": "동향 전체(동향·게시판·영상)", cat: "냥정보", game: "게임정보", news: "NC뉴스", biz: "동향 뉴스", security: "보안뉴스", event: "행사일정", boards: "재단게시판", social: "재단영상", report: "AI리포트", food: "맛집" };
 function activeTab() {
   const t = document.querySelector(".tab.active");
   return (t && t.dataset.tab) || "cat";
 }
+function purgeScope() {
+  const tab = activeTab();
+  return tab === "biz" ? (document.getElementById("biz-reset-scope")?.value || "biz-all") : tab;
+}
 async function purgeDb() {
-  const scope = activeTab();               // 현재 보고 있는 탭만 초기화
+  const scope = purgeScope();
   const label = TAB_KO[scope] || scope;
   const days = 1825;                        // 뉴스/냥정보 재수집 기간(5년)
   const btn = document.getElementById("purge-db-btn");
-  const msgEl = document.getElementById("msg-" + scope) || document.getElementById("msg-cat");
+  const msgEl = document.getElementById("msg-" + scope) || document.getElementById("msg-" + activeTab());
   btn.disabled = true;
   msgEl.style.color = "";
-  msgEl.innerHTML = catSpin(`[${label}] DB 비우는 중…`);
+  msgEl.innerHTML = catSpin(`[${label}] 재수집 준비 중…`);
   try {
     const r = await fetch("/api/admin/purge", {
       method: "POST",
@@ -1848,14 +1873,11 @@ async function purgeDb() {
     let j = {};
     try { j = await r.json(); } catch (_) { /* 응답이 JSON이 아닐 때 대비 */ }
     if (!r.ok || !j.ok) throw new Error(j.error || ("서버 오류 " + r.status));
-    const total = Object.values(j.deleted || {}).reduce((a, b) => a + (b || 0), 0);
-    msgEl.innerHTML = `${uiIcon("trash")} [${label}] 삭제 완료(${total}건). 새 수집을 시작했어요.`;
-    const el = document.getElementById("list-" + scope);
-    if (el) el.innerHTML = "";
-    (j.recollect_started || []).forEach((g) => _startPolling(g));
+    msgEl.textContent = `[${label}] 재수집을 시작했어요. 새 항목을 확보하면 교체해요.`;
+    (j.recollect_started || []).forEach((group) => _startPolling(group));
   } catch (e) {
     msgEl.style.color = "#c0392b";
-    msgEl.textContent = "DB 비우기 실패: " + e.message;
+    msgEl.textContent = "초기화·재수집 실패: " + e.message;
   } finally {
     btn.disabled = false;
   }
@@ -1867,7 +1889,8 @@ document.getElementById("purge-db-btn").addEventListener("click", () => {
     armConfirm(btn, `[${window.lunchPurgeCtx.label()}] 초기화 확정`, window.lunchPurgeCtx.run);
     return;
   }
-  const label = TAB_KO[activeTab()] || activeTab();
+  const scope = purgeScope();
+  const label = TAB_KO[scope] || scope;
   armConfirm(btn, `[${label}] 초기화 확정`, purgeDb);
 });
 
@@ -1942,6 +1965,11 @@ async function loadMeta() {
     const r = await fetchData("/api/meta");
     const m = await r.json();
     updateStorageBadge(m);
+    const combined = document.getElementById("last-biz-sources");
+    if (combined) combined.textContent = ["biz", "boards", "social"].map((key) => {
+      const label = {biz: "동향", boards: "게시판", social: "영상"}[key];
+      return `${label}: ${m[key] || "수집 기록 없음"}`;
+    }).join(" · ");
     for (const key of ["cat", "game", "news", "biz", "security", "event", "boards", "social"]) {
       const label = document.getElementById("last-" + key);
       if (label) label.textContent = fmtLast(m[key]);

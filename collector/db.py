@@ -349,14 +349,16 @@ _EVENT_COLS = ("title", "published_at", "author", "content", "url", "source_url"
                "venue", "region", "start_date", "end_date", "image_url", "source", "collected_at")
 
 
-def _upsert_many(table, cols, items):
+def _upsert_many(table, cols, items, replace_where=None, replace_args=()):
     """items를 url 기준으로 일괄 upsert. 반환: (신규수, 갱신수)."""
     if not items:
         return (0, 0)
     now = _now()
     # url은 키라서, section은 최초 소속을 유지(재수집이 다른 탭으로 뺏지 않게) 갱신에서 제외.
     _no_update = {"url", "section"}
-    set_clause = ", ".join(f"{c}=excluded.{c}" for c in cols if c not in _no_update)
+    set_clause = ", ".join(
+        f"{c}=COALESCE(NULLIF(excluded.{c}, ''), {table}.{c})" if c in ("image_url", "source_url")
+        else f"{c}=excluded.{c}" for c in cols if c not in _no_update)
     ph = ", ".join(["?"] * len(cols))
     sql = _q(f"INSERT INTO {table} ({', '.join(cols)}) VALUES ({ph}) "
              f"ON CONFLICT (url) DO UPDATE SET {set_clause}")
@@ -364,6 +366,21 @@ def _upsert_many(table, cols, items):
     for it in items:
         rows.append(tuple(now if c == "collected_at" else it.get(c) for c in cols))
     with get_conn() as conn:
+        if replace_where:
+            # 동일 URL의 확보된 사진·원문 주소는 새 수집에서 누락돼도 보존한다.
+            media_cols = [col for col in ("image_url", "source_url") if col in cols]
+            old = conn.execute(_q(f"SELECT url, {', '.join(media_cols)} FROM {table} WHERE {replace_where}"), replace_args).fetchall()
+            media = {row["url"]: dict(row) for row in old}
+            restored = []
+            for row in rows:
+                row = list(row)
+                previous = media.get(row[cols.index("url")], {})
+                for col in media_cols:
+                    index = cols.index(col)
+                    row[index] = row[index] or previous.get(col)
+                restored.append(tuple(row))
+            rows = restored
+            conn.execute(_q(f"DELETE FROM {table} WHERE {replace_where}"), replace_args)
         # 신규 건수는 저장 전후 총 개수 차이로 계산한다(COUNT는 인덱스로 빨라서, 큰 테이블/
         # Neon cold start에서도 전체 URL을 끌어오던 예전 방식보다 훨씬 빠르다).
         before = conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]
@@ -374,20 +391,21 @@ def _upsert_many(table, cols, items):
     return (new, max(0, len(items) - new))
 
 
-def upsert_news_many(items):
-    return _upsert_many("news", _NEWS_COLS, items)
+def upsert_news_many(items, replace_section=None):
+    where, args = _section_cond(replace_section) if replace_section else (None, ())
+    return _upsert_many("news", _NEWS_COLS, items, where, args)
 
 
-def upsert_board_many(items):
-    return _upsert_many("boards", _BOARD_COLS, items)
+def upsert_board_many(items, replace=False):
+    return _upsert_many("boards", _BOARD_COLS, items, "1=1" if replace else None)
 
 
-def upsert_social_many(items):
-    return _upsert_many("social", _SOCIAL_COLS, items)
+def upsert_social_many(items, replace=False):
+    return _upsert_many("social", _SOCIAL_COLS, items, "1=1" if replace else None)
 
 
-def upsert_event_many(items):
-    return _upsert_many("events", _EVENT_COLS, items)
+def upsert_event_many(items, replace=False):
+    return _upsert_many("events", _EVENT_COLS, items, "1=1" if replace else None)
 
 
 def list_events(limit=1000):

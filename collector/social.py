@@ -12,6 +12,7 @@ import time
 from bs4 import BeautifulSoup
 
 from . import extractor, fetcher
+from .collection_result import CollectionItems
 
 YT_DATA_API = "https://www.googleapis.com/youtube/v3/playlistItems"
 YT_SEARCH_API = "https://www.googleapis.com/youtube/v3/search"
@@ -211,18 +212,28 @@ def crawl_all(max_items=10, progress=None):
     progress = progress or (lambda m: None)
     t0 = time.time()
     results = []
+    warnings = []
     # 1) 재단: NC문화재단 채널
     for cfg in SOURCES:
-        items = crawl_source(cfg, max_items=max_items)
+        try:
+            items = crawl_source(cfg, max_items=max_items)
+        except Exception as error:
+            items = []
+        if not items:
+            warnings.append(cfg.get("service") or cfg.get("account") or "출처")
         results.extend(items)
         progress(f"{cfg['account']}: {len(items)}건")
     # 2) 주요 재단: 기관명으로 유튜브 검색(키 있을 때만)
     if os.environ.get("YOUTUBE_API_KEY", "").strip():
         for i, name in enumerate(MAJOR_FOUNDATIONS, 1):
             items = _crawl_youtube_search(name, name, max_items=8)
+            if not items:
+                warnings.append(name)
             results.extend(items)
             progress(f"주요 재단 {i}/{len(MAJOR_FOUNDATIONS)} · {name}: {len(items)}건")
     else:
         progress("주요 재단: YOUTUBE_API_KEY 없음 → 건너뜀")
     print(f"[social] 전체 완료: 총 {len(results)}건 / {time.time() - t0:.1f}s", flush=True)
-    return results
+    return CollectionItems(results, complete=not warnings,
+                           warnings=["일부 출처에서 항목을 확보하지 못했어요: " + ", ".join(warnings)] if warnings else [])
+
