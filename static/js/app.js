@@ -1136,10 +1136,28 @@ function renderBizCombined(el, list) {
     (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab }),
     "표시할 소식이 아직 없어요.");
 }
+function publicationTime(value) {
+  const text = String(value || "").trim();
+  // 게시판의 YYYYMMDD와 뉴스·영상의 YYYY-MM-DD HH:mm 형식을
+  // 동일한 시간값으로 비교한다. 문자열 비교는 9월 게시판을 10월 뉴스보다 앞에 둔다.
+  const compact = text.match(/^(\d{4})(\d{2})(\d{2})$/);
+  let iso = compact ? `${compact[1]}-${compact[2]}-${compact[3]}` : text;
+  iso = iso.replace(/^(\d{4})[./](\d{1,2})[./](\d{1,2})/, (_, y, m, d) => `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`);
+  if (!/^\d{4}-\d{2}-\d{2}(?:$|[ T])/.test(iso)) return -Infinity;
+  iso = iso.replace(" ", "T");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) iso += "T00:00:00";
+  // 시간대 없는 저장값도 브라우저의 지역 설정과 무관하게 같은 순서를 유지한다.
+  if (!/(?:Z|[+-]\d{2}:?\d{2})$/i.test(iso)) iso += "Z";
+  const ts = Date.parse(iso);
+  return Number.isFinite(ts) ? ts : -Infinity;
+}
 function mergeBiz(biz, boards, social) {
   const tag = (arr, src, tab) => (Array.isArray(arr) ? arr : []).map((it) => ({ ...it, _src: src, _tab: tab }));
   return [...tag(biz, "news", "biz"), ...tag(boards, "board", "boards"), ...tag(social, "video", "social")]
-    .sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
+    .sort((a, b) => {
+      const at = publicationTime(a.published_at), bt = publicationTime(b.published_at);
+      return at === bt ? 0 : at > bt ? -1 : 1;
+    });
 }
 let _bizBoards = [], _bizSocial = [];
 async function loadBiz() {
