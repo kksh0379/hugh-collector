@@ -432,10 +432,17 @@ def newscheck():
         except Exception as e:  # noqa: BLE001
             checks[name] = {"ok": False, "error": f"{type(e).__name__}: {e}",
                             "ms": int((time.time() - t0) * 1000)}
+    try:
+        images = {"counts": db.news_image_counts("biz"),
+                  "scheduler_enabled": os.environ.get("ENABLE_SCHEDULER", "1") == "1",
+                  "batch_limit": IMG_ENRICH_MAX, "busy": _news_image_locks["biz"].locked()}
+    except Exception as e:
+        images = {"error": type(e).__name__}
     return jsonify({
         "db_ready": bool(ready),
         "backend": db.BACKEND,
         "checks": checks,
+        "image_enrichment": images,
         "cache_last_errors": _PUBLIC_READS.last_errors(),
     })
 

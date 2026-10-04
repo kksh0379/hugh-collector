@@ -555,6 +555,16 @@ def news_needs_enrich(limit=200, section=None):
         return [dict(r) for r in rows]
 
 
+def news_image_counts(section):
+    """공개 진단용 집계만 반환. 기사 본문·계정 정보는 포함하지 않는다."""
+    with get_conn() as conn:
+        row = conn.execute(_q("SELECT COUNT(*) AS total, "
+                           "SUM(CASE WHEN image_url IS NOT NULL AND image_url != '' THEN 1 ELSE 0 END) AS images, "
+                           "SUM(CASE WHEN enrich_checked_at IS NOT NULL THEN 1 ELSE 0 END) AS checked "
+                           "FROM news WHERE section=?"), (section,)).fetchone()
+        return {key: int(row[key] or 0) for key in ("total", "images", "checked")}
+
+
 def mark_news_enrich_attempt(urls):
     """성공/실패 모두 확인 시각을 기록해 다음 후보로 진행. 초기화 시 행과 함께 제거."""
     checked = datetime.now(timezone.utc).isoformat(timespec="seconds")
