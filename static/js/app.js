@@ -2899,8 +2899,13 @@ function lunchLocationLabel(location) {
     renderGpsButton($("lunch-gps-refresh"), "위치 다시 확인", gpsLocating, "위치 확인 중");
     if (gpsDownloading && $("lunch-gps-refresh")) $("lunch-gps-refresh").disabled = true;
     const download = $("lunch-gps-download");
-    renderGpsButton(download, "주변 맛집 다운로드", gpsDownloading, "다운로드 중");
-    if (download) { download.hidden = !(LUNCH.downloadNeeded || gpsDownloading); if (gpsLocating) download.disabled = true; }
+    if (download) {
+      download.textContent = "주변 맛집 다운로드";
+      download.hidden = !LUNCH.downloadNeeded || gpsDownloading;
+      download.disabled = gpsLocating;
+    }
+    const downloadStatus = $("lunch-gps-download-status");
+    if (downloadStatus) downloadStatus.hidden = !gpsDownloading;
     const collect = $("lunch-collect"), add = $("lunch-add");
     if (collect) collect.disabled = gps;
     if (add) add.disabled = gps;
