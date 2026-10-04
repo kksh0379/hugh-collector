@@ -56,7 +56,7 @@ CONTEXT_HQ = ["게임", "게임즈", "소프트", "리니지", "아이온", "블
               "쓰론", "throne", "tl", "김택진", "판교", "mmorpg", "신작", "게임사",
               "게임업계", "게임주", "엔터", "ip", "출시", "앱마켓", "모바일게임", "pc게임"]
 NEWS_TIMEOUT = 10  # 뉴스 원문 해석은 빨리 실패시켜(스냅샷 폴백) 전체 수집을 지연시키지 않음
-FULLBODY_MAX = 150  # 새 기사가 이보다 많으면 원문 해석 생략(스냅샷만) → 대량 백필 폭주 방지
+FULLBODY_MAX = 150  # 대량 수집도 최신 150건은 원문 조회. 나머지는 저장 후 보강
 # 진단 등 호환용 평면 키워드 목록
 KEYWORDS = [kw for kws in CATEGORIES.values() for kw in kws]
 RECENT_DAYS = 1825  # 최근 5년 기사 수집
@@ -389,26 +389,21 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
     items = []
     if entries:
         n = len(entries)
-        if n > FULLBODY_MAX:
-            # 대량(백필 등): 원문 해석(batchexecute) 생략하고 RSS 요약(snippet)만 사용.
-            # → 수천 건도 빠르게 처리, 구글 rate-limit/차단 회피, 서버 부하 급감.
-            progress(f"새 기사 {n}건 — 요약(스냅샷)만 사용(대량)")
-            processed = []
-            for e in entries:
-                e["content"] = e.get("snippet") or ""
-                processed.append(e)
-        else:
-            # 소량(일상 증분): 원문 해석 시도(병렬)로 본문 요약 품질 확보.
-            progress(f"새 기사 요약 처리 0/{n}")
-            processed = []
-            with ThreadPoolExecutor(max_workers=max_workers) as pool:
-                futures = [pool.submit(_summary_from_article, e) for e in entries]
-                done = 0
-                for fut in as_completed(futures):
-                    processed.append(fut.result())
-                    done += 1
-                    if done % 5 == 0 or done == n:
-                        progress(f"새 기사 요약 처리 {done}/{n}")
+        # 대량 수집도 화면에 먼저 보이는 최신 기사부터 원문·사진을 확보한다.
+        # 나머지는 빠르게 RSS로 저장하고 섹션별 보강 작업이 계속 처리한다.
+        entries.sort(key=lambda e: e.get("published_at") or "", reverse=True)
+        originals, deferred = entries[:FULLBODY_MAX], entries[FULLBODY_MAX:]
+        processed = []
+        for entry in deferred:
+            entry["content"] = entry.get("snippet") or ""
+            processed.append(entry)
+        progress(f"최신 기사 원문·이미지 처리 0/{len(originals)} · 후속 보강 {len(deferred)}건")
+        with ThreadPoolExecutor(max_workers=min(max_workers, 4)) as pool:
+            futures = [pool.submit(_summary_from_article, entry) for entry in originals]
+            for done, future in enumerate(as_completed(futures), 1):
+                processed.append(future.result())
+                if done % 5 == 0 or done == len(originals):
+                    progress(f"최신 기사 원문·이미지 처리 {done}/{len(originals)} · 후속 보강 {len(deferred)}건")
         _flt = _passes_filters if keyword_filter else _passes_date
 
         def _ok(e):

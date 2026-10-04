@@ -1758,50 +1758,45 @@ def _purge_news_noise(progress=None):
 IMG_ENRICH_MAX = int(os.environ.get("IMG_ENRICH_MAX", "200"))  # 수집 1회당 보강 개수 상한
 
 
-_news_image_lock = threading.Lock()
+_news_image_locks = {section: threading.Lock() for section in ("nc", "cat", "game", "biz", "sec")}
 
 
-def _enrich_news_images(progress=None, section="nc"):
-    """탭별 후보를 순차 보강하고 커서를 저장해 과거 누락까지 이어 처리한다."""
-    if IMG_ENRICH_MAX <= 0 or not _news_image_lock.acquire(blocking=False):
+def _enrich_news_images(progress=None, section="nc", limit=None):
+    """최신 미처리 후보부터 보강. 동향은 경쟁 작업이 있어도 정기 작업이 이어 처리한다."""
+    lock = _news_image_locks[section]
+    if IMG_ENRICH_MAX <= 0 or not lock.acquire(blocking=False):
         return
     try:
-        key = f"news_image_cursor_v368_{section}"
-        cursor = db.get_meta(key)
-        before_id = int(cursor) if cursor and str(cursor).isdigit() else None
-        rows = db.news_needs_enrich(limit=IMG_ENRICH_MAX, section=section, before_id=before_id)
-        if not rows and before_id is not None:
-            rows = db.news_needs_enrich(limit=IMG_ENRICH_MAX, section=section)
+        rows = db.news_needs_enrich(limit=min(limit or IMG_ENRICH_MAX, IMG_ENRICH_MAX), section=section)
         if not rows:
             return
         if progress:
             progress(f"본문·이미지 보강 0/{len(rows)}")
         n = 0
-        # 20건 단위로 저장해 원문 조회가 모두 끝나기 전에 확보한 사진부터 표시한다.
         for offset in range(0, len(rows), 20):
             chunk = rows[offset:offset + 20]
             data = google_news.enrich_articles(chunk, progress=progress)
             updated = db.apply_news_enrich(data)
+            db.mark_news_enrich_attempt([row["url"] for row in chunk])
             n += updated
-            db.set_meta(key, str(chunk[-1]["id"]))
             if updated:
                 _invalidate_read_cache()
         print(f"[crawl] {section} 본문·이미지 보강 {n}/{len(rows)}건", flush=True)
     except Exception as e:  # noqa: BLE001
         print(f"[crawl] 보강 실패: {e}", flush=True)
     finally:
-        _news_image_lock.release()
+        lock.release()
 
 
 def _bootstrap_biz_images():
-    """배포 후 기존 동향의 누락 이미지부터 한 묶음 보강. 요청 처리는 기다리지 않는다."""
+    """배포/정기 실행 때 동향 미처리 후보를 계속 보강. 방문자 요청은 기다리지 않는다."""
     if os.environ.get("ENABLE_SCHEDULER", "1") != "1":
         return
     try:
         if _ensure_db(force=True):
-            _enrich_news_images(section="biz")
+            _enrich_news_images(section="biz", limit=40)
     except Exception as e:
-        print(f"[images] 동향 이미지 초기 보강 실패: {type(e).__name__}", flush=True)
+        print(f"[images] 동향 이미지 보강 실패: {type(e).__name__}", flush=True)
 
 
 def _save_boards(items):
@@ -2348,6 +2343,8 @@ def _start_scheduler():
     sched = BackgroundScheduler(daemon=True, timezone=KST)
     # 첫 실행은 4시간 뒤. 즉시 수집은 관리자가 버튼으로.
     sched.add_job(_batch_all, "interval", hours=4, id="crawl_all", coalesce=True, max_instances=1)
+    sched.add_job(_bootstrap_biz_images, "interval", minutes=2, id="biz_images",
+                  coalesce=True, max_instances=1)
     sched.start()
     print("[scheduler] 4시간 주기 수집 배치 시작", flush=True)
 

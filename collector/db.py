@@ -16,7 +16,7 @@ import re
 import sqlite3
 import time
 from contextlib import contextmanager, nullcontext
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "collector.db")
 
@@ -132,7 +132,7 @@ _DDL = [
     f"""CREATE TABLE IF NOT EXISTS news (
         id {_AUTO_PK}, title TEXT, published_at TEXT, author TEXT, content TEXT,
         url TEXT UNIQUE, content_hash TEXT, group_key TEXT, source_url TEXT,
-        category TEXT, image_url TEXT, section TEXT, collected_at TEXT,
+        category TEXT, image_url TEXT, section TEXT, collected_at TEXT, enrich_checked_at TEXT,
         ai_tags TEXT, ai_importance TEXT, ai_insight TEXT, ai_at TEXT
     )""",
     f"""CREATE TABLE IF NOT EXISTS boards (
@@ -222,6 +222,7 @@ def init_db():
             conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS source_url TEXT")
             conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS category TEXT")
             conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS image_url TEXT")
+            conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS enrich_checked_at TEXT")
             conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS section TEXT")
             # 보안뉴스 AI 후처리(자동 태깅/중요도/시사점)
             conn.execute("ALTER TABLE news ADD COLUMN IF NOT EXISTS ai_tags TEXT")
@@ -243,6 +244,8 @@ def init_db():
                 conn.execute("ALTER TABLE news ADD COLUMN category TEXT")
             if "image_url" not in cols:
                 conn.execute("ALTER TABLE news ADD COLUMN image_url TEXT")
+            if "enrich_checked_at" not in cols:
+                conn.execute("ALTER TABLE news ADD COLUMN enrich_checked_at TEXT")
             if "section" not in cols:
                 conn.execute("ALTER TABLE news ADD COLUMN section TEXT")
             for _c in ("ai_tags", "ai_importance", "ai_insight", "ai_at"):
@@ -535,23 +538,29 @@ def all_news_urls():
         return {r["url"] for r in rows}
 
 
-def news_needs_enrich(limit=200, section=None, before_id=None):
-    """섹션별 보강 후보. ID 커서로 실패한 동일 최신 기사만 반복하지 않는다."""
-    where = ["(image_url IS NULL OR image_url = '' OR content IS NULL OR LENGTH(content) < 80)"]
-    params = []
+def news_needs_enrich(limit=200, section=None):
+    """미처리 후보를 화면과 같은 최신순으로 조회. 실패는 24시간 후 재시도."""
+    where = ["(image_url IS NULL OR image_url = '' OR content IS NULL OR LENGTH(content) < 80)",
+             "(enrich_checked_at IS NULL OR enrich_checked_at < ?)"]
+    params = [(datetime.now(timezone.utc) - timedelta(hours=24)).isoformat(timespec="seconds")]
     if section:
         where.append("section = ?")
         params.append(section)
-    if before_id is not None:
-        where.append("id < ?")
-        params.append(before_id)
     params.append(limit)
     with get_conn() as conn:
         rows = conn.execute(
             _q("SELECT id, url, source_url, content, image_url FROM news WHERE "
-               + " AND ".join(where) + " ORDER BY id DESC LIMIT ?"), tuple(params)
+               + " AND ".join(where) + " ORDER BY published_at DESC, id DESC LIMIT ?"), tuple(params)
         ).fetchall()
         return [dict(r) for r in rows]
+
+
+def mark_news_enrich_attempt(urls):
+    """성공/실패 모두 확인 시각을 기록해 다음 후보로 진행. 초기화 시 행과 함께 제거."""
+    checked = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with get_conn() as conn:
+        conn.cursor().executemany(_q("UPDATE news SET enrich_checked_at=? WHERE url=?"),
+                                  [(checked, url) for url in urls])
 
 
 def apply_news_enrich(url_to_data):

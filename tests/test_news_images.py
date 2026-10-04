@@ -48,31 +48,65 @@ class ImageExtractionTests(unittest.TestCase):
 
 
 class ImageQueueTests(unittest.TestCase):
-    def test_section_cursor_updates_preserve_content(self):
+    def test_reset_recollect_uses_latest_date_and_fresh_attempt_state(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(db, 'DB_PATH', directory + '/test.db'), patch.object(db, '_PG', False):
+            db.init_db()
+            with db.get_conn() as conn:
+                conn.executemany('INSERT INTO news (id, url, content, section, published_at) VALUES (?, ?, ?, ?, ?)', [(1, 'latest', 'existing ' * 15, 'biz', '2026-10-04'), (2, 'other', 'other ' * 15, 'cat', '2026-10-04'), (3, 'older', 'older ' * 30, 'biz', '2026-01-01')])
+            self.assertEqual([r['url'] for r in db.news_needs_enrich(limit=1, section='biz')], ['latest'])
+            db.mark_news_enrich_attempt(['latest'])
+            self.assertEqual([r['url'] for r in db.news_needs_enrich(section='biz')], ['older'])
+            db.apply_news_enrich({'older': {'image_url': 'https://paper.example/old.jpg'}})
+            with db.get_conn() as conn:
+                self.assertEqual(conn.execute("SELECT content FROM news WHERE url='older'").fetchone()['content'], 'older ' * 30)
+                self.assertIsNone(conn.execute("SELECT image_url FROM news WHERE url='other'").fetchone()['image_url'])
+            # A legacy cursor survives in metadata; it must never hide newly inserted rows.
+            db.set_meta('news_image_cursor_v368_biz', '1')
+            db.clear_news_section('biz')
+            with db.get_conn() as conn:
+                conn.execute("INSERT INTO news (id, url, content, section, published_at) VALUES (9, 'latest', 'text', 'biz', '2026-10-04')")
+            self.assertEqual([r['url'] for r in db.news_needs_enrich(section='biz')], ['latest'])
+
+    def test_old_schema_migrates_without_losing_news(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(db, 'DB_PATH', directory + '/test.db'), patch.object(db, '_PG', False):
             with db.get_conn() as conn:
-                conn.execute('CREATE TABLE news (id INTEGER PRIMARY KEY, url TEXT, source_url TEXT, content TEXT, image_url TEXT, section TEXT)')
-                conn.executemany('INSERT INTO news VALUES (?, ?, ?, ?, ?, ?)', [(1, 'old', None, 'existing ' * 15, None, 'biz'), (2, 'other', None, 'other ' * 15, None, 'cat'), (3, 'new', None, 'new ' * 30, None, 'biz')])
-            self.assertEqual([r['url'] for r in db.news_needs_enrich(limit=1, section='biz')], ['new'])
-            self.assertEqual([r['url'] for r in db.news_needs_enrich(section='biz', before_id=3)], ['old'])
-            db.apply_news_enrich({'old': {'image_url': 'https://paper.example/old.jpg'}})
+                conn.execute(db._DDL[0].replace(' enrich_checked_at TEXT,', ''))
+                conn.execute("INSERT INTO news (url, title, section) VALUES ('saved', 'preserve me', 'biz')")
+            db.init_db()
             with db.get_conn() as conn:
-                self.assertEqual(conn.execute("SELECT content FROM news WHERE url='old'").fetchone()['content'], 'existing ' * 15)
-                self.assertIsNone(conn.execute("SELECT image_url FROM news WHERE url='other'").fetchone()['image_url'])
+                row = conn.execute("SELECT title, enrich_checked_at FROM news WHERE url='saved'").fetchone()
+                self.assertEqual(row['title'], 'preserve me'); self.assertIsNone(row['enrich_checked_at'])
 
-    def test_failed_images_advance_cursor(self):
-        module = ast.parse(Path('app.py').read_text())
+    def test_failed_candidates_marked_and_busy_job_can_resume(self):
+        module = ast.parse((Path(__file__).resolve().parents[1] / 'app.py').read_text())
         fn = next(n for n in module.body if isinstance(n, ast.FunctionDef) and n.name == '_enrich_news_images')
-        meta, calls = {}, []
+        marked, calls = [], []
         def candidates(**kwargs):
             calls.append(kwargs)
-            return [{'id': 9, 'url': 'a'}] if kwargs['before_id'] is None else [{'id': 8, 'url': 'b'}]
-        fake_db = SimpleNamespace(get_meta=lambda k: meta.get(k), set_meta=lambda k,v: meta.update({k:v}), news_needs_enrich=candidates, apply_news_enrich=lambda data: 0)
-        scope = {'IMG_ENRICH_MAX': 200, '_news_image_lock': threading.Lock(), 'db': fake_db, 'google_news': SimpleNamespace(enrich_articles=lambda rows, **kwargs: {}), '_invalidate_read_cache': lambda: None}
+            return [{'url': 'a'}] if not marked else []
+        fake_db = SimpleNamespace(news_needs_enrich=candidates, apply_news_enrich=lambda data: 0,
+                                  mark_news_enrich_attempt=lambda urls: marked.extend(urls))
+        lock = threading.Lock()
+        scope = {'IMG_ENRICH_MAX': 200, '_news_image_locks': {'biz': lock}, 'db': fake_db,
+                 'google_news': SimpleNamespace(enrich_articles=lambda rows, **kwargs: {}), '_invalidate_read_cache': lambda: None}
         exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
-        scope['_enrich_news_images'](section='biz'); scope['_enrich_news_images'](section='biz')
-        self.assertEqual([c['before_id'] for c in calls], [None, 9])
-        self.assertEqual(meta['news_image_cursor_v368_biz'], '8')
+        lock.acquire(); scope['_enrich_news_images'](section='biz'); lock.release()
+        self.assertEqual(calls, [])
+        scope['_enrich_news_images'](section='biz', limit=40)
+        self.assertEqual(marked, ['a']); self.assertEqual(calls[0]['limit'], 40)
+
+    def test_large_crawl_still_fetches_newest_originals(self):
+        rows = [{'url': 'old', 'title': 'old', 'published_at': '2026-01-01', 'snippet': 'rss'},
+                {'url': 'latest', 'title': 'latest', 'published_at': '2026-10-04', 'snippet': 'rss'},
+                {'url': 'middle', 'title': 'middle', 'published_at': '2026-09-01', 'snippet': 'rss'}]
+        fetched = []
+        def original(entry):
+            fetched.append(entry['url']); return dict(entry, content='original', image_url='https://paper.example/' + entry['url'] + '.jpg')
+        with patch.object(google_news, '_date_windows', return_value=[('a','b')]), patch.object(google_news, '_collect_items', return_value=rows), patch.object(google_news, '_summary_from_article', side_effect=original), patch.object(google_news, 'FULLBODY_MAX', 2), patch.object(google_news, '_passes_date', return_value=True):
+            result = google_news.crawl(categories={'test': ['keyword']}, keyword_filter=False)
+        self.assertEqual(set(fetched), {'latest', 'middle'})
+        by_url = {r['url']: r for r in result}
+        self.assertTrue(by_url['latest']['image_url']); self.assertEqual(by_url['old']['content'], 'rss')
 
 
 if __name__ == '__main__':
