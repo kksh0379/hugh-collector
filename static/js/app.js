@@ -3077,7 +3077,7 @@ function lunchLocationLabel(location) {
     const bar = $("lunch-cats"); if (!bar) return;
     const counts = catCounts();
     const cats = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-    if (!LUNCH.rows.length) { bar.innerHTML = ""; return; }
+    if (!LUNCH.rows.length && LUNCH.curLoc?.id !== "gps") { bar.innerHTML = ""; return; }
     if (LUNCH.cat !== "전체" && !counts[LUNCH.cat]) LUNCH.cat = "전체";
     const chip = (key, label, n) => {
       const on = !LUNCH.reviewedOnly && LUNCH.cat === key;   // 검증된 곳 선택 중엔 일반 칩 off
@@ -3086,9 +3086,7 @@ function lunchLocationLabel(location) {
     };
     // 평점·리뷰 있는 '검증된 곳'을 별도 칩으로 맨 앞에 고정.
     const reviewedN = LUNCH.rows.filter((r) => Number(r.review_count || 0) > 0).length;
-    const reviewedChip = reviewedN
-      ? `<label class="lcat-chip lcat-star${LUNCH.reviewedOnly ? " on" : ""}" title="평점·리뷰가 있는 검증된 곳만 보기"><input type="radio" name="lcat" value="__reviewed"${LUNCH.reviewedOnly ? " checked" : ""}>${uiIcon("star")} 검증된 곳 <b>${reviewedN}</b></label>`
-      : "";
+    const reviewedChip = `<label class="lcat-chip lcat-star${LUNCH.reviewedOnly ? " on" : ""}" title="평점·리뷰가 있는 검증된 곳만 보기"><input type="radio" name="lcat" value="__reviewed"${LUNCH.reviewedOnly ? " checked" : ""}>${uiIcon("star")} 검증된 곳 <b>${reviewedN}</b></label>`;
     bar.innerHTML = reviewedChip + chip("전체", "전체", LUNCH.rows.length) + cats.map((c) => chip(c, c, counts[c])).join("");
     const rev = $("lunch-reviewed-only"); if (rev) rev.checked = LUNCH.reviewedOnly;   // 기존 체크박스 동기화
   }
@@ -3165,7 +3163,9 @@ function lunchLocationLabel(location) {
         : `<li class="lunch-loading">${uiIcon("bowl")} 아직 등록된 식당이 없어요${isAdmin() ? "<br>“주변 식당 수집”을 눌러 채워주세요" : ""}</li>`;
       return;
     }
-    if (!fs.length) { list.innerHTML = `<li class="lunch-loading">조건에 맞는 식당이 없어요</li>`; return; }
+    if (!fs.length) { list.innerHTML = LUNCH.reviewedOnly && !LUNCH.rows.some((r) => Number(r.review_count || 0) > 0)
+      ? `<li class="lunch-loading">이 주변에는 아직 평점·후기가 등록된 맛집이 없어요.<br>전체 목록에서 맛집을 확인하고 방문 후 후기를 남겨 주세요.</li>`
+      : `<li class="lunch-loading">조건에 맞는 식당이 없어요</li>`; return; }
     list.innerHTML = fs.map(lunchCard).join("");
   }
 
