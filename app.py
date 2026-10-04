@@ -1807,9 +1807,9 @@ def _bootstrap_biz_images():
     try:
         if _ensure_db(force=True):
             if db.news_image_counts("biz")["total"] == 0:
-                last = float(db.get_meta("biz_empty_recovery_v370", "0") or 0)
+                last = float(db.get_meta("biz_empty_recovery_v371", "0") or 0)
                 if time.time() - last >= 3600 and not _JOBS.get("biz", {}).get("running"):
-                    db.set_meta("biz_empty_recovery_v370", str(time.time()))
+                    db.set_meta("biz_empty_recovery_v371", str(time.time()))
                     _start_job("biz", days=30)
             else:
                 _enrich_news_images(section="biz", limit=40)
@@ -1883,8 +1883,12 @@ def _do_crawl(group, progress=None, days=None, replace=False):
         print(f"[crawl] {group} 오류: {e}", flush=True)
         result = {"crawled": 0, "new": 0, "updated": 0, "duplicates": 0, "error": str(e)}
         progress(f"오류: {e}")
-    result["last_crawled_at"] = _now_kst()  # 서버 기준 마지막 수집 일시
-    db.set_meta(f"last_crawl_{group}", result["last_crawled_at"])
+    result["attempted_at"] = _now_kst()
+    db.set_meta(f"last_attempt_{group}", result["attempted_at"])
+    if not result.get("error"):
+        result["last_crawled_at"] = result["attempted_at"]
+        db.set_meta(f"last_crawl_{group}", result["last_crawled_at"])
+    db.set_meta(f"last_result_{group}", json.dumps(result, ensure_ascii=False))
     _last_result[group] = result
     # 실행 로그 기록(관리자가 언제·성공/실패를 볼 수 있게)
     try:
@@ -1894,7 +1898,7 @@ def _do_crawl(group, progress=None, days=None, replace=False):
             status = "부분 성공" if result.get("warning") else "성공"
             detail = (f"신규 {result.get('new', 0)} · 갱신 {result.get('updated', 0)} "
                       f"· 수집 {result.get('crawled', 0)}")
-        db.add_run_log(group, status, detail, result["last_crawled_at"])
+        db.add_run_log(group, status, detail, result["attempted_at"])
     except Exception as e:  # noqa: BLE001
         print(f"[runlog] 기록 실패: {e}", flush=True)
     return result
@@ -1956,7 +1960,13 @@ def crawl_job_status(group):
     st = _JOBS.get(group)
     if not st:
         # 이번 세션에 실행 이력이 없으면 마지막 저장 결과만 참고로 반환
-        return jsonify({"running": False, "progress": None, "result": _last_result.get(group)})
+        result = _last_result.get(group)
+        if result is None:
+            try:
+                result = json.loads(db.get_meta(f"last_result_{group}", "null"))
+            except Exception:
+                result = None
+        return jsonify({"running": False, "progress": None, "result": result})
     # 30분 넘게 '실행 중'이면 멈춘 것으로 간주 → UI가 풀리도록 완료 처리
     if st.get("running") and (time.time() - st.get("started_ts", 0) > _JOB_STALE_SEC):
         st["running"] = False

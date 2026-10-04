@@ -1741,22 +1741,24 @@ function _renderCrawlState(group, st) {
   if (st.running) {
     if (btn) btn.disabled = true;
     msgEl.style.color = "";
-    msgEl.innerHTML = catRunInline(st.progress || "수집 중…");
+    msgEl.innerHTML = catRunInline(({biz: "동향", boards: "게시판", social: "영상"}[group] || "수집") + " · " + (st.progress || "수집 중…"));
     return false;
   }
   // 완료(또는 미실행)
   if (btn) btn.disabled = false;
   const r = st.result || {};
+  const label = {biz: "동향", boards: "게시판", social: "영상"}[group];
+  const prefix = label ? `${label} · ` : "";
   if (r.error) {
     msgEl.style.color = "#dc2626";
-    msgEl.textContent = "수집 실패: " + r.error;
+    msgEl.textContent = prefix + "수집 실패: " + r.error;
   } else if (r.warning) {
     msgEl.style.color = "#a16207";
-    msgEl.textContent = `일부 수집 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건 · ${r.warning}`;
+    msgEl.textContent = `${prefix}일부 수집 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건 · ${r.warning}`;
   } else if (r.new !== undefined || r.crawled !== undefined) {
     msgEl.style.color = "#16a34a";
     const g = r.groups ? ` · 그룹 ${r.groups}개` : "";
-    msgEl.textContent = `수집 완료 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건${g}`;
+    msgEl.textContent = `${prefix}수집 완료 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건${g}`;
   }
   return true;  // 종료됨
 }
@@ -1815,6 +1817,7 @@ async function resumeCrawls() {
     try {
       const st = await (await fetch("/api/crawl/" + group + "/status")).json();
       if (st.running) _startPolling(group);
+      else _renderCrawlState(group, st);
     } catch (e) { /* 무시 */ }
   }
 }
@@ -1938,7 +1941,7 @@ function toAmPm(ts) {
   return `${m[1]} ${ampm} ${h}:${m[3]}`;
 }
 function fmtLast(ts) {
-  return ts ? `마지막 수집: ${toAmPm(ts)} (서버 기준)` : "아직 수집 기록 없음";
+  return ts ? `최근 수집 성공: ${toAmPm(ts)} (서버 기준)` : "아직 수집 성공 기록 없음";
 }
 function updateStorageBadge(meta) {
   const badge = document.getElementById('storage-badge');
@@ -1966,9 +1969,9 @@ async function loadMeta() {
     const m = await r.json();
     updateStorageBadge(m);
     const combined = document.getElementById("last-biz-sources");
-    if (combined) combined.textContent = ["biz", "boards", "social"].map((key) => {
+    if (combined) combined.textContent = "최근 수집 성공 · " + ["biz", "boards", "social"].map((key) => {
       const label = {biz: "동향", boards: "게시판", social: "영상"}[key];
-      return `${label}: ${m[key] || "수집 기록 없음"}`;
+      return `${label}: ${m[key] ? toAmPm(m[key]) : "성공 기록 없음"}`;
     }).join(" · ");
     for (const key of ["cat", "game", "news", "biz", "security", "event", "boards", "social"]) {
       const label = document.getElementById("last-" + key);

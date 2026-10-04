@@ -1,5 +1,6 @@
 import ast
 import copy
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,6 +24,18 @@ class FeedTests(unittest.TestCase):
     def test_all_rss_failures_raise_instead_of_zero_success(self):
         with patch.object(google_news,'_date_windows',return_value=[('a','b')]), patch.object(google_news,'_collect_items',side_effect=RuntimeError('503')):
             with self.assertRaisesRegex(RuntimeError,'RSS'): google_news.crawl(categories={'test':['query']})
+
+    def test_unavailable_feed_stops_before_all_windows(self):
+        with patch.object(google_news, '_date_windows', return_value=[('a', 'b')] * 8), patch.object(google_news, '_collect_items', side_effect=RuntimeError('503')) as get:
+            with self.assertRaisesRegex(RuntimeError, 'RSS'):
+                google_news.crawl(categories={'test': ['query']})
+            self.assertEqual(get.call_count, 4)
+
+    def test_one_bad_window_does_not_stop_good_windows(self):
+        with patch.object(google_news, '_date_windows', return_value=[('a', 'b')] * 8), patch.object(google_news, '_collect_items', side_effect=[RuntimeError('503')] + [[]] * 7) as get:
+            result = google_news.crawl(categories={'test': ['query']})
+            self.assertEqual(get.call_count, 8)
+            self.assertFalse(result.complete)
 
     def test_partly_failed_boards_are_marked_incomplete(self):
         with patch.object(boards,'SOURCES',[{'service':'a','category':'x'},{'service':'b','category':'x'}]), patch.object(boards,'crawl_source',side_effect=[[{'url':'a'}],[]]):
@@ -70,14 +83,27 @@ class ControllerTests(unittest.TestCase):
         result,starts=self.purge('biz-all',True);self.assertEqual(result[1],409);self.assertEqual(starts,[])
     def crawl(self,items,replace=True):
         saved=[]
-        ctx={'_CRAWLERS':{'biz':(lambda **kwargs:items,lambda data,**kwargs:saved.append(kwargs) or {'new':len(data),'updated':0})},'_ensure_db':lambda **kw:True,'_purge_biz_nc':lambda *args:None,'_enrich_news_images':lambda *args,**kw:None,'_invalidate_read_cache':lambda:None,'_now_kst':lambda:'now','_last_result':{},'db':SimpleNamespace(set_meta=lambda *args:None,add_run_log=lambda *args:None)}
+        self.metadata = {}
+        ctx={'json':json,'_CRAWLERS':{'biz':(lambda **kwargs:items,lambda data,**kwargs:saved.append(kwargs) or {'new':len(data),'updated':0})},'_ensure_db':lambda **kw:True,'_purge_biz_nc':lambda *args:None,'_enrich_news_images':lambda *args,**kw:None,'_invalidate_read_cache':lambda:None,'_now_kst':lambda:'now','_last_result':{},'db':SimpleNamespace(set_meta=lambda key,value:self.metadata.update({key:value}),add_run_log=lambda *args:None)}
         return function('_do_crawl',ctx)('biz',replace=replace),saved
     def test_zero_rebuild_is_failure_and_never_saves(self):
         result,saved=self.crawl([]);self.assertIn('error',result);self.assertEqual(saved,[])
+        self.assertNotIn('last_crawl_biz', self.metadata)
+        self.assertEqual(self.metadata['last_attempt_biz'], 'now')
+        self.assertIn('error', json.loads(self.metadata['last_result_biz']))
     def test_partial_rebuild_only_upserts_and_reports_warning(self):
         result,saved=self.crawl(CollectionItems([{'url':'a'}],complete=False,warnings=['one source failed']));self.assertIn('warning',result);self.assertFalse(saved[0]['replace'])
     def test_complete_rebuild_replaces(self):
         result,saved=self.crawl(CollectionItems([{'url':'a'}]));self.assertNotIn('error',result);self.assertTrue(saved[0]['replace'])
+        self.assertEqual(self.metadata['last_crawl_biz'], 'now')
+    def test_status_after_restart_restores_saved_failure(self):
+        result = {'error': 'HTTP 503', 'attempted_at': 'now'}
+        ctx = {'_JOBS': {}, '_last_result': {}, 'json': json,
+               'db': SimpleNamespace(get_meta=lambda *args: json.dumps(result)), 'jsonify': lambda x: x}
+        state = function('crawl_job_status', ctx)('biz')
+        self.assertFalse(state['running'])
+        self.assertEqual(state['result'], result)
+
     def test_background_job_forwards_replace_flag(self):
         calls=[];state={'running':True};ctx={'_JOBS':{'biz':state},'_do_crawl':lambda group,**kw:calls.append(kw) or {'new':1}}
         function('_job_run',ctx)('biz',30,True);self.assertTrue(calls[0]['replace']);self.assertFalse(state['running'])

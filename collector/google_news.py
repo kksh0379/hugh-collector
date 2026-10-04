@@ -17,6 +17,7 @@ import base64
 import json
 import re
 import time
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -27,6 +28,8 @@ from . import extractor, fetcher
 from .collection_result import CollectionItems
 
 RSS_URL = "https://news.google.com/rss/search"
+# 여러 탭의 동시 수집도 Google RSS 요청은 두 개까지만 허용한다.
+_RSS_SLOTS = threading.BoundedSemaphore(2)
 BATCH_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
 # 뉴스 카테고리별 검색 키워드. (재단=엔씨문화재단, 본사=엔씨소프트 및 자회사)
 CATEGORIES = {
@@ -112,10 +115,11 @@ def _snippet(description_html):
 
 
 def _collect_items(query, after=None, before=None):
-    resp = fetcher.get(RSS_URL, params=_feed_params(query, after, before),
-                       headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
-                                "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8"},
-                       timeout=NEWS_TIMEOUT, retries=1)
+    with _RSS_SLOTS:
+        resp = fetcher.get(RSS_URL, params=_feed_params(query, after, before),
+                           headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
+                                    "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8"},
+                           timeout=NEWS_TIMEOUT, retries=1)
     soup = BeautifulSoup(resp.content, "xml")
     if not soup.find("rss"):
         raise RuntimeError("뉴스 RSS 대신 다른 응답을 받았어요.")
@@ -352,8 +356,8 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
 
     # 기간을 구간으로 쪼개 (검색어 × 구간)마다 RSS 수집 → 구글 100건 제한 우회(깊은 과거까지).
     windows = _date_windows(days)
-    tasks = [(cat, kw, af, bf) for cat, kws in categories.items()
-             for kw in kws for (af, bf) in windows]
+    tasks = [(cat, kw, af, bf) for (af, bf) in windows
+             for cat, kws in categories.items() for kw in kws]
     progress(f"RSS 수집 중… (검색어 {sum(len(v) for v in categories.values())}개 × 구간 {len(windows)}개)")
 
     def _fetch(task):
@@ -361,33 +365,47 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
         try:
             return cat, _collect_items(kw, af, bf), None
         except Exception as error:
-            print(f"[google] RSS 요청 실패: {cat} · {type(error).__name__}", flush=True)
-            return cat, [], type(error).__name__
+            status = getattr(getattr(error, "response", None), "status_code", None)
+            reason = f"HTTP {status}" if status else type(error).__name__
+            print(f"[google] RSS 요청 실패: {cat} · {kw} · {af}~{bf} · {reason}", flush=True)
+            return cat, [], reason
 
     seen, entries = set(), []
     done_tasks, failed_tasks = 0, 0
-    with ThreadPoolExecutor(max_workers=min(max_workers, 4)) as pool:
-        for cat, rows, error in pool.map(_fetch, tasks):
-            failed_tasks += int(error is not None)
-            done_tasks += 1
-            for e in rows:
-                u = e["url"]
-                if u not in seen:
-                    seen.add(u)
-                    e["category"] = cat
-                    entries.append(e)
-                elif cat == "재단":
-                    # 같은 URL이 본사로 먼저 잡혔어도 재단이 우선
-                    for prev in entries:
-                        if prev["url"] == u:
-                            prev["category"] = "재단"
-                            break
-            if done_tasks % 10 == 0 or done_tasks == len(tasks):
-                progress(f"RSS 수집 {done_tasks}/{len(tasks)} 구간 · 누적 {len(entries)}건")
-    print(f"[google] RSS 수집 완료: {len(tasks)}개 요청 → {len(entries)}건", flush=True)
+    errors = set()
+    # 전체 연결 장애이면 작은 첫 묶음에서 종료한다. 나머지 수십 구간에
+    # 동일한 실패를 반복하며 몇 분 동안 기다리게 하지 않는다.
+    batch_size = max(1, min(max_workers, 4))
+    def batches():
+        with ThreadPoolExecutor(max_workers=min(max_workers, 2)) as pool:
+            for offset in range(0, len(tasks), batch_size):
+                yield from pool.map(_fetch, tasks[offset:offset + batch_size])
+                if done_tasks == batch_size and failed_tasks == done_tasks:
+                    break
+    for cat, rows, error in batches():
+        if error:
+            errors.add(error)
+        failed_tasks += int(error is not None)
+        done_tasks += 1
+        for e in rows:
+            u = e["url"]
+            if u not in seen:
+                seen.add(u)
+                e["category"] = cat
+                entries.append(e)
+            elif cat == "재단":
+                # 같은 URL이 본사로 먼저 잡혔어도 재단이 우선
+                for prev in entries:
+                    if prev["url"] == u:
+                        prev["category"] = "재단"
+                        break
+        if done_tasks % 10 == 0 or done_tasks == len(tasks):
+            progress(f"RSS 수집 {done_tasks}/{len(tasks)} 구간 · 누적 {len(entries)}건")
+    print(f"[google] RSS 요청 종료: {done_tasks}/{len(tasks)}개 요청 → {len(entries)}건", flush=True)
 
-    if failed_tasks == len(tasks) and tasks:
-        raise RuntimeError("뉴스 RSS에 연결하지 못했어요. 기존 목록은 유지했어요. 잠시 후 다시 수집해 주세요.")
+    if done_tasks and failed_tasks == done_tasks:
+        detail = ", ".join(sorted(errors))
+        raise RuntimeError(f"뉴스 RSS 연결 실패({detail}). 기존 목록은 유지했어요. 잠시 후 다시 수집해 주세요.")
     # 이미 저장된 URL은 재해석하지 않는다(증분). 새 기사만 남긴다.
     total = len(entries)
     entries = [e for e in entries if e["url"] not in known_urls]

@@ -29,5 +29,20 @@ test('source progress remains independent and partial result is a warning',()=>{
  const c=setup({loadCat:()=>{},loadGame:()=>{},loadNews:()=>{},loadBiz:()=>{},loadSecurity:()=>{},loadEvent:()=>{}});
  vm.runInContext(source.slice(source.indexOf('const CRAWL_UI'),source.indexOf('async function _pollCrawl')),c.ctx);
  c.ctx._renderCrawlState('boards',{running:true,progress:'board progress'});c.ctx._renderCrawlState('social',{running:true,progress:'video progress'});
- assert.equal(c.nodes['msg-boards'].innerHTML,'board progress');assert.equal(c.nodes['msg-social'].innerHTML,'video progress');c.ctx._renderCrawlState('biz',{result:{warning:'preserved',new:1}});assert.match(c.nodes['msg-biz'].textContent,/일부 수집/);
+ assert.equal(c.nodes['msg-boards'].innerHTML,'게시판 · board progress');assert.equal(c.nodes['msg-social'].innerHTML,'영상 · video progress');c.ctx._renderCrawlState('biz',{result:{warning:'preserved',new:1}});assert.match(c.nodes['msg-biz'].textContent,/일부 수집/);
+});
+
+function renderState(group, state) {
+ const c=setup();
+ vm.runInContext(source.slice(source.indexOf('const CRAWL_UI'),source.indexOf('async function _pollCrawl')), c.ctx);
+ c.ctx._renderCrawlState(group, state);
+ return c;
+}
+test('combined collection results identify each source',()=>{
+ const c=renderState('boards',{running:false,result:{new:0,updated:413,warning:'one source'}});
+ assert.match(c.nodes['msg-boards'].textContent,/^게시판 · 일부 수집/);
+ const failure=renderState('biz',{running:false,result:{error:'HTTP 503'}});
+ assert.match(failure.nodes['msg-biz'].textContent,/^동향 · 수집 실패/);
+ const video=renderState('social',{running:false,result:{new:0,updated:459}});
+ assert.match(video.nodes['msg-social'].textContent,/^영상 · 수집 완료/);
 });
