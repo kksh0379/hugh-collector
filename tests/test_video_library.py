@@ -28,6 +28,10 @@ class VideoLibraryTests(unittest.TestCase):
             self.assertEqual(self.client.get('/api/videos/catalog?' + query).status_code, 400)
         load.assert_not_called()
 
+    def test_known_titles_do_not_change_to_episode_subtitles(self):
+        result = parse_page('<meta property="og:title" content="원피스 나는 루피! 해적왕이 될 남자다! 1화">', '3217', '1', '1')
+        self.assertEqual(result['title'], '원피스')
+
     @patch('collector.video_library.load_catalog', side_effect=requests.Timeout)
     def test_source_failure_has_retryable_error(self, load):
         response = self.client.get('/api/videos/catalog?id=555')

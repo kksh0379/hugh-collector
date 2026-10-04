@@ -10,13 +10,26 @@
     } catch { return null; }
   }
   function watchUrl(item) { return `https://linkani.tv/watch/${item.id}/a${item.series}/k${item.episode}/`; }
-  let library = [{id:'19240', series:1, episode:8, title:'강철의 연금술사'}];
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORE));
-    if (Array.isArray(saved)) {
-      const valid = saved.slice(0,100).filter(x => x && parseWatchUrl(watchUrl(x))).map(x => ({...parseWatchUrl(watchUrl(x)), title:String(x.title || `작품 ${x.id}`).slice(0,160)}));
-      if (valid.length) library = valid;
+  const DEFAULT_LIBRARY = [
+    {id:'19240', series:1, episode:8, title:'강철의 연금술사'},
+    {id:'3217', series:1, episode:1, title:'원피스'},
+    {id:'21707', series:1, episode:1, title:'나루토'},
+    {id:'2010', series:1, episode:1, title:'보루토'},
+    {id:'70867', series:1, episode:1, title:'바람의 검심'},
+  ];
+  function mergeLibrary(saved) {
+    const result = [], seen = new Set();
+    for (const item of [...(Array.isArray(saved) ? saved.slice(0,100) : []), ...DEFAULT_LIBRARY]) {
+      const parsed = item && parseWatchUrl(watchUrl(item));
+      if (!parsed || seen.has(parsed.id)) continue;
+      seen.add(parsed.id);
+      result.push({...parsed, title:String(item.title || `작품 ${parsed.id}`).slice(0,160)});
     }
+    return result;
+  }
+  let library = mergeLibrary(null);
+  try {
+    library = mergeLibrary(JSON.parse(localStorage.getItem(STORE)));
   } catch {}
   let selected = null, catalog = null, requestVersion = 0, initialized = false;
   const cache = new Map();

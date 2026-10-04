@@ -10,6 +10,8 @@ from flask import Blueprint, jsonify, request
 
 bp = Blueprint('video_library', __name__)
 ORIGIN = 'https://linkani.tv'
+TITLE_NAMES = {'19240': '강철의 연금술사', '3217': '원피스',
+               '21707': '나루토', '2010': '보루토', '70867': '바람의 검심'}
 WATCH = re.compile(r'^/watch/([1-9]\d{0,8})/a([1-9]\d{0,3})/k([1-9]\d{0,4})/?$')
 
 
@@ -18,6 +20,7 @@ def parse_page(html, title_id, series, episode):
     meta = soup.find('meta', property='og:title')
     title = meta.get('content', '') if meta else ''
     title = re.sub(r'\s+\d+화(?:\s.*)?$', '', title).strip() or f'작품 {title_id}'
+    title = TITLE_NAMES.get(title_id, title)
     found = {}
     for a in soup.select('a[href]'):
         u = urlparse(urljoin(ORIGIN, a['href']))
