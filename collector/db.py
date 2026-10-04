@@ -11,6 +11,8 @@
 - meta   : 마지막 수집 일시 등 메타
 """
 import os
+import math
+import re
 import sqlite3
 import time
 from contextlib import contextmanager, nullcontext
@@ -184,6 +186,11 @@ _DDL = [
     f"""CREATE TABLE IF NOT EXISTS lunch_visit (
         id {_AUTO_PK}, restaurant_id INTEGER, username TEXT, visited_at TEXT
     )""",
+    """CREATE TABLE IF NOT EXISTS lunch_download_area (
+        area_key TEXT PRIMARY KEY, lat REAL, lng REAL, radius INTEGER, downloaded_at TEXT
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_lunch_rest_coords ON lunch_restaurant(lat, lng)",
+    "CREATE INDEX IF NOT EXISTS idx_lunch_rest_place ON lunch_restaurant(source, place_id)",
     "CREATE INDEX IF NOT EXISTS idx_lunch_rest_loc ON lunch_restaurant(loc_id)",
     "CREATE INDEX IF NOT EXISTS idx_lunch_review_rid ON lunch_review(restaurant_id)",
     "CREATE INDEX IF NOT EXISTS idx_lunch_visit_rid ON lunch_visit(restaurant_id)",
@@ -974,6 +981,106 @@ def lunch_restaurant_data(loc_id, include_excluded=False):
     with get_conn() as conn:
         loc = lunch_get_location(loc_id, conn=conn)
         return loc, lunch_list_restaurants(loc_id, include_excluded, conn=conn) if loc else []
+
+
+def _lunch_bounds(lat, lng, radius):
+    dy = radius / 110000.0
+    dx = dy / max(.01, math.cos(math.radians(lat)))
+    return lat - dy, lat + dy, lng - dx, lng + dx
+
+
+def lunch_download_covered(lat, lng, radius, conn=None):
+    from .lunch import haversine_m
+    with (get_conn() if conn is None else nullcontext(conn)) as c:
+        rows = c.execute(_q("SELECT lat,lng,radius FROM lunch_download_area WHERE radius>=?"), (radius,)).fetchall()
+        return any(haversine_m(lat, lng, r["lat"], r["lng"]) + radius <= r["radius"] for r in rows)
+
+
+def lunch_nearby_restaurants(lat, lng, radius, include_excluded=False):
+    """Read original restaurant IDs and their reviews across every saved location."""
+    from .lunch import haversine_m
+    with get_conn() as c:
+        rows = c.execute(_q("""SELECT r.*,
+            (SELECT COUNT(*) FROM lunch_review v WHERE v.restaurant_id=r.id) AS review_count,
+            (SELECT AVG(v.rating) FROM lunch_review v WHERE v.restaurant_id=r.id) AS avg_rating,
+            (SELECT COUNT(*) FROM lunch_visit v WHERE v.restaurant_id=r.id) AS visit_count
+            FROM lunch_restaurant r WHERE r.lat BETWEEN ? AND ? AND r.lng BETWEEN ? AND ?
+            ORDER BY r.id"""), _lunch_bounds(lat, lng, radius)).fetchall()
+        covered = lunch_download_covered(lat, lng, radius, conn=c)
+    groups = {}
+    for row in rows:
+        r = dict(row)
+        if haversine_m(lat, lng, r["lat"], r["lng"]) > radius:
+            continue
+        key = (r.get("source") or "kakao", r.get("place_id") or str(r["id"]))
+        groups.setdefault(key, []).append(r)
+    out = []
+    for group in groups.values():
+        # Preserve an existing exclusion rather than reintroducing it through another location.
+        if not include_excluded and any(r.get("excluded") for r in group):
+            continue
+        out.append(max(group, key=lambda r: (r["review_count"], r["visit_count"], -r["id"])))
+    return out, covered
+
+
+def _lunch_identity_text(value):
+    return re.sub(r"\s+", "", str(value or "")).casefold()
+
+
+def lunch_save_nearby(lat, lng, radius, items):
+    """Insert only. Existing restaurant fields, reviews, visits and IDs never change.
+
+    GPS-only restaurants use loc_id=0, outside the fixed-location catalogue.
+    Area history and new rows commit together; failed downloads never mark coverage.
+    """
+    from .lunch import haversine_m
+    new = reused = 0
+    with get_conn() as c:
+        if _PG:
+            c.execute("SELECT pg_advisory_xact_lock(731556)")
+        else:
+            c.execute("BEGIN IMMEDIATE")
+        known = [dict(r) for r in c.execute("SELECT * FROM lunch_restaurant ORDER BY id").fetchall()]
+        seen = set()
+        for item in items:
+            pid = str(item.get("place_id") or "")
+            if not pid or pid in seen:
+                continue
+            seen.add(pid)
+            source = item.get("source") or "kakao"
+            match = next((r for r in known if (r.get("source") or "kakao") == source and str(r.get("place_id")) == pid), None)
+            if match is None:
+                # Manual/imported records may have no provider ID. Require name + exact address
+                # + nearby coordinates, never just a matching business name.
+                name = _lunch_identity_text(item.get("name"))
+                addresses = {_lunch_identity_text(item.get(k)) for k in ("address", "road_address")} - {""}
+                for r in known:
+                    if r.get("source") == source and not str(r.get("place_id") or "").startswith("manual:"):
+                        continue
+                    old_addresses = {_lunch_identity_text(r.get(k)) for k in ("address", "road_address")} - {""}
+                    dist = haversine_m(item.get("lat"), item.get("lng"), r.get("lat"), r.get("lng"))
+                    if name and name == _lunch_identity_text(r.get("name")) and addresses & old_addresses and dist is not None and dist <= 35:
+                        match = r
+                        break
+            if match is not None:
+                reused += 1
+                continue
+            values = (0, source, pid, item.get("name"), item.get("category"), item.get("cat_norm"), item.get("sub_cat"),
+                      item.get("address"), item.get("road_address"), item.get("lat"), item.get("lng"),
+                      item.get("phone"), item.get("place_url"), _now(), _now())
+            cur = c.execute(_q("""INSERT INTO lunch_restaurant
+                (loc_id,source,place_id,name,category,cat_norm,sub_cat,address,road_address,lat,lng,phone,place_url,excluded,first_seen,last_checked)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?) ON CONFLICT(loc_id,place_id) DO NOTHING"""), values)
+            if cur.rowcount:
+                known.append(dict(item, source=source, place_id=pid))
+                new += 1
+            else:
+                reused += 1
+        key = f"{lat:.4f}:{lng:.4f}:{radius}"
+        c.execute(_q("""INSERT INTO lunch_download_area (area_key,lat,lng,radius,downloaded_at)
+            VALUES (?,?,?,?,?) ON CONFLICT(area_key) DO UPDATE SET downloaded_at=excluded.downloaded_at"""),
+            (key, lat, lng, radius, _now()))
+    return new, reused
 
 
 def lunch_visit_context(username):

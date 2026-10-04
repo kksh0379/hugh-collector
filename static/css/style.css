@@ -1605,3 +1605,13 @@ body.chrome-hidden .view-head { position: static; }
 .event-place .ui-icon, .agenda-place .ui-icon { color:var(--primary); }
 .scrap-fly .ui-icon { width:100%; height:100%; }
 .notes-tab, .auth-btn, .pdf-save-btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+
+/* GPS nearby discovery */
+.lunch-gps-tools {display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 16px 12px; color:var(--muted); font-size:12px;}
+.lunch-gps-tools[hidden], .lunch-gps-tools button[hidden] {display:none;}
+.lunch-gps-tools select {font:inherit; color:var(--text); background:var(--card); border:1px solid var(--border); border-radius:7px; padding:5px 8px;}
+.lunch-download-dialog {box-sizing:border-box; width:min(390px,calc(100% - 32px)); border:1px solid var(--border); border-radius:16px; padding:22px; color:var(--text); background:var(--card); box-shadow:0 16px 48px #0003;}
+.lunch-download-dialog::backdrop {background:#0006;}
+.lunch-download-dialog h2 {font-size:17px; margin:0 0 12px;}
+.lunch-download-dialog p {font-size:14px; line-height:1.7; margin:0 0 20px; word-break:keep-all; overflow-wrap:break-word;}
+.lunch-download-actions {display:flex; gap:8px; justify-content:flex-end;}

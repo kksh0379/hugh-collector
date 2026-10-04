@@ -6,6 +6,7 @@
 수동 실행 방식: 화면의 "수집 실행" 버튼을 누르면 해당 탭의 크롤러가 동작한다.
 """
 import json
+import math
 import os
 import queue
 import threading
@@ -883,6 +884,102 @@ def lunch_restaurants():
     return response
 
 
+_GPS_JOBS = {}
+_GPS_LOCK = threading.Lock()
+
+
+def _lunch_gps_input(data):
+    try:
+        lat, lng = float(data.get("lat")), float(data.get("lng"))
+        radius = float(data.get("radius", 500))
+        if not all(math.isfinite(v) for v in (lat, lng, radius)) or not (33 <= lat <= 39 and 124 <= lng <= 132):
+            raise ValueError()
+        if radius not in (500, 1000, 2000):
+            raise ValueError()
+        return {"id": "gps", "name": "내 위치", "lat": lat, "lng": lng, "radius": int(radius)}
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError("국내 위치와 검색 반경을 확인해 주세요.") from None
+
+
+@app.post("/api/lunch/nearby")
+def lunch_nearby():
+    try:
+        loc = _lunch_gps_input(request.get_json(silent=True) or {})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    if not _ensure_db(force=True):
+        return jsonify({"error": "저장된 맛집을 불러오지 못했습니다. 다시 시도해 주세요."}), 503
+    rows, covered = db.lunch_nearby_restaurants(loc["lat"], loc["lng"], loc["radius"], _admin_ok())
+    response = jsonify({"restaurants": _lunch_decorate(loc, rows), "location": loc,
+                        "download_needed": not covered, "kakao": lunch.has_key()})
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+def _lunch_gps_run(job_id, loc):
+    job = _GPS_JOBS[job_id]
+    try:
+        if not _ensure_db(force=True):
+            raise RuntimeError("데이터 연결이 지연되고 있습니다. 다시 시도해 주세요.")
+        # A small margin covers GPS jitter; the displayed list still uses the chosen radius.
+        lat, lng = round(loc["lat"], 4), round(loc["lng"], 4)
+        radius = loc["radius"] + 100
+        items = lunch.collect(lat, lng, radius, progress=lambda t: job.update(progress=t), strict=True)
+        new, reused = db.lunch_save_nearby(lat, lng, radius, items)
+        job.update(result={"ok": True, "new": new, "existing": reused},
+                   progress=f"신규 {new}곳 추가 · 기존 {reused}곳 불러옴")
+    except Exception:
+        job.update(result={"ok": False, "error": "다운로드하지 못했습니다. 기존 데이터는 유지됩니다. 잠시 후 다시 시도해 주세요."})
+    finally:
+        _invalidate_lunch_cache()
+        job["running"] = False
+
+
+@app.post("/api/lunch/nearby/download")
+def lunch_nearby_download():
+    data = request.get_json(silent=True) or {}
+    if data.get("confirmed") is not True:
+        return jsonify({"error": "다운로드 동의가 필요합니다."}), 400
+    try:
+        loc = _lunch_gps_input(data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    if not lunch.has_key():
+        return jsonify({"error": "현재 맛집 다운로드를 이용할 수 없습니다."}), 503
+    if not _ensure_db(force=True):
+        return jsonify({"error": "데이터 연결이 지연되고 있습니다."}), 503
+    if db.lunch_download_covered(loc["lat"], loc["lng"], loc["radius"]):
+        return jsonify({"ok": True, "covered": True})
+    owner = session.get("lunch_download_owner")
+    if not owner:
+        owner = session["lunch_download_owner"] = uuid.uuid4().hex
+    with _GPS_LOCK:
+        now = time.time()
+        for key in list(_GPS_JOBS):
+            if not _GPS_JOBS[key]["running"] and now - _GPS_JOBS[key]["started"] > 1800:
+                del _GPS_JOBS[key]
+        active = next(((key, job) for key, job in _GPS_JOBS.items() if job["running"]), None)
+        if active:
+            if active[1]["owner"] == owner:
+                return jsonify({"job_id": active[0], "running": True})
+            return jsonify({"error": "다른 다운로드가 진행 중입니다. 잠시 후 다시 시도해 주세요."}), 429
+        if len(_GPS_JOBS) >= 64:
+            oldest = min(_GPS_JOBS, key=lambda key: _GPS_JOBS[key]["started"])
+            del _GPS_JOBS[oldest]
+        job_id = uuid.uuid4().hex
+        _GPS_JOBS[job_id] = {"owner": owner, "running": True, "started": now, "progress": "주변 맛집 다운로드 준비 중…", "result": None}
+        threading.Thread(target=_lunch_gps_run, args=(job_id, loc), daemon=True).start()
+    return jsonify({"job_id": job_id, "running": True})
+
+
+@app.get("/api/lunch/nearby/download/status")
+def lunch_nearby_download_status():
+    job = _GPS_JOBS.get(request.args.get("job_id"))
+    if not job or job["owner"] != session.get("lunch_download_owner"):
+        return jsonify({"error": "다운로드 상태를 확인할 수 없습니다. 주변 목록을 다시 불러와 주세요."}), 404
+    return jsonify({"running": job["running"], "progress": job["progress"], "result": job["result"]})
+
+
 def _lunch_collect_run(loc_id):
     st = _LUNCH_JOB
     try:
@@ -1183,10 +1280,18 @@ def lunch_recommend():
         return jsonify({"ok": False, "error": "db"}), 503
     d = request.get_json(silent=True) or {}
     loc_id = d.get("loc_id")
-    loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id)) if loc_id else None
-    if not loc:
-        return jsonify({"ok": False, "error": "위치 없음"}), 400
-    cands = _lunch_decorate(loc, db.lunch_list_restaurants(loc_id))
+    if loc_id == "gps":
+        try:
+            loc = _lunch_gps_input(d)
+        except ValueError as e:
+            return jsonify({"ok": False, "error": str(e)}), 400
+        rows, _ = db.lunch_nearby_restaurants(loc["lat"], loc["lng"], loc["radius"])
+        cands = _lunch_decorate(loc, rows)
+    else:
+        loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id)) if loc_id else None
+        if not loc:
+            return jsonify({"ok": False, "error": "위치 없음"}), 400
+        cands = _lunch_decorate(loc, db.lunch_list_restaurants(loc_id))
     ids = d.get("candidate_ids")
     if ids:
         idset = set(ids)

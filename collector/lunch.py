@@ -173,7 +173,7 @@ SEARCH_TERMS = ["맛집", "한식", "백반", "국밥", "김치찌개", "칼국�
                 "파스타", "피자", "버거", "샐러드", "카페"]
 
 
-def collect(lat, lng, radius_m, progress=None, max_terms=0):
+def collect(lat, lng, radius_m, progress=None, max_terms=0, strict=False):
     """좌표 기준 반경 내 음식점 수집(카카오 키워드검색). place_id로 중복 제거한 리스트 반환.
     각 원소: {place_id, name, category, cat_norm, sub_cat, address, road_address,
               lat, lng, phone, place_url, dist_m}. 키 없으면 빈 리스트."""
@@ -194,8 +194,14 @@ def collect(lat, lng, radius_m, progress=None, max_terms=0):
                                     "page": page, "size": 15, "sort": "distance",
                                     "category_group_code": "FD6",  # 음식점
                                 })
+                if strict and r.status_code != 200:
+                    raise RuntimeError("맛집 제공 서비스에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.")
                 j = r.json() or {}
+                if strict and "documents" not in j:
+                    raise RuntimeError("맛집 정보를 확인하지 못했습니다. 다시 시도해 주세요.")
             except Exception as e:  # noqa: BLE001
+                if strict:
+                    raise
                 progress(f"수집 오류({term}): {e}")
                 break
             docs = j.get("documents") or []
