@@ -1608,7 +1608,9 @@ body.chrome-hidden .view-head { position: static; }
 
 /* GPS nearby discovery */
 .lunch-gps-tools {display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:12px 16px 14px; color:var(--muted); font-size:12px;}
-.lunch-gps-tools[hidden], .lunch-gps-tools button[hidden] {display:none;}
+.lunch-gps-tools[hidden], .lunch-gps-tools button[hidden], .gps-download-status[hidden] {display:none;}
+.gps-download-status {display:inline-flex; align-items:center; gap:6px; min-height:32px; font-size:12px; color:var(--muted); white-space:nowrap;}
+.gps-download-status .gps-btn-spinner {width:10px; height:10px; border-width:1.5px;}
 .lunch-gps-range {display:inline-flex; align-items:center; gap:6px; flex:none;}
 .lunch-gps-tools select, .lunch-gps-tools button {box-sizing:border-box; height:32px; font-size:12px; line-height:1; border-radius:var(--r-sm);}
 .lunch-gps-tools select {font-family:inherit; color:var(--text); background:var(--card); border:1px solid var(--border); padding:0 8px; min-width:68px;}
