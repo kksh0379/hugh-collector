@@ -467,15 +467,21 @@ document.querySelectorAll(".tab").forEach((tab) => {
     if (typeof syncSearchInput === "function") syncSearchInput();
     if (typeof updateCount === "function") updateCount(tab.dataset.tab);
     if (tab.dataset.tab === "report" && typeof loadReport === "function") loadReport();
-    if (tab.dataset.tab === "event") renderTab("event");
+    if (tab.dataset.tab === "event") { syncEventViewControls(); renderTab("event"); }
+    else applyViewClasses(newsViewMode);
   });
 });
 
 // ----------------------------- 보기 방식(리스트/카드) -----------------------------
+let newsViewMode = "card";
+function applyViewClasses(mode) {
+  document.body.classList.toggle("view-list", mode === "list");
+  document.body.classList.toggle("view-card", mode !== "list");
+}
 function setView(mode) {
   mode = mode === "list" ? "list" : "card";  // 기본 card
-  document.body.classList.toggle("view-list", mode === "list");
-  document.body.classList.toggle("view-card", mode === "card");
+  newsViewMode = mode;
+  applyViewClasses(mode);
   document.querySelectorAll("#view-toggle button").forEach((b) =>
     b.classList.toggle("active", b.dataset.view === mode));
   try { localStorage.setItem("nvView", mode); } catch (e) { /* 무시 */ }
@@ -1355,7 +1361,12 @@ function eventCategories(item) {
   return tags.length ? tags : ["기타"];
 }
 const filterEventsByCategory = makeCheckFilter("event", "event-cats", eventCategories);
-let eventView = "curation";                 // album | calendar
+let eventView = "curation"; // curation | list | album | calendar
+let eventScheduleView = "list";
+try {
+  const saved = localStorage.getItem("eventScheduleView");
+  if (["list", "album", "calendar"].includes(saved)) eventScheduleView = saved;
+} catch (_) {}
 let eventCalYM = null;                    // 캘린더가 보는 [year, month(0-11)]
 async function loadEvent() {
   const el = document.getElementById("list-event");
@@ -1589,6 +1600,7 @@ function renderEventCalendar(list) {
 }
 function renderEvents(list) {
   closeEventCalendarPopover();
+  syncEventViewControls();
   const albumEl = document.getElementById("list-event");
   const calEl = document.getElementById("cal-event");
   const isCal = eventView === "calendar", isCurated = eventView === "curation";
@@ -1603,16 +1615,36 @@ function renderEvents(list) {
   }
   if (!isCal && !isCurated) renderEventAlbum(list);
 }
-// 앨범/캘린더 토글
+// Two content tabs; the ordinary schedule retains its independent display preference.
+function syncEventViewControls() {
+  const curated = eventView === "curation";
+  document.getElementById("event-view-toggle").hidden = curated;
+  document.querySelectorAll("#event-mode-toggle button").forEach(b => {
+    const active = b.dataset.emode === (curated ? "curation" : "schedule");
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll("#event-view-toggle button").forEach(b => {
+    const active = b.dataset.eview === eventScheduleView;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-pressed", String(active));
+  });
+  if (activeTab() === "event") applyViewClasses(eventView === "list" ? "list" : "card");
+}
 (function initEventView() {
-  const seg = document.getElementById("event-view-toggle");
-  if (!seg) return;
-  seg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
-    eventView = ["calendar", "curation"].includes(b.dataset.eview) ? b.dataset.eview : "album";
-    seg.querySelectorAll("button").forEach((x) => x.classList.toggle("active", x.dataset.eview === eventView));
-    if (eventView === "calendar") eventCalYM = null;  // 열 때 다가오는 달로 재설정
+  document.querySelectorAll("#event-mode-toggle button").forEach(b => b.addEventListener("click", () => {
+    eventView = b.dataset.emode === "curation" ? "curation" : eventScheduleView;
+    syncEventViewControls();
     renderTab("event");
   }));
+  document.querySelectorAll("#event-view-toggle button").forEach(b => b.addEventListener("click", () => {
+    if (!["list", "album", "calendar"].includes(b.dataset.eview)) return;
+    eventScheduleView = eventView = b.dataset.eview;
+    try { localStorage.setItem("eventScheduleView", eventScheduleView); } catch (_) {}
+    syncEventViewControls();
+    renderTab("event");
+  }));
+  syncEventViewControls();
 })();
 
 // ----------------------------- 상태 확인 -----------------------------
