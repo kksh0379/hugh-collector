@@ -1629,3 +1629,23 @@ body.chrome-hidden .view-head { position: static; }
 .lunch-download-dialog h2 {font-size:17px; margin:0 0 12px;}
 .lunch-download-dialog p {font-size:14px; line-height:1.7; margin:0 0 20px; word-break:keep-all; overflow-wrap:break-word;}
 .lunch-download-actions {display:flex; gap:8px; justify-content:flex-end;}
+
+
+.lunch-address-entry {margin:10px 16px;}
+.lunch-address-entry button {min-height:32px; font-size:12px; padding:0 12px;}
+.lunch-address-dialog {box-sizing:border-box; width:min(460px,calc(100vw - 32px)); max-height:80vh; overflow:auto;}
+.lunch-address-head {display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;}
+.lunch-address-head h2 {margin:0;}
+.lunch-address-head button {flex:none;}
+.lunch-address-form label {display:block; margin-bottom:8px; font-size:13px; font-weight:600;}
+.lunch-address-input {display:flex; gap:8px; align-items:stretch;}
+.lunch-address-input input {min-width:0; flex:1; box-sizing:border-box; min-height:40px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--card); color:var(--text); padding:8px 10px; font:inherit; font-size:16px;}
+.lunch-address-input button {flex:none; min-height:40px;}
+#lunch-address-status {font-size:12px; color:var(--muted); line-height:1.6; margin:12px 0;}
+.lunch-address-results {list-style:none; padding:0; margin:0;}
+.lunch-address-results li + li {border-top:1px solid var(--border);}
+.lunch-address-results button {width:100%; text-align:left; border:0; background:transparent; color:var(--text); padding:12px 4px; font:inherit; cursor:pointer;}
+.lunch-address-results b,.lunch-address-results span {display:block; overflow-wrap:anywhere;}
+.lunch-address-results b {font-size:14px; line-height:1.5;}
+.lunch-address-results span {margin-top:4px; font-size:12px; line-height:1.5; color:var(--muted);}
+.lunch-address-results button:hover {background:var(--card);}

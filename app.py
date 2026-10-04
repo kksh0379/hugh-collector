@@ -901,6 +901,20 @@ def _lunch_gps_input(data):
         raise ValueError("국내 위치와 검색 반경을 확인해 주세요.") from None
 
 
+@app.post("/api/lunch/address/search")
+def lunch_address_search():
+    data = request.get_json(silent=True) or {}
+    query = data.get("query")
+    if not isinstance(query, str) or not 2 <= len(query.strip()) <= 100:
+        return jsonify({"error": "주소나 장소명을 2~100자로 입력해 주세요."}), 400
+    try:
+        response = jsonify({"locations": lunch.search_locations(query.strip())})
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+    except RuntimeError as error:
+        return jsonify({"error": str(error)}), 503
+
+
 @app.post("/api/lunch/nearby")
 def lunch_nearby():
     try:

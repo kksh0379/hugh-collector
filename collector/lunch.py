@@ -90,6 +90,42 @@ def _headers():
 LAST_GEO = {}
 
 
+def search_locations(query):
+    """Return selectable domestic addresses/places without exposing the API key."""
+    if not has_key():
+        raise RuntimeError("주소 검색을 현재 이용할 수 없어요.")
+    for url in (KAKAO_ADDRESS_URL, KAKAO_KEYWORD_URL):
+        try:
+            response = fetcher.get(url, params={"query": query, "size": 8},
+                                   headers=_headers(), retries=1, timeout=8, raise_status=False)
+            if response.status_code != 200:
+                raise RuntimeError("주소 검색 연결이 지연되고 있어요. 잠시 후 다시 시도해 주세요.")
+            documents = response.json().get("documents") or []
+        except RuntimeError:
+            raise
+        except Exception:
+            raise RuntimeError("주소 검색 연결이 지연되고 있어요. 잠시 후 다시 시도해 주세요.") from None
+        results = []
+        seen = set()
+        for doc in documents:
+            try:
+                lat, lng = float(doc["y"]), float(doc["x"])
+                if not (33 <= lat <= 39 and 124 <= lng <= 132):
+                    continue
+            except (KeyError, TypeError, ValueError):
+                continue
+            road = doc.get("road_address") or {}
+            address = road.get("address_name") or doc.get("road_address_name") or doc.get("address_name") or ""
+            name = doc.get("place_name") or road.get("building_name") or address
+            if (lat, lng) in seen or not address:
+                continue
+            seen.add((lat, lng))
+            results.append({"name": name, "address": address, "lat": lat, "lng": lng})
+        if results:
+            return results
+    return []
+
+
 def geocode(query):
     """주소/장소명 → (lat, lng). 주소검색 → 키워드검색 순. 실패 시 None.
     실패 원인은 LAST_GEO에 기록(키 거부 401/403 vs 결과 없음 구분)."""

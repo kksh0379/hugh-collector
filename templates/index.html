@@ -282,6 +282,16 @@
         <button type="button" class="search-btn" id="lunch-search-btn" aria-label="검색"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
       </div>
     </div>
+    <div class="lunch-address-entry"><button type="button" class="btn-status" id="lunch-address-open">주소로 위치 지정</button></div>
+    <dialog id="lunch-address-dialog" class="lunch-download-dialog lunch-address-dialog" aria-labelledby="lunch-address-title">
+      <div class="lunch-address-head"><h2 id="lunch-address-title">주소로 위치 지정</h2><button type="button" class="btn-status" id="lunch-address-close">닫기</button></div>
+      <form id="lunch-address-form" class="lunch-address-form">
+        <label for="lunch-address-query">주소 또는 장소명</label>
+        <div class="lunch-address-input"><input id="lunch-address-query" type="search" minlength="2" maxlength="100" placeholder="예: 이화장길 100, 혜화역" required autocomplete="off"><button type="submit" class="btn-collect" id="lunch-address-submit">검색</button></div>
+      </form>
+      <p id="lunch-address-status" role="status" aria-live="polite">검색 결과에서 원하는 위치를 선택해 주세요.</p>
+      <ul id="lunch-address-results" class="lunch-address-results"></ul>
+    </dialog>
     <div class="lunch-gps-tools" id="lunch-gps-tools" hidden>
       <div class="lunch-gps-range"><label for="lunch-gps-radius">반경</label>
       <select id="lunch-gps-radius"><option value="500">500m</option><option value="1000">1km</option><option value="2000">2km</option></select></div>
