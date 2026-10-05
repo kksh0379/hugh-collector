@@ -17,12 +17,13 @@
       <h3 id="videos-title"></h3>
       <p id="videos-detail-status" role="status" aria-live="polite" hidden></p>
       <div id="videos-detail-body" hidden>
-      <div class="videos-watch-head"><strong id="videos-selected"></strong><a id="videos-original" target="_blank" rel="noopener noreferrer">원본 사이트에서 보기 ↗</a></div>
+      <div class="videos-watch-head"><strong id="videos-selected"></strong><a id="videos-original" class="admin-only" target="_blank" rel="noopener noreferrer">원본 사이트에서 보기 ↗</a></div>
       <div id="videos-player" class="videos-player"><p>회차를 선택한 뒤 재생을 눌러 주세요.</p></div>
+      <div id="videos-airplay-controls" class="videos-airplay-controls" hidden><button type="button" id="videos-airplay">AirPlay</button><button type="button" id="videos-airplay-return" hidden>이 기기로 전환</button><span id="videos-airplay-status" role="status" aria-live="polite"></span></div>
       <div class="videos-controls"><button type="button" id="videos-prev">이전 화</button><button type="button" id="videos-picker-open" aria-haspopup="dialog" aria-controls="videos-picker" aria-expanded="false">회차 선택 ▾</button><button type="button" id="videos-next">다음 화</button></div>
       <p class="videos-picker-hint">회차를 누르면 목록이 열려요.</p>
       <button type="button" id="videos-play" class="videos-resume"><span class="videos-resume-icon" aria-hidden="true">▶</span><span><strong id="videos-resume-title">재생하기</strong><small id="videos-resume-info"></small></span><span class="videos-resume-arrow" aria-hidden="true">›</span></button>
-      <p class="videos-help">영상이 재생되지 않으면 다시 불러오거나 원본 사이트에서 열어 주세요.</p>
+      <p class="videos-help">영상이 재생되지 않으면 다시 불러오거나 다른 회차를 선택해 주세요.</p>
       <dialog id="videos-picker" class="videos-episode-picker" aria-labelledby="videos-episode-heading"><div class="videos-sheet-handle" aria-hidden="true"></div>
         <div class="videos-episode-heading"><h4 id="videos-episode-heading">회차 선택</h4><button type="button" id="videos-picker-close" aria-label="회차 선택 닫기">×</button></div>
         <div class="videos-series-row"><label id="videos-series-label" class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label><span id="videos-episode-count"></span></div>

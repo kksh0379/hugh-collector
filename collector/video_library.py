@@ -7,7 +7,8 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, jsonify, request, send_file, session, redirect, Response, url_for
+from . import video_hls
 
 bp = Blueprint('video_library', __name__)
 ORIGIN = 'https://linkani.tv'
@@ -23,9 +24,7 @@ def parse_playback(html):
         return None
     source = video.find('source', src=True)
     url = video.get('src') or (source.get('src') if source else '')
-    def safe(value):
-        u = urlparse(value)
-        return u.scheme == 'https' and bool(re.fullmatch(r'aniplayer\d+\.site', u.hostname or '')) and not u.username and not u.password and u.port in (None, 443)
+    safe = video_hls.safe_media_url
     if not safe(url):
         return None
     tracks = [dict(src=t['src'], language=t.get('srclang', 'ko'), label=t.get('label', '한국어'))
@@ -41,15 +40,83 @@ def playback():
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
         response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False)
+        if response.status_code in (404, 410):
+            result = jsonify(error='원출처에 이 회차의 영상이 없어요. 다른 회차를 선택해 주세요.', code='video_missing')
+            result.status_code = 404
+            result.headers['Cache-Control'] = 'no-store'
+            return result
         response.raise_for_status()
         data = parse_playback(response.text) if response.status_code == 200 else None
-        result = jsonify(data or dict(error='별도 플레이어를 연결할 수 없어요.'))
-        result.status_code = 200 if data else 409
+        if data and data.get('tracks'):
+            data['native_src'] = url_for('video_library.native_manifest', token=video_hls.encode_playback(data), _external=True, _scheme='https')
+        absent = response.status_code == 200 and not BeautifulSoup(response.text, 'html.parser').select_one('video[src], video source[src], iframe[src]')
+        result = jsonify(data or dict(error='원출처에서 재생 가능한 영상을 찾지 못했어요. 다른 회차를 선택해 주세요.' if absent else '영상 연결 형식을 확인하지 못했어요. 다시 시도해 주세요.', code='video_missing' if absent else 'unsupported_player'))
+        result.status_code = 200 if data else 404 if absent else 409
     except requests.RequestException:
         result = jsonify(error='원본 재생 영역으로 연결할게요.')
         result.status_code = 502
     result.headers['Cache-Control'] = 'no-store'
     return result
+
+
+@bp.get('/api/videos/original')
+def original():
+    if not session.get('admin'):
+        return jsonify(error='관리자만 원문 링크를 열 수 있어요.'), 403
+    parts = [request.args.get(key, '') for key in ('id', 'series', 'episode')]
+    path = f'/watch/{parts[0]}/a{parts[1]}/k{parts[2]}/'
+    if not WATCH.fullmatch(path):
+        return jsonify(error='영상 주소를 확인해 주세요.'), 400
+    return redirect(ORIGIN + path)
+
+
+def hls_response(text, mime='application/vnd.apple.mpegurl'):
+    response = Response(text, mimetype=mime)
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
+@bp.get('/api/videos/native.m3u8')
+def native_manifest():
+    try:
+        token = request.args.get('token', '')
+        data = video_hls.decode_playback(token)
+        text = video_hls.load_text(data['src'])
+        return hls_response(video_hls.master_playlist(text, data['src'], data['tracks'], token))
+    except Exception:
+        return jsonify(error='자막 포함 재생 목록을 불러오지 못했어요.'), 502
+
+
+def subtitle_source():
+    token = request.args.get('token', '')
+    data = video_hls.decode_playback(token)
+    index = int(request.args.get('track', '0'))
+    if not 0 <= index < len(data['tracks']):
+        raise ValueError('invalid track')
+    return token, index, video_hls.load_text(data['tracks'][index]['src'])
+
+
+@bp.get('/api/videos/subtitles.m3u8')
+def subtitle_playlist():
+    try:
+        token, index, text = subtitle_source()
+        _, count = video_hls.subtitle_segments(text)
+        lines = ['#EXTM3U', '#EXT-X-VERSION:6', '#EXT-X-TARGETDURATION:6', '#EXT-X-MEDIA-SEQUENCE:0', '#EXT-X-PLAYLIST-TYPE:VOD']
+        for segment in range(count):
+            lines += ['#EXTINF:6.000,', url_for('video_library.subtitle_vtt', token=token, track=index, segment=segment, _external=True, _scheme='https')]
+        return hls_response('\n'.join(lines + ['#EXT-X-ENDLIST', '']))
+    except Exception:
+        return jsonify(error='자막 재생 목록을 불러오지 못했어요.'), 502
+
+
+@bp.get('/api/videos/subtitle.vtt')
+def subtitle_vtt():
+    try:
+        _, _, text = subtitle_source()
+        return hls_response(video_hls.subtitle_segment(text, int(request.args.get('segment', '0'))), 'text/vtt')
+    except Exception:
+        return jsonify(error='자막을 불러오지 못했어요.'), 502
 
 
 @bp.get('/api/videos/library')

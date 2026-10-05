@@ -81,9 +81,11 @@
       const card = document.createElement('article'); card.className = 'videos-work';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'videos-work-open';
       const image = cache.get(item.id)?.image || item.image || allWorks.find(x => x.id === item.id)?.image;
-      if (image) { const img = document.createElement('img'); img.src = image; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.onerror = () => img.remove(); b.append(img); }
-      const name = document.createElement('strong'); name.textContent = item.title; b.append(name);
-      if (item.description) { const info = document.createElement('small'); info.textContent = item.description; b.append(info); }
+      const poster = document.createElement('div'); poster.className = 'videos-poster'; poster.setAttribute('aria-hidden','true');
+      if (image) { const img = document.createElement('img'); img.src = image; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.onerror = () => img.remove(); poster.append(img); }
+      b.append(poster);
+      const name = document.createElement('strong'); name.textContent = item.title; name.title = item.title; b.append(name);
+      const info = document.createElement('small'); info.textContent = item.description || ''; b.append(info);
       b.onclick = () => selectWork(item);
       const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'videos-save'; favorite.textContent = favoriteLabel(item);
       favorite.setAttribute('aria-pressed', String(library.some(x => x.id === item.id))); favorite.setAttribute('aria-label', `${item.title} ${favoriteLabel(item)}`);
@@ -125,7 +127,7 @@
   $('videos-picker').onclick = event => { if (event.target === $('videos-picker')) { const r = $('videos-picker').getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closePicker(); } };
   window.addEventListener('resize', () => { if ($('videos-picker').open) { sizePicker(); revealEpisode(); } });
   window.visualViewport?.addEventListener('resize', () => { if ($('videos-picker').open) sizePicker(); });
-  function stop() { ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
+  function stop() { $('videos-airplay-controls').hidden = true; $('videos-airplay-return').hidden = true; $('videos-airplay-status').textContent = ''; ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
   function revealEpisode(number = selected.episode) {
     const list = $('videos-episodes'), button = Array.from(list.querySelectorAll('button')).find(b => Number(b.dataset.episode) === number);
     if (button) list.scrollTop = Math.max(0, button.offsetTop - (list.clientHeight - button.offsetHeight) / 2);
@@ -142,7 +144,7 @@
     const latest = currentEpisodes().slice(-1)[0]; $('videos-latest-page').textContent = `최신 ${latest}화`;
     $('videos-selected').textContent = `${number}화`; $('videos-picker-open').textContent = `${number}화 ▾`; updateResume();
     $('videos-jump').value = String(number); $('videos-jump-status').hidden = true;
-    $('videos-original').href = watchUrl(selected);
+    $('videos-original').href = `/api/videos/original?id=${selected.id}&series=${selected.series}&episode=${selected.episode}`;
     $('videos-episodes').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.episode) === number)));
     const eps = catalog.series.find(s => s.id === selected.series).episodes, i = eps.indexOf(number);
     $('videos-prev').disabled = i <= 0; $('videos-next').disabled = i < 0 || i >= eps.length-1;
@@ -212,15 +214,46 @@
     } catch (e) { if (version === requestVersion) status(e.name === 'AbortError' ? '연결이 지연되고 있어요. 뒤로 간 뒤 작품을 다시 선택해 주세요.' : e.message, true); }
     finally { clearTimeout(timer); }
   }
+  function setupAirPlay(video, current, hasSubtitles) {
+    const controls = $('videos-airplay-controls'), button = $('videos-airplay'), back = $('videos-airplay-return'), label = $('videos-airplay-status');
+    const supported = typeof video.webkitShowPlaybackTargetPicker === 'function' || !!video.remote?.prompt;
+    controls.hidden = !supported;
+    if (!supported) return;
+    const refresh = () => {
+      if (!current()) return;
+      const wireless = !!video.webkitCurrentPlaybackTargetIsWireless || video.remote?.state === 'connected';
+      back.hidden = !wireless; button.textContent = wireless ? 'AirPlay 기기 변경' : 'AirPlay';
+      button.disabled = false;
+      label.textContent = wireless ? 'AirPlay 연결 중' : '';
+      if (wireless && hasSubtitles) label.textContent += ' · TV 재생 메뉴에서 한국어 자막을 선택해 주세요.';
+    };
+    const picker = () => {
+      if (!current()) return;
+      try {
+        if (typeof video.webkitShowPlaybackTargetPicker === 'function') video.webkitShowPlaybackTargetPicker();
+        else video.remote.prompt().catch(() => refresh());
+      } catch { label.textContent = '기기 선택창을 다시 열어 주세요.'; }
+      refresh();
+    };
+    button.onclick = picker;
+    back.onclick = () => { picker(); label.textContent = '기기 선택창에서 iPhone 또는 이 기기를 선택하면 연결이 해제돼요.'; };
+    // Device availability can temporarily report unavailable after cancelling the picker.
+    // Keep the control mounted while this video exists so it can always reopen.
+    video.addEventListener('webkitplaybacktargetavailabilitychanged', refresh);
+    video.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', refresh);
+    for (const event of ['loadedmetadata', 'playing', 'pause']) video.addEventListener(event, refresh);
+    if (video.remote?.addEventListener) for (const event of ['connect','disconnect','connecting']) video.remote.addEventListener(event, refresh);
+    refresh();
+  }
   async function play() {
     if (!selected || !catalog) return;
-    stop();
+    stop(); status('', true);
     const version = playerVersion, item = {...selected};
     const current = () => version === playerVersion;
     let fallbackUsed = false;
     function fallback() {
       if (!current() || fallbackUsed) return;
-      fallbackUsed = true; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null;
+      fallbackUsed = true; $('videos-airplay-controls').hidden = true; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null;
       const video = $('videos-player').querySelector('video');
       if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
       const frame = document.createElement('iframe');
@@ -239,11 +272,17 @@
     const timeout = setTimeout(() => { controller.abort(); fallback(); }, 16000);
     try {
       const response = await fetch(`/api/videos/playback?id=${item.id}&series=${item.series}&episode=${item.episode}`, {signal:controller.signal,cache:'no-store'});
-      if (!response.ok) throw Error('no direct player');
-      const data = await response.json(); if (!current() || fallbackUsed) return;
+      const data = await response.json();
+      if (!response.ok && data.code === 'video_missing') {
+        if (!current()) return; fallbackUsed = true;
+        const missing = document.createElement('p'); missing.textContent = data.error;
+        $('videos-player').replaceChildren(missing); status(data.error, true); playLabel('다시 확인하기'); return;
+      }
+      if (!response.ok) throw Error('no direct player'); if (!current() || fallbackUsed) return;
       const video = document.createElement('video'); video.controls = true; video.playsInline = true; video.preload = 'auto'; video.crossOrigin = 'anonymous';
+      video.setAttribute('x-webkit-airplay', 'allow'); video.disableRemotePlayback = false;
       video.setAttribute('aria-label', `${item.title} ${item.episode}화`);
-      for (const entry of data.tracks || []) {
+      for (const entry of data.native_src ? [] : data.tracks || []) {
         const track = document.createElement('track'); track.kind = 'subtitles'; track.src = entry.src; track.srclang = entry.language; track.label = entry.label; track.default = true; video.append(track);
       }
       let lastSaved = 0;
@@ -259,14 +298,22 @@
         try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
         updateResume();
       };
-      video.onerror = fallback;
+      const mediaFailure = () => {
+        if (!current() || fallbackUsed) return;
+        fallbackUsed = true; clearTimeout(playbackTimer); $('videos-airplay-controls').hidden = true;
+        video.pause(); hlsPlayer?.destroy(); hlsPlayer = null;
+        const failure = document.createElement('p'); failure.textContent = '원출처 영상에 연결하지 못했어요. 삭제되었거나 제공이 중단된 영상일 수 있어요.';
+        $('videos-player').replaceChildren(failure); status(failure.textContent, true); playLabel('다시 확인하기');
+      };
+      video.onerror = mediaFailure;
       video.onloadeddata = () => { if (current()) clearTimeout(playbackTimer); };
       $('videos-player').replaceChildren(video);
-      playbackTimer = setTimeout(fallback, 12000);
-      if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = data.src;
+      setupAirPlay(video, current, !!data.tracks?.length);
+      playbackTimer = setTimeout(() => { if (!video.webkitCurrentPlaybackTargetIsWireless) mediaFailure(); }, 12000);
+      if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = data.native_src || data.src;
       else if (window.Hls?.isSupported()) {
-        hlsPlayer = new window.Hls(); hlsPlayer.on(window.Hls.Events.ERROR, (event, info) => { if (info.fatal) fallback(); });
-        hlsPlayer.loadSource(data.src); hlsPlayer.attachMedia(video);
+        hlsPlayer = new window.Hls(); hlsPlayer.on(window.Hls.Events.ERROR, (event, info) => { if (info.fatal) mediaFailure(); });
+        hlsPlayer.loadSource(data.native_src || data.src); hlsPlayer.attachMedia(video);
       } else { fallback(); return; }
       playLabel('다시 불러오기');
       const autoplay = video.play(); if (autoplay?.catch) autoplay.catch(() => {});

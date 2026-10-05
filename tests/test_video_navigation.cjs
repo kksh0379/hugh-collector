@@ -1,16 +1,16 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('static/js/videos.js','utf8');
 const flush=()=>new Promise(setImmediate);
-function setup(direct = false, episodes = [1,8]) {
+function setup(direct = false, episodes = [1,8], options = {}) {
  const elements=new Map(), stored=new Map([['hscope-video-library-v1',JSON.stringify([{id:'123',series:1,episode:8,title:'작품 A'}])]]), listeners={};
- function element(tag='div') { return {tag,open:false,style:{setProperty(k,v){this[k]=v}},children:[],dataset:{},attrs:{},value:'',textContent:'',hidden:false,setAttribute(k,v){this.attrs[k]=v},append(...nodes){this.children.push(...nodes)},replaceChildren(...nodes){this.children=nodes},querySelectorAll(){return this.children.filter(x=>x.tag==='button')},querySelector(tag){return this.children.find(x=>tag.split(',').map(x=>x.trim()).includes(x.tag))||null},addEventListener(k,v){this['on'+k]=v},getBoundingClientRect(){return {bottom:440,left:0,right:400,top:400}},showModal(){this.open=true},close(){this.open=false},focus(){},remove(){},pause(){},load(){},removeAttribute(k){delete this.attrs[k]},canPlayType(){return direct?'probably':''},play(){return Promise.resolve()}}; }
+ function element(tag='div') { return {tag,webkitShowPlaybackTargetPicker:options.airplay && tag==='video' ? function(){this.pickerCount=(this.pickerCount||0)+1} : undefined,open:false,style:{setProperty(k,v){this[k]=v}},children:[],dataset:{},attrs:{},value:'',textContent:'',hidden:false,setAttribute(k,v){this.attrs[k]=v},append(...nodes){this.children.push(...nodes)},replaceChildren(...nodes){this.children=nodes},querySelectorAll(){return this.children.filter(x=>x.tag==='button')},querySelector(tag){return this.children.find(x=>tag.split(',').map(x=>x.trim()).includes(x.tag))||null},addEventListener(k,v){this['on'+k]=v},getBoundingClientRect(){return {bottom:440,left:0,right:400,top:400}},showModal(){this.open=true},close(){this.open=false},focus(){},remove(){},pause(){},load(){},removeAttribute(k){delete this.attrs[k]},canPlayType(){return direct?'probably':''},play(){return Promise.resolve()}}; }
  const el=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id)};
  el('videos-detail').hidden=true;el('videos-detail-body').hidden=true;
  const location={href:'https://hscope.onrender.com/'}, entries=[{url:location.href,state:null}];let position=0;
  const win={innerHeight:844,scrollY:900,scrollTo(x,y){this.scrollY=typeof x==='object'?x.top:y},addEventListener(name,fn){listeners[name]=fn}};
  const history={state:null,pushState(state,unused,url){entries.splice(++position);entries.push({state,url:String(url)});this.state=state;location.href=String(url)},replaceState(state,unused,url){entries[position]={state,url:String(url)};this.state=state;location.href=String(url)},back(){if(position){const entry=entries[--position];this.state=entry.state;location.href=entry.url;listeners.popstate()}}};
  const works=[{id:'123',series:1,episode:1,title:'작품 A'},{id:'456',series:1,episode:1,title:'작품 B'}];
- const c=vm.createContext({URL,AbortController,location,history,window:win,document:{documentElement:{style:{overflow:''}},getElementById:el,createElement:element},localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:()=>1,clearTimeout(){},fetch:async url=>({ok:!url.includes('/playback')||direct,json:async()=>url.includes('/playback')?{src:'https://aniplayer1.site/test.m3u8',tracks:[]}:url.includes('/library')?{items:works}:{id:'123',title:'작품 A',series:[{id:1,episodes}]}})});
+ const c=vm.createContext({URL,AbortController,location,history,window:win,document:{documentElement:{style:{overflow:''}},getElementById:el,createElement:element},localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:()=>1,clearTimeout(){},fetch:async url=>({ok:!url.includes('/playback')||(direct&&!options.missing),json:async()=>url.includes('/playback')?(options.missing ? {code:'video_missing',error:'원출처에 영상이 없어요.'} : {src:'https://aniplayer1.site/test.m3u8',tracks:options.subtitles?[{src:'https://aniplayer1.site/sub.vtt'}]:[],...(options.subtitles?{native_src:'https://hscope.onrender.com/api/videos/native.m3u8?token=test'}:{})}):url.includes('/library')?{items:works}:{id:'123',title:'작품 A',series:[{id:1,episodes}]}})});
  vm.runInContext(source,c);
  return {el,win,history,location,stored,async start(){win.onShowVideos();await flush()},favoriteCount(){return JSON.parse(stored.get('hscope-video-favorites-v2')||'[]').length}};
 }
@@ -106,4 +106,26 @@ test('sparse episodes create only populated ranges and hide range selector for a
  assert.equal(s.el('videos-episodes').children.length,1);assert.equal(s.el('videos-episodes').children[0].textContent,'1179화');
  const short=setup();await short.start();await short.el('videos-library').children[0].children[0].onclick();
  assert.equal(short.el('videos-range-row').hidden,true);assert.equal(short.el('videos-series-label').hidden,true);
+});
+
+test('missing source episode shows a clear message and never loads an iframe',async()=>{
+ const s=setup(true,[1,8],{missing:true});await s.start();await s.el('videos-library').children[0].children[0].onclick();await s.el('videos-play').onclick();
+ assert.equal(s.el('videos-player').children[0].tag,'p');assert.match(s.el('videos-player').children[0].textContent,/영상이 없어요/);assert.equal(s.el('videos-resume-title').textContent,'다시 확인하기');
+});
+test('AirPlay picker stays available after cancellation and supports return to device',async()=>{
+ const s=setup(true,[1,8],{airplay:true});await s.start();await s.el('videos-library').children[0].children[0].onclick();await s.el('videos-play').onclick();
+ const video=s.el('videos-player').children[0];assert.equal(s.el('videos-airplay-controls').hidden,false);
+ s.el('videos-airplay').onclick();video.onwebkitplaybacktargetavailabilitychanged({availability:'not-available'});
+ assert.equal(s.el('videos-airplay-controls').hidden,false);assert.equal(s.el('videos-airplay').disabled,false);
+ video.webkitCurrentPlaybackTargetIsWireless=true;video.onwebkitcurrentplaybacktargetiswirelesschanged();assert.equal(s.el('videos-airplay-return').hidden,false);
+ s.el('videos-airplay-return').onclick();assert.equal(video.pickerCount,2);assert.match(s.el('videos-airplay-status').textContent,/이 기기/);
+ video.webkitCurrentPlaybackTargetIsWireless=false;video.onwebkitcurrentplaybacktargetiswirelesschanged();assert.equal(s.el('videos-airplay-return').hidden,true);assert.equal(s.el('videos-airplay').textContent,'AirPlay');
+});
+test('native subtitle rendition is used instead of page-only tracks',async()=>{
+ const s=setup(true,[1,8],{subtitles:true});await s.start();await s.el('videos-library').children[0].children[0].onclick();await s.el('videos-play').onclick();
+ const video=s.el('videos-player').children[0];assert.match(video.src,/native\.m3u8/);assert.equal(video.children.length,0);
+});
+test('media errors display unavailable status instead of silently switching to source page',async()=>{
+ const s=setup(true);await s.start();await s.el('videos-library').children[0].children[0].onclick();await s.el('videos-play').onclick();s.el('videos-player').children[0].onerror();
+ assert.equal(s.el('videos-player').children[0].tag,'p');assert.match(s.el('videos-detail-status').textContent,/제공이 중단/);
 });
