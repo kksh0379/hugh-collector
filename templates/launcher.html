@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f8fc">
+  <title>서비스 홈</title>
+  <meta name="description" content="김상화의 개인 서비스. 사용할 서비스를 선택해 주세요.">
+  <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.104') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.104') }}">
+</head>
+<body>
+  <a class="skip-link" href="#services">서비스 목록으로 이동</a>
+  <header class="launcher-header">
+    <a class="launcher-brand" href="{{ url_for('launcher') }}" aria-label="서비스 홈">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+      <span>서비스 홈</span>
+    </a>
+    <span class="owner">김상화의 개인 서비스</span>
+  </header>
+  <main class="launcher-main">
+    <section class="launcher-intro" aria-labelledby="launcher-title">
+      <span class="eyebrow">나의 서비스 공간</span>
+      <h1 id="launcher-title">어떤 서비스를<br>열어볼까요?</h1>
+      <p>필요한 서비스를 선택해 주세요.<br>새로운 서비스도 이곳에서 만날 수 있어요.</p>
+    </section>
+    <section id="services" aria-labelledby="services-title">
+      <div class="section-heading"><h2 id="services-title">서비스</h2><span>{{ services | length }}개</span></div>
+      <div class="service-grid">
+        {% for service in services %}
+        <a class="service-card" href="{{ service.href }}" aria-label="{{ service.name }} 열기">
+          <div class="service-content">
+            <div class="service-card-top"><span class="service-icon">
+              {% if service.icon == 'scope' %}
+              <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="3" fill="currentColor" stroke="none"/><path d="M16 1v6m0 18v6M1 16h6m18 0h6"/></svg>
+              {% else %}
+              <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 12h16M12 4v16"/></svg>
+              {% endif %}
+            </span><span class="service-available"><i aria-hidden="true"></i>이용 가능</span></div>
+            <h3>{{ service.name }}</h3>
+            <p>{{ service.description }}</p>
+            <ul class="service-tags" aria-label="주요 기능">{% for tag in service.tags %}<li>{{ tag }}</li>{% endfor %}</ul>
+            <span class="service-open">서비스 열기 <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></span>
+          </div>
+          <div class="service-art" aria-hidden="true"><div class="art-orbit art-orbit-outer"></div><div class="art-orbit art-orbit-inner"></div><div class="art-core">
+            {% if service.icon == 'scope' %}<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="3" fill="currentColor" stroke="none"/><path d="M16 1v6m0 18v6M1 16h6m18 0h6"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 12h16M12 4v16"/></svg>{% endif %}
+          </div><span class="art-dot art-dot-one"></span><span class="art-dot art-dot-two"></span></div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    <a class="service-intro-link" href="{{ url_for('intro') }}">휴스코프가 궁금하다면 <span>서비스 소개 ↗</span></a>
+  </main>
+  <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.104</span></footer>
+</body>
+</html>

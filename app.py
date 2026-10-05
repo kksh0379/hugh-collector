@@ -14,12 +14,13 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, Response, g, jsonify, render_template, request, session
+from flask import Flask, Response, g, jsonify, redirect, render_template, request, session, url_for
 
 from collector import (analysis, boards, db, dedup, event_curation, event_sources, events, fetcher,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
 
 from collector.identity import canonical_user, display_name, public_author
+from collector.service_registry import SERVICES
 from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
 from collector.video_library import bp as video_library_bp
@@ -1380,6 +1381,14 @@ def intro():
 
 
 @app.route("/")
+def launcher():
+    # Preserve existing root video bookmarks after moving the service entry page.
+    if request.args.get("video"):
+        return redirect(url_for("index") + "?" + request.query_string.decode("utf-8", errors="replace"), code=302)
+    return render_template("launcher.html", services=SERVICES, year=datetime.now(KST).year)
+
+
+@app.route("/hscope", strict_slashes=False)
 def index():
     _log_visit()  # 방문 기록(백그라운드, 페이지 로딩 안 막음)
     services = sorted({s["service"] for s in boards.SOURCES})

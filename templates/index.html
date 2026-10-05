@@ -13,7 +13,7 @@
   <meta property="og:site_name" content="휴 스코프" />
   <meta property="og:title" content="휴 스코프" />
   <meta property="og:description" content="재단·업계 뉴스와 재단 게시판·소셜 채널을 한눈에" />
-  <meta property="og:url" content="{{ og_base }}/" />
+  <meta property="og:url" content="{{ og_base }}{{ url_for('index') }}" />
   <meta property="og:image" content="{{ og_base }}{{ url_for('static', filename='og-image.png', v='145') }}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -29,8 +29,8 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg', v='145') }}" type="image/svg+xml" />
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
-  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.103") }}" />
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.104') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.104") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -46,17 +46,18 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.103') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.104') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.103') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.103") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.104') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.104") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.103') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.104') }}">
 <style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
 </head>
 <body>
   <header class="app-header">
-    <a class="brand" href="/" aria-label="휴 스코프 홈">
+    <a class="launcher-return" href="{{ url_for('launcher') }}" aria-label="서비스 선택" title="서비스 선택"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></a>
+    <a class="brand" href="{{ url_for('index') }}" aria-label="휴 스코프 홈">
       <svg class="brand-mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
         <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2.4"/>
         <circle cx="16" cy="16" r="3.4" fill="currentColor"/>
@@ -499,7 +500,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.103 · build 261005</span>
+    <span class="ver">v3.104 · build 261005</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -528,13 +529,12 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.103") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.103") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.104") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.104") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='vendor/hls-1.5.17.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/video-timeline.js', v='3.103') }}"></script>
-  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.103') }}"></script>
+  <script src="{{ url_for('static', filename='js/video-timeline.js', v='3.104') }}"></script>
+  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.104') }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>
-
