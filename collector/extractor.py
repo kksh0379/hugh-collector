@@ -157,7 +157,9 @@ def extract_image(soup, url=None):
 
     selectors = ("[itemprop=articleBody]", "#article-view-content-div", "#newsct_article",
                  "#dic_area", "#articleBodyContents", ".article-body", ".article_body",
-                 ".news-body", ".view_content", ".view-content", ".article-content", "article")
+                 ".news-body", ".view_content", ".view-content", ".article-content",
+                 "#articleBody", "#article-body", "#newsView", "#news_view", "#article-view",
+                 ".article_view", ".article-view", ".news_view", ".newsview", "article")
     for selector in selectors:
         for container in soup.select(selector):
             for node in container.select("img"):
@@ -169,7 +171,7 @@ def extract_image(soup, url=None):
                 if any(str(node.get(key, "")).isdigit() and int(node[key]) <= 80
                        for key in ("width", "height")):
                     continue
-                candidates = [node.get(key) for key in ("data-original", "data-src", "data-lazy-src")]
+                candidates = [node.get(key) for key in ("data-original", "data-src", "data-lazy-src", "data-lazy", "data-url")]
                 srcset = node.get("data-srcset") or node.get("srcset") or ""
                 candidates.extend(part.strip().split()[0] for part in reversed(srcset.split(",")) if part.strip())
                 candidates.append(node.get("src"))
@@ -214,4 +216,3 @@ def extract_article(soup, url):
 
     content = clean_text(extract_main_text(soup))
     return {"title": clean_text(title), "published_at": published, "author": author, "content": content}
-

@@ -568,7 +568,8 @@ def news_needs_enrich(limit=200, section=None):
     with get_conn() as conn:
         rows = conn.execute(
             _q("SELECT id, url, source_url, content, image_url FROM news WHERE "
-               + " AND ".join(where) + " ORDER BY published_at DESC, id DESC LIMIT ?"), tuple(params)
+               + " AND ".join(where) + " ORDER BY CASE WHEN enrich_checked_at IS NULL THEN 0 ELSE 1 END, "
+               "enrich_checked_at, published_at DESC, id DESC LIMIT ?"), tuple(params)
         ).fetchall()
         return [dict(r) for r in rows]
 
@@ -589,6 +590,13 @@ def mark_news_enrich_attempt(urls):
     with get_conn() as conn:
         conn.cursor().executemany(_q("UPDATE news SET enrich_checked_at=? WHERE url=?"),
                                   [(checked, url) for url in urls])
+
+
+def reset_missing_news_image_attempts(section):
+    """Resolver migration: requeue missing photos without deleting articles or existing images."""
+    with get_conn() as conn:
+        conn.execute(_q("UPDATE news SET enrich_checked_at=NULL WHERE section=? "
+                        "AND (image_url IS NULL OR image_url='')"), (section,))
 
 
 def apply_news_enrich(url_to_data):
@@ -1226,4 +1234,3 @@ def lunch_all_visited_ids(username):
         rows = conn.execute(_q("SELECT DISTINCT restaurant_id FROM lunch_visit WHERE username=?"),
                             (username,)).fetchall()
         return {dict(r)["restaurant_id"] for r in rows}
-

@@ -1791,7 +1791,8 @@ def _enrich_news_images(progress=None, section="nc", limit=None):
             chunk = rows[offset:offset + 20]
             data = google_news.enrich_articles(chunk, progress=progress)
             updated = db.apply_news_enrich(data)
-            db.mark_news_enrich_attempt([row["url"] for row in chunk])
+            db.mark_news_enrich_attempt([row["url"] for row in chunk
+                                        if not data.get(row["url"], {}).get("_retry")])
             n += updated
             if updated:
                 _invalidate_read_cache()
@@ -1808,6 +1809,13 @@ def _bootstrap_biz_images():
         return
     try:
         if _ensure_db(force=True):
+            if db.get_meta("biz_image_resolver_v3102", "") != "ready":
+                db.reset_missing_news_image_attempts("biz")
+                db.set_meta("biz_image_resolver_v3102", "ready")
+            if _JOBS.get("biz", {}).get("running"):
+                return
+            # Photo repair gets a turn before the historical RSS recovery job.
+            _enrich_news_images(section="biz", limit=40)
             # 최근 30일 자료가 있어도 과거 5년 복구가 끝난 것으로 보지 않는다.
             complete = db.get_meta("biz_history_recovery_v373", "") == "complete"
             last = float(db.get_meta("biz_history_attempt_v373", "0") or 0)
@@ -1815,8 +1823,6 @@ def _bootstrap_biz_images():
                 # replace=False: 기존 자료·사진을 보존하며 빠진 과거 기사만 추가/갱신.
                 if _start_job("biz", days=google_news.RECENT_DAYS):
                     db.set_meta("biz_history_attempt_v373", str(time.time()))
-            elif not _JOBS.get("biz", {}).get("running"):
-                _enrich_news_images(section="biz", limit=40)
     except Exception as e:
         print(f"[images] 동향 이미지 보강 실패: {type(e).__name__}", flush=True)
 

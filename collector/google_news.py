@@ -22,6 +22,8 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
+from urllib.parse import urlsplit
+from collections import Counter
 
 from bs4 import BeautifulSoup
 
@@ -33,6 +35,9 @@ RSS_URL = "https://news.google.com/rss/search"
 _RSS_SLOTS = threading.BoundedSemaphore(1)
 _RSS_NEXT_REQUEST = 0.0
 BATCH_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
+_DECODE_LOCK = threading.Lock()
+_DECODE_NEXT = 0.0
+_DECODE_RETRY_AT = 0.0
 # 뉴스 카테고리별 검색 키워드. (재단=엔씨문화재단, 본사=엔씨소프트 및 자회사)
 CATEGORIES = {
     "재단": ["엔씨문화재단", "NC문화재단"],
@@ -183,7 +188,7 @@ def _decode_google_url(url):
        (signature/timestamp와 함께) 질의해 원문 URL을 받아온다.
     실패하면 None을 돌려주고, 호출측은 RSS 요약으로 폴백한다.
     """
-    m = re.search(r"news\.google\.com/(?:rss/)?articles/([A-Za-z0-9_\-]+)", url or "")
+    m = re.search(r"news\.google\.com/(?:rss/)?(?:articles|read)/([A-Za-z0-9_\-]+)", url or "")
     if not m:
         return None
     token = m.group(1)
@@ -192,7 +197,7 @@ def _decode_google_url(url):
     padded = token + "=" * (-len(token) % 4)
     try:
         text = base64.urlsafe_b64decode(padded).decode("latin-1", "ignore")
-        m2 = re.search(r"https?://[^\s\"'<>\\]+", text)
+        m2 = re.search(r"https?://[^\x00-\x20\x7f-\xff\"'<>\\]+", text)
         if m2 and "google.com" not in m2.group(0):
             return m2.group(0)
     except Exception:  # noqa: BLE001
@@ -206,39 +211,92 @@ def _decode_via_batchexecute(token):
     """구글 뉴스 신형 기사 토큰을 원문 URL로 복원한다.
     기사 페이지에서 서명(data-n-a-sg)/타임스탬프(data-n-a-ts)를 읽어
     내부 RPC(Fbv4je/garturlreq)를 호출한다."""
+    # All sections share one paced resolver; a 429 stops further calls until retry.
+    global _DECODE_NEXT, _DECODE_RETRY_AT
+    with _DECODE_LOCK:
+        if time.time() < _DECODE_RETRY_AT:
+            return None
+        time.sleep(max(0, _DECODE_NEXT - time.monotonic()))
+        try:
+            return _decode_rpc(token)
+        except requests.HTTPError as error:
+            response = error.response
+            status = response.status_code if response is not None else 0
+            if status in (429, 503):
+                wait = 300
+                try:
+                    raw = response.headers.get("Retry-After", "300")
+                    wait = max(wait, float(raw))
+                except ValueError:
+                    try:
+                        wait = max(wait, parsedate_to_datetime(raw).timestamp() - time.time())
+                    except (TypeError, ValueError, OverflowError):
+                        pass
+                _DECODE_RETRY_AT = time.time() + wait
+            print(f"[images] 구글 원문 해석 HTTP {status} · 재시도 대기", flush=True)
+        except Exception as error:
+            print(f"[images] 구글 원문 해석 {type(error).__name__}", flush=True)
+        finally:
+            _DECODE_NEXT = time.monotonic() + 1.5
+    return None
+
+
+def _publisher_url(value):
+    if not isinstance(value, str):
+        return None
     try:
-        page = fetcher.get(f"https://news.google.com/articles/{token}",
-                           params={"hl": "ko", "gl": "KR", "ceid": "KR:ko"},
-                           retries=0, timeout=NEWS_TIMEOUT)
-        div = BeautifulSoup(page.text, "lxml").select_one("[data-n-a-sg][data-n-a-ts]")
-        if not div:
-            return None
-        sig, ts = div.get("data-n-a-sg"), div.get("data-n-a-ts")
-        if not (sig and ts):
-            return None
-        inner = json.dumps([
-            "garturlreq",
-            [["X", "X", ["X", "X"], None, None, 1, 1, "US:en", None, 1,
-              None, None, None, None, None, 0, 1],
-             "X", "X", 1, [1, 1, 1], 1, 1, None, 0, 0, None, 0],
-            token, int(ts), sig,
-        ])
-        f_req = json.dumps([[["Fbv4je", inner, None, "generic"]]])
-        resp = fetcher.post(
-            BATCH_URL,
-            data={"f.req": f_req},
-            headers={"content-type": "application/x-www-form-urlencoded;charset=UTF-8"},
-            retries=0, timeout=NEWS_TIMEOUT,
-        )
-        for line in resp.text.splitlines():
-            if "wrb.fr" in line and "garturlres" in line:
-                arr = json.loads(line)
-                decoded = json.loads(arr[0][2])
-                if isinstance(decoded, list) and len(decoded) > 1:
-                    return decoded[1]
+        parts = urlsplit(value)
+        host = parts.hostname or ""
+        if parts.scheme in ("http", "https") and host and not (host == "google.com" or host.endswith(".google.com")):
+            return value
+    except ValueError:
+        pass
+    return None
+
+
+def _decode_rpc(token):
+    # /articles redirects non-browser clients away from the signature page.
+    page = fetcher.get(f"https://news.google.com/rss/articles/{token}",
+                       params={"hl": "ko", "gl": "KR", "ceid": "KR:ko"},
+                       retries=0, timeout=NEWS_TIMEOUT)
+    direct = _publisher_url(getattr(page, "url", ""))
+    if direct:
+        return direct
+    div = BeautifulSoup(page.text, "lxml").select_one("[data-n-a-sg][data-n-a-ts]")
+    if not div:
         return None
-    except Exception:  # noqa: BLE001
+    sig, ts = div.get("data-n-a-sg"), div.get("data-n-a-ts")
+    if not (sig and ts):
         return None
+    inner = json.dumps([
+        "garturlreq",
+        [["X", "X", ["X", "X"], None, None, 1, 1, "US:en", None, 1,
+          None, None, None, None, None, 0, 1],
+         "X", "X", 1, [1, 1, 1], 1, 1, None, 0, 0, None, 0],
+        token, int(ts), sig,
+    ])
+    f_req = json.dumps([[["Fbv4je", inner, None, "generic"]]])
+    resp = fetcher.post(
+        BATCH_URL,
+        data={"f.req": f_req},
+        headers={"content-type": "application/x-www-form-urlencoded;charset=UTF-8"},
+        retries=0, timeout=NEWS_TIMEOUT,
+    )
+    decoder = json.JSONDecoder()
+    # Ignore XSSI/length prefixes; inspect every RPC row, including multiline JSON.
+    for match in re.finditer(r"\[", resp.text):
+        try:
+            arr, _ = decoder.raw_decode(resp.text[match.start():])
+            if not isinstance(arr, list) or len(arr) < 3 or arr[:2] != ["wrb.fr", "Fbv4je"]:
+                continue
+            decoded = json.loads(arr[2]) if isinstance(arr[2], str) else arr[2]
+            if isinstance(decoded, list) and len(decoded) > 1 and decoded[0] == "garturlres":
+                target = _publisher_url(decoded[1])
+                if target:
+                    return target
+        except (ValueError, TypeError):
+            continue
+    return None
 
 
 def _summary_from_article(entry):
@@ -247,9 +305,12 @@ def _summary_from_article(entry):
     summary = ""
     try:
         real = _decode_google_url(entry.get("url", ""))
+        if not real and time.time() < _DECODE_RETRY_AT:
+            entry["content"] = entry.get("snippet") or ""
+            return entry
         resp = fetcher.get(real or entry["url"], retries=0, timeout=NEWS_TIMEOUT)  # 리다이렉트 따라감
         final = resp.url or ""
-        if "news.google." not in final and "consent.google" not in final:
+        if _publisher_url(final):
             # 저장 키(url)는 RSS의 '구글 링크'로 고정(증분 수집이 되게).
             # 복원/리다이렉트로 얻은 실제 기사 URL은 표시(원문 보기)용으로만 보관.
             if final:
@@ -276,17 +337,20 @@ def _enrich_one(row):
     out = {}
     try:
         gl = row.get("url", "")
-        real = row.get("source_url") or _decode_google_url(gl) or gl
+        real = _publisher_url(row.get("source_url")) or _decode_google_url(gl) or gl
+        if not _publisher_url(real):
+            return {"_image_status": "원문 링크 미해석", "_retry": time.time() < _DECODE_RETRY_AT}
         resp = fetcher.get(real, retries=0, timeout=NEWS_TIMEOUT)
         final = resp.url or ""
-        if "news.google." in final or "consent.google" in final:
-            return out
+        if not _publisher_url(final):
+            return {"_image_status": "구글 안내 페이지"}
         if final and not row.get("source_url"):
             out["source_url"] = final
         soup = BeautifulSoup(resp.text, "lxml")
         img = extractor.extract_image(soup, final)
         if img:
             out["image_url"] = img
+        out["_image_status"] = "이미지 확보" if img else "원문 이미지 없음"
         # 요약: og:description 우선, 없으면 본문에서 요약
         summ = extractor.extract_summary(soup)
         if not summ:
@@ -295,8 +359,8 @@ def _enrich_one(row):
                 summ = extractor.summarize(art["content"])
         if summ and len(summ) > len(row.get("content") or ""):
             out["content"] = summ  # 기존(짧은 RSS 요약)보다 길 때만 교체
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as error:  # noqa: BLE001
+        out["_image_status"] = type(error).__name__
     return out
 
 
@@ -306,17 +370,20 @@ def enrich_articles(rows, max_workers=4, progress=None):
     progress = progress or (lambda m: None)
     if not rows:
         return {}
-    out, done = {}, 0
+    out, done, statuses = {}, 0, Counter()
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futs = {pool.submit(_enrich_one, r): r for r in rows}
         for fut in as_completed(futs):
             r = futs[fut]
             data = fut.result()
+            statuses[data.get("_image_status", "미확보")] += 1
             if data:
                 out[r["url"]] = data
             done += 1
             if done % 20 == 0 or done == len(rows):
-                progress(f"본문·이미지 보강 {done}/{len(rows)} · 확보 {len(out)}건")
+                photos = sum(bool(data.get("image_url")) for data in out.values())
+                progress(f"본문·이미지 보강 {done}/{len(rows)} · 이미지 확보 {photos}건")
+    print(f"[images] 보강 결과 {dict(statuses)}", flush=True)
     return out
 
 

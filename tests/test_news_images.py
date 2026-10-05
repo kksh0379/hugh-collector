@@ -44,7 +44,9 @@ class ImageExtractionTests(unittest.TestCase):
         row = {'url': 'https://google.example/rss', 'source_url': 'https://paper.example/news/view', 'content': 'a' * 300}
         response = SimpleNamespace(url=row['source_url'], text='<article><img data-src="/story.jpg"></article>')
         with patch.object(google_news.fetcher, 'get', return_value=response):
-            self.assertEqual(google_news._enrich_one(row), {'image_url': 'https://paper.example/story.jpg'})
+            result = google_news._enrich_one(row)
+            self.assertEqual(result['image_url'], 'https://paper.example/story.jpg')
+            self.assertNotIn('content', result)
 
 
 class ImageQueueTests(unittest.TestCase):
