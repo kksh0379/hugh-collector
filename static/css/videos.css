@@ -27,7 +27,7 @@
 .videos-player video{object-fit:contain;background:#000;}
 
 .videos-player{position:relative;}
-.videos-player iframe.videos-source-crop{position:absolute;top:0;left:0;width:560px;height:315px;max-width:none;transform-origin:top left;}
+.videos-player iframe.videos-source-crop{position:absolute;top:0;left:0;width:560px;height:560px;max-width:none;transform-origin:top left;}
 
 .videos-picker-hint{text-align:center;color:var(--muted);font-size:12px;margin:10px 0 20px;}
 .videos-shell button.videos-resume{display:flex;align-items:center;gap:14px;width:100%;padding:16px;text-align:left;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:14px;}
