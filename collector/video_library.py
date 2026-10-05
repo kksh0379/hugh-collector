@@ -1,6 +1,8 @@
 """Source metadata and short-lived playback URLs; media is never proxied."""
 import re
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -8,13 +10,97 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from flask import Blueprint, jsonify, request, send_file, session, redirect, Response, url_for
-from . import video_hls
+from . import video_hls, db
 
 bp = Blueprint('video_library', __name__)
 ORIGIN = 'https://linkani.tv'
 TITLE_NAMES = {'19240': '강철의 연금술사', '3217': '원피스',
                '21707': '나루토', '2010': '보루토', '70867': '바람의 검심'}
 WATCH = re.compile(r'^/watch/([1-9]\d{0,8})/a([1-9]\d{0,3})/k([1-9]\d{0,4})/?$')
+_STATE_LOCK = threading.RLock()
+_CHECK_SLOTS = threading.BoundedSemaphore(2)
+_EPISODE_STATES = {}
+
+
+def episode_states(title_id):
+    with _STATE_LOCK:
+        if title_id not in _EPISODE_STATES:
+            try:
+                import json
+                saved = json.loads(db.get_meta('video_availability_' + title_id, '{}') or '{}')
+            except Exception:
+                saved = {}
+            if len(_EPISODE_STATES) >= 128:
+                _EPISODE_STATES.pop(next(iter(_EPISODE_STATES)))
+            _EPISODE_STATES[title_id] = saved if isinstance(saved, dict) else {}
+        return {key: value for key, value in _EPISODE_STATES[title_id].items()
+                if isinstance(value, dict) and time.time() - value.get('checked_at', 0) < 21600}
+
+
+def record_episode(title_id, series, episode, state):
+    if state not in ('available', 'missing'):
+        return
+    with _STATE_LOCK:
+        values = episode_states(title_id)
+        values[f'{series}:{episode}'] = dict(status=state, checked_at=time.time())
+        _EPISODE_STATES[title_id] = values
+        try:
+            import json
+            db.set_meta('video_availability_' + title_id, json.dumps(values))
+        except Exception:
+            pass
+
+
+def check_episode(title_id, series, episode):
+    key = f'{series}:{episode}'
+    known = episode_states(title_id).get(key)
+    if known:
+        return key, known['status']
+    path = f'/watch/{title_id}/a{series}/k{episode}/'
+    state = 'unknown'
+    try:
+        with _CHECK_SLOTS:
+            response = requests.get(ORIGIN + path, timeout=(3, 5), allow_redirects=False)
+        if response.status_code in (404, 410):
+            state = 'missing'
+        elif response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            player = parse_playback(response.text)
+            if player:
+                with _CHECK_SLOTS:
+                    with requests.get(player['src'], timeout=(3, 5), stream=True, allow_redirects=False) as media:
+                        if media.status_code in (404, 410):
+                            state = 'missing'
+                        elif media.status_code in (200, 206):
+                            state = 'available'
+            else:
+                canonical = soup.select_one('link[rel="canonical"][href], meta[property="og:url"][content]')
+                page_path = urlparse(canonical.get('href') or canonical.get('content') or '').path if canonical else ''
+                # A captcha/error page or unsupported embedded player is not a missing video.
+                if page_path.rstrip('/') == path.rstrip('/') and not soup.select_one('video[src], video source[src], iframe[src]'):
+                    state = 'missing'
+    except requests.RequestException:
+        pass
+    record_episode(title_id, series, episode, state)
+    return key, state
+
+
+@bp.get('/api/videos/availability')
+def availability():
+    title_id, series = request.args.get('id', ''), request.args.get('series', '')
+    raw = request.args.get('episodes', '').split(',')
+    if not 1 <= len(raw) <= 12 or any(not WATCH.fullmatch(f'/watch/{title_id}/a{series}/k{ep}/') for ep in raw):
+        return jsonify(error='회차 범위를 확인해 주세요.'), 400
+    try:
+        data = load_catalog(title_id, series, raw[0], int(time.time() // 3600))
+        allowed = next((s['episodes'] for s in data['series'] if s['id'] == int(series)), [])
+        if any(int(ep) not in allowed for ep in raw):
+            return jsonify(error='등록된 회차만 확인할 수 있어요.'), 400
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            states = dict(pool.map(lambda ep: check_episode(title_id, series, ep), raw))
+        return jsonify(states=states)
+    except requests.RequestException:
+        return jsonify(states={f'{series}:{ep}': 'unknown' for ep in raw})
 
 
 def parse_playback(html):
@@ -41,6 +127,7 @@ def playback():
     try:
         response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False)
         if response.status_code in (404, 410):
+            record_episode(*parts, 'missing')
             result = jsonify(error='원출처에 이 회차의 영상이 없어요. 다른 회차를 선택해 주세요.', code='video_missing')
             result.status_code = 404
             result.headers['Cache-Control'] = 'no-store'
@@ -174,7 +261,7 @@ def catalog():
         data = load_catalog(*parts, int(time.time() // 3600))
         if not data.get('series'):
             return jsonify(error='이 작품은 아직 재생할 수 있는 회차가 등록되지 않았어요.'), 409
-        return jsonify(data)
+        return jsonify(dict(data, availability=episode_states(parts[0])))
     except requests.RequestException:
         # Snapshot verified from the supplied page; never invent episode ranges.
         if parts[0] == '19240' and parts[1] == '1' and 1 <= int(parts[2]) <= 68:

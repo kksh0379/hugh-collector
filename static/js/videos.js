@@ -70,31 +70,69 @@
   function showBrowse(restore = true) {
     closePicker(false);
     ++requestVersion; selected = null; catalog = null; stop(); $('videos-detail').hidden = true; $('videos-browse').hidden = false; status('', true);
+    renderLibrary();
     if (restore && !$('view-videos').hidden) window.scrollTo({top:listScroll,left:0,behavior:'instant'});
   }
   function detailUrl(id) { const url = new URL(location.href); if (id) url.searchParams.set('video',id); else url.searchParams.delete('video'); return url; }
-  function renderLibrary() {
-    const query = $('videos-search').value.trim();
-    const rows = discoveryRows(library, allWorks, scope, query);
+  function makeCard(item, resume = false) {
+    const card = document.createElement('article'); card.className = 'videos-work';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'videos-work-open';
+    const image = cache.get(item.id)?.image || item.image || allWorks.find(x => x.id === item.id)?.image;
+    const poster = document.createElement('div'); poster.className = 'videos-poster'; poster.setAttribute('aria-hidden','true');
+    const placeholder = document.createElement('span'); placeholder.className = 'videos-poster-placeholder'; placeholder.textContent = 'HSCOPE'; poster.append(placeholder);
+    if (image) { const img = document.createElement('img'); img.src = image; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.onerror = () => img.remove(); poster.append(img); }
+    if (resume) { const badge = document.createElement('span'); badge.className = 'videos-card-badge'; badge.textContent = '이어보기'; poster.append(badge); }
+    b.append(poster);
+    const name = document.createElement('strong'); name.textContent = item.title; name.title = item.title; b.append(name);
+    const info = document.createElement('small'), saved = progress[item.id];
+    info.textContent = resume && saved ? `${saved.episode}화 · ${Math.floor((saved.seconds || 0) / 60)}분 시청` : item.description ? `회차 ${item.description}` : '작품 정보 보기'; b.append(info);
+    b.onclick = async () => { await selectWork(item); if (resume && catalog && selected?.id === item.id) play(); };
+    const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'videos-save';
+    const savedItem = library.some(x => x.id === item.id); favorite.textContent = savedItem ? '✓ 내 목록' : '+ 내 목록';
+    favorite.setAttribute('aria-pressed', String(savedItem)); favorite.setAttribute('aria-label', `${item.title} ${favoriteLabel(item)}`);
+    favorite.onclick = () => toggleFavorite(item); card.append(b, favorite); return card;
+  }
+  function renderShelves(query) {
+    const show = scope === 'all' && !query;
+    $('videos-shelves').hidden = !show; $('videos-hero').hidden = !show || !allWorks.length;
+    if (!show) return;
+    const candidates = discoveryRows(library, allWorks, 'all', '');
+    const continuing = candidates.filter(item => Number(progress[item.id]?.seconds) > 0).sort((a,b) => (progress[b.id].updatedAt || 0) - (progress[a.id].updatedAt || 0));
+    for (const [section, target, rows, resume] of [['videos-continue-section','videos-continue',continuing,true],['videos-my-section','videos-my-rail',library,false],['videos-picks-section','videos-picks',DEFAULT_LIBRARY.map(item => allWorks.find(x => x.id === item.id)).filter(Boolean),false]]) {
+      $(section).hidden = !rows.length; $(target).replaceChildren(...rows.slice(0,16).map(item => makeCard(item,resume)));
+    }
+    const featured = continuing[0] || allWorks.find(x => x.id === '19240') || allWorks[0];
+    if (!featured) return;
+    const hero = $('videos-hero'); hero.replaceChildren();
+    if (featured.image) { const image = document.createElement('img'); image.src = featured.image; image.alt = ''; image.referrerPolicy = 'no-referrer'; image.onerror = () => image.remove(); hero.append(image); }
+    const content = document.createElement('div'); content.className = 'videos-hero-content';
+    const eyebrow = document.createElement('span'); eyebrow.className = 'videos-eyebrow'; eyebrow.textContent = continuing.length ? '멈췄던 이야기, 이어서' : '오늘 만날 이야기';
+    const title = document.createElement('h3'); title.textContent = featured.title;
+    const description = document.createElement('p'); description.textContent = continuing.length ? `${progress[featured.id].episode}화부터 다시 시작하세요.` : '작품을 열고 원하는 회차를 골라 감상하세요.';
+    const actions = document.createElement('div'); actions.className = 'videos-hero-actions';
+    const open = document.createElement('button'); open.type = 'button'; open.textContent = continuing.length ? '▶ 이어보기' : '▶ 작품 보기';
+    open.onclick = async () => { await selectWork(featured); if (continuing.length && catalog && selected?.id === featured.id) play(); };
+    const saveButton = document.createElement('button'); saveButton.type = 'button'; saveButton.textContent = favoriteLabel(featured); saveButton.onclick = () => toggleFavorite(featured);
+    actions.append(open,saveButton); content.append(eyebrow,title,description,actions); hero.append(content);
+  }
+  function renderLibrary(append = false) {
+    const query = $('videos-search').value.trim(), rows = discoveryRows(library, allWorks, scope, query);
     $('videos-count').textContent = `총 ${rows.length.toLocaleString()}개${query ? ' · 검색 결과' : ''}${indexLoading ? ' · 전체 목록 불러오는 중…' : ''}`;
-    $('videos-more').hidden = rows.length <= visibleCount;
-    $('videos-library').replaceChildren(...rows.slice(0, visibleCount).map(item => {
-      const card = document.createElement('article'); card.className = 'videos-work';
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'videos-work-open';
-      const image = cache.get(item.id)?.image || item.image || allWorks.find(x => x.id === item.id)?.image;
-      const poster = document.createElement('div'); poster.className = 'videos-poster'; poster.setAttribute('aria-hidden','true');
-      if (image) { const img = document.createElement('img'); img.src = image; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer'; img.onerror = () => img.remove(); poster.append(img); }
-      b.append(poster);
-      const name = document.createElement('strong'); name.textContent = item.title; name.title = item.title; b.append(name);
-      const info = document.createElement('small'); info.textContent = item.description || ''; b.append(info);
-      b.onclick = () => selectWork(item);
-      const favorite = document.createElement('button'); favorite.type = 'button'; favorite.className = 'videos-save'; favorite.textContent = favoriteLabel(item);
-      favorite.setAttribute('aria-pressed', String(library.some(x => x.id === item.id))); favorite.setAttribute('aria-label', `${item.title} ${favoriteLabel(item)}`);
-      favorite.onclick = () => toggleFavorite(item);
-      card.append(b, favorite); return card;
-    }));
+    $('videos-grid-heading').textContent = query ? '검색 결과' : scope === 'saved' ? '내 목록의 모든 작품' : '모든 작품';
+    const cards = rows.slice(append ? Math.max(0,visibleCount-40) : 0,visibleCount).map(item => makeCard(item));
+    if (append) $('videos-library').append(...cards); else { $('videos-library').replaceChildren(...cards); renderShelves(query); }
+    const more = rows.length > visibleCount;
+    $('videos-sentinel').hidden = !more; $('videos-sentinel').textContent = more ? '스크롤하면 다음 작품을 불러와요' : '';
     if (!rows.length) { const p = document.createElement('p'); p.className = 'videos-empty'; p.textContent = indexLoading && scope === 'all' ? '전체 작품 목록을 불러오고 있어요…' : scope === 'saved' && !query ? '마음에 드는 작품을 내 목록에 추가해 보세요.' : '검색 결과가 없어요. 다른 제목으로 찾아보세요.'; $('videos-library').append(p); }
   }
+  let loadingMore = false;
+  function loadMore() {
+    if (loadingMore || $('view-videos').hidden || $('videos-browse').hidden || $('videos-sentinel').hidden) return;
+    loadingMore = true; visibleCount += 40; renderLibrary(true);
+    window.requestAnimationFrame(() => { loadingMore = false; if (!$('videos-sentinel').hidden && $('videos-sentinel').getBoundingClientRect().top < window.innerHeight + 450) loadMore(); });
+  }
+  if (window.IntersectionObserver) { const observer = new window.IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) loadMore(); }, {rootMargin:'450px'}); observer.observe($('videos-sentinel')); }
+  else window.addEventListener('scroll', () => { if ($('videos-sentinel').getBoundingClientRect().top < window.innerHeight + 450) loadMore(); }, {passive:true});
   function playLabel(label, disabled = false) { $('videos-resume-title').textContent = label; $('videos-play').disabled = disabled; }
   function updateResume() {
     if (!selected) return;
@@ -102,10 +140,40 @@
     $('videos-resume-info').textContent = `${selected.episode}화${seconds ? ' · ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : ''}`;
   }
   let rangeStart = 1;
+  let availabilityRun = 0, availabilityController = null;
+  function episodeState(ep) {
+    const entry = catalog?.availability?.[`${selected.series}:${ep}`];
+    return typeof entry === 'string' ? entry : entry?.status;
+  }
+  function paintEpisodeStates() {
+    for (const button of $('videos-episodes').querySelectorAll('button')) {
+      const ep = Number(button.dataset.episode), state = episodeState(ep);
+      button.dataset.availability = state || 'unchecked';
+      button.textContent = `${ep}화${state === 'missing' ? ' · 영상 없음' : !state || state === 'unknown' ? ' · 미확인' : ''}`;
+      button.setAttribute('aria-label', `${ep}화${state === 'missing' ? ', 원출처 영상 없음. 선택하면 다시 확인' : !state || state === 'unknown' ? ', 영상 연결 미확인' : ''}`);
+    }
+  }
+  async function checkEpisodePage() {
+    if (!catalog || !$('videos-picker').open) return;
+    const run = ++availabilityRun, work = selected.id, series = selected.series, data = catalog;
+    availabilityController?.abort(); const controller = new AbortController(); availabilityController = controller;
+    const numbers = Array.from($('videos-episodes').querySelectorAll('button')).map(b => Number(b.dataset.episode)).filter(ep => !episodeState(ep));
+    for (let offset = 0; offset < numbers.length; offset += 12) {
+      if (run !== availabilityRun || !$('videos-picker').open || selected?.id !== work || selected.series !== series) break;
+      try {
+        const response = await fetch(`/api/videos/availability?id=${work}&series=${series}&episodes=${numbers.slice(offset,offset+12).join(',')}`, {signal:controller.signal});
+        if (!response.ok) break;
+        const result = await response.json();
+        data.availability = {...data.availability, ...result.states};
+        if (run === availabilityRun && catalog === data) paintEpisodeStates();
+      } catch { break; }
+    }
+  }
   let sheetOverflow = '';
   function closePicker(focus = true) {
     const sheet = $('videos-picker'); if (!sheet.open) return;
     sheet.close(); document.documentElement.style.overflow = sheetOverflow;
+    ++availabilityRun; availabilityController?.abort(); availabilityController = null;
     $('videos-picker-open').setAttribute('aria-expanded', 'false');
     if (focus) $('videos-picker-open').focus({preventScroll:true});
   }
@@ -120,6 +188,7 @@
     browseEpisode(selected.episode);
     $('videos-picker').showModal(); $('videos-picker-open').setAttribute('aria-expanded', 'true');
     revealEpisode();
+    checkEpisodePage();
   }
   function pickEpisode(number) { closePicker(); chooseEpisode(number, true); }
   $('videos-picker-open').onclick = openPicker;
@@ -136,7 +205,7 @@
   function chooseEpisode(number, autoplay = false) {
     const playing = !!$('videos-player').querySelector('iframe, video') || !!playbackController;
     const previous = progress[selected.id];
-    selected.episode = number; progress[selected.id] = {series:selected.series, episode:number, seconds:previous?.series === selected.series && previous?.episode === number ? Number(previous.seconds) || 0 : 0};
+    selected.episode = number; progress[selected.id] = {series:selected.series, episode:number, seconds:previous?.series === selected.series && previous?.episode === number ? Number(previous.seconds) || 0 : 0, updatedAt:previous?.updatedAt || 0};
     try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
     const favorite = library.find(x => x.id === selected.id); if (favorite) { favorite.series = selected.series; favorite.episode = number; save(); }
     stop();
@@ -166,6 +235,8 @@
       b.setAttribute('aria-pressed', String(ep === selected.episode)); b.onclick = () => pickEpisode(ep); return b;
     }));
     $('videos-episodes').scrollTop = 0;
+    paintEpisodeStates();
+    checkEpisodePage();
   }
   function browseEpisode(number) {
     rangeStart = Math.floor((number - 1) / 100) * 100 + 1;
@@ -306,6 +377,7 @@
       const data = await response.json();
       if (!response.ok && data.code === 'video_missing') {
         if (!current()) return; fallbackUsed = true;
+        catalog.availability = {...catalog.availability, [`${item.series}:${item.episode}`]: 'missing'}; paintEpisodeStates();
         const missing = document.createElement('p'); missing.textContent = data.error;
         $('videos-player').replaceChildren(missing); status(data.error, true); playLabel('다시 확인하기'); return;
       }
@@ -325,7 +397,7 @@
         if (!current() || !Number.isFinite(video.currentTime)) return;
         const seconds = Math.floor(video.currentTime);
         if (Math.abs(seconds - lastSaved) < 5) return;
-        lastSaved = seconds; progress[item.id] = {series:item.series, episode:item.episode, seconds};
+        lastSaved = seconds; progress[item.id] = {series:item.series, episode:item.episode, seconds, updatedAt:Date.now()};
         try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
         updateResume();
       };
@@ -337,7 +409,7 @@
         $('videos-player').replaceChildren(failure); status(failure.textContent, true); playLabel('다시 확인하기');
       };
       video.onerror = mediaFailure;
-      video.onloadeddata = () => { if (current()) clearTimeout(playbackTimer); };
+      video.onloadeddata = () => { if (current()) { clearTimeout(playbackTimer); catalog.availability = {...catalog.availability, [`${item.series}:${item.episode}`]: 'available'}; paintEpisodeStates(); } };
       $('videos-player').replaceChildren(video);
       setupAirPlay(video, current, !!data.tracks?.length);
       playbackTimer = setTimeout(() => { if (!video.webkitCurrentPlaybackTargetIsWireless) mediaFailure(); }, 12000);
@@ -389,7 +461,7 @@
   for (const [id, value] of [['videos-all','all'], ['videos-saved','saved']]) $(id).onclick = () => {
     scope = value; visibleCount = 40; $('videos-all').setAttribute('aria-pressed',String(scope === 'all')); $('videos-saved').setAttribute('aria-pressed',String(scope === 'saved')); renderLibrary();
   };
-  $('videos-more').onclick = () => { visibleCount += 40; renderLibrary(); };
+
   window.onShowVideos = () => {
     if (!initialized) { initialized = true; renderLibrary(); }
     if (!allWorks.length && !indexLoading) loadIndex();

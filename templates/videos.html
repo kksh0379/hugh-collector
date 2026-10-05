@@ -1,7 +1,8 @@
 <main class="view-body" id="view-videos" hidden>
   <section class="videos-shell" aria-labelledby="videos-heading">
     <section id="videos-browse">
-    <header><h2 id="videos-heading">영상</h2><p>작품과 회차를 선택해 감상하세요.</p></header>
+    <header class="videos-masthead"><div><span class="videos-eyebrow">HSCOPE CINEMA</span><h2 id="videos-heading">오늘의 감상</h2></div><p>보고 싶은 이야기, 멈췄던 순간부터.</p></header>
+    <section id="videos-hero" class="videos-hero" hidden aria-label="추천 작품"></section>
     <p id="videos-status" role="status" aria-live="polite" hidden></p>
     <div class="videos-discovery">
       <label class="sr-only" for="videos-search">애니메이션 검색</label>
@@ -9,8 +10,14 @@
       <div class="videos-filters" aria-label="작품 범위"><button type="button" id="videos-all" aria-pressed="true">전체 작품</button><button type="button" id="videos-saved" aria-pressed="false">내 목록</button></div>
       <p id="videos-count" role="status" aria-live="polite"></p>
     </div>
+    <div id="videos-shelves">
+      <section id="videos-continue-section" class="videos-shelf" hidden><h3>이어보기</h3><div id="videos-continue" class="videos-rail"></div></section>
+      <section id="videos-my-section" class="videos-shelf" hidden><h3>내 목록</h3><div id="videos-my-rail" class="videos-rail"></div></section>
+      <section id="videos-picks-section" class="videos-shelf" hidden><h3>추천 작품</h3><div id="videos-picks" class="videos-rail"></div></section>
+    </div>
+    <h3 id="videos-grid-heading" class="videos-grid-heading">모든 작품</h3>
     <div id="videos-library" class="videos-library" aria-label="작품 목록"></div>
-    <button type="button" id="videos-more" hidden>더 보기</button>
+    <div id="videos-sentinel" class="videos-sentinel" role="status" aria-live="polite"></div>
     </section>
     <section id="videos-detail" hidden aria-label="선택한 작품">
       <div class="videos-detail-nav"><button type="button" id="videos-back">← 뒤로가기</button><button type="button" id="videos-detail-save" aria-pressed="false">내 목록에 추가</button></div>
@@ -32,7 +39,7 @@
         <form id="videos-jump-form" class="videos-jump"><label for="videos-jump">회차 바로가기</label><input id="videos-jump" type="number" min="1" step="1" inputmode="numeric" placeholder="회차 번호 입력" required><button type="submit">이동</button></form>
         <p id="videos-jump-status" role="status" aria-live="polite" hidden></p>
         <p id="videos-range-info" class="videos-range-info"></p>
-        <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div><p class="videos-sheet-help">회차를 선택하면 바로 재생돼요.</p>
+        <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div><p class="videos-sheet-help">영상 없음 표시는 원출처 확인 결과예요. 미확인 회차는 선택 후 확인해요.</p>
       </dialog>
       </div>
     </section>
