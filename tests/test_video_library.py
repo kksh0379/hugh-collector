@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import requests
 from flask import Flask
-from collector.video_library import bp, parse_page
+from collector.video_library import bp, parse_page, parse_playback
 
 
 class VideoLibraryTests(unittest.TestCase):
@@ -11,6 +11,23 @@ class VideoLibraryTests(unittest.TestCase):
         app = Flask(__name__)
         app.register_blueprint(bp)
         self.client = app.test_client()
+
+    def test_playback_extracts_video_and_subtitles_only(self):
+        data = parse_playback('<video id="linktv-video"><source src="https://aniplayer1.site/x/index.m3u8?expires=1&amp;md5=abc"><track src="https://aniplayer1.site/x/sub.vtt" srclang="ko"><track src="https://evil.example/sub.vtt"></video>')
+        self.assertEqual(data['src'], 'https://aniplayer1.site/x/index.m3u8?expires=1&md5=abc')
+        self.assertEqual(len(data['tracks']), 1)
+        self.assertIsNone(parse_playback('<video id="linktv-video" src="https://evil.example/file"></video>'))
+
+    @patch('collector.video_library.requests.get')
+    def test_playback_validates_coordinates_and_never_caches_expiring_urls(self, get):
+        self.assertEqual(self.client.get('/api/videos/playback?id=../x').status_code, 400)
+        get.assert_not_called()
+        get.return_value.status_code = 200
+        get.return_value.text = '<video id="linktv-video" src="https://aniplayer1.site/a.m3u8"></video>'
+        result = self.client.get('/api/videos/playback?id=19240&series=1&episode=2')
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.headers['Cache-Control'], 'no-store')
+        self.assertEqual(get.call_args.args[0], 'https://linkani.tv/watch/19240/a1/k2/')
 
     def test_metadata_groups_actual_links_and_rejects_other_hosts_and_titles(self):
         html = '''<meta property="og:title" content="강철의 연금술사 8화">

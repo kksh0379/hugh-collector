@@ -40,6 +40,7 @@
   try {
     library = mergeLibrary(JSON.parse(localStorage.getItem(STORE)));
   } catch {}
+  let playerVersion = 0, playbackController = null, hlsPlayer = null, playbackTimer = null, cropObserver = null;
   let selected = null, catalog = null, requestVersion = 0, initialized = false;
   let allWorks = [], scope = 'all', visibleCount = 40, indexLoading = false, listScroll = 0;
   let progress = {};
@@ -81,13 +82,13 @@
     }));
     if (!rows.length) { const p = document.createElement('p'); p.className = 'videos-empty'; p.textContent = indexLoading && scope === 'all' ? '전체 작품 목록을 불러오고 있어요…' : scope === 'saved' && !query ? '마음에 드는 작품을 내 목록에 추가해 보세요.' : '검색 결과가 없어요. 다른 제목으로 찾아보세요.'; $('videos-library').append(p); }
   }
-  function stop() { $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); $('videos-play').textContent = '재생'; $('videos-play').disabled = false; }
+  function stop() { ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); $('videos-play').textContent = '재생'; $('videos-play').disabled = false; }
   function revealEpisode() {
     const list = $('videos-episodes'), button = Array.from(list.querySelectorAll('button')).find(b => Number(b.dataset.episode) === selected.episode);
     if (button) list.scrollTop = Math.max(0, button.offsetTop - (list.clientHeight - button.offsetHeight) / 2);
   }
   function chooseEpisode(number) {
-    const playing = $('videos-player').querySelector('iframe') !== null;
+    const playing = !!$('videos-player').querySelector('iframe, video') || !!playbackController;
     selected.episode = number; progress[selected.id] = {series:selected.series, episode:number};
     try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
     const favorite = library.find(x => x.id === selected.id); if (favorite) { favorite.series = selected.series; favorite.episode = number; save(); }
@@ -136,13 +137,53 @@
     } catch (e) { if (version === requestVersion) status(e.name === 'AbortError' ? '연결이 지연되고 있어요. 뒤로 간 뒤 작품을 다시 선택해 주세요.' : e.message, true); }
     finally { clearTimeout(timer); }
   }
-  function play() {
+  async function play() {
     if (!selected || !catalog) return;
-    const frame = document.createElement('iframe'); frame.src = watchUrl(selected); frame.title = `${selected.title} ${selected.episode}화 재생`;
-    frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
-    frame.setAttribute('allow', 'fullscreen; autoplay; encrypted-media; picture-in-picture'); frame.allowFullscreen = true;
-    frame.referrerPolicy = 'no-referrer'; $('videos-player').replaceChildren(frame);
-    $('videos-play').textContent = '다시 불러오기';
+    stop();
+    const version = playerVersion, item = {...selected};
+    const current = () => version === playerVersion;
+    let fallbackUsed = false;
+    function fallback() {
+      if (!current() || fallbackUsed) return;
+      fallbackUsed = true; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null;
+      const video = $('videos-player').querySelector('video');
+      if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
+      const frame = document.createElement('iframe');
+      frame.src = watchUrl(item) + '#linktv-video'; frame.title = `${item.title} ${item.episode}화 재생`;
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+      frame.setAttribute('allow', 'fullscreen; autoplay; encrypted-media; picture-in-picture');
+      frame.setAttribute('scrolling', 'no'); frame.className = 'videos-source-crop'; frame.allowFullscreen = true;
+      frame.referrerPolicy = 'no-referrer'; $('videos-player').replaceChildren(frame);
+      const resize = () => { frame.style.transform = `scale(${($('videos-player').clientWidth || 560) / 560})`; };
+      resize(); if (window.ResizeObserver) { cropObserver = new window.ResizeObserver(resize); cropObserver.observe($('videos-player')); }
+      $('videos-play').textContent = '다시 불러오기'; $('videos-play').disabled = false;
+    }
+    const message = document.createElement('p'); message.textContent = '영상 연결 중…'; $('videos-player').replaceChildren(message);
+    $('videos-play').textContent = '연결 중…'; $('videos-play').disabled = true;
+    const controller = new AbortController(); playbackController = controller;
+    const timeout = setTimeout(() => { controller.abort(); fallback(); }, 16000);
+    try {
+      const response = await fetch(`/api/videos/playback?id=${item.id}&series=${item.series}&episode=${item.episode}`, {signal:controller.signal,cache:'no-store'});
+      if (!response.ok) throw Error('no direct player');
+      const data = await response.json(); if (!current() || fallbackUsed) return;
+      const video = document.createElement('video'); video.controls = true; video.playsInline = true; video.preload = 'auto'; video.crossOrigin = 'anonymous';
+      video.setAttribute('aria-label', `${item.title} ${item.episode}화`);
+      for (const entry of data.tracks || []) {
+        const track = document.createElement('track'); track.kind = 'subtitles'; track.src = entry.src; track.srclang = entry.language; track.label = entry.label; track.default = true; video.append(track);
+      }
+      video.onerror = fallback;
+      video.onloadeddata = () => { if (current()) clearTimeout(playbackTimer); };
+      $('videos-player').replaceChildren(video);
+      playbackTimer = setTimeout(fallback, 12000);
+      if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = data.src;
+      else if (window.Hls?.isSupported()) {
+        hlsPlayer = new window.Hls(); hlsPlayer.on(window.Hls.Events.ERROR, (event, info) => { if (info.fatal) fallback(); });
+        hlsPlayer.loadSource(data.src); hlsPlayer.attachMedia(video);
+      } else { fallback(); return; }
+      $('videos-play').textContent = '다시 불러오기'; $('videos-play').disabled = false;
+      const autoplay = video.play(); if (autoplay?.catch) autoplay.catch(() => {});
+    } catch { fallback(); }
+    finally { clearTimeout(timeout); if (current()) playbackController = null; }
   }
   $('videos-jump-form').onsubmit = event => {
     event.preventDefault(); if (!catalog) return;

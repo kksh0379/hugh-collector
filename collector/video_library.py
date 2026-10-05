@@ -1,4 +1,4 @@
-"""Watch-page metadata only; playback remains on the source website."""
+"""Source metadata and short-lived playback URLs; media is never proxied."""
 import re
 import time
 from functools import lru_cache
@@ -14,6 +14,42 @@ ORIGIN = 'https://linkani.tv'
 TITLE_NAMES = {'19240': '강철의 연금술사', '3217': '원피스',
                '21707': '나루토', '2010': '보루토', '70867': '바람의 검심'}
 WATCH = re.compile(r'^/watch/([1-9]\d{0,8})/a([1-9]\d{0,3})/k([1-9]\d{0,4})/?$')
+
+
+def parse_playback(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    video = soup.select_one('video#linktv-video')
+    if not video:
+        return None
+    source = video.find('source', src=True)
+    url = video.get('src') or (source.get('src') if source else '')
+    def safe(value):
+        u = urlparse(value)
+        return u.scheme == 'https' and bool(re.fullmatch(r'aniplayer\d+\.site', u.hostname or '')) and not u.username and not u.password and u.port in (None, 443)
+    if not safe(url):
+        return None
+    tracks = [dict(src=t['src'], language=t.get('srclang', 'ko'), label=t.get('label', '한국어'))
+              for t in video.select('track[src]') if safe(t['src'])]
+    return dict(src=url, tracks=tracks)
+
+
+@bp.get('/api/videos/playback')
+def playback():
+    parts = [request.args.get(key, '') for key in ('id', 'series', 'episode')]
+    path = f'/watch/{parts[0]}/a{parts[1]}/k{parts[2]}/'
+    if not WATCH.fullmatch(path):
+        return jsonify(error='영상 주소를 확인해 주세요.'), 400
+    try:
+        response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False)
+        response.raise_for_status()
+        data = parse_playback(response.text) if response.status_code == 200 else None
+        result = jsonify(data or dict(error='별도 플레이어를 연결할 수 없어요.'))
+        result.status_code = 200 if data else 409
+    except requests.RequestException:
+        result = jsonify(error='원본 재생 영역으로 연결할게요.')
+        result.status_code = 502
+    result.headers['Cache-Control'] = 'no-store'
+    return result
 
 
 @bp.get('/api/videos/library')
