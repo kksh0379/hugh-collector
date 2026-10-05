@@ -168,11 +168,12 @@ SEARCH_BACKOFF_KEY = "youtube_search_backoff_v385"
 
 
 def _search_backoff(reason, delay):
+    until = time.time() + delay
     try:
-        db.set_meta(SEARCH_BACKOFF_KEY, json.dumps({"until": time.time() + delay, "reason": reason}))
+        db.set_meta(SEARCH_BACKOFF_KEY, json.dumps({"until": until, "reason": reason}))
     except Exception:
         pass
-    return CollectionFailure(reason, stop_search=True)
+    return CollectionFailure(reason, stop_search=True, retry_at=until)
 
 
 
@@ -183,12 +184,12 @@ def _raise_youtube_error(data, *, search=False):
     reasons = {e.get("reason") for e in error.get("errors", []) if isinstance(e, dict)}
     code = error.get("code")
     if reasons & {"quotaExceeded", "dailyLimitExceeded", "dailyLimitExceededUnreg"}:
-        reason = "유튜브 API 일일 할당량 소진 · 자동 재시도 대기"
+        reason = "유튜브 API 일일 할당량 소진 · 다음 수집 대기"
         if search:
             raise _search_backoff(reason, 86400)
         raise CollectionFailure(reason, stop_search=True)
     if code == 429 or reasons & {"rateLimitExceeded", "userRateLimitExceeded"}:
-        reason = "유튜브 요청 제한(HTTP 429) · 자동 재시도 대기"
+        reason = "유튜브 요청 제한(HTTP 429) · 다음 수집 대기"
         if search:
             raise _search_backoff(reason, 3600)
         raise CollectionFailure(reason, stop_search=True)
@@ -214,7 +215,8 @@ def _crawl_youtube_search(query, account, max_items=8):
     try:
         blocked = json.loads(db.get_meta(SEARCH_BACKOFF_KEY, "{}") or "{}")
         if blocked.get("until", 0) > time.time():
-            raise CollectionFailure(blocked.get("reason") or "유튜브 요청 제한 · 자동 재시도 대기", stop_search=True)
+            raise CollectionFailure(blocked.get("reason") or "유튜브 요청 제한", stop_search=True,
+                                    deferred=True, retry_at=blocked["until"])
     except CollectionFailure:
         raise
     except Exception:
@@ -232,7 +234,7 @@ def _crawl_youtube_search(query, account, max_items=8):
                 delay = max(60, min(86400, int(response.headers.get("Retry-After", 3600))))
             except (AttributeError, TypeError, ValueError):
                 delay = 3600
-            raise _search_backoff("유튜브 요청 제한(HTTP 429) · 자동 재시도 대기", delay) from None
+            raise _search_backoff("유튜브 요청 제한(HTTP 429) · 다음 수집 대기", delay) from None
         if response is not None:
             try:
                 _raise_youtube_error(response.json(), search=True)
@@ -300,16 +302,20 @@ def crawl_all(max_items=10, progress=None):
     if os.environ.get("YOUTUBE_API_KEY", "").strip():
         for i, name in enumerate(MAJOR_FOUNDATIONS, 1):
             status, reason = "success", ""
+            retry_at = None
             try:
                 if stopped:
-                    items, status, reason = [], "deferred", stopped
+                    items, status = [], "deferred"
+                    reason, retry_at = stopped
                 else:
                     items = _crawl_youtube_search(name, name, max_items=8)
             except Exception as error:
-                items, status, reason = [], "failed", failure_reason(error)
+                items, status, reason = [], "deferred" if getattr(error, "deferred", False) else "failed", failure_reason(error)
+                retry_at = getattr(error, "retry_at", None)
                 if getattr(error, "stop_search", False):
-                    stopped = reason
-            sources.append({"name": name, "status": status, "count": len(items), "reason": reason})
+                    stopped = (reason, retry_at)
+            sources.append({"name": name, "status": status, "count": len(items), "reason": reason,
+                            "retry_at": retry_at})
             results.extend(items)
             progress(f"주요 재단 {i}/{len(MAJOR_FOUNDATIONS)} · {name}: {len(items)}건" + (f" · {reason}" if reason else ""))
     else:

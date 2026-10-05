@@ -9,9 +9,11 @@ class CollectionItems(list):
 
 class CollectionFailure(RuntimeError):
     """사용자에게 공개 가능한 오류만 보관. 요청 URL·인증키는 결과에 넣지 않는다."""
-    def __init__(self, reason, *, stop_search=False):
+    def __init__(self, reason, *, stop_search=False, deferred=False, retry_at=None):
         super().__init__(reason)
         self.stop_search = stop_search
+        self.deferred = deferred
+        self.retry_at = retry_at
 
 
 def failure_reason(error):

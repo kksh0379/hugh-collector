@@ -1782,7 +1782,15 @@ function _renderCrawlState(group, st) {
   const r = st.result || {};
   const failed = (r.sources || []).filter(s => s.status === "failed" || s.status === "deferred");
   if (details && failed.length) {
-    details.innerHTML = `<details class="collection-details"><summary>미완료 출처 ${failed.length}개 확인</summary><ul>${failed.map(s => `<li><strong>${escapeHtml(s.name)}</strong> · ${escapeHtml(s.reason)}${s.count ? ` · 확보 ${Number(s.count)}건` : ""}</li>`).join("")}</ul><p>기존 자료는 유지돼요. 원인 해결 후 다시 수집하면 누락된 항목을 보완해요.</p></details>`;
+    const deferred = failed.filter(s => s.status === "deferred").length;
+    const summary = [failed.length - deferred ? `수집 미완료 ${failed.length - deferred}곳` : "", deferred ? `확인 보류 ${deferred}곳` : ""].filter(Boolean).join(" · ");
+    details.innerHTML = `<details class="collection-details"><summary>${summary}</summary><ul>${failed.map(s => {
+      const state = s.status === "deferred" ? "확인 보류 · 이번 요청 생략" : "수집 미완료";
+      const reason = String(s.reason || "").replaceAll("자동 재시도 대기", "다음 수집 대기");
+      const retryAt = Number(s.retry_at);
+      const retry = retryAt > 0 && Number.isFinite(retryAt) ? ` · 재요청 가능: ${new Date(retryAt * 1000).toLocaleString("ko-KR", {timeZone: "Asia/Seoul"})} (한국시간) 이후` : "";
+      return `<li><strong>${escapeHtml(s.name)}</strong> · ${state} · ${escapeHtml(reason)}${escapeHtml(retry)}${s.count ? ` · 확보 ${Number(s.count)}건` : ""}</li>`;
+    }).join("")}</ul><p>기존에 저장된 자료는 유지돼요. 확인 보류는 해당 출처의 오류가 아니라 이번 확인을 건너뛴 상태예요. 대기 시간이 끝난 뒤 수집 버튼 또는 다음 정기 수집으로 최신 자료를 다시 확인해요.</p></details>`;
   }
   if (details && !failed.length && r.warning) {
     details.innerHTML = `<details class="collection-details"><summary>수집 상태 자세히 보기</summary><p>${escapeHtml(r.warning)}</p><p>기존 자료는 유지돼요.</p></details>`;
@@ -3844,4 +3852,3 @@ loadBiz();   // 동향 뉴스 + 재단게시판 + 재단영상 통합 로드
 loadSecurity();
 loadEvent();
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
-
