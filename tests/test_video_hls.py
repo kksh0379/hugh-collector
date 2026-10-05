@@ -50,6 +50,19 @@ class VideoHLSTests(unittest.TestCase):
         self.assertNotIn('다음 자막', video_hls.subtitle_segment(VTT, 1))
         self.assertIn('다음 자막', video_hls.subtitle_segment(VTT, 2))
 
+    def test_boundary_copies_have_no_overlapping_display_time(self):
+        first = video_hls.vtt_cues(video_hls.subtitle_segment(VTT, 0))
+        second = video_hls.vtt_cues(video_hls.subtitle_segment(VTT, 1))
+        self.assertEqual(first[0][:2], (5, 6))
+        self.assertEqual(second[0][:2], (6, 8))
+        self.assertLessEqual(first[0][1], second[0][0])
+
+    def test_duplicate_source_cues_render_once(self):
+        cue = '00:00:05.000 --> 00:00:08.000\n한국어 자막'
+        text = 'WEBVTT\n\nfirst\n' + cue + '\n\nsecond\n' + cue + '\n'
+        self.assertEqual(len(video_hls.vtt_cues(text)), 1)
+        self.assertEqual(video_hls.subtitle_segment(text, 0).count('한국어 자막'), 1)
+
     def test_subtitle_playlist_and_segments_can_be_fetched_without_session_by_tv(self):
         with patch.object(video_hls, 'load_text', return_value=VTT):
             playlist = self.client.get('/api/videos/subtitles.m3u8?token=' + self.token).get_data(as_text=True)

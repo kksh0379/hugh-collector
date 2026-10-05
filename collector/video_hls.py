@@ -68,6 +68,8 @@ def master_playlist(text, source, tracks, token):
                           '#EXT-X-STREAM-INF:BANDWIDTH=2500000,SUBTITLES="hscope-captions"', source, ''])
     lines = []
     for line in text.splitlines():
+        if line.startswith('#EXT-X-MEDIA:') and re.search(r'(?:^|[:,])TYPE=SUBTITLES(?:,|$)', line):
+            continue
         if line.startswith('#EXT-X-STREAM-INF:'):
             line = re.sub(r',?SUBTITLES="[^"]*"', '', line) + ',SUBTITLES="hscope-captions"'
         if line.startswith('#'):
@@ -88,6 +90,7 @@ def vtt_cues(text):
     if not text.lstrip('\ufeff').startswith('WEBVTT'):
         raise ValueError('invalid subtitles')
     cues = []
+    seen = set()
     for block in re.split(r'\n\s*\n', text.replace('\r\n', '\n')):
         match = re.search(r'(\d{2}:)?\d{2}:\d{2}\.\d{3}\s+-->\s+((?:\d{2}:)?\d{2}:\d{2}\.\d{3})', block)
         if not match:
@@ -95,6 +98,10 @@ def vtt_cues(text):
         start_value = match.group(0).split('-->')[0].strip()
         start, end = timestamp(start_value), timestamp(match[2])
         if end > start:
+            key = (start, end, block[match.end():].strip())
+            if key in seen:
+                continue
+            seen.add(key)
             cues.append((start, end, block))
     # A complete but empty WEBVTT file is a valid empty subtitle track.
     return cues
@@ -112,7 +119,19 @@ def subtitle_segment(text, index):
     cues, count = subtitle_segments(text)
     if not 0 <= index < count:
         raise ValueError('invalid segment')
-    blocks = [block for start, end, block in cues if start < (index + 1) * 6 and end > index * 6]
+    def clock(seconds):
+        milliseconds = round(seconds * 1000)
+        return f'{milliseconds // 3600000:02}:{milliseconds // 60000 % 60:02}:{milliseconds // 1000 % 60:02}.{milliseconds % 1000:03}'
+    blocks = []
+    for cue_id, (start, end, block) in enumerate(cues):
+        if start >= (index + 1) * 6 or end <= index * 6:
+            continue
+        # Adjacent segments must never render overlapping copies of one cue.
+        lines = block.splitlines()
+        timing_index = next(i for i, line in enumerate(lines) if '-->' in line)
+        timing = re.sub(r'(?:(?:\d{2}:)?\d{2}:\d{2}\.\d{3})\s+-->\s+(?:(?:\d{2}:)?\d{2}:\d{2}\.\d{3})',
+                        f'{clock(max(start, index * 6))} --> {clock(min(end, (index + 1) * 6))}', lines[timing_index])
+        blocks.append('\n'.join([f'hscope-{cue_id}-{index}', timing, *lines[timing_index + 1:]]))
     mapping = re.search(r'^X-TIMESTAMP-MAP=[^\r\n]+', text, re.M)
     header = mapping[0] if mapping else 'X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:0'
     return 'WEBVTT\n' + header + '\n\n' + '\n\n'.join(blocks) + '\n'

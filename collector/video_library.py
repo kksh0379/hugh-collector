@@ -102,7 +102,7 @@ def availability():
     if not 1 <= len(raw) <= 12 or any(not WATCH.fullmatch(f'/watch/{title_id}/a{series}/k{ep}/') for ep in raw):
         return jsonify(error='회차 범위를 확인해 주세요.'), 400
     try:
-        data = load_catalog(title_id, series, raw[0], int(time.time() // 3600))
+        data = load_catalog(title_id, series, raw[0], int(time.time() // 300))
         allowed = next((s['episodes'] for s in data['series'] if s['id'] == int(series)), [])
         if any(int(ep) not in allowed for ep in raw):
             return jsonify(error='등록된 회차만 확인할 수 있어요.'), 400
@@ -143,7 +143,7 @@ def playback():
     if not WATCH.fullmatch(path):
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
-        response = _watch_response(path, int(time.time() // 120))
+        response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False) if request.args.get('refresh') == '1' else _watch_response(path, int(time.time() // 120))
         if response.status_code in (404, 410):
             record_episode(*parts, 'missing')
             result = jsonify(error='원출처에 이 회차의 영상이 없어요. 다른 회차를 선택해 주세요.', code='video_missing')
@@ -281,7 +281,7 @@ def catalog():
     if not WATCH.fullmatch(f'/watch/{parts[0]}/a{parts[1]}/k{parts[2]}/'):
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
-        data = load_catalog(*parts, int(time.time() // 3600))
+        data = load_catalog(*parts, int(time.time() // 300))
         if not data.get('series'):
             return jsonify(error='이 작품은 아직 재생할 수 있는 회차가 등록되지 않았어요.'), 409
         return jsonify(dict(data, availability=episode_states(parts[0])))

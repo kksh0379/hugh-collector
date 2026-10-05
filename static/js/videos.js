@@ -183,14 +183,14 @@
       }
     }
   }
-  async function inspectPlayback(work, series, ep, signal) {
+  async function inspectPlayback(work, series, ep, signal, retry = false) {
     if (signal.aborted) return null;
     const controller = new AbortController();
     const abort = () => controller.abort(); signal.addEventListener('abort',abort,{once:true});
-    const timeout = setTimeout(abort,12000);
+    const timeout = setTimeout(abort,retry ? 20000 : 12000);
     let video = null, hls = null;
     try {
-      const response = await fetch(`/api/videos/playback?id=${work}&series=${series}&episode=${ep}&probe=1`,{signal:controller.signal,cache:'no-store'});
+      const response = await fetch(`/api/videos/playback?id=${work}&series=${series}&episode=${ep}&probe=1${retry ? "&refresh=1" : ""}`,{signal:controller.signal,cache:'no-store'});
       const data = await response.json();
       if (!response.ok || !data.src) return signal.aborted ? null : 'unavailable';
       video = document.createElement('video'); video.muted = true; video.playsInline = true; video.preload = 'auto'; video.crossOrigin = 'anonymous';
@@ -235,12 +235,17 @@
     const run = ++availabilityRun, work = selected.id, series = selected.series, episodes = inspectionEpisodes();
     if (force) { for (const ep of episodes) delete verified[`${work}:${series}:${ep}`]; paintEpisodeStates(); }
     const controller = new AbortController(); availabilityController = controller;
-    const numbers = episodes.filter(ep => !verifiedEntry(work,series,ep)).sort((a,b) => Math.abs(a-selected.episode)-Math.abs(b-selected.episode));
+    const latest = currentEpisodes().slice(-2);
+    const numbers = episodes.filter(ep => verifiedEntry(work,series,ep)?.status !== 'available' || latest.includes(ep)).sort((a,b) => latest.includes(b)-latest.includes(a) || Math.abs(a-selected.episode)-Math.abs(b-selected.episode));
+    for (const ep of numbers) delete verified[`${work}:${series}:${ep}`];
+    paintEpisodeStates();
     inspectionProgress(work,series,episodes);
     let cursor = 0;
     async function worker() {
       while (cursor < numbers.length && run === availabilityRun && !controller.signal.aborted) {
-        const ep = numbers[cursor++], state = await inspectPlayback(work,series,ep,controller.signal);
+        const ep = numbers[cursor++];
+        let state = await inspectPlayback(work,series,ep,controller.signal);
+        if (state === 'unavailable' && latest.includes(ep) && !controller.signal.aborted) state = await inspectPlayback(work,series,ep,controller.signal,true);
         if (state && run === availabilityRun && selected?.id === work && selected.series === series) {
           rememberCheck(work,series,ep,state); paintEpisodeStates(ep); inspectionProgress(work,series,episodes);
         }
@@ -359,9 +364,9 @@
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 35000);
     try {
       let data = cache.get(item.id);
-      if (!data) {
+      if (!data || Date.now() - (data.fetchedAt || 0) > 300000) {
         const response = await fetch(`/api/videos/catalog?id=${selected.id}&series=${selected.series}&episode=${selected.episode}`, {signal:controller.signal});
-        data = await response.json(); if (!response.ok) throw Error(data.error || '작품 정보를 불러오지 못했어요.');
+        data = await response.json(); data.fetchedAt = Date.now(); if (!response.ok) throw Error(data.error || '작품 정보를 불러오지 못했어요.');
       }
       if (version !== requestVersion) return;
       catalog = data; cache.set(item.id, data); selected.title = data.title;
@@ -377,19 +382,11 @@
     const supported = typeof video.webkitShowPlaybackTargetPicker === 'function' || !!video.remote?.prompt;
     controls.hidden = !supported;
     if (!supported) return;
-    let repairPending = false;
     const wireless = () => !!video.webkitCurrentPlaybackTargetIsWireless || video.remote?.state === 'connected';
     const repairNativeControls = () => {
-      if (!current() || wireless() || repairPending || video.webkitDisplayingFullscreen || document.fullscreenElement === video) return;
-      repairPending = true;
-      video.setAttribute('x-webkit-airplay', 'allow'); video.disableRemotePlayback = false;
-      // Rebuild the native controls without changing src, playback position or text tracks.
-      video.controls = false;
-      const frame = window.requestAnimationFrame || (callback => setTimeout(callback, 20));
-      frame(() => frame(() => {
-        if (current()) video.controls = true;
-        repairPending = false;
-      }));
+      if (!current()) return;
+      video.setAttribute('x-webkit-airplay','allow'); video.disableRemotePlayback = false;
+      video.controls = true; video.setAttribute('controls','');
     };
     const refresh = () => {
       if (!current()) return;
@@ -475,8 +472,20 @@
       for (const entry of data.native_src ? [] : data.tracks || []) {
         const track = document.createElement('track'); track.kind = 'subtitles'; track.src = entry.src; track.srclang = entry.language; track.label = entry.label; track.default = true; video.append(track);
       }
-      let lastSaved = 0;
+      let lastSaved = 0, lastSubtitle = null, fixingTracks = false;
+      const singleSubtitle = () => {
+        if (fixingTracks || !current()) return;
+        const showing = Array.from(video.textTracks || []).filter(track => ['subtitles','captions'].includes(track.kind) && track.mode === 'showing');
+        if (showing.length > 1) {
+          fixingTracks = true;
+          const keep = showing.find(track => track !== lastSubtitle) || showing[0];
+          for (const track of showing) if (track !== keep) track.mode = 'disabled';
+          lastSubtitle = keep; fixingTracks = false;
+        } else lastSubtitle = showing[0] || null;
+      };
+      video.textTracks?.addEventListener('change',singleSubtitle);
       video.onloadedmetadata = () => {
+        video.controls = true; video.setAttribute('controls',''); singleSubtitle();
         const seconds = Number(progress[item.id]?.seconds) || 0;
         if (current() && seconds > 0 && seconds < video.duration - 5) video.currentTime = seconds;
       };
@@ -497,7 +506,7 @@
         $('videos-player').replaceChildren(failure); status(failure.textContent, true); playLabel('다시 확인하기');
       };
       video.onerror = mediaFailure;
-      video.onloadeddata = () => { if (current()) { clearTimeout(playbackTimer); rememberCheck(item.id,item.series,item.episode,'available'); paintEpisodeStates(); } };
+      video.onloadeddata = () => { if (current()) { video.controls = true; video.setAttribute('controls',''); singleSubtitle(); clearTimeout(playbackTimer); rememberCheck(item.id,item.series,item.episode,'available'); paintEpisodeStates(); } };
       $('videos-player').replaceChildren(video);
       setupAirPlay(video, current, !!data.tracks?.length);
       playbackTimer = setTimeout(() => { if (!video.webkitCurrentPlaybackTargetIsWireless) mediaFailure(); }, 12000);
