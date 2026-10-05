@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import urlsplit
 from collector.service_registry import SERVICES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,9 +39,17 @@ class LauncherTests(unittest.TestCase):
         self.assertIn('@app.get("/api/me")',source)
         self.assertIn('@app.get("/api/news")',source)
 
-    def test_registry_has_unique_local_service_paths(self):
+    def test_registry_has_unique_local_services_or_authorized_documents(self):
         self.assertEqual(len({item['id'] for item in SERVICES}),len(SERVICES))
-        self.assertTrue(all(item['href'].startswith('/') and not item['href'].startswith('//') for item in SERVICES))
+        for item in SERVICES:
+            if item.get('kind') == 'document':
+                url = urlsplit(item['href'])
+                self.assertEqual(url.scheme, 'https')
+                self.assertEqual(url.hostname, 'chatgpt.com')
+                self.assertTrue(url.path.startswith('/api/library/files/') and url.path.endswith('/download'))
+                self.assertEqual(item['badge'], '기획서')
+            else:
+                self.assertTrue(item['href'].startswith('/') and not item['href'].startswith('//'))
 
 
 if __name__ == '__main__': unittest.main()

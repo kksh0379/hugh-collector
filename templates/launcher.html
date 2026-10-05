@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#f6f8fc">
   <title>서비스 홈</title>
   <meta name="description" content="김상화의 개인 서비스. 사용할 서비스를 선택해 주세요.">
-  <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.105') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.105') }}">
+  <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.106') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.106') }}">
 </head>
 <body>
   <a class="skip-link" href="#services">서비스 목록으로 이동</a>
@@ -28,17 +28,21 @@
       <div class="section-heading"><h2 id="services-title">서비스</h2><span>{{ services | length }}개</span></div>
       <div class="service-grid">
         {% for service in services %}
-        <a class="service-app" href="{{ service.href }}" title="{{ service.description }}" aria-label="{{ service.name }} 열기" aria-describedby="service-desc-{{ service.id }}">
+        <a class="service-app" href="{{ service.href }}" {% if service.new_tab | default(false) %}target="_blank" rel="noopener noreferrer"{% endif %} title="{{ service.description }}" aria-label="{{ service.name }} {{ service.badge | default('') }} 열기{% if service.new_tab | default(false) %} (새 창){% endif %}" aria-describedby="service-desc-{{ service.id }}">
           <span class="service-icon" data-service="{{ service.id }}">
             {% if service.icon_url | default('') %}
             <img src="{{ service.icon_url }}" alt="" width="80" height="80" loading="lazy">
             {% elif service.icon == 'scope' %}
             <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="3" fill="currentColor" stroke="none"/><path d="M16 1v6m0 18v6M1 16h6m18 0h6"/></svg>
+            {% elif service.icon == 'heart' %}
+            <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26 5 15C-2 8 8 0 16 9c8-9 18-1 11 6Z"/><path d="M10 15h4l2-4 3 8 2-4h3"/></svg>
             {% else %}
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 12h16M12 4v16"/></svg>
             {% endif %}
           </span>
           <span class="service-name">{{ service.name }}</span>
+          {% if service.badge | default('') %}<span class="service-badge">{{ service.badge }}</span>{% endif %}
+          {% if service.note | default('') %}<span class="service-note">{{ service.note }}</span>{% endif %}
           <span id="service-desc-{{ service.id }}" class="sr-only">{{ service.description }}</span>
         </a>
         {% endfor %}
@@ -46,6 +50,6 @@
     </section>
     <a class="service-intro-link" href="{{ url_for('intro') }}">휴스코프가 궁금하다면 <span>서비스 소개 ↗</span></a>
   </main>
-  <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.105</span></footer>
+  <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.106</span></footer>
 </body>
 </html>
