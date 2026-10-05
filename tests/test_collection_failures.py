@@ -9,6 +9,39 @@ from collector.collection_result import CollectionFailure
 
 
 class CollectionFailureTests(unittest.TestCase):
+    def test_homepage_social_links_use_detail_without_separate_social_api(self):
+        cfg = {'service': '대표 홈페이지', 'category': '재단소식', 'api': 'https://api.example.org/community/all', 'base_url': 'https://example.org', 'list_url': 'https://example.org/community/all'}
+        for link in ['https://www.youtube.com/watch?v=abcdefghijk', 'https://blog.naver.com/ncfound/123', 'https://www.instagram.com/p/example/']:
+            with self.subTest(link=link):
+                rows = {'list': [{'id': 1, 'dtype': 'social', 'subject': '소셜 글'}]}
+                detail = {'data': {'link': link, 'contents': '홈페이지에 게시된 소셜 글의 설명입니다.'}}
+                with patch.object(boards.db, 'board_content_map', return_value={}), patch.object(boards.fetcher, 'get', side_effect=[SimpleNamespace(json=lambda: rows), SimpleNamespace(json=lambda: detail)]) as get:
+                    result = boards._crawl_json_api(cfg, 10)
+                self.assertTrue(result.complete)
+                self.assertEqual(result[0]['url'], link)
+                self.assertEqual(get.call_args.args[0], 'https://api.example.org/community/social/1')
+
+    def test_homepage_social_detail_failure_does_not_report_complete_or_create_duplicate(self):
+        cfg = {'service': '대표 홈페이지', 'category': '재단소식', 'api': 'https://api.example.org/community/all', 'base_url': 'https://example.org', 'list_url': 'https://example.org/community/all'}
+        rows = {'list': [{'id': 1, 'dtype': 'social', 'subject': '소셜 글'}]}
+        with patch.object(boards.db, 'board_content_map', return_value={}), patch.object(boards.fetcher, 'get', side_effect=[SimpleNamespace(json=lambda: rows), TimeoutError()]):
+            result = boards._crawl_json_api(cfg, 10)
+        self.assertFalse(result.complete)
+        self.assertEqual(result, [])
+        self.assertIn('시간 초과', ' '.join(result.warnings))
+
+    def test_saved_social_summary_is_preserved_at_external_link(self):
+        link = 'https://www.instagram.com/p/example/'
+        cfg = {'service': '대표 홈페이지', 'category': '재단소식', 'api': 'https://api.example.org/community/all', 'base_url': 'https://example.org', 'list_url': 'https://example.org/community/all'}
+        rows = {'list': [{'id': 1, 'dtype': 'social', 'subject': '소셜 글', 'link': link}]}
+        with patch.object(boards.db, 'board_content_map', return_value={link: '기존 설명'}), patch.object(boards.fetcher, 'get', return_value=SimpleNamespace(json=lambda: rows)), patch.object(boards, '_ncf_detail_summary', return_value=('', None)) as detail:
+            result = boards._crawl_json_api(cfg, 10)
+        self.assertEqual(result[0]['content'], '기존 설명')
+        detail.assert_not_called()
+
+    def test_body_quoted_social_url_is_not_a_representative_link(self):
+        self.assertIsNone(boards._social_link({'contents': '인용 https://www.instagram.com/p/example/'}))
+
     def test_projectory_transient_html_recovers(self):
         bad = SimpleNamespace(text='<html>temporary</html>', json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
         good = SimpleNamespace(json=lambda: {'boardList': []})

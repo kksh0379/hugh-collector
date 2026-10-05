@@ -24,7 +24,7 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-from . import extractor, fetcher
+from . import extractor, fetcher, db
 from .collection_result import CollectionItems, CollectionFailure, failure_reason, summarize_failures
 
 SOURCES = [
@@ -303,7 +303,7 @@ def _social_link(obj):
 
 
 def _ncf_detail_summary(api_base, dtype, pid):
-    """대표 홈페이지 상세 API에서 (요약, 소셜URL)을 반환. 실패 시 ('', None)."""
+    """대표 홈페이지 상세 API에서 (요약, 소셜URL)을 반환. 조회 실패는 호출측에 전달한다."""
     try:
         resp = fetcher.get(f"{api_base}/community/{dtype}/{pid}", retries=0, timeout=8)
         social = None
@@ -318,8 +318,8 @@ def _ncf_detail_summary(api_base, dtype, pid):
             if text and len(text) >= 10:
                 return extractor.summarize(text), social
         return "", social  # 본문이 없어도 소셜 링크는 반환(이미지 글은 썸네일 표시)
-    except Exception:  # noqa: BLE001
-        return "", None
+    except Exception as error:  # noqa: BLE001
+        raise CollectionFailure("홈페이지 상세 조회 실패 · " + failure_reason(error)) from None
 
 
 def _crawl_json_api(cfg, max_items, max_workers=5):
@@ -369,23 +369,34 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
     # 본문이 아직 없는 글은 상세 API로 요약 보강. 소셜 글(dtype=social)은 본문이 있어도 상세의
     # link(유튜브·블로그·인스타 URL)를 확보해야 하므로, 아직 소셜 URL이 없으면 함께 상세를 받는다.
     need = [e for e in entries if e["pid"] is not None and (
-        not (known_content.get(e["url"]) or "").strip()
+        not (known_content.get(e.get("social") or e["url"]) or known_content.get(e["url"]) or "").strip()
         or (e["dtype"] == "social" and not e.get("social")))]
 
     def _summ(e):
-        return _ncf_detail_summary(api_base, e["dtype"], e["pid"])
-    fetched = {}
+        try:
+            summary, social = _ncf_detail_summary(api_base, e["dtype"], e["pid"])
+            return summary, social, ""
+        except Exception as error:
+            return "", None, failure_reason(error)
+    fetched, failures = {}, []
     if need:
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             for e, res in zip(need, pool.map(_summ, need)):
-                summary, social = res
+                summary, social, reason = res
+                if reason:
+                    failures.append(reason)
                 fetched[e["url"]] = summary
                 if e["dtype"] == "social" and social and not e.get("social"):
                     e["social"] = social  # 소셜 글만 상세의 대표 링크로 바인딩
 
     items = []
     for e in entries:
-        content = (known_content.get(e["url"]) or "").strip() or fetched.get(e["url"], "")
+        content = ((known_content.get(e.get("social") or e["url"]) or "").strip()
+                   or (known_content.get(e["url"]) or "").strip() or fetched.get(e["url"], ""))
+        if e["dtype"] == "social" and not e.get("social"):
+            failures.append("홈페이지 소셜 글의 원문 링크를 확인하지 못했어요")
+            # URL이 저장 키이므로 임시 홈페이지 URL로 같은 소셜 글을 중복 저장하지 않는다.
+            continue
         # 소셜(유튜브·블로그·인스타 등) 글은 홈페이지 상세 대신 해당 소셜 URL로 바로 연결.
         items.append({
             "service": cfg["service"],
@@ -398,7 +409,7 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
             "image_url": e.get("image_url"),
         })
     print(f"[board] {label}: {len(items)}건(본문보강 {len(need)}) / {time.time() - t0:.1f}s", flush=True)
-    return CollectionItems(items)
+    return CollectionItems(items, complete=not failures, warnings=list(dict.fromkeys(failures)))
 
 
 def _pick(d, keys):
