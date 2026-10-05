@@ -151,9 +151,19 @@
   function paintEpisodeStates() {
     for (const button of $('videos-episodes').querySelectorAll('button')) {
       const ep = Number(button.dataset.episode), state = episodeState(ep);
-      button.dataset.availability = state || 'checking';
-      button.textContent = `${ep}화${state === 'missing' ? ' · 영상 없음' : state === 'unknown' ? ' · 확인 불가' : !state ? ' · 확인 중' : ' · 연결 있음'}`;
-      button.setAttribute('aria-label', `${ep}화${state === 'missing' ? ', 원출처 영상 없음. 선택하면 다시 확인' : !state || state === 'unknown' ? ', 영상 연결 확인 중 또는 확인 불가' : ''}`);
+      const marked = state === 'available' || state === 'missing';
+      button.dataset.availability = marked ? state : '';
+      button.textContent = `${ep}화`;
+      const description = state === 'missing' ? '영상 없음 · 선택하면 다시 확인' : state === 'available' ? '영상 연결 있음' : '';
+      button.title = description;
+      button.setAttribute('aria-label', `${ep}화${description ? ', ' + description : ''}`);
+      if (marked) {
+        const icon = document.createElement('span'); icon.className = 'videos-availability-icon'; icon.setAttribute('aria-hidden','true');
+        icon.innerHTML = state === 'available'
+          ? '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="8"/><path d="m8 6 6 4-6 4Z" fill="currentColor" stroke="none"/></svg>'
+          : '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="8"/><path d="m4.4 4.4 11.2 11.2"/></svg>';
+        button.append(icon);
+      }
     }
   }
   async function checkEpisodePage() {
