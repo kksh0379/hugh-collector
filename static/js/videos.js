@@ -73,9 +73,23 @@
     await play({restorePaused:paused});
     if (wireless && selected) $('videos-airplay-status').textContent = '자막 시간을 조정했어요. AirPlay 기기를 다시 선택해 주세요.';
   }
-  $('videos-subtitle-delay').replaceChildren(...Array.from({length:41},(_,i) => { const amount=(i-20)/2, option=document.createElement('option'); option.value=String(amount); option.textContent=amount === 0 ? '원래 시간' : `${Math.abs(amount)}초 ${amount > 0 ? '늦게' : '빠르게'}`; return option; }));
-  $('videos-subtitle-delay').onchange = () => applySubtitleDelay(Number($('videos-subtitle-delay').value));
-  $('videos-subtitle-airplay').onclick = () => applySubtitleDelay(2);
+  let subtitleStepTimer = null;
+  function renderSubtitleDelay() {
+    const amount = subtitleDelay();
+    $('videos-subtitle-delay').textContent = `${amount > 0 ? '+' : ''}${amount.toFixed(1)}초`;
+    $('videos-subtitle-earlier').disabled = amount <= -10;
+    $('videos-subtitle-later').disabled = amount >= 10;
+  }
+  function stepSubtitleDelay(delta) {
+    if (!selected || !catalog) return;
+    const work = selected.id, series = selected.series;
+    const amount = Math.round(Math.max(-10,Math.min(10,subtitleDelay()+delta))*2)/2;
+    subtitleSync[`${work}:${series}`] = amount; renderSubtitleDelay();
+    clearTimeout(subtitleStepTimer);
+    subtitleStepTimer = setTimeout(() => { if (selected?.id === work && selected.series === series) applySubtitleDelay(subtitleDelay()); },350);
+  }
+  $('videos-subtitle-earlier').onclick = () => stepSubtitleDelay(-.5);
+  $('videos-subtitle-later').onclick = () => stepSubtitleDelay(.5);
   function save() { try { localStorage.setItem(STORE, JSON.stringify(library)); } catch {} }
   function status(text, detail = false) { const el = $(detail ? 'videos-detail-status' : 'videos-status'); el.textContent = text; el.hidden = !text; }
   function favoriteLabel(item) { return library.some(x => x.id === item.id) ? '내 목록에서 제거' : '내 목록에 추가'; }
@@ -527,7 +541,7 @@
       video.onloadeddata = () => { if (current()) { video.controls = true; video.setAttribute('controls',''); singleSubtitle(); clearTimeout(playbackTimer); rememberCheck(item.id,item.series,item.episode,'available'); paintEpisodeStates(); } };
       $('videos-player').replaceChildren(video);
       setupAirPlay(video, current, !!data.tracks?.length);
-      $('videos-subtitle-sync').hidden = !data.tracks?.length; $('videos-subtitle-delay').value = String(subtitleDelay());
+      $('videos-subtitle-sync').hidden = !data.tracks?.length; renderSubtitleDelay();
       playbackTimer = setTimeout(() => { if (!video.webkitCurrentPlaybackTargetIsWireless) mediaFailure(); }, 12000);
       if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = data.native_src || data.src;
       else if (window.Hls?.isSupported()) {
