@@ -1769,6 +1769,8 @@ function _renderCrawlState(group, st) {
   const ui = CRAWL_UI[group];
   const msgEl = document.getElementById(ui.msg);
   const btn = document.getElementById(ui.btn);
+  const details = document.getElementById(ui.msg + "-details");
+  if (details) details.innerHTML = "";
   if (st.running) {
     if (btn) btn.disabled = true;
     msgEl.style.color = "";
@@ -1778,6 +1780,10 @@ function _renderCrawlState(group, st) {
   // 완료(또는 미실행)
   if (btn) btn.disabled = false;
   const r = st.result || {};
+  const failed = (r.sources || []).filter(s => s.status === "failed" || s.status === "deferred");
+  if (details && failed.length) {
+    details.innerHTML = `<details class="collection-details"><summary>미완료 출처 ${failed.length}개 확인</summary><ul>${failed.map(s => `<li><strong>${escapeHtml(s.name)}</strong> · ${escapeHtml(s.reason)}${s.count ? ` · 확보 ${Number(s.count)}건` : ""}</li>`).join("")}</ul><p>기존 자료는 유지돼요. 원인 해결 후 다시 수집하면 누락된 항목을 보완해요.</p></details>`;
+  }
   const label = {biz: "동향", boards: "게시판", social: "영상"}[group];
   const prefix = label ? `${label} · ` : "";
   if (r.error) {

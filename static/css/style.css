@@ -1650,3 +1650,10 @@ body.chrome-hidden .view-head { position: static; }
 /* One no-image design keeps every thumbnail slot stable. */
 [data-thumbnail].is-no-image {background:#f2f4f7;}
 [data-thumbnail].is-no-image img {object-fit:contain;}
+
+/* 수집 결과: 요약은 짧게, 출처별 사유는 펼쳐 확인 */
+.collection-details { margin: .4rem 0 1rem; font-size: .88rem; line-height: 1.6; color: #526071; }
+.collection-details summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: #8b590d; }
+.collection-details ul { margin: .25rem 0; padding-left: 1.3rem; }
+.collection-details li { margin: .4rem 0; overflow-wrap: anywhere; }
+.collection-details p { margin: .5rem 0; }

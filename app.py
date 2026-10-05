@@ -1855,6 +1855,7 @@ def _do_crawl(group, progress=None, days=None, replace=False):
     crawl_fn, save_fn = _CRAWLERS[group]
     progress("DB 연결 중…")
     _ensure_db(force=True)  # 실제로 접속을 기다려 Neon을 깨운다(수집은 DB가 꼭 필요)
+    sources = []
     try:
         if group in ("news", "cat", "game", "biz", "security", "event"):
             # 뉴스류(뉴스/냥정보/게임/업계동향/보안뉴스/행사일정): 수집 기간(days) 전달. 저장 시 ON CONFLICT로 중복 처리.
@@ -1864,6 +1865,7 @@ def _do_crawl(group, progress=None, days=None, replace=False):
         progress("저장·그룹화 중…")
         complete = getattr(items, "complete", True)
         warnings = list(getattr(items, "warnings", []))
+        sources = list(getattr(items, "sources", []))
         if not items and (replace or not complete):
             raise RuntimeError("수집 항목을 확보하지 못했어요. 기존 목록은 유지했어요.")
         counts = save_fn(items, replace=replace and complete)
@@ -1887,6 +1889,8 @@ def _do_crawl(group, progress=None, days=None, replace=False):
         print(f"[crawl] {group} 오류: {e}", flush=True)
         result = {"crawled": 0, "new": 0, "updated": 0, "duplicates": 0, "error": str(e)}
         progress(f"오류: {e}")
+    if sources:
+        result["sources"] = sources
     result["attempted_at"] = _now_kst()
     db.set_meta(f"last_attempt_{group}", result["attempted_at"])
     if not result.get("error"):

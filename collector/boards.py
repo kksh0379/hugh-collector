@@ -25,7 +25,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from . import extractor, fetcher
-from .collection_result import CollectionItems
+from .collection_result import CollectionItems, CollectionFailure, failure_reason, summarize_failures
 
 SOURCES = [
     {
@@ -213,9 +213,11 @@ def _extract_embedded(html, cfg):
 
 def _build_entry(e, cfg, known=None):
     """목록 항목 1건 → 저장용 dict. http 링크면 상세에서 본문·이미지 보강, 아니면 고유 키 생성.
-    이미 저장돼(요약 있음) 있으면 None을 반환(상세 재요청 생략, 기존 글 유지 → 증분)."""
+    이미 저장돼(요약 있음) 있으면 저장된 요약을 반환(상세 재요청 생략, 기존 글 유지)."""
     if e.get("url") and (known or {}).get(e["url"], "").strip():
-        return None
+        return {"service": cfg["service"], "category": cfg["category"],
+                "title": e["title"], "url": e["url"],
+                "published_at": e["published_at"], "content": known[e["url"]]}
     content = e["desc"]
     published = e["published_at"]
     author = None
@@ -329,9 +331,11 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
     try:
         data = fetcher.get(cfg["api"], retries=1, timeout=15).json()
     except Exception as e:  # noqa: BLE001
-        print(f"[board] {label} API 실패: {e}", flush=True)
-        return []
-    rows = data.get("list") or (data if isinstance(data, list) else [])
+        print(f"[board] {label} API 실패: {type(e).__name__}", flush=True)
+        raise
+    rows = data if isinstance(data, list) else data.get("list")
+    if not isinstance(rows, list):
+        raise CollectionFailure("게시판 목록 응답 형식이 바뀌었어요")
     cap = max(max_items, 300)
 
     # api base: "https://api.ncfoundation.or.kr/community/all" → "https://api.ncfoundation.or.kr"
@@ -394,7 +398,7 @@ def _crawl_json_api(cfg, max_items, max_workers=5):
             "image_url": e.get("image_url"),
         })
     print(f"[board] {label}: {len(items)}건(본문보강 {len(need)}) / {time.time() - t0:.1f}s", flush=True)
-    return items
+    return CollectionItems(items)
 
 
 def _pick(d, keys):
@@ -413,16 +417,21 @@ def _crawl_projectory(cfg, max_items):
     base, api = cfg["base_url"], cfg["projectory_api"]
     accept = {"Accept": "application/json, text/plain, */*", "Referer": api}
     out, seen = [], set()
+    failures = []
     last_idx, reg_day, pg, list_count = -1, "", 1, 10
     cap = max(max_items, 300)
     for _ in range(30):  # 최대 30페이지 안전장치
         params = {"lastIdx": last_idx, "regDay": reg_day or "", "searchVal": "", "pg": pg}
         try:
-            j = fetcher.get(api, params=params, headers=accept, retries=0, timeout=12).json()
+            j = fetcher.get(api, params=params, headers=accept, retries=1, timeout=15).json()
         except Exception as e:  # noqa: BLE001
-            print(f"[board] {label} API 실패(pg={pg}): {e}", flush=True)
+            print(f"[board] {label} API 실패(pg={pg}): {type(e).__name__}", flush=True)
+            failures.append(failure_reason(e))
             break
-        blist = j.get("boardList") or []
+        blist = j.get("boardList") if isinstance(j, dict) else None
+        if not isinstance(blist, list):
+            failures.append("프로젝토리 게시판 목록 응답 형식이 바뀌었어요")
+            break
         if not blist:
             break
         for b in blist:
@@ -456,7 +465,7 @@ def _crawl_projectory(cfg, max_items):
             break
 
     print(f"[board] {label}: {len(out)}건 / {time.time() - t0:.1f}s", flush=True)
-    return out
+    return CollectionItems(out, complete=not failures, warnings=failures)
 
 
 def _crawl_fairai(cfg, max_items):
@@ -470,15 +479,20 @@ def _crawl_fairai(cfg, max_items):
     rows_per = 20
     cap = max(max_items, 300)
     out, seen = [], set()
+    failures = []
     for pg in range(1, 16):
         body = _json.dumps({"page": pg, "rowsPerPage": rows_per,
                             "sortBy": "createdAt", "sortType": "desc", "keyword": None})
         try:
             j = fetcher.post(api, data=body, headers=hdr, retries=0, timeout=12).json()
         except Exception as e:  # noqa: BLE001
-            print(f"[board] {label} API 실패(pg={pg}): {e}", flush=True)
+            print(f"[board] {label} API 실패(pg={pg}): {type(e).__name__}", flush=True)
+            failures.append(failure_reason(e))
             break
-        items = j.get("items") or (j.get("data") or {}).get("items") or []
+        items = j.get("items", (j.get("data") or {}).get("items")) if isinstance(j, dict) else None
+        if not isinstance(items, list):
+            failures.append("FAIR AI 게시판 목록 응답 형식이 바뀌었어요")
+            break
         if not items:
             break
         for it in items:
@@ -504,7 +518,7 @@ def _crawl_fairai(cfg, max_items):
         if len(items) < rows_per or len(out) >= cap:
             break
     print(f"[board] {label}: {len(out)}건 / {time.time() - t0:.1f}s", flush=True)
-    return out
+    return CollectionItems(out, complete=not failures, warnings=failures)
 
 
 def crawl_source(cfg, max_items=8, max_workers=3):
@@ -522,7 +536,7 @@ def crawl_source(cfg, max_items=8, max_workers=3):
         return _crawl_json_api(cfg, max_items)
     if cfg.get("spa"):
         print(f"[board] {label}: SPA라 건너뜀 (API/Playwright 필요)", flush=True)
-        return []
+        raise CollectionFailure("정적 페이지에 게시판 목록이 없어요")
 
     t0 = time.time()
     page_param = cfg.get("page_param")           # 예: "page" → ?page=N 페이지네이션
@@ -530,12 +544,14 @@ def crawl_source(cfg, max_items=8, max_workers=3):
     cap = max(max_items, 500) if page_param else max_items
 
     entries, seen = [], set()
+    failures = []
     for pg in range(1, pages + 1):
         params = {page_param: pg} if page_param else None
         try:
             resp = fetcher.get(cfg["list_url"], params=params)
         except Exception as e:  # noqa: BLE001
-            print(f"[board] {label} 목록 요청 실패(pg={pg}): {e}", flush=True)
+            print(f"[board] {label} 목록 요청 실패(pg={pg}): {type(e).__name__}", flush=True)
+            failures.append(failure_reason(e))
             break
         page_entries, had_anchors = _parse_list_page(resp.text, cfg)
         if not had_anchors:
@@ -566,7 +582,9 @@ def crawl_source(cfg, max_items=8, max_workers=3):
     items = [x for x in built if x]
 
     print(f"[board] {label}: 수집 {len(items)}건(목록 {len(entries)}) / {time.time() - t0:.1f}s", flush=True)
-    return items
+    if not entries and not failures:
+        failures.append("게시판 목록을 찾지 못했어요")
+    return CollectionItems(items, complete=not failures, warnings=failures)
 
 
 def _parse_list_page(html, cfg):
@@ -606,20 +624,21 @@ def crawl_all(max_items=10, progress=None):
     """
     progress = progress or (lambda m: None)
     t0 = time.time()
-    results = []
-    warnings = []
+    results, sources = [], []
     for cfg in SOURCES:
+        label = f"{cfg['service']} · {cfg['category']}"
         try:
             items = crawl_source(cfg, max_items=max_items)
+            complete = getattr(items, "complete", bool(items))
+            reason = " · ".join(getattr(items, "warnings", [])) or ("" if complete else "게시판 목록을 찾지 못했어요")
         except Exception as error:
-            items = []
-        if not items:
-            warnings.append(cfg.get("service") or cfg.get("account") or "출처")
+            items, complete, reason = [], False, failure_reason(error)
+        sources.append({"name": label, "status": "success" if complete else "failed",
+                        "count": len(items), "reason": reason})
         results.extend(items)
-        progress(f"{cfg['service']} · {cfg['category']}: {len(items)}건")
+        progress(f"{label}: {len(items)}건" + (f" · {reason}" if reason else ""))
     msg = f"게시판 전체 {len(results)}건 / {time.time() - t0:.1f}s"
     print("[board] " + msg, flush=True)
     progress(msg)
-    return CollectionItems(results, complete=not warnings,
-                           warnings=["일부 출처에서 항목을 확보하지 못했어요: " + ", ".join(warnings)] if warnings else [])
-
+    warnings = summarize_failures(sources)
+    return CollectionItems(results, complete=not warnings, warnings=warnings, sources=sources)
