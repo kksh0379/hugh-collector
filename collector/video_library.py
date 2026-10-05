@@ -1,6 +1,7 @@
 """Source metadata and short-lived playback URLs; media is never proxied."""
 import re
 import time
+import math
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
@@ -143,6 +144,12 @@ def playback():
     if not WATCH.fullmatch(path):
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
+        subtitle_delay = float(request.args.get('subtitle_delay', '0'))
+        if not math.isfinite(subtitle_delay) or not -10 <= subtitle_delay <= 10:
+            raise ValueError()
+    except ValueError:
+        return jsonify(error='자막 조정 범위를 확인해 주세요.'), 400
+    try:
         response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False) if request.args.get('refresh') == '1' else _watch_response(path, int(time.time() // 120))
         if response.status_code in (404, 410):
             record_episode(*parts, 'missing')
@@ -153,6 +160,7 @@ def playback():
         response.raise_for_status()
         data = parse_playback(response.text) if response.status_code == 200 else None
         if data and data.get('tracks') and request.args.get('probe') != '1':
+            data['subtitle_delay'] = subtitle_delay
             data['native_src'] = url_for('video_library.native_manifest', token=video_hls.encode_playback(data), _external=True, _scheme='https')
         absent = response.status_code == 200 and not BeautifulSoup(response.text, 'html.parser').select_one('video[src], video source[src], iframe[src]')
         result = jsonify(data or dict(error='원출처에서 재생 가능한 영상을 찾지 못했어요. 다른 회차를 선택해 주세요.' if absent else '영상 연결 형식을 확인하지 못했어요. 다시 시도해 주세요.', code='video_missing' if absent else 'unsupported_player'))
@@ -199,14 +207,14 @@ def subtitle_source():
     index = int(request.args.get('track', '0'))
     if not 0 <= index < len(data['tracks']):
         raise ValueError('invalid track')
-    return token, index, video_hls.load_text(data['tracks'][index]['src'])
+    return token, index, video_hls.load_text(data['tracks'][index]['src']), float(data.get('subtitle_delay', 0))
 
 
 @bp.get('/api/videos/subtitles.m3u8')
 def subtitle_playlist():
     try:
-        token, index, text = subtitle_source()
-        _, count = video_hls.subtitle_segments(text)
+        token, index, text, delay = subtitle_source()
+        _, count = video_hls.subtitle_segments(text, delay)
         lines = ['#EXTM3U', '#EXT-X-VERSION:6', '#EXT-X-TARGETDURATION:6', '#EXT-X-MEDIA-SEQUENCE:0', '#EXT-X-PLAYLIST-TYPE:VOD']
         for segment in range(count):
             lines += ['#EXTINF:6.000,', url_for('video_library.subtitle_vtt', token=token, track=index, segment=segment, _external=True, _scheme='https')]
@@ -218,8 +226,8 @@ def subtitle_playlist():
 @bp.get('/api/videos/subtitle.vtt')
 def subtitle_vtt():
     try:
-        _, _, text = subtitle_source()
-        return hls_response(video_hls.subtitle_segment(text, int(request.args.get('segment', '0'))), 'text/vtt')
+        _, _, text, delay = subtitle_source()
+        return hls_response(video_hls.subtitle_segment(text, int(request.args.get('segment', '0')), delay), 'text/vtt')
     except Exception:
         return jsonify(error='자막을 불러오지 못했어요.'), 502
 

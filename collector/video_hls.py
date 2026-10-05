@@ -33,6 +33,9 @@ def decode_playback(token):
     tracks = data.get('tracks', [])
     if not isinstance(tracks, list) or len(tracks) > 16 or any(not safe_media_url(t.get('src', '')) for t in tracks):
         raise ValueError('invalid subtitle')
+    delay = float(data.get('subtitle_delay', 0))
+    if not math.isfinite(delay) or not -10 <= delay <= 10:
+        raise ValueError('invalid subtitle delay')
     return data
 
 
@@ -107,16 +110,16 @@ def vtt_cues(text):
     return cues
 
 
-def subtitle_segments(text):
-    cues = vtt_cues(text)
+def subtitle_segments(text, delay=0):
+    cues = [(max(0, start + delay), end + delay, block) for start, end, block in vtt_cues(text) if end + delay > 0]
     duration = max((end for _, end, _ in cues), default=6)
     if duration > 86400:
         raise ValueError('subtitles too long')
     return cues, max(1, math.ceil(duration / 6))
 
 
-def subtitle_segment(text, index):
-    cues, count = subtitle_segments(text)
+def subtitle_segment(text, index, delay=0):
+    cues, count = subtitle_segments(text, delay)
     if not 0 <= index < count:
         raise ValueError('invalid segment')
     def clock(seconds):

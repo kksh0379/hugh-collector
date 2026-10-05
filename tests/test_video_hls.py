@@ -63,6 +63,21 @@ class VideoHLSTests(unittest.TestCase):
         self.assertEqual(len(video_hls.vtt_cues(text)), 1)
         self.assertEqual(video_hls.subtitle_segment(text, 0).count('한국어 자막'), 1)
 
+    def test_positive_delay_moves_caption_later_without_overlap(self):
+        self.assertNotIn('한국어 자막', video_hls.subtitle_segment(VTT, 0, 2))
+        cues = video_hls.vtt_cues(video_hls.subtitle_segment(VTT, 1, 2))
+        self.assertEqual(cues[0][:2], (7, 10))
+
+    def test_negative_delay_never_produces_negative_caption_time(self):
+        text = 'WEBVTT\n\n00:00:01.000 --> 00:00:04.000\n자막\n'
+        self.assertEqual(video_hls.vtt_cues(video_hls.subtitle_segment(text, 0, -2))[0][:2], (0, 2))
+
+    def test_invalid_caption_delay_is_rejected_before_source_request(self):
+        with patch('collector.video_library.requests.get') as get:
+            result = self.client.get('/api/videos/playback?id=3217&series=1&episode=1&subtitle_delay=nan')
+        self.assertEqual(result.status_code, 400)
+        get.assert_not_called()
+
     def test_subtitle_playlist_and_segments_can_be_fetched_without_session_by_tv(self):
         with patch.object(video_hls, 'load_text', return_value=VTT):
             playlist = self.client.get('/api/videos/subtitles.m3u8?token=' + self.token).get_data(as_text=True)
