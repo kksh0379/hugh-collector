@@ -60,27 +60,37 @@ def check_episode(title_id, series, episode):
     state = 'unknown'
     try:
         with _CHECK_SLOTS:
-            response = requests.get(ORIGIN + path, timeout=(3, 5), allow_redirects=False)
+            response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False)
         if response.status_code in (404, 410):
             state = 'missing'
         elif response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             player = parse_playback(response.text)
             if player:
-                with _CHECK_SLOTS:
-                    with requests.get(player['src'], timeout=(3, 5), stream=True, allow_redirects=False) as media:
-                        if media.status_code in (404, 410):
-                            state = 'missing'
-                        elif media.status_code in (200, 206):
-                            state = 'available'
+                target = player['src']
+                for _ in range(4):
+                    with _CHECK_SLOTS:
+                        with requests.get(target, timeout=(5, 10), stream=True, allow_redirects=False) as media:
+                            if media.status_code in (301, 302, 303, 307, 308):
+                                target = urljoin(target, media.headers.get('Location', ''))
+                                if not video_hls.safe_media_url(target):
+                                    break
+                                continue
+                            if media.status_code in (404, 410):
+                                state = 'missing'
+                            elif media.status_code in (200, 206):
+                                state = 'available'
+                    break
             else:
                 canonical = soup.select_one('link[rel="canonical"][href], meta[property="og:url"][content]')
                 page_path = urlparse(canonical.get('href') or canonical.get('content') or '').path if canonical else ''
                 # A captcha/error page or unsupported embedded player is not a missing video.
-                if page_path.rstrip('/') == path.rstrip('/') and not soup.select_one('video[src], video source[src], iframe[src]'):
+                if (page_path.rstrip('/') == path.rstrip('/') or soup.select_one('#linktv-video')) and not soup.select_one('video[src], video source[src], iframe[src]'):
                     state = 'missing'
+        if state == 'unknown':
+            print(f'[video] 회차 사전 확인 보류: {title_id}/{series}/{episode} · HTTP {response.status_code}', flush=True)
     except requests.RequestException:
-        pass
+        print(f'[video] 회차 사전 확인 연결 지연: {title_id}/{series}/{episode}', flush=True)
     record_episode(title_id, series, episode, state)
     return key, state
 
@@ -243,12 +253,17 @@ def parse_page(html, title_id, series, episode, include_requested=True):
 
 
 @lru_cache(maxsize=128)
-def load_catalog(title_id, series, episode, bucket):
+def _load_catalog_page(title_id, bucket):
     url = f'{ORIGIN}/ani/{title_id}/'
     response = requests.get(url, timeout=(10, 15), allow_redirects=False)
     if response.status_code != 200:
         raise requests.RequestException('watch page unavailable')
-    return parse_page(response.text, title_id, series, episode, include_requested=False)
+    return parse_page(response.text, title_id, '1', '1', include_requested=False)
+
+
+def load_catalog(title_id, series, episode, bucket):
+    # Every episode uses the same /ani page. Do not refetch it for each batch.
+    return _load_catalog_page(title_id, bucket)
 
 
 @bp.get('/api/videos/catalog')
