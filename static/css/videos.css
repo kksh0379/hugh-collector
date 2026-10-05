@@ -9,7 +9,7 @@
 .videos-series-label{display:flex;align-items:center;gap:12px;font-size:14px;}.videos-episodes{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px;margin:16px 0 0;max-height:240px;overflow:auto;overscroll-behavior:contain;padding:3px;}.videos-episodes button{padding:10px 6px;min-height:44px;}
 .videos-watch-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 12px;}.videos-watch-head a{font-size:13px;color:var(--primary);}
 .videos-player{background:#101725;color:#e0e6ef;border-radius:12px;overflow:hidden;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;}.videos-player p{font-size:14px;padding:20px;text-align:center;line-height:1.6;}.videos-player iframe,.videos-player video{display:block;width:100%;height:100%;border:0;}
-.videos-controls{display:flex;gap:10px;margin-top:12px;}.videos-controls button{flex:1;}#videos-play{background:var(--primary);color:white;border-color:var(--primary);}
+.videos-controls{display:flex;gap:10px;margin-top:12px;}.videos-controls button{flex:1;}#videos-picker-open{background:var(--primary);color:white;border-color:var(--primary);font-weight:600;}
 @media(max-width:600px){.videos-shell{padding:14px 10px 24px;}.videos-library{grid-template-columns:repeat(2,minmax(0,1fr));}.footnav{padding-left:4px;padding-right:4px;gap:0;}.fnav .fnav-ic{width:min(48px,100%);}.fnav{padding-left:2px;padding-right:2px;font-size:10px;}}
 
 .videos-library .videos-work{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;gap:10px;}
@@ -28,3 +28,16 @@
 
 .videos-player{position:relative;}
 .videos-player iframe.videos-source-crop{position:absolute;top:0;left:0;width:560px;height:315px;max-width:none;transform-origin:top left;}
+
+.videos-picker-hint{text-align:center;color:var(--muted);font-size:12px;margin:10px 0 20px;}
+.videos-shell button.videos-resume{display:flex;align-items:center;gap:14px;width:100%;padding:16px;text-align:left;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:14px;}
+.videos-resume-icon{display:grid;place-items:center;flex:0 0 44px;height:44px;background:#edf4ff;color:var(--primary);border-radius:12px;}.videos-resume strong,.videos-resume small{display:block;}.videos-resume strong{font-size:15px;}.videos-resume small{margin-top:5px;color:var(--muted);font-size:13px;}.videos-resume-arrow{margin-left:auto;font-size:24px;color:var(--muted);}
+.videos-episode-picker{position:fixed;inset:auto 0 0;margin:0 auto;width:min(560px,100%);box-sizing:border-box;height:var(--sheet-height,440px);max-height:calc(100dvh - 24px);padding:12px 20px max(16px,env(safe-area-inset-bottom));border:0;border-radius:20px 20px 0 0;box-shadow:0 -8px 40px #0002;color:var(--text);background:var(--card);overflow:hidden;}
+.videos-episode-picker[open]{display:flex;flex-direction:column;gap:10px;}.videos-episode-picker::backdrop{background:#0004;}
+.videos-sheet-handle{width:40px;height:4px;flex-shrink:0;background:#c4c9d2;border-radius:3px;margin:0 auto 2px;}
+.videos-episode-picker .videos-episode-heading{margin:0;flex-shrink:0;}.videos-episode-heading h4{font-size:18px;}.videos-shell #videos-picker-close{border:0;padding:0;width:40px;height:40px;font-size:28px;background:transparent;}
+.videos-series-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}.videos-series-row .videos-series-label{flex:1;min-width:0;}.videos-series-row #videos-episode-count{font-size:12px;color:var(--muted);white-space:nowrap;}
+.videos-episode-picker .videos-jump{margin:0;flex-shrink:0;flex-wrap:nowrap;}.videos-episode-picker .videos-jump label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}.videos-episode-picker .videos-jump input{width:0;flex:1;min-width:0;}.videos-episode-picker #videos-jump-status{margin:0;font-size:12px;}
+.videos-episode-picker .videos-episodes{flex:1;min-height:44px;max-height:none;grid-template-columns:repeat(4,minmax(0,1fr));align-content:start;margin:0;padding:3px;overflow:auto;touch-action:pan-y;}
+.videos-episode-picker .videos-episodes button[aria-pressed=true]{background:var(--primary);color:white;font-weight:600;}.videos-sheet-help{margin:0;color:var(--muted);text-align:center;font-size:12px;flex-shrink:0;}
+@media(max-width:600px){.videos-episode-picker{padding-left:16px;padding-right:16px;}.videos-controls button{padding:10px 8px;white-space:nowrap;}.videos-detail-nav button{font-size:13px;padding:9px 12px;}}
