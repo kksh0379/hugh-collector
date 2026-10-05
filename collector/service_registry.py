@@ -11,13 +11,13 @@ SERVICES = (
     {
         'id': 'maeum-record',
         'name': '마음기록',
-        'description': '일기처럼 쓰는 유서 서비스의 40페이지 기획서. PDF 보기와 원본 PPT 다운로드.',
+        'description': '일기처럼 쓰는 유서 서비스의 40페이지 기획서. 기획서 바로 보기와 원본 PPT 다운로드.',
         'href': '/maeum-record',
         'icon': 'heart',
         'kind': 'document',
         'new_tab': False,
         'badge': '기획서',
-        'note': 'PDF 보기 · PPT 다운로드',
+        'note': '기획서 보기 · PPT 다운로드',
         'tags': (),
     },
 )
