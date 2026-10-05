@@ -9,6 +9,30 @@ from collector.collection_result import CollectionFailure
 
 
 class CollectionFailureTests(unittest.TestCase):
+    def test_projectory_transient_html_recovers(self):
+        bad = SimpleNamespace(json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
+        good = SimpleNamespace(json=lambda: {'boardList': []})
+        with patch.object(boards.fetcher, 'get', side_effect=[bad, good]) as get, patch.object(boards.time, 'sleep'):
+            self.assertEqual(boards._projectory_list_json('api', {}, {}), {'boardList': []})
+            self.assertEqual(get.call_count, 2)
+
+    def test_projectory_persistent_html_preserves_partial_failure(self):
+        bad = SimpleNamespace(headers={'Content-Type': 'text/html'}, text='<html>error</html>', json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
+        cfg = {'service': '프로젝토리', 'category': '갤러리', 'base_url': 'https://example.org', 'projectory_api': 'https://example.org/api'}
+        with patch.object(boards.fetcher, 'get', return_value=bad) as get, patch.object(boards.time, 'sleep'):
+            result = boards._crawl_projectory(cfg, 10)
+            self.assertFalse(result.complete)
+            self.assertIn('웹페이지', result.warnings[0])
+            self.assertEqual(get.call_count, 2)
+
+    def test_json_429_honors_retry_after(self):
+        from requests import HTTPError
+        response = SimpleNamespace(status_code=429, headers={'Retry-After': '120'}, json=lambda: {'error': {'code': 429}})
+        with patch.dict(social.os.environ, {'YOUTUBE_API_KEY': 'test'}), patch.object(social.db, 'get_meta', return_value='{}'), patch.object(social.db, 'set_meta') as save, patch.object(social.time, 'time', return_value=1000), patch.object(social.fetcher, 'get', side_effect=HTTPError(response=response)):
+            with self.assertRaises(CollectionFailure):
+                social._crawl_youtube_search('a', 'a')
+            self.assertEqual(json.loads(save.call_args.args[1])['until'], 1120)
+
     def test_saved_board_is_returned_without_detail_request(self):
         entry = {'url': 'https://example.org/a', 'title': 'saved', 'published_at': None}
         with patch.object(boards.fetcher, 'get') as get:

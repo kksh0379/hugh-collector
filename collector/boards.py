@@ -409,6 +409,24 @@ def _pick(d, keys):
     return None
 
 
+def _projectory_list_json(api, params, headers):
+    # HTTP 성공이어도 HTML 오류 페이지가 올 수 있다. 이 경우 한 번만 재확인한다.
+    for attempt in range(2):
+        response = fetcher.get(api, params=params, headers=headers, retries=1, timeout=15)
+        try:
+            return response.json()
+        except ValueError:
+            if attempt == 0:
+                time.sleep(1)
+                continue
+            content_type = response.headers.get("Content-Type", "").lower()
+            html = response.text.lstrip().lower()
+            reason = ("게시판 API가 JSON 대신 웹페이지를 반환했어요"
+                      if "html" in content_type or html.startswith(("<!doctype html", "<html"))
+                      else "게시판 API가 비어 있거나 잘못된 JSON을 반환했어요")
+            raise CollectionFailure(reason) from None
+
+
 def _crawl_projectory(cfg, max_items):
     """프로젝토리(모바일 m.projectory.or.kr): axios.get(url, {params})로 목록 JSON을 받는다.
     params={lastIdx, regDay, searchVal, pg}로 페이지네이션. 응답 {boardList:[...], search:{totalCnt}}."""
@@ -423,7 +441,7 @@ def _crawl_projectory(cfg, max_items):
     for _ in range(30):  # 최대 30페이지 안전장치
         params = {"lastIdx": last_idx, "regDay": reg_day or "", "searchVal": "", "pg": pg}
         try:
-            j = fetcher.get(api, params=params, headers=accept, retries=1, timeout=15).json()
+            j = _projectory_list_json(api, params, accept)
         except Exception as e:  # noqa: BLE001
             print(f"[board] {label} API 실패(pg={pg}): {type(e).__name__}", flush=True)
             failures.append(failure_reason(e))

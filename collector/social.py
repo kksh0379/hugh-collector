@@ -227,17 +227,17 @@ def _crawl_youtube_search(query, account, max_items=8):
         j = fetcher.get(YT_SEARCH_API, params=params, retries=0, timeout=12).json()
     except Exception as e:  # noqa: BLE001
         response = getattr(e, "response", None)
-        if response is not None:
-            try:
-                _raise_youtube_error(response.json(), search=True)
-            except ValueError:
-                pass
         if response is not None and response.status_code == 429:
             try:
                 delay = max(60, min(86400, int(response.headers.get("Retry-After", 3600))))
             except (AttributeError, TypeError, ValueError):
                 delay = 3600
             raise _search_backoff("유튜브 요청 제한(HTTP 429) · 자동 재시도 대기", delay) from None
+        if response is not None:
+            try:
+                _raise_youtube_error(response.json(), search=True)
+            except ValueError:
+                pass
         raise CollectionFailure(failure_reason(e)) from None
     _raise_youtube_error(j, search=True)
     if not isinstance(j.get("items"), list):
