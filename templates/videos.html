@@ -25,9 +25,12 @@
       <p class="videos-help">영상이 재생되지 않으면 다시 불러오거나 원본 사이트에서 열어 주세요.</p>
       <dialog id="videos-picker" class="videos-episode-picker" aria-labelledby="videos-episode-heading"><div class="videos-sheet-handle" aria-hidden="true"></div>
         <div class="videos-episode-heading"><h4 id="videos-episode-heading">회차 선택</h4><button type="button" id="videos-picker-close" aria-label="회차 선택 닫기">×</button></div>
-        <div class="videos-series-row"><label class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label><span id="videos-episode-count"></span></div>
+        <div class="videos-series-row"><label id="videos-series-label" class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label><span id="videos-episode-count"></span></div>
+        <div class="videos-quick-pages"><button type="button" id="videos-current-page">현재 회차</button><button type="button" id="videos-latest-page">최신 회차</button></div>
+        <div id="videos-range-row" class="videos-range-row" hidden><button type="button" id="videos-range-prev" aria-label="이전 100화 구간">‹</button><label for="videos-range" class="videos-range-label">회차 구간<select id="videos-range"></select></label><button type="button" id="videos-range-next" aria-label="다음 100화 구간">›</button></div>
         <form id="videos-jump-form" class="videos-jump"><label for="videos-jump">회차 바로가기</label><input id="videos-jump" type="number" min="1" step="1" inputmode="numeric" placeholder="회차 번호 입력" required><button type="submit">이동</button></form>
         <p id="videos-jump-status" role="status" aria-live="polite" hidden></p>
+        <p id="videos-range-info" class="videos-range-info"></p>
         <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div><p class="videos-sheet-help">회차를 선택하면 바로 재생돼요.</p>
       </dialog>
       </div>

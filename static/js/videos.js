@@ -19,6 +19,15 @@
     const exact = candidates.filter(item => normalize(item.title).includes(normalize(query)));
     return exact.length ? exact : candidates.filter(item => typeof koreanMatchAll === 'function' && koreanMatchAll(item.title, query));
   }
+  function episodeRanges(episodes) {
+    const groups = new Map();
+    for (const episode of episodes) {
+      const start = Math.floor((episode - 1) / 100) * 100 + 1;
+      if (!groups.has(start)) groups.set(start, []);
+      groups.get(start).push(episode);
+    }
+    return Array.from(groups, ([start, values]) => ({start, end:values[values.length - 1], episodes:values}));
+  }
   const DEFAULT_LIBRARY = [
     {id:'19240', series:1, episode:8, title:'강철의 연금술사'},
     {id:'3217', series:1, episode:1, title:'원피스'},
@@ -89,6 +98,7 @@
     const seconds = Math.max(0, Math.floor(Number(progress[selected.id]?.seconds) || 0));
     $('videos-resume-info').textContent = `${selected.episode}화${seconds ? ' · ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : ''}`;
   }
+  let rangeStart = 1;
   let sheetOverflow = '';
   function closePicker(focus = true) {
     const sheet = $('videos-picker'); if (!sheet.open) return;
@@ -97,14 +107,14 @@
     if (focus) $('videos-picker-open').focus({preventScroll:true});
   }
   function sizePicker() {
-    const controls = $('videos-picker-open').getBoundingClientRect();
-    const available = (window.visualViewport?.height || window.innerHeight) - Math.max(0, controls.bottom) - 8;
-    $('videos-picker').style.setProperty('--sheet-height', `${Math.max(300, Math.min(440, available))}px`);
+    const height = window.visualViewport?.height || window.innerHeight;
+    $('videos-picker').style.setProperty('--sheet-height', `${Math.min(720, Math.floor(height * .88))}px`);
   }
   function openPicker() {
     if (!catalog || $('videos-picker').open) return;
     sizePicker(); sheetOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
+    browseEpisode(selected.episode);
     $('videos-picker').showModal(); $('videos-picker-open').setAttribute('aria-expanded', 'true');
     revealEpisode();
   }
@@ -116,8 +126,8 @@
   window.addEventListener('resize', () => { if ($('videos-picker').open) { sizePicker(); revealEpisode(); } });
   window.visualViewport?.addEventListener('resize', () => { if ($('videos-picker').open) sizePicker(); });
   function stop() { ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
-  function revealEpisode() {
-    const list = $('videos-episodes'), button = Array.from(list.querySelectorAll('button')).find(b => Number(b.dataset.episode) === selected.episode);
+  function revealEpisode(number = selected.episode) {
+    const list = $('videos-episodes'), button = Array.from(list.querySelectorAll('button')).find(b => Number(b.dataset.episode) === number);
     if (button) list.scrollTop = Math.max(0, button.offsetTop - (list.clientHeight - button.offsetHeight) / 2);
   }
   function chooseEpisode(number, autoplay = false) {
@@ -127,6 +137,9 @@
     try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
     const favorite = library.find(x => x.id === selected.id); if (favorite) { favorite.series = selected.series; favorite.episode = number; save(); }
     stop();
+    browseEpisode(number);
+    $('videos-current-page').textContent = `현재 ${number}화`;
+    const latest = currentEpisodes().slice(-1)[0]; $('videos-latest-page').textContent = `최신 ${latest}화`;
     $('videos-selected').textContent = `${number}화`; $('videos-picker-open').textContent = `${number}화 ▾`; updateResume();
     $('videos-jump').value = String(number); $('videos-jump-status').hidden = true;
     $('videos-original').href = watchUrl(selected);
@@ -136,15 +149,42 @@
     revealEpisode();
     if (playing || autoplay) play();
   }
+  function currentEpisodes() { return catalog.series.find(s => s.id === selected.series).episodes; }
+  function renderEpisodePage() {
+    const ranges = episodeRanges(currentEpisodes());
+    const page = ranges.find(r => r.start === rangeStart) || ranges[0]; rangeStart = page.start;
+    $('videos-range').value = String(rangeStart);
+    $('videos-range-row').hidden = ranges.length <= 1;
+    const index = ranges.indexOf(page);
+    $('videos-range-prev').disabled = index <= 0; $('videos-range-next').disabled = index >= ranges.length - 1;
+    $('videos-range-info').textContent = `${page.episodes[0]}~${page.end}화 · ${index + 1}/${ranges.length}구간`;
+    $('videos-episodes').replaceChildren(...page.episodes.map(ep => {
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.episode = String(ep); b.textContent = `${ep}화`;
+      b.setAttribute('aria-pressed', String(ep === selected.episode)); b.onclick = () => pickEpisode(ep); return b;
+    }));
+    $('videos-episodes').scrollTop = 0;
+  }
+  function browseEpisode(number) {
+    rangeStart = Math.floor((number - 1) / 100) * 100 + 1;
+    renderEpisodePage(); if ($('videos-picker').open) revealEpisode(number);
+  }
   function renderSeries() {
     const entries = catalog.series.find(s => s.id === selected.series) || catalog.series[0];
     selected.series = entries.id; $('videos-series').value = String(entries.id);
+    $('videos-series-label').hidden = catalog.series.length <= 1;
     $('videos-episode-count').textContent = `총 ${entries.episodes.length.toLocaleString()}화`;
-    $('videos-episodes').replaceChildren(...entries.episodes.map(ep => {
-      const b = document.createElement('button'); b.type = 'button'; b.dataset.episode = String(ep); b.textContent = `${ep}화`; b.onclick = () => pickEpisode(ep); return b;
-    }));
-    chooseEpisode(entries.episodes.includes(selected.episode) ? selected.episode : entries.episodes[0]);
+    const ranges = episodeRanges(entries.episodes);
+    $('videos-range').replaceChildren(...ranges.map(r => { const o = document.createElement('option'); o.value = String(r.start); o.textContent = `${r.start}~${r.end}화`; return o; }));
+    const number = entries.episodes.includes(selected.episode) ? selected.episode : entries.episodes[0];
+    rangeStart = Math.floor((number - 1) / 100) * 100 + 1; renderEpisodePage(); chooseEpisode(number);
   }
+  $('videos-range').onchange = () => { rangeStart = Number($('videos-range').value); renderEpisodePage(); };
+  for (const [id, offset] of [['videos-range-prev',-1],['videos-range-next',1]]) $(id).onclick = () => {
+    const ranges = episodeRanges(currentEpisodes()), target = ranges[ranges.findIndex(r => r.start === rangeStart) + offset];
+    if (target) { rangeStart = target.start; renderEpisodePage(); }
+  };
+  $('videos-current-page').onclick = () => browseEpisode(selected.episode);
+  $('videos-latest-page').onclick = () => { const episodes = currentEpisodes(); browseEpisode(episodes[episodes.length - 1]); };
   async function selectWork(item, push = true) {
     if (!$('videos-browse').hidden) listScroll = window.scrollY;
     const savedProgress = progress[item.id];

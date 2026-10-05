@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('static/js/videos.js','utf8');
 const flush=()=>new Promise(setImmediate);
-function setup(direct = false) {
+function setup(direct = false, episodes = [1,8]) {
  const elements=new Map(), stored=new Map([['hscope-video-library-v1',JSON.stringify([{id:'123',series:1,episode:8,title:'작품 A'}])]]), listeners={};
  function element(tag='div') { return {tag,open:false,style:{setProperty(k,v){this[k]=v}},children:[],dataset:{},attrs:{},value:'',textContent:'',hidden:false,setAttribute(k,v){this.attrs[k]=v},append(...nodes){this.children.push(...nodes)},replaceChildren(...nodes){this.children=nodes},querySelectorAll(){return this.children.filter(x=>x.tag==='button')},querySelector(tag){return this.children.find(x=>tag.split(',').map(x=>x.trim()).includes(x.tag))||null},addEventListener(k,v){this['on'+k]=v},getBoundingClientRect(){return {bottom:440,left:0,right:400,top:400}},showModal(){this.open=true},close(){this.open=false},focus(){},remove(){},pause(){},load(){},removeAttribute(k){delete this.attrs[k]},canPlayType(){return direct?'probably':''},play(){return Promise.resolve()}}; }
  const el=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id)};
@@ -10,7 +10,7 @@ function setup(direct = false) {
  const win={innerHeight:844,scrollY:900,scrollTo(x,y){this.scrollY=typeof x==='object'?x.top:y},addEventListener(name,fn){listeners[name]=fn}};
  const history={state:null,pushState(state,unused,url){entries.splice(++position);entries.push({state,url:String(url)});this.state=state;location.href=String(url)},replaceState(state,unused,url){entries[position]={state,url:String(url)};this.state=state;location.href=String(url)},back(){if(position){const entry=entries[--position];this.state=entry.state;location.href=entry.url;listeners.popstate()}}};
  const works=[{id:'123',series:1,episode:1,title:'작품 A'},{id:'456',series:1,episode:1,title:'작품 B'}];
- const c=vm.createContext({URL,AbortController,location,history,window:win,document:{documentElement:{style:{overflow:''}},getElementById:el,createElement:element},localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:()=>1,clearTimeout(){},fetch:async url=>({ok:!url.includes('/playback')||direct,json:async()=>url.includes('/playback')?{src:'https://aniplayer1.site/test.m3u8',tracks:[]}:url.includes('/library')?{items:works}:{id:'123',title:'작품 A',series:[{id:1,episodes:[1,8]}]}})});
+ const c=vm.createContext({URL,AbortController,location,history,window:win,document:{documentElement:{style:{overflow:''}},getElementById:el,createElement:element},localStorage:{getItem:k=>stored.get(k)||null,setItem:(k,v)=>stored.set(k,v)},setTimeout:()=>1,clearTimeout(){},fetch:async url=>({ok:!url.includes('/playback')||direct,json:async()=>url.includes('/playback')?{src:'https://aniplayer1.site/test.m3u8',tracks:[]}:url.includes('/library')?{items:works}:{id:'123',title:'작품 A',series:[{id:1,episodes}]}})});
  vm.runInContext(source,c);
  return {el,win,history,location,stored,async start(){win.onShowVideos();await flush()},favoriteCount(){return JSON.parse(stored.get('hscope-video-favorites-v2')||'[]').length}};
 }
@@ -82,4 +82,28 @@ test('playback time is saved for the same episode and cleared when selecting ano
  s.el('videos-prev').onclick();await flush();
  assert.equal(JSON.parse(s.stored.get('hscope-video-progress-v1'))['123'].seconds,0);
  assert.equal(s.el('videos-resume-info').textContent,'1화');
+});
+
+test('1179 episodes use 100-episode ranges, current/latest shortcuts and whole-series numeric jump',async()=>{
+ const episodes=Array.from({length:1179},(_,i)=>i+1),s=setup(true,episodes);
+ await s.start();await s.el('videos-library').children[0].children[0].onclick();
+ assert.equal(s.el('videos-range').children.length,12);
+ assert.equal(s.el('videos-episodes').children.length,100);
+ s.el('videos-picker-open').onclick();s.el('videos-latest-page').onclick();
+ assert.equal(s.el('videos-range').value,'1101');assert.equal(s.el('videos-episodes').children.length,79);
+ assert.equal(s.el('videos-episodes').children.at(-1).textContent,'1179화');
+ assert.equal(s.el('videos-selected').textContent,'8화');
+ s.el('videos-range-prev').onclick();assert.equal(s.el('videos-range').value,'1001');
+ s.el('videos-current-page').onclick();assert.equal(s.el('videos-range').value,'1');
+ s.el('videos-jump').value='1179';s.el('videos-jump-form').onsubmit({preventDefault(){}});await flush();
+ assert.equal(s.el('videos-selected').textContent,'1179화');assert.equal(s.el('videos-next').disabled,true);
+ assert.equal(s.el('videos-range').value,'1101');assert.equal(s.el('videos-picker').open,false);
+ assert.equal(s.el('videos-player').children[0].tag,'video');
+});
+test('sparse episodes create only populated ranges and hide range selector for a short series',async()=>{
+ const s=setup(true,[1,1001,1179]);await s.start();await s.el('videos-library').children[0].children[0].onclick();
+ assert.equal(s.el('videos-range').children.length,3);s.el('videos-latest-page').onclick();
+ assert.equal(s.el('videos-episodes').children.length,1);assert.equal(s.el('videos-episodes').children[0].textContent,'1179화');
+ const short=setup();await short.start();await short.el('videos-library').children[0].children[0].onclick();
+ assert.equal(short.el('videos-range-row').hidden,true);assert.equal(short.el('videos-series-label').hidden,true);
 });
