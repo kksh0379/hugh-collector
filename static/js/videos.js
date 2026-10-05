@@ -49,6 +49,7 @@
   try {
     library = mergeLibrary(JSON.parse(localStorage.getItem(STORE)));
   } catch {}
+  let airplayCleanup = null;
   let playerVersion = 0, playbackController = null, hlsPlayer = null, playbackTimer = null, cropObserver = null;
   let selected = null, catalog = null, requestVersion = 0, initialized = false;
   let allWorks = [], scope = 'all', visibleCount = 40, indexLoading = false, listScroll = 0;
@@ -127,7 +128,7 @@
   $('videos-picker').onclick = event => { if (event.target === $('videos-picker')) { const r = $('videos-picker').getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closePicker(); } };
   window.addEventListener('resize', () => { if ($('videos-picker').open) { sizePicker(); revealEpisode(); } });
   window.visualViewport?.addEventListener('resize', () => { if ($('videos-picker').open) sizePicker(); });
-  function stop() { $('videos-airplay-controls').hidden = true; $('videos-airplay-return').hidden = true; $('videos-airplay-status').textContent = ''; ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
+  function stop() { airplayCleanup?.(); airplayCleanup = null; $('videos-airplay-controls').hidden = true; $('videos-airplay-return').hidden = true; $('videos-airplay-status').textContent = ''; ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
   function revealEpisode(number = selected.episode) {
     const list = $('videos-episodes'), button = Array.from(list.querySelectorAll('button')).find(b => Number(b.dataset.episode) === number);
     if (button) list.scrollTop = Math.max(0, button.offsetTop - (list.clientHeight - button.offsetHeight) / 2);
@@ -219,6 +220,20 @@
     const supported = typeof video.webkitShowPlaybackTargetPicker === 'function' || !!video.remote?.prompt;
     controls.hidden = !supported;
     if (!supported) return;
+    let repairPending = false;
+    const wireless = () => !!video.webkitCurrentPlaybackTargetIsWireless || video.remote?.state === 'connected';
+    const repairNativeControls = () => {
+      if (!current() || wireless() || repairPending || video.webkitDisplayingFullscreen || document.fullscreenElement === video) return;
+      repairPending = true;
+      video.setAttribute('x-webkit-airplay', 'allow'); video.disableRemotePlayback = false;
+      // Rebuild the native controls without changing src, playback position or text tracks.
+      video.controls = false;
+      const frame = window.requestAnimationFrame || (callback => setTimeout(callback, 20));
+      frame(() => frame(() => {
+        if (current()) video.controls = true;
+        repairPending = false;
+      }));
+    };
     const refresh = () => {
       if (!current()) return;
       const wireless = !!video.webkitCurrentPlaybackTargetIsWireless || video.remote?.state === 'connected';
@@ -239,13 +254,29 @@
     back.onclick = () => { picker(); label.textContent = '기기 선택창에서 iPhone 또는 이 기기를 선택하면 연결이 해제돼요.'; };
     // Device availability can temporarily report unavailable after cancelling the picker.
     // Keep the control mounted while this video exists so it can always reopen.
-    video.addEventListener('webkitplaybacktargetavailabilitychanged', refresh);
-    video.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', refresh);
+    video.addEventListener('webkitplaybacktargetavailabilitychanged', () => { refresh(); repairNativeControls(); });
+    video.addEventListener('webkitcurrentplaybacktargetiswirelesschanged', () => { refresh(); repairNativeControls(); });
+    video.addEventListener('webkitendfullscreen', repairNativeControls);
+    const wake = () => { if (document.visibilityState !== 'hidden') { refresh(); repairNativeControls(); } };
+    window.addEventListener('focus', wake); window.addEventListener('pageshow', wake);
+    document.addEventListener?.('visibilitychange', wake);
+    airplayCleanup = () => {
+      window.removeEventListener?.('focus', wake); window.removeEventListener?.('pageshow', wake);
+      document.removeEventListener?.('visibilitychange', wake);
+    };
+    $('videos-player-repair').onclick = () => {
+      if (!current() || wireless()) { label.textContent = '이 기기로 전환한 뒤 재생기를 복구해 주세요.'; return; }
+      if (selected && Number.isFinite(video.currentTime)) {
+        progress[selected.id] = {series:selected.series, episode:selected.episode, seconds:video.currentTime};
+        try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
+      }
+      play({restorePaused:video.paused});
+    };
     for (const event of ['loadedmetadata', 'playing', 'pause']) video.addEventListener(event, refresh);
     if (video.remote?.addEventListener) for (const event of ['connect','disconnect','connecting']) video.remote.addEventListener(event, refresh);
     refresh();
   }
-  async function play() {
+  async function play(options = {}) {
     if (!selected || !catalog) return;
     stop(); status('', true);
     const version = playerVersion, item = {...selected};
@@ -316,7 +347,7 @@
         hlsPlayer.loadSource(data.native_src || data.src); hlsPlayer.attachMedia(video);
       } else { fallback(); return; }
       playLabel('다시 불러오기');
-      const autoplay = video.play(); if (autoplay?.catch) autoplay.catch(() => {});
+      if (!options.restorePaused) { const autoplay = video.play(); if (autoplay?.catch) autoplay.catch(() => {}); }
     } catch { fallback(); }
     finally { clearTimeout(timeout); if (current()) playbackController = null; }
   }
