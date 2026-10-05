@@ -1406,6 +1406,11 @@ def index():
     )
 
 
+@app.get("/maeum-record")
+def maeum_record_plan():
+    return render_template("maeum_record_plan.html")
+
+
 # ---------------------------- 조회 API ----------------------------
 # 조회 결과 인메모리 캐시(경로+쿼리 기준, 짧은 TTL). 이미 수집된 데이터는 자주 안 바뀌므로
 # 반복 호출/재불러오기를 즉시 응답해 속도↑·DB부하↓. DB가 잠깐 죽어도 '마지막 캐시'를 내줘서

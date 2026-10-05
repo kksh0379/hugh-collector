@@ -44,9 +44,8 @@ class LauncherTests(unittest.TestCase):
         for item in SERVICES:
             if item.get('kind') == 'document':
                 url = urlsplit(item['href'])
-                self.assertEqual(url.scheme, 'https')
-                self.assertEqual(url.hostname, 'chatgpt.com')
-                self.assertTrue(url.path.startswith('/api/library/files/') and url.path.endswith('/download'))
+                self.assertEqual(url.scheme, '')
+                self.assertEqual(url.path, '/maeum-record')
                 self.assertEqual(item['badge'], '기획서')
             else:
                 self.assertTrue(item['href'].startswith('/') and not item['href'].startswith('//'))
