@@ -416,6 +416,8 @@ def _projectory_list_json(api, params, headers):
         try:
             return response.json()
         except ValueError:
+            if "graph.instagram.com/me/media" in response.text:
+                raise CollectionFailure("갤러리는 인스타그램 피드 화면이에요 · 별도 연동 확인이 필요해요") from None
             if attempt == 0:
                 time.sleep(1)
                 continue

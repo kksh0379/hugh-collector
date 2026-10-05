@@ -10,7 +10,7 @@ from collector.collection_result import CollectionFailure
 
 class CollectionFailureTests(unittest.TestCase):
     def test_projectory_transient_html_recovers(self):
-        bad = SimpleNamespace(json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
+        bad = SimpleNamespace(text='<html>temporary</html>', json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
         good = SimpleNamespace(json=lambda: {'boardList': []})
         with patch.object(boards.fetcher, 'get', side_effect=[bad, good]) as get, patch.object(boards.time, 'sleep'):
             self.assertEqual(boards._projectory_list_json('api', {}, {}), {'boardList': []})
@@ -32,6 +32,13 @@ class CollectionFailureTests(unittest.TestCase):
             with self.assertRaises(CollectionFailure):
                 social._crawl_youtube_search('a', 'a')
             self.assertEqual(json.loads(save.call_args.args[1])['until'], 1120)
+
+    def test_instagram_gallery_is_not_retried_as_board_api(self):
+        page = SimpleNamespace(text="_sendAxios.getParam('https://graph.instagram.com/me/media', params)", json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
+        with patch.object(boards.fetcher, 'get', return_value=page) as get:
+            with self.assertRaisesRegex(CollectionFailure, '인스타그램 피드'):
+                boards._projectory_list_json('api', {}, {})
+            get.assert_called_once()
 
     def test_saved_board_is_returned_without_detail_request(self):
         entry = {'url': 'https://example.org/a', 'title': 'saved', 'published_at': None}
