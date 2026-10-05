@@ -24,6 +24,7 @@
       <h3 id="videos-title"></h3>
       <p id="videos-detail-status" role="status" aria-live="polite" hidden></p>
       <div id="videos-detail-body" hidden>
+      <section id="videos-inspection" class="videos-inspection" hidden aria-label="회차 재생 검사"><div><span class="videos-inspection-pulse" aria-hidden="true"></span><span id="videos-inspection-status" role="status" aria-live="polite"></span></div><progress id="videos-inspection-progress" max="100" value="0" aria-label="회차 검사 진행률"></progress><button type="button" id="videos-inspection-toggle">검사 중지</button></section>
       <div class="videos-watch-head"><strong id="videos-selected"></strong><a id="videos-original" class="admin-only" target="_blank" rel="noopener noreferrer">원본 사이트에서 보기 ↗</a></div>
       <div id="videos-player" class="videos-player"><p>회차를 선택한 뒤 재생을 눌러 주세요.</p></div>
       <div id="videos-airplay-controls" class="videos-airplay-controls" hidden><button type="button" id="videos-airplay">AirPlay</button><button type="button" id="videos-airplay-return" hidden>이 기기로 전환</button><button type="button" id="videos-player-repair">재생기 버튼 복구</button><span id="videos-airplay-status" role="status" aria-live="polite"></span></div>
@@ -39,7 +40,7 @@
         <form id="videos-jump-form" class="videos-jump"><label for="videos-jump">회차 바로가기</label><input id="videos-jump" type="number" min="1" step="1" inputmode="numeric" placeholder="회차 번호 입력" required><button type="submit">이동</button></form>
         <p id="videos-jump-status" role="status" aria-live="polite" hidden></p>
         <p id="videos-range-info" class="videos-range-info"></p>
-        <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div><p class="videos-sheet-help videos-availability-legend"><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="m8 6 6 4-6 4Z" fill="currentColor" stroke="none"/></svg> 연결 있음</span><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="m4.4 4.4 11.2 11.2"/></svg> 영상 없음</span></p>
+        <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div><p class="videos-sheet-help videos-availability-legend"><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="m8 6 6 4-6 4Z" fill="currentColor" stroke="none"/></svg> 재생 확인</span><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="m4.4 4.4 11.2 11.2"/></svg> 재생 확인 실패</span></p>
       </dialog>
       </div>
     </section>

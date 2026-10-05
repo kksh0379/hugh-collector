@@ -141,22 +141,31 @@
     $('videos-resume-info').textContent = `${selected.episode}화${seconds ? ' · ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : ''}`;
   }
   let rangeStart = 1;
-  let availabilityRun = 0, availabilityController = null, availabilityContext = '';
-  function cancelAvailability() { ++availabilityRun; availabilityController?.abort(); availabilityController = null; availabilityContext = ''; }
-  function episodeState(ep) {
-    const entry = catalog?.availability?.[`${selected.series}:${ep}`];
-    if (entry?.status === 'unknown' && Date.now()/1000 - entry.checked_at > 60) return undefined;
-    return typeof entry === 'string' ? entry : entry?.status;
+  const VERIFIED = 'hscope-video-playback-check-v396';
+  let verified = {};
+  try { verified = JSON.parse(localStorage.getItem(VERIFIED)) || {}; } catch {}
+  if (!verified || typeof verified !== 'object' || Array.isArray(verified)) verified = {};
+  let availabilityRun = 0, availabilityController = null, availabilityContext = '', inspectionPaused = false;
+  function cancelAvailability() { ++availabilityRun; availabilityController?.abort(); availabilityController = null; availabilityContext = ''; $('videos-inspection').hidden = true; }
+  function verifiedEntry(work, series, ep) {
+    const entry = verified[`${work}:${series}:${ep}`];
+    const lifetime = entry?.status === 'available' ? 21600 : 900;
+    return entry && Date.now()/1000 - entry.checked_at < lifetime ? entry : null;
   }
+  function rememberCheck(work, series, ep, state) {
+    verified[`${work}:${series}:${ep}`] = {status:state,checked_at:Date.now()/1000};
+    const entries = Object.entries(verified).filter(([,entry]) => Date.now()/1000 - entry.checked_at < 21600).sort((a,b) => b[1].checked_at-a[1].checked_at).slice(0,5000);
+    verified = Object.fromEntries(entries);
+    try { localStorage.setItem(VERIFIED,JSON.stringify(verified)); } catch {}
+  }
+  function episodeState(ep) { return selected ? verifiedEntry(selected.id,selected.series,ep)?.status : undefined; }
   function paintEpisodeStates() {
     for (const button of $('videos-episodes').querySelectorAll('button')) {
-      const ep = Number(button.dataset.episode), state = episodeState(ep);
-      const marked = state === 'available' || state === 'missing';
-      button.dataset.availability = marked ? state : '';
+      const ep = Number(button.dataset.episode), state = episodeState(ep), marked = !!state;
+      button.dataset.availability = state === 'available' ? 'available' : marked ? 'missing' : '';
       button.textContent = `${ep}화`;
-      const description = state === 'missing' ? '영상 없음 · 선택하면 다시 확인' : state === 'available' ? '영상 연결 있음' : '';
-      button.title = description;
-      button.setAttribute('aria-label', `${ep}화${description ? ', ' + description : ''}`);
+      const description = state === 'available' ? '브라우저에서 영상 로드 확인' : marked ? '재생 확인 실패 · 선택하면 다시 시도' : '';
+      button.title = description; button.setAttribute('aria-label', `${ep}화${description ? ', ' + description : ''}`);
       if (marked) {
         const icon = document.createElement('span'); icon.className = 'videos-availability-icon'; icon.setAttribute('aria-hidden','true');
         icon.innerHTML = state === 'available'
@@ -166,33 +175,75 @@
       }
     }
   }
-  async function checkEpisodePage() {
-    if (!catalog || !selected || $('view-videos').hidden) return;
-    const context = `${selected.id}:${selected.series}:${rangeStart}`;
-    if (context === availabilityContext && availabilityController && !availabilityController.signal.aborted) return;
-    availabilityContext = context;
-    const run = ++availabilityRun, work = selected.id, series = selected.series, data = catalog;
-    availabilityController?.abort(); const controller = new AbortController(); availabilityController = controller;
-    const numbers = Array.from($('videos-episodes').querySelectorAll('button')).map(b => Number(b.dataset.episode)).filter(ep => !episodeState(ep)).sort((a,b) => Math.abs(a-selected.episode)-Math.abs(b-selected.episode));
-    for (let offset = 0; offset < numbers.length; offset += 2) {
-      if (run !== availabilityRun || selected?.id !== work || selected.series !== series) break;
-      try {
-        const response = await fetch(`/api/videos/availability?id=${work}&series=${series}&episodes=${numbers.slice(offset,offset+2).join(',')}`, {signal:controller.signal});
-        if (!response.ok) throw Error('availability unavailable');
-        const result = await response.json();
-        const states = Object.fromEntries(Object.entries(result.states || {}).map(([key,value]) => [key,value === 'unknown' ? {status:value,checked_at:Date.now()/1000} : value]));
-        data.availability = {...data.availability, ...states};
-        if (run === availabilityRun && catalog === data) paintEpisodeStates();
-      } catch {
-        if (run === availabilityRun && catalog === data && !controller.signal.aborted) {
-          for (const ep of numbers.slice(offset)) data.availability = {...data.availability,[`${series}:${ep}`]:{status:'unknown',checked_at:Date.now()/1000}};
-          paintEpisodeStates();
+  async function inspectPlayback(work, series, ep, signal) {
+    if (signal.aborted) return null;
+    const controller = new AbortController();
+    const abort = () => controller.abort(); signal.addEventListener('abort',abort,{once:true});
+    const timeout = setTimeout(abort,20000);
+    let video = null, hls = null;
+    try {
+      const response = await fetch(`/api/videos/playback?id=${work}&series=${series}&episode=${ep}`,{signal:controller.signal,cache:'no-store'});
+      const data = await response.json();
+      if (!response.ok || !data.src) return signal.aborted ? null : 'unavailable';
+      video = document.createElement('video'); video.muted = true; video.playsInline = true; video.preload = 'auto'; video.crossOrigin = 'anonymous';
+      video.setAttribute('aria-hidden','true'); video.setAttribute('disableRemotePlayback',''); video.disableRemotePlayback = true;
+      video.setAttribute('x-webkit-airplay','deny'); video.className = 'videos-inspection-probe'; video.tabIndex = -1;
+      document.body.append(video);
+      return await new Promise(resolve => {
+        let done = false;
+        const finish = value => { if (done) return; done = true; controller.signal.removeEventListener('abort',onAbort); resolve(value); };
+        const onAbort = () => finish(signal.aborted ? null : 'unavailable');
+        controller.signal.addEventListener('abort',onAbort,{once:true});
+        if (controller.signal.aborted) { onAbort(); return; }
+        video.onloadeddata = () => finish('available');
+        video.onerror = () => finish('unavailable');
+        if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = data.native_src || data.src; video.load(); const start = video.play(); start?.catch(() => {}); }
+        else if (window.Hls?.isSupported()) {
+          hls = new window.Hls({maxBufferLength:2,maxMaxBufferLength:2,maxBufferSize:1024*1024});
+          hls.on(window.Hls.Events.ERROR,(event,info) => { if (info.fatal) finish('unavailable'); });
+          hls.loadSource(data.native_src || data.src); hls.attachMedia(video);
+          const start = video.play(); start?.catch(() => {});
+        } else finish('unavailable');
+      });
+    } catch { return signal.aborted ? null : 'unavailable'; }
+    finally { clearTimeout(timeout); signal.removeEventListener('abort',abort); hls?.destroy(); if (video) { video.onloadeddata = null; video.onerror = null; video.pause(); video.removeAttribute('src'); video.load(); video.remove(); } }
+  }
+  function inspectionProgress(work, series, episodes, paused = false) {
+    if (selected?.id !== work || selected.series !== series) return;
+    const entries = episodes.map(ep => verifiedEntry(work,series,ep)), checked = entries.filter(Boolean).length;
+    const available = entries.filter(entry => entry?.status === 'available').length;
+    $('videos-inspection').hidden = false;
+    $('videos-inspection-progress').max = episodes.length; $('videos-inspection-progress').value = checked;
+    $('videos-inspection-status').textContent = `${paused ? '검사 일시정지' : checked === episodes.length ? '재생 검사 완료' : '영상 재생 검사 중'} · ${checked}/${episodes.length}화 · 재생 확인 ${available} · 확인 실패 ${checked-available}`;
+    $('videos-inspection-toggle').textContent = paused ? '검사 계속' : checked === episodes.length ? '다시 검사' : '검사 중지';
+  }
+  async function checkEpisodePage(force = false) {
+    if (!catalog || !selected || $('view-videos').hidden || inspectionPaused) return;
+    const context = `${selected.id}:${selected.series}`;
+    if (!force && context === availabilityContext && availabilityController && !availabilityController.signal.aborted) return;
+    availabilityController?.abort(); availabilityContext = context;
+    const run = ++availabilityRun, work = selected.id, series = selected.series, episodes = currentEpisodes().slice();
+    if (force) { for (const ep of episodes) delete verified[`${work}:${series}:${ep}`]; paintEpisodeStates(); }
+    const controller = new AbortController(); availabilityController = controller;
+    const numbers = episodes.filter(ep => !verifiedEntry(work,series,ep)).sort((a,b) => Math.abs(a-selected.episode)-Math.abs(b-selected.episode));
+    inspectionProgress(work,series,episodes);
+    let cursor = 0;
+    async function worker() {
+      while (cursor < numbers.length && run === availabilityRun && !controller.signal.aborted) {
+        const ep = numbers[cursor++], state = await inspectPlayback(work,series,ep,controller.signal);
+        if (state && run === availabilityRun && selected?.id === work && selected.series === series) {
+          rememberCheck(work,series,ep,state); paintEpisodeStates(); inspectionProgress(work,series,episodes);
         }
-        break;
       }
     }
+    await Promise.all([worker(),worker()]);
     if (run === availabilityRun) availabilityController = null;
   }
+  $('videos-inspection-toggle').onclick = () => {
+    if (!selected || !catalog) return;
+    if (availabilityController) { inspectionPaused = true; ++availabilityRun; availabilityController.abort(); availabilityController = null; inspectionProgress(selected.id,selected.series,currentEpisodes(),true); }
+    else { const complete = currentEpisodes().every(ep => verifiedEntry(selected.id,selected.series,ep)); inspectionPaused = false; checkEpisodePage(complete); }
+  };
   let sheetOverflow = '';
   function closePicker(focus = true) {
     const sheet = $('videos-picker'); if (!sheet.open) return;
@@ -287,7 +338,7 @@
     const savedProgress = progress[item.id];
     const resume = savedProgress && parseWatchUrl(watchUrl({...item, ...savedProgress}));
     closePicker(false);
-    cancelAvailability();
+    cancelAvailability(); inspectionPaused = false;
     const version = ++requestVersion; selected = {...item, ...(resume || {})}; catalog = null; stop();
     $('videos-browse').hidden = true; $('videos-detail').hidden = false; $('videos-detail-body').hidden = true;
     $('videos-title').textContent = item.title; $('videos-detail-save').textContent = favoriteLabel(item); $('videos-detail-save').setAttribute('aria-pressed',String(library.some(x => x.id === item.id)));
@@ -373,6 +424,7 @@
   }
   async function play(options = {}) {
     if (!selected || !catalog) return;
+    if (availabilityController) { inspectionPaused = true; ++availabilityRun; availabilityController.abort(); availabilityController = null; inspectionProgress(selected.id,selected.series,currentEpisodes(),true); }
     stop(); status('', true);
     const version = playerVersion, item = {...selected};
     const current = () => version === playerVersion;
@@ -401,7 +453,7 @@
       const data = await response.json();
       if (!response.ok && data.code === 'video_missing') {
         if (!current()) return; fallbackUsed = true;
-        catalog.availability = {...catalog.availability, [`${item.series}:${item.episode}`]: 'missing'}; paintEpisodeStates();
+        rememberCheck(item.id,item.series,item.episode,'unavailable'); paintEpisodeStates();
         const missing = document.createElement('p'); missing.textContent = data.error;
         $('videos-player').replaceChildren(missing); status(data.error, true); playLabel('다시 확인하기'); return;
       }
@@ -427,13 +479,14 @@
       };
       const mediaFailure = () => {
         if (!current() || fallbackUsed) return;
+        rememberCheck(item.id,item.series,item.episode,'unavailable'); paintEpisodeStates();
         fallbackUsed = true; clearTimeout(playbackTimer); $('videos-airplay-controls').hidden = true;
         video.pause(); hlsPlayer?.destroy(); hlsPlayer = null;
         const failure = document.createElement('p'); failure.textContent = '원출처 영상에 연결하지 못했어요. 삭제되었거나 제공이 중단된 영상일 수 있어요.';
         $('videos-player').replaceChildren(failure); status(failure.textContent, true); playLabel('다시 확인하기');
       };
       video.onerror = mediaFailure;
-      video.onloadeddata = () => { if (current()) { clearTimeout(playbackTimer); catalog.availability = {...catalog.availability, [`${item.series}:${item.episode}`]: 'available'}; paintEpisodeStates(); } };
+      video.onloadeddata = () => { if (current()) { clearTimeout(playbackTimer); rememberCheck(item.id,item.series,item.episode,'available'); paintEpisodeStates(); } };
       $('videos-player').replaceChildren(video);
       setupAirPlay(video, current, !!data.tracks?.length);
       playbackTimer = setTimeout(() => { if (!video.webkitCurrentPlaybackTargetIsWireless) mediaFailure(); }, 12000);
