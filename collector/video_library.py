@@ -128,6 +128,14 @@ def parse_playback(html):
     return dict(src=url, tracks=tracks)
 
 
+@lru_cache(maxsize=128)
+def _watch_response(path, bucket):
+    response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False)
+    if response.status_code not in (200, 404, 410):
+        response.raise_for_status()
+    return response
+
+
 @bp.get('/api/videos/playback')
 def playback():
     parts = [request.args.get(key, '') for key in ('id', 'series', 'episode')]
@@ -135,7 +143,7 @@ def playback():
     if not WATCH.fullmatch(path):
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
-        response = requests.get(ORIGIN + path, timeout=(5, 10), allow_redirects=False)
+        response = _watch_response(path, int(time.time() // 120))
         if response.status_code in (404, 410):
             record_episode(*parts, 'missing')
             result = jsonify(error='원출처에 이 회차의 영상이 없어요. 다른 회차를 선택해 주세요.', code='video_missing')
@@ -144,7 +152,7 @@ def playback():
             return result
         response.raise_for_status()
         data = parse_playback(response.text) if response.status_code == 200 else None
-        if data and data.get('tracks'):
+        if data and data.get('tracks') and request.args.get('probe') != '1':
             data['native_src'] = url_for('video_library.native_manifest', token=video_hls.encode_playback(data), _external=True, _scheme='https')
         absent = response.status_code == 200 and not BeautifulSoup(response.text, 'html.parser').select_one('video[src], video source[src], iframe[src]')
         result = jsonify(data or dict(error='원출처에서 재생 가능한 영상을 찾지 못했어요. 다른 회차를 선택해 주세요.' if absent else '영상 연결 형식을 확인하지 못했어요. 다시 시도해 주세요.', code='video_missing' if absent else 'unsupported_player'))

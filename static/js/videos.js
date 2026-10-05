@@ -145,7 +145,16 @@
   let verified = {};
   try { verified = JSON.parse(localStorage.getItem(VERIFIED)) || {}; } catch {}
   if (!verified || typeof verified !== 'object' || Array.isArray(verified)) verified = {};
-  let availabilityRun = 0, availabilityController = null, availabilityContext = '', inspectionPaused = false;
+  let availabilityRun = 0, availabilityController = null, availabilityContext = '', inspectionPaused = false, inspectionAll = false;
+  let verifiedSaveTimer = null;
+  function flushVerified() {
+    clearTimeout(verifiedSaveTimer); verifiedSaveTimer = null;
+    const entries = Object.entries(verified).filter(([,entry]) => Date.now()/1000 - entry.checked_at < 21600).sort((a,b) => b[1].checked_at-a[1].checked_at).slice(0,5000);
+    verified = Object.fromEntries(entries);
+    try { localStorage.setItem(VERIFIED,JSON.stringify(verified)); } catch {}
+  }
+  window.addEventListener('pagehide',flushVerified);
+  function inspectionEpisodes() { return inspectionAll ? currentEpisodes().slice() : (episodeRanges(currentEpisodes()).find(page => page.start === rangeStart)?.episodes || []).slice(); }
   function cancelAvailability() { ++availabilityRun; availabilityController?.abort(); availabilityController = null; availabilityContext = ''; $('videos-inspection').hidden = true; }
   function verifiedEntry(work, series, ep) {
     const entry = verified[`${work}:${series}:${ep}`];
@@ -154,14 +163,13 @@
   }
   function rememberCheck(work, series, ep, state) {
     verified[`${work}:${series}:${ep}`] = {status:state,checked_at:Date.now()/1000};
-    const entries = Object.entries(verified).filter(([,entry]) => Date.now()/1000 - entry.checked_at < 21600).sort((a,b) => b[1].checked_at-a[1].checked_at).slice(0,5000);
-    verified = Object.fromEntries(entries);
-    try { localStorage.setItem(VERIFIED,JSON.stringify(verified)); } catch {}
+    if (!verifiedSaveTimer) verifiedSaveTimer = setTimeout(flushVerified,500);
   }
   function episodeState(ep) { return selected ? verifiedEntry(selected.id,selected.series,ep)?.status : undefined; }
-  function paintEpisodeStates() {
+  function paintEpisodeStates(onlyEpisode) {
     for (const button of $('videos-episodes').querySelectorAll('button')) {
       const ep = Number(button.dataset.episode), state = episodeState(ep), marked = !!state;
+      if (onlyEpisode !== undefined && ep !== onlyEpisode) continue;
       button.dataset.availability = state === 'available' ? 'available' : marked ? 'missing' : '';
       button.textContent = `${ep}화`;
       const description = state === 'available' ? '브라우저에서 영상 로드 확인' : marked ? '재생 확인 실패 · 선택하면 다시 시도' : '';
@@ -179,10 +187,10 @@
     if (signal.aborted) return null;
     const controller = new AbortController();
     const abort = () => controller.abort(); signal.addEventListener('abort',abort,{once:true});
-    const timeout = setTimeout(abort,20000);
+    const timeout = setTimeout(abort,12000);
     let video = null, hls = null;
     try {
-      const response = await fetch(`/api/videos/playback?id=${work}&series=${series}&episode=${ep}`,{signal:controller.signal,cache:'no-store'});
+      const response = await fetch(`/api/videos/playback?id=${work}&series=${series}&episode=${ep}&probe=1`,{signal:controller.signal,cache:'no-store'});
       const data = await response.json();
       if (!response.ok || !data.src) return signal.aborted ? null : 'unavailable';
       video = document.createElement('video'); video.muted = true; video.playsInline = true; video.preload = 'auto'; video.crossOrigin = 'anonymous';
@@ -215,14 +223,16 @@
     $('videos-inspection').hidden = false;
     $('videos-inspection-progress').max = episodes.length; $('videos-inspection-progress').value = checked;
     $('videos-inspection-status').textContent = `${paused ? '검사 일시정지' : checked === episodes.length ? '재생 검사 완료' : '영상 재생 검사 중'} · ${checked}/${episodes.length}화 · 재생 확인 ${available} · 확인 실패 ${checked-available}`;
+    $('videos-inspection-all').hidden = inspectionAll || currentEpisodes().length <= episodes.length;
+    $('videos-inspection-all').textContent = `전체 ${currentEpisodes().length.toLocaleString()}화 검사`;
     $('videos-inspection-toggle').textContent = paused ? '검사 계속' : checked === episodes.length ? '다시 검사' : '검사 중지';
   }
   async function checkEpisodePage(force = false) {
     if (!catalog || !selected || $('view-videos').hidden || inspectionPaused) return;
-    const context = `${selected.id}:${selected.series}`;
+    const context = `${selected.id}:${selected.series}:${inspectionAll ? 'all' : rangeStart}`;
     if (!force && context === availabilityContext && availabilityController && !availabilityController.signal.aborted) return;
     availabilityController?.abort(); availabilityContext = context;
-    const run = ++availabilityRun, work = selected.id, series = selected.series, episodes = currentEpisodes().slice();
+    const run = ++availabilityRun, work = selected.id, series = selected.series, episodes = inspectionEpisodes();
     if (force) { for (const ep of episodes) delete verified[`${work}:${series}:${ep}`]; paintEpisodeStates(); }
     const controller = new AbortController(); availabilityController = controller;
     const numbers = episodes.filter(ep => !verifiedEntry(work,series,ep)).sort((a,b) => Math.abs(a-selected.episode)-Math.abs(b-selected.episode));
@@ -232,18 +242,19 @@
       while (cursor < numbers.length && run === availabilityRun && !controller.signal.aborted) {
         const ep = numbers[cursor++], state = await inspectPlayback(work,series,ep,controller.signal);
         if (state && run === availabilityRun && selected?.id === work && selected.series === series) {
-          rememberCheck(work,series,ep,state); paintEpisodeStates(); inspectionProgress(work,series,episodes);
+          rememberCheck(work,series,ep,state); paintEpisodeStates(ep); inspectionProgress(work,series,episodes);
         }
       }
     }
-    await Promise.all([worker(),worker()]);
+    await Promise.all([worker(),worker(),worker(),worker()]);
     if (run === availabilityRun) availabilityController = null;
   }
   $('videos-inspection-toggle').onclick = () => {
     if (!selected || !catalog) return;
-    if (availabilityController) { inspectionPaused = true; ++availabilityRun; availabilityController.abort(); availabilityController = null; inspectionProgress(selected.id,selected.series,currentEpisodes(),true); }
-    else { const complete = currentEpisodes().every(ep => verifiedEntry(selected.id,selected.series,ep)); inspectionPaused = false; checkEpisodePage(complete); }
+    if (availabilityController) { inspectionPaused = true; ++availabilityRun; availabilityController.abort(); availabilityController = null; inspectionProgress(selected.id,selected.series,inspectionEpisodes(),true); }
+    else { const complete = inspectionEpisodes().every(ep => verifiedEntry(selected.id,selected.series,ep)); inspectionPaused = false; checkEpisodePage(complete); }
   };
+  $('videos-inspection-all').onclick = () => { inspectionAll = true; inspectionPaused = false; checkEpisodePage(); };
   let sheetOverflow = '';
   function closePicker(focus = true) {
     const sheet = $('videos-picker'); if (!sheet.open) return;
@@ -338,7 +349,7 @@
     const savedProgress = progress[item.id];
     const resume = savedProgress && parseWatchUrl(watchUrl({...item, ...savedProgress}));
     closePicker(false);
-    cancelAvailability(); inspectionPaused = false;
+    cancelAvailability(); inspectionPaused = false; inspectionAll = false;
     const version = ++requestVersion; selected = {...item, ...(resume || {})}; catalog = null; stop();
     $('videos-browse').hidden = true; $('videos-detail').hidden = false; $('videos-detail-body').hidden = true;
     $('videos-title').textContent = item.title; $('videos-detail-save').textContent = favoriteLabel(item); $('videos-detail-save').setAttribute('aria-pressed',String(library.some(x => x.id === item.id)));
@@ -424,7 +435,7 @@
   }
   async function play(options = {}) {
     if (!selected || !catalog) return;
-    if (availabilityController) { inspectionPaused = true; ++availabilityRun; availabilityController.abort(); availabilityController = null; inspectionProgress(selected.id,selected.series,currentEpisodes(),true); }
+    if (availabilityController) { inspectionPaused = true; ++availabilityRun; availabilityController.abort(); availabilityController = null; inspectionProgress(selected.id,selected.series,inspectionEpisodes(),true); }
     stop(); status('', true);
     const version = playerVersion, item = {...selected};
     const current = () => version === playerVersion;
