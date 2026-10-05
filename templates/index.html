@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>휴 스코프</title>
   <meta name="description" content="재단·업계 뉴스와 재단 게시판·소셜 채널을 한 곳에서 모아보는 통합 스코프." />
-  <meta name="theme-color" content="#2d6cdf" />
+  <meta name="theme-color" content="#ffffff" />
 
   <!-- 링크 미리보기(카톡·슬랙·트위터 등) Open Graph -->
   {% set og_base = 'https://' + request.host %}
@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.100") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.101") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -46,11 +46,12 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.100') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.101') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.100') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.100") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.101') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.101") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.101') }}">
 <style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
 </head>
 <body>
@@ -68,7 +69,7 @@
     </a>
     <div class="header-actions" id="header-actions">
     <span class="foot-user loggedin-only" id="foot-user"></span>
-    <button class="auth-btn admin-only" id="features-btn">⚙ 표시</button>
+    <button class="auth-btn admin-only" id="features-btn"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="10" cy="18" r="2" fill="white"/></svg> 표시</button>
     <button class="auth-btn admin-only" id="notes-btn"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M3 7h4m-4 5h4m-4 5h4M10 7h6m-6 5h6"/></svg> 노트</button>
     <button class="auth-btn admin-only" id="runlog-btn"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 11h6m-6 5h6"/></svg> 로그</button>
     <button class="auth-btn admin-only" id="purge-db-btn"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg> 초기화</button>
@@ -498,7 +499,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.100 · build 261005</span>
+    <span class="ver">v3.101 · build 261005</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -527,11 +528,11 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.100") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.100") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.101") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.101") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='vendor/hls-1.5.17.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.100') }}"></script>
+  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.101') }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>
