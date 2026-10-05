@@ -49,7 +49,7 @@
   try {
     library = mergeLibrary(JSON.parse(localStorage.getItem(STORE)));
   } catch {}
-  let airplayCleanup = null;
+  let airplayCleanup = null, timeline = null;
   let playerVersion = 0, playbackController = null, hlsPlayer = null, playbackTimer = null, cropObserver = null;
   let selected = null, catalog = null, requestVersion = 0, initialized = false;
   let allWorks = [], scope = 'all', visibleCount = 40, indexLoading = false, listScroll = 0;
@@ -62,7 +62,7 @@
   let subtitleSync = {};
   try { subtitleSync = JSON.parse(localStorage.getItem(SUBTITLE_SYNC)) || {}; } catch {}
   if (!subtitleSync || typeof subtitleSync !== 'object' || Array.isArray(subtitleSync)) subtitleSync = {};
-  function subtitleDelay() { const amount = Number(subtitleSync[`${selected?.id}:${selected?.series}`]) || 0; return Math.max(-10,Math.min(10,amount)); }
+  function subtitleDelay() { const saved = subtitleSync[`${selected?.id}:${selected?.series}`]; const amount = saved == null ? 1.5 : Number(saved); return Math.round(Math.max(-10,Math.min(10,Number.isFinite(amount) ? amount : 1.5))*10)/10; }
   async function applySubtitleDelay(amount) {
     if (!selected || !catalog || !Number.isFinite(amount)) return;
     const video = $('videos-player').querySelector('video');
@@ -83,13 +83,13 @@
   function stepSubtitleDelay(delta) {
     if (!selected || !catalog) return;
     const work = selected.id, series = selected.series;
-    const amount = Math.round(Math.max(-10,Math.min(10,subtitleDelay()+delta))*2)/2;
+    const amount = Math.round(Math.max(-10,Math.min(10,subtitleDelay()+delta))*10)/10;
     subtitleSync[`${work}:${series}`] = amount; renderSubtitleDelay();
     clearTimeout(subtitleStepTimer);
     subtitleStepTimer = setTimeout(() => { if (selected?.id === work && selected.series === series) applySubtitleDelay(subtitleDelay()); },350);
   }
-  $('videos-subtitle-earlier').onclick = () => stepSubtitleDelay(-.5);
-  $('videos-subtitle-later').onclick = () => stepSubtitleDelay(.5);
+  $('videos-subtitle-earlier').onclick = () => stepSubtitleDelay(-.1);
+  $('videos-subtitle-later').onclick = () => stepSubtitleDelay(.1);
   function save() { try { localStorage.setItem(STORE, JSON.stringify(library)); } catch {} }
   function status(text, detail = false) { const el = $(detail ? 'videos-detail-status' : 'videos-status'); el.textContent = text; el.hidden = !text; }
   function favoriteLabel(item) { return library.some(x => x.id === item.id) ? '내 목록에서 제거' : '내 목록에 추가'; }
@@ -319,7 +319,7 @@
   $('videos-picker').onclick = event => { if (event.target === $('videos-picker')) { const r = $('videos-picker').getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closePicker(); } };
   window.addEventListener('resize', () => { if ($('videos-picker').open) { sizePicker(); revealEpisode(); } });
   window.visualViewport?.addEventListener('resize', () => { if ($('videos-picker').open) sizePicker(); });
-  function stop() { $('videos-subtitle-sync').hidden = true; airplayCleanup?.(); airplayCleanup = null; $('videos-airplay-controls').hidden = true; $('videos-airplay-return').hidden = true; $('videos-airplay-status').textContent = ''; ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
+  function stop() { timeline?.destroy(); timeline = null; $('videos-subtitle-sync').hidden = true; airplayCleanup?.(); airplayCleanup = null; $('videos-airplay-controls').hidden = true; $('videos-airplay-return').hidden = true; $('videos-airplay-status').textContent = ''; ++playerVersion; cropObserver?.disconnect(); cropObserver = null; playbackController?.abort(); playbackController = null; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null; const video = $('videos-player').querySelector('video'); if (video) { video.pause(); video.removeAttribute('src'); video.load(); } $('videos-player').replaceChildren(); const p = document.createElement('p'); p.textContent = '재생을 눌러 선택한 회차를 감상하세요.'; $('videos-player').append(p); playLabel(selected && Number(progress[selected.id]?.seconds) > 0 ? '이어보기' : '재생하기'); }
   function revealEpisode(number = selected.episode) {
     const list = $('videos-episodes'), button = Array.from(list.querySelectorAll('button')).find(b => Number(b.dataset.episode) === number);
     if (button) list.scrollTop = Math.max(0, button.offsetTop - (list.clientHeight - button.offsetHeight) / 2);
@@ -414,7 +414,6 @@
     const supported = typeof video.webkitShowPlaybackTargetPicker === 'function' || !!video.remote?.prompt;
     controls.hidden = !supported;
     if (!supported) return;
-    const wireless = () => !!video.webkitCurrentPlaybackTargetIsWireless || video.remote?.state === 'connected';
     const repairNativeControls = () => {
       if (!current()) return;
       video.setAttribute('x-webkit-airplay','allow'); video.disableRemotePlayback = false;
@@ -450,14 +449,6 @@
       window.removeEventListener?.('focus', wake); window.removeEventListener?.('pageshow', wake);
       document.removeEventListener?.('visibilitychange', wake);
     };
-    $('videos-player-repair').onclick = () => {
-      if (!current() || wireless()) { label.textContent = '이 기기로 전환한 뒤 재생기를 복구해 주세요.'; return; }
-      if (selected && Number.isFinite(video.currentTime)) {
-        progress[selected.id] = {series:selected.series, episode:selected.episode, seconds:video.currentTime};
-        try { localStorage.setItem(PROGRESS, JSON.stringify(progress)); } catch {}
-      }
-      play({restorePaused:video.paused});
-    };
     for (const event of ['loadedmetadata', 'playing', 'pause']) video.addEventListener(event, refresh);
     if (video.remote?.addEventListener) for (const event of ['connect','disconnect','connecting']) video.remote.addEventListener(event, refresh);
     refresh();
@@ -471,7 +462,7 @@
     let fallbackUsed = false;
     function fallback() {
       if (!current() || fallbackUsed) return;
-      fallbackUsed = true; $('videos-airplay-controls').hidden = true; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null;
+      fallbackUsed = true; timeline?.destroy(); timeline = null; $('videos-subtitle-sync').hidden = true; $('videos-airplay-controls').hidden = true; clearTimeout(playbackTimer); hlsPlayer?.destroy(); hlsPlayer = null;
       const video = $('videos-player').querySelector('video');
       if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
       const frame = document.createElement('iframe');
@@ -504,7 +495,7 @@
       for (const entry of data.native_src ? [] : data.tracks || []) {
         const track = document.createElement('track'); track.kind = 'subtitles'; track.src = entry.src; track.srclang = entry.language; track.label = entry.label; track.default = true; video.append(track);
       }
-      let lastSaved = 0, lastSubtitle = null, fixingTracks = false;
+      let lastSaved = 0, lastSubtitle = null, fixingTracks = false, resumeRestored = false;
       const singleSubtitle = () => {
         if (fixingTracks || !current()) return;
         const showing = Array.from(video.textTracks || []).filter(track => ['subtitles','captions'].includes(track.kind) && track.mode === 'showing');
@@ -518,11 +509,14 @@
       video.textTracks?.addEventListener('change',singleSubtitle);
       video.onloadedmetadata = () => {
         video.controls = true; video.setAttribute('controls',''); singleSubtitle();
+        // AirPlay can emit metadata again; saved resume is applied once per player.
+        if (!current() || resumeRestored) return;
+        resumeRestored = true;
         const seconds = Number(progress[item.id]?.seconds) || 0;
-        if (current() && seconds > 0 && seconds < video.duration - 5) video.currentTime = seconds;
+        if (seconds > 0 && seconds < video.duration - 5) video.currentTime = seconds;
       };
       video.ontimeupdate = () => {
-        if (!current() || !Number.isFinite(video.currentTime)) return;
+        if (!current() || video.seeking || timeline?.pending() || !Number.isFinite(video.currentTime)) return;
         const seconds = Math.floor(video.currentTime);
         if (Math.abs(seconds - lastSaved) < 5) return;
         lastSaved = seconds; progress[item.id] = {series:item.series, episode:item.episode, seconds, updatedAt:Date.now()};
@@ -532,7 +526,7 @@
       const mediaFailure = () => {
         if (!current() || fallbackUsed) return;
         rememberCheck(item.id,item.series,item.episode,'unavailable'); paintEpisodeStates();
-        fallbackUsed = true; clearTimeout(playbackTimer); $('videos-airplay-controls').hidden = true;
+        fallbackUsed = true; timeline?.destroy(); timeline = null; $('videos-subtitle-sync').hidden = true; clearTimeout(playbackTimer); $('videos-airplay-controls').hidden = true;
         video.pause(); hlsPlayer?.destroy(); hlsPlayer = null;
         const failure = document.createElement('p'); failure.textContent = '원출처 영상에 연결하지 못했어요. 삭제되었거나 제공이 중단된 영상일 수 있어요.';
         $('videos-player').replaceChildren(failure); status(failure.textContent, true); playLabel('다시 확인하기');
@@ -540,6 +534,7 @@
       video.onerror = mediaFailure;
       video.onloadeddata = () => { if (current()) { video.controls = true; video.setAttribute('controls',''); singleSubtitle(); clearTimeout(playbackTimer); rememberCheck(item.id,item.series,item.episode,'available'); paintEpisodeStates(); } };
       $('videos-player').replaceChildren(video);
+      timeline = window.HscopeVideoTimeline.attach(video, {bar:$('videos-timeline'),seek:$('videos-seek'),time:$('videos-time'),toggle:$('videos-toggle-play'),back:$('videos-rewind'),forward:$('videos-forward'),status:$('videos-seek-status')}, current);
       setupAirPlay(video, current, !!data.tracks?.length);
       $('videos-subtitle-sync').hidden = !data.tracks?.length; renderSubtitleDelay();
       playbackTimer = setTimeout(() => { if (!video.webkitCurrentPlaybackTargetIsWireless) mediaFailure(); }, 12000);

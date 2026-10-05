@@ -144,7 +144,7 @@ def playback():
     if not WATCH.fullmatch(path):
         return jsonify(error='영상 주소를 확인해 주세요.'), 400
     try:
-        subtitle_delay = float(request.args.get('subtitle_delay', '0'))
+        subtitle_delay = float(request.args.get('subtitle_delay', '1.5'))
         if not math.isfinite(subtitle_delay) or not -10 <= subtitle_delay <= 10:
             raise ValueError()
     except ValueError:
