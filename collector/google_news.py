@@ -18,6 +18,7 @@ import json
 import re
 import time
 import threading
+import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -28,8 +29,9 @@ from . import extractor, fetcher
 from .collection_result import CollectionItems
 
 RSS_URL = "https://news.google.com/rss/search"
-# 여러 탭의 동시 수집도 Google RSS 요청은 두 개까지만 허용한다.
-_RSS_SLOTS = threading.BoundedSemaphore(2)
+# 여러 탭에서도 RSS 요청·장애 대기를 직렬화하여 요청 폭주를 막는다.
+_RSS_SLOTS = threading.BoundedSemaphore(1)
+_RSS_NEXT_REQUEST = 0.0
 BATCH_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
 # 뉴스 카테고리별 검색 키워드. (재단=엔씨문화재단, 본사=엔씨소프트 및 자회사)
 CATEGORIES = {
@@ -115,11 +117,41 @@ def _snippet(description_html):
 
 
 def _collect_items(query, after=None, before=None):
+    global _RSS_NEXT_REQUEST
     with _RSS_SLOTS:
-        resp = fetcher.get(RSS_URL, params=_feed_params(query, after, before),
-                           headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
-                                    "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8"},
-                           timeout=NEWS_TIMEOUT, retries=1)
+        for attempt in range(3):
+            delay = _RSS_NEXT_REQUEST - time.monotonic()
+            if delay > 0:
+                # 긴 Retry-After는 수집을 중단하고 이후 요청에서도 대기를 존중한다.
+                if delay > 60:
+                    raise RuntimeError("뉴스 RSS 요청 제한 대기 중이에요. 잠시 후 다시 수집해 주세요.")
+                time.sleep(delay)
+            try:
+                resp = fetcher.get(RSS_URL, params=_feed_params(query, after, before),
+                                   headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36",
+                                            "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8"},
+                                   timeout=NEWS_TIMEOUT, retries=0)
+                _RSS_NEXT_REQUEST = time.monotonic() + 1.5
+                break
+            except requests.RequestException as error:
+                response = error.response
+                status = response.status_code if response is not None else None
+                if status is not None and status not in (429, 500, 502, 503, 504):
+                    raise
+                wait = (5, 15, 30)[attempt]
+                retry_after = response.headers.get("Retry-After") if response is not None else None
+                if retry_after:
+                    try:
+                        wait = max(wait, float(retry_after))
+                    except ValueError:
+                        try:
+                            wait = max(wait, parsedate_to_datetime(retry_after).timestamp() - time.time())
+                        except (TypeError, ValueError, OverflowError):
+                            pass
+                _RSS_NEXT_REQUEST = time.monotonic() + wait
+                if attempt == 2 or wait > 60:
+                    raise
+                print(f"[google] RSS 일시 오류 {status or type(error).__name__} · {wait:.0f}초 후 재시도 {attempt + 1}/2", flush=True)
     soup = BeautifulSoup(resp.content, "xml")
     if not soup.find("rss"):
         raise RuntimeError("뉴스 RSS 대신 다른 응답을 받았어요.")
@@ -573,4 +605,3 @@ def crawl_security(max_workers=24, max_items=0, progress=None, known_urls=None, 
     return crawl(max_workers=max_workers, max_items=max_items, progress=progress,
                  known_urls=known_urls, days=days, categories=SECURITY_CATEGORIES,
                  keyword_filter=False, title_exclude=SEC_EXCLUDE_TITLE)
-
