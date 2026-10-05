@@ -1968,6 +1968,8 @@ def crawl_start(group):
 
 @app.get("/api/crawl/<group>/status")
 def crawl_job_status(group):
+    if not _admin_ok():
+        return jsonify({"running": False, "progress": None, "result": None})
     st = _JOBS.get(group)
     if not st:
         # 이번 세션에 실행 이력이 없으면 마지막 저장 결과만 참고로 반환
@@ -2538,4 +2540,3 @@ if __name__ == "__main__":
     # 로컬 실행. 호스팅 환경은 gunicorn이 app 객체를 직접 띄운다(Procfile 참고).
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
-

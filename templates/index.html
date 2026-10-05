@@ -30,7 +30,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='145') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.91") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.92") }}" />
   {% for pose in range(6) %}
   <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
   {% endfor %}
@@ -46,11 +46,12 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.91') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.92') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.91') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.91") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.92') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.92") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
+<style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
 </head>
 <body>
   <header class="app-header">
@@ -122,7 +123,7 @@
       <span class="chip chip-plan">최근 5년 · 구글 뉴스(RSS)</span>
     </div>
     <div class="last-crawl" id="last-cat"></div>
-    <div class="result-msg" id="msg-cat"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-cat"></div>
     <ul class="list" id="list-cat"></ul>
   </section>
 
@@ -143,7 +144,7 @@
       <span class="chip chip-plan">최근 5년 · 구글 뉴스(RSS)</span>
     </div>
     <div class="last-crawl" id="last-game"></div>
-    <div class="result-msg" id="msg-game"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-game"></div>
     <ul class="list" id="list-game"></ul>
   </section>
 
@@ -165,7 +166,7 @@
       <span class="chip chip-plan">최근 5년 · 구글 뉴스(RSS)</span>
     </div>
     <div class="last-crawl" id="last-news"></div>
-    <div class="result-msg" id="msg-news"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-news"></div>
     <ul class="list" id="list-news"></ul>
   </section>
 
@@ -195,11 +196,11 @@
       <span class="chip chip-plan">제목 채용·입찰·휴관·티켓 제외 · 구글 뉴스(RSS)</span>
     </div>
     <div class="last-crawl" id="last-biz-sources"></div>
-    <div class="result-msg" id="msg-biz"></div>
-    <div class="result-msg" id="msg-boards" style="min-height:0"></div>
-    <div id="msg-boards-details"></div>
-    <div class="result-msg" id="msg-social" style="min-height:0"></div>
-    <div id="msg-social-details"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-biz"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-boards" style="min-height:0"></div>
+    <div class="admin-only collection-admin" id="msg-boards-details"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-social" style="min-height:0"></div>
+    <div class="admin-only collection-admin" id="msg-social-details"></div>
     <ul class="list" id="list-biz"></ul>
   </section>
 
@@ -228,7 +229,7 @@
       <span class="chip chip-plan">사고<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></svg>행위 조합 검색 · 광고/시세성 제외 · 구글 뉴스(RSS)</span>
     </div>
     <div class="last-crawl" id="last-security"></div>
-    <div class="result-msg" id="msg-security"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-security"></div>
     <ul class="list" id="list-security"></ul>
   </section>
 
@@ -268,7 +269,7 @@
       <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 10 18H2ZM12 9v5m0 3h.01"/></svg> 뉴스에 소개된 행사 정보는 오류가 있거나 공식 일정이 변경될 수 있으니, 참여 전 원문을 확인해 주세요.
     </div>
     <div class="last-crawl" id="last-event"></div>
-    <div class="result-msg" id="msg-event"></div>
+    <div class="result-msg admin-only collection-admin" id="msg-event"></div>
     <div class="event-body">
       <div id="event-curation"></div>
       <ul class="list album-grid" id="list-event" hidden></ul>
@@ -497,7 +498,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.91 · build 261005</span>
+    <span class="ver">v3.92 · build 261005</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -526,11 +527,11 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.91") }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.91") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.92") }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.92") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='vendor/hls-1.5.17.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.91') }}"></script>
+  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.92') }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>
