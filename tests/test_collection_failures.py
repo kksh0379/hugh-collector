@@ -50,3 +50,32 @@ class CollectionFailureTests(unittest.TestCase):
         with patch.dict(social.os.environ, {'YOUTUBE_API_KEY': 'test'}), patch.object(social.db, 'get_meta', return_value='{}'), patch.object(social.fetcher, 'get', return_value=SimpleNamespace(json=lambda: {})):
             with self.assertRaises(CollectionFailure):
                 social._crawl_youtube_search('a', 'a')
+
+    def test_http_429_stops_searches_and_persists_wait_without_exposing_key(self):
+        from requests import HTTPError
+        meta = {}
+        response = SimpleNamespace(status_code=429, headers={'Retry-After': '120'}, json=lambda: (_ for _ in ()).throw(ValueError('HTML')))
+        error = HTTPError('https://api.example/search?key=secret-value', response=response)
+        with patch.dict(social.os.environ, {'YOUTUBE_API_KEY': 'test'}), patch.object(social, 'SOURCES', []), patch.object(social, 'MAJOR_FOUNDATIONS', ['a', 'b', 'c']), patch.object(social.db, 'get_meta', side_effect=lambda k, d=None: meta.get(k, d)), patch.object(social.db, 'set_meta', side_effect=lambda k, v: meta.update({k: v})), patch.object(social.fetcher, 'get', side_effect=error) as get:
+            result = social.crawl_all()
+            get.assert_called_once()
+            self.assertFalse(result.complete)
+            self.assertNotIn('secret-value', str(result.sources))
+            wait = json.loads(meta[social.SEARCH_BACKOFF_KEY])
+            self.assertGreater(wait['until'], time.time())
+            # A new collection run/process reads the stored cooldown and makes no new request.
+            get.reset_mock()
+            social.crawl_all()
+            get.assert_not_called()
+
+    def test_json_rate_limit_is_a_shared_backoff(self):
+        with patch.object(social.db, 'set_meta') as save:
+            with self.assertRaises(CollectionFailure) as raised:
+                social._raise_youtube_error({'error': {'code': 429, 'errors': []}}, search=True)
+            self.assertTrue(raised.exception.stop_search)
+            self.assertEqual(save.call_args.args[0], social.SEARCH_BACKOFF_KEY)
+
+    def test_search_retries_after_wait_expires(self):
+        with patch.dict(social.os.environ, {'YOUTUBE_API_KEY': 'test'}), patch.object(social.db, 'get_meta', side_effect=lambda key, default=None: json.dumps({'until': time.time()-1}) if key == social.SEARCH_BACKOFF_KEY else '{}'), patch.object(social.db, 'set_meta'), patch.object(social.fetcher, 'get', return_value=SimpleNamespace(json=lambda: {'items': []})) as get:
+            self.assertEqual(social._crawl_youtube_search('a', 'a'), [])
+            get.assert_called_once()

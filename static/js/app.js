@@ -1784,6 +1784,9 @@ function _renderCrawlState(group, st) {
   if (details && failed.length) {
     details.innerHTML = `<details class="collection-details"><summary>미완료 출처 ${failed.length}개 확인</summary><ul>${failed.map(s => `<li><strong>${escapeHtml(s.name)}</strong> · ${escapeHtml(s.reason)}${s.count ? ` · 확보 ${Number(s.count)}건` : ""}</li>`).join("")}</ul><p>기존 자료는 유지돼요. 원인 해결 후 다시 수집하면 누락된 항목을 보완해요.</p></details>`;
   }
+  if (details && !failed.length && r.warning) {
+    details.innerHTML = `<details class="collection-details"><summary>수집 상태 자세히 보기</summary><p>${escapeHtml(r.warning)}</p><p>기존 자료는 유지돼요.</p></details>`;
+  }
   const label = {biz: "동향", boards: "게시판", social: "영상"}[group];
   const prefix = label ? `${label} · ` : "";
   if (r.error) {
@@ -1791,7 +1794,7 @@ function _renderCrawlState(group, st) {
     msgEl.textContent = prefix + "수집 실패: " + r.error;
   } else if (r.warning) {
     msgEl.style.color = "#a16207";
-    msgEl.textContent = `${prefix}일부 수집 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건 · ${r.warning}`;
+    msgEl.textContent = `${prefix}일부 수집 · 신규 ${r.new ?? 0}건 · 갱신 ${r.updated ?? 0}건 · 기존 목록 유지`;
   } else if (r.new !== undefined || r.crawled !== undefined) {
     msgEl.style.color = "#16a34a";
     const g = r.groups ? ` · 그룹 ${r.groups}개` : "";
@@ -1978,7 +1981,7 @@ function toAmPm(ts) {
   return `${m[1]} ${ampm} ${h}:${m[3]}`;
 }
 function fmtLast(ts) {
-  return ts ? `최근 수집 성공: ${toAmPm(ts)} (서버 기준)` : "아직 수집 성공 기록 없음";
+  return ts ? `최근 수집: ${toAmPm(ts)} (서버 기준)` : "아직 수집 기록 없음";
 }
 function updateStorageBadge(meta) {
   const badge = document.getElementById('storage-badge');
@@ -2006,7 +2009,7 @@ async function loadMeta() {
     const m = await r.json();
     updateStorageBadge(m);
     const combined = document.getElementById("last-biz-sources");
-    if (combined) combined.textContent = "최근 수집 성공 · " + ["biz", "boards", "social"].map((key) => {
+    if (combined) combined.textContent = "최근 수집 · " + ["biz", "boards", "social"].map((key) => {
       const label = {biz: "동향", boards: "게시판", social: "영상"}[key];
       return `${label}: ${m[key] ? toAmPm(m[key]) : "성공 기록 없음"}`;
     }).join(" · ");

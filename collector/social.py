@@ -164,14 +164,34 @@ def _crawl_youtube(cfg, max_items=15):
     return CollectionItems(items, complete=False, warnings=["RSS는 최근 영상만 제공하므로 기존 영상 목록을 보존했어요"])
 
 
-def _raise_youtube_error(data):
+SEARCH_BACKOFF_KEY = "youtube_search_backoff_v385"
+
+
+def _search_backoff(reason, delay):
+    try:
+        db.set_meta(SEARCH_BACKOFF_KEY, json.dumps({"until": time.time() + delay, "reason": reason}))
+    except Exception:
+        pass
+    return CollectionFailure(reason, stop_search=True)
+
+
+
+def _raise_youtube_error(data, *, search=False):
     error = data.get("error") if isinstance(data, dict) else None
     if not error:
         return
     reasons = {e.get("reason") for e in error.get("errors", []) if isinstance(e, dict)}
     code = error.get("code")
     if reasons & {"quotaExceeded", "dailyLimitExceeded", "dailyLimitExceededUnreg"}:
-        raise CollectionFailure("유튜브 API 일일 할당량 소진 · 한도 초기화 후 다시 수집해 주세요", stop_search=True)
+        reason = "유튜브 API 일일 할당량 소진 · 자동 재시도 대기"
+        if search:
+            raise _search_backoff(reason, 86400)
+        raise CollectionFailure(reason, stop_search=True)
+    if code == 429 or reasons & {"rateLimitExceeded", "userRateLimitExceeded"}:
+        reason = "유튜브 요청 제한(HTTP 429) · 자동 재시도 대기"
+        if search:
+            raise _search_backoff(reason, 3600)
+        raise CollectionFailure(reason, stop_search=True)
     if reasons & {"keyInvalid", "accessNotConfigured", "forbidden", "ipRefererBlocked"} or code in (401, 403):
         raise CollectionFailure("유튜브 API 키·권한 설정 확인이 필요해요", stop_search=True)
     raise CollectionFailure(f"유튜브 API 응답 오류 (HTTP {code or 'unknown'})")
@@ -191,6 +211,14 @@ def _crawl_youtube_search(query, account, max_items=8):
             return cached["items"]
     except Exception:
         pass
+    try:
+        blocked = json.loads(db.get_meta(SEARCH_BACKOFF_KEY, "{}") or "{}")
+        if blocked.get("until", 0) > time.time():
+            raise CollectionFailure(blocked.get("reason") or "유튜브 요청 제한 · 자동 재시도 대기", stop_search=True)
+    except CollectionFailure:
+        raise
+    except Exception:
+        pass
     params = {
         "part": "snippet", "q": query, "type": "video", "order": "date",
         "maxResults": max_items, "regionCode": "KR", "relevanceLanguage": "ko", "key": key,
@@ -201,11 +229,17 @@ def _crawl_youtube_search(query, account, max_items=8):
         response = getattr(e, "response", None)
         if response is not None:
             try:
-                _raise_youtube_error(response.json())
+                _raise_youtube_error(response.json(), search=True)
             except ValueError:
                 pass
+        if response is not None and response.status_code == 429:
+            try:
+                delay = max(60, min(86400, int(response.headers.get("Retry-After", 3600))))
+            except (AttributeError, TypeError, ValueError):
+                delay = 3600
+            raise _search_backoff("유튜브 요청 제한(HTTP 429) · 자동 재시도 대기", delay) from None
         raise CollectionFailure(failure_reason(e)) from None
-    _raise_youtube_error(j)
+    _raise_youtube_error(j, search=True)
     if not isinstance(j.get("items"), list):
         raise CollectionFailure("유튜브 검색 응답 형식이 바뀌었어요")
     items = []
