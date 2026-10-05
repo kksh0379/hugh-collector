@@ -99,7 +99,7 @@
   function sizePicker() {
     const controls = $('videos-picker-open').getBoundingClientRect();
     const available = (window.visualViewport?.height || window.innerHeight) - Math.max(0, controls.bottom) - 8;
-    $('videos-picker').style.setProperty('--sheet-height', `${Math.max(180, Math.min(440, available))}px`);
+    $('videos-picker').style.setProperty('--sheet-height', `${Math.max(300, Math.min(440, available))}px`);
   }
   function openPicker() {
     if (!catalog || $('videos-picker').open) return;
