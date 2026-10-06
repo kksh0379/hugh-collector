@@ -419,7 +419,8 @@ def list_events(limit=1000):
             "WHERE end_date IS NULL OR end_date='' OR end_date >= ? "
             "ORDER BY CASE WHEN start_date IS NULL OR start_date='' THEN 1 ELSE 0 END, "
             "start_date ASC, id DESC LIMIT ?"), (today, limit)).fetchall()
-        return [dict(r) for r in rows]
+        from .event_identity import merge_events
+        return merge_events([dict(r) for r in rows])
 
 
 def clear_events():

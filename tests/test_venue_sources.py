@@ -119,15 +119,16 @@ class VenueTests(unittest.TestCase):
                 self.assertNotEqual(ast.unparse(node.value.func), '_start_scheduler')
         fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == '_start_worker_jobs')
         scheduler = Mock(); thread = Mock()
-        targets = [Mock(), Mock(), Mock()]
+        targets = [Mock() for _ in range(5)]
         import threading
         scope = dict(os=os, threading=Mock(Thread=thread), _worker_jobs_pid=None,
                      _worker_jobs_lock=threading.Lock(), _start_scheduler=scheduler,
-                     _auto_backfill=targets[0], _bootstrap_venue_schedules=targets[1], _db_keepalive=targets[2])
+                     _auto_backfill=targets[0], _bootstrap_venue_schedules=targets[1], _bootstrap_eventus=targets[2],
+                     _bootstrap_biz_images=targets[3], _db_keepalive=targets[4])
         exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
         scope['_start_worker_jobs'](); scope['_start_worker_jobs']()
         scheduler.assert_called_once()
-        self.assertEqual(thread.call_count, 3)
+        self.assertEqual(thread.call_count, 5)
         self.assertEqual([call.kwargs['target'] for call in thread.call_args_list], targets)
 
 

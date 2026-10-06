@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, g, jsonify, redirect, render_template, request, session, url_for
 
-from collector import (analysis, boards, db, dedup, event_curation, event_sources, events, fetcher,
+from collector import (analysis, boards, db, dedup, event_curation, event_sources, eventus, events, fetcher,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
 
 from collector.identity import canonical_user, display_name, public_author
@@ -409,6 +409,8 @@ def eventcheck():
               if request.args.get('venues') == '1' else event_sources.diagnose())
     # A completed initial import survives worker restarts in DB metadata.
     try:
+        if 'eventus' in result and not result['eventus'].get('checked'):
+            result['eventus'] = json.loads(db.get_meta('eventus_status', '{}')) or result['eventus']
         saved = json.loads(db.get_meta('venue_sources_status', '{}'))
         for source, state in result['venue_schedules'].items():
             if state.get('checked') is False and source in saved:
@@ -2470,6 +2472,26 @@ def _auto_backfill():
     threading.Thread(target=_run, daemon=True).start()
 
 
+def _bootstrap_eventus():
+    """Import only the new source once; retry on a later restart after failure."""
+    if os.environ.get('ENABLE_SCHEDULER', '1') != '1' or os.environ.get('EVENTUS_OFF') == '1':
+        return
+    try:
+        if not _ensure_db(force=True) or db.get_meta('eventus_version') == '1':
+            return
+        items = eventus.collect(lambda message: print('[eventus] ' + message, flush=True))
+        if items:
+            counts = _save_event(items)
+            _invalidate_read_cache()
+            print(f"[eventus] 신규 {counts['new']}건 · 갱신 {counts['updated']}건", flush=True)
+        status = eventus.diagnose()
+        db.set_meta('eventus_status', json.dumps(status, ensure_ascii=False))
+        if status.get('ok'):
+            db.set_meta('eventus_version', '1')
+    except Exception as exc:
+        print(f'[eventus] 초기 수집 실패: {type(exc).__name__}', flush=True)
+
+
 def _bootstrap_venue_schedules():
     """One bounded import for newly added official sources; no news crawl or AI.
 
@@ -2558,7 +2580,7 @@ def _start_worker_jobs():
             return
         _worker_jobs_pid = pid
         _start_scheduler()
-        for target in (_auto_backfill, _bootstrap_venue_schedules, _bootstrap_biz_images, _db_keepalive):
+        for target in (_auto_backfill, _bootstrap_venue_schedules, _bootstrap_eventus, _bootstrap_biz_images, _db_keepalive):
             threading.Thread(target=target, daemon=True).start()
 
 

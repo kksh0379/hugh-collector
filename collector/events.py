@@ -351,25 +351,12 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
         })
         if max_items and len(out) >= max_items:
             break
-    # 구조화 소스(관광공사 축제·문화행사 등) 병합 — 설정된 것만, 실패는 자동 제외(날조 없음).
+    # Merge complete identities, retaining separate sessions with different venues.
     try:
-        for s in event_sources.collect(progress):
-            st = s.get("start_date")
-            if not st or not (s.get("title") or "").strip():
-                continue
-            key = _norm_title(s.get("title", "")) + "|" + st
-            if key in seen:
-                # Venue/API rows carry the original schedule. Prefer these over
-                # news extraction for an identical title and start date.
-                for i, existing in enumerate(out):
-                    if (_norm_title(existing.get('title', '')) + '|' + (existing.get('start_date') or '') == key
-                            and existing.get('source') == '뉴스'):
-                        out[i] = s
-                        break
-                continue
-            seen.add(key)
-            out.append(s)
-    except Exception:  # noqa: BLE001
+        out.extend(event_sources.collect(progress))
+    except Exception:
         pass
+    from .event_identity import merge_events
+    out = merge_events(out)
     progress(f"국내 행사 {len(out)}건")
     return out
