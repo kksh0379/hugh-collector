@@ -1720,20 +1720,22 @@ _last_result = {"news": None, "cat": None, "biz": None, "security": None, "board
 # 저장 정책: 키 = 원문 URL.
 #  - 뉴스는 '동일 기사(여러 매체 배포)'도 전부 저장한다(중복 제거 X). 대신 저장 후
 #    전체를 본문/제목 유사도로 클러스터링해 group_key를 부여 → 화면에서 아코디언 묶음.
+def _regroup_news(section):
+    """현재 저장된 섹션을 원문 URL·정규화 제목·본문 유사도로 다시 묶는다."""
+    rows = db.all_news_min(section)
+    keys = dedup.cluster_items(rows)
+    url_to_key = {row["url"]: key for row, key in zip(rows, keys) if row.get("url")}
+    db.set_news_group_keys(url_to_key)
+    return len(set(url_to_key.values()))
+
+
 def _save_news(items, section="nc", replace=False):
     for item in items:
         item["content_hash"] = dedup.content_hash(item.get("content", ""))
         item["section"] = section
     new, updated = db.upsert_news_many(items, replace_section=section if replace else None)
-
-    # 같은 섹션(nc/cat) 안에서만 '같은 기사' 그룹화(group_key 부여)
-    rows = db.all_news_min(section)
-    keys = dedup.cluster_items(rows)
-    url_to_key = {r["url"]: k for r, k in zip(rows, keys) if r.get("url")}
-    db.set_news_group_keys(url_to_key)
-    groups = len(set(url_to_key.values()))
+    groups = _regroup_news(section)
     return {"new": new, "updated": updated, "duplicates": 0, "groups": groups}
-
 
 def _save_cat(items, replace=False):
     return _save_news(items, section="cat", replace=replace)
@@ -1810,6 +1812,8 @@ def _enrich_news_images(progress=None, section="nc", limit=None):
             n += updated
             if updated:
                 _invalidate_read_cache()
+        if n:
+            _regroup_news(section)  # 원문 URL/정상화된 본문을 반영해 기존 중복도 다시 묶기
         print(f"[crawl] {section} 본문·이미지 보강 {n}/{len(rows)}건", flush=True)
     except Exception as e:  # noqa: BLE001
         print(f"[crawl] 보강 실패: {e}", flush=True)

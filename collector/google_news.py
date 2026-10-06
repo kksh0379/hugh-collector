@@ -118,7 +118,7 @@ def _clean_title(raw):
 def _snippet(description_html):
     if not description_html:
         return ""
-    return BeautifulSoup(description_html, "lxml").get_text(" ", strip=True)
+    return extractor.clean_summary_text(BeautifulSoup(description_html, "lxml").get_text(" ", strip=True))
 
 
 def _collect_items(query, after=None, before=None):
@@ -327,7 +327,8 @@ def _summary_from_article(entry):
         pass
     # 원문 추출에 실패하면(구글 리다이렉트라 대부분 실패) RSS 요약(snippet)을
     # 본문으로 사용한다. 그래야 본문이 비어 키워드 필터에서 탈락하는 일이 없다.
-    entry["content"] = summary or entry.get("snippet") or ""
+    fallback = extractor.clean_summary_text(entry.get("snippet") or "")
+    entry["content"] = summary or ("" if extractor.looks_mojibake(fallback) else fallback)
     return entry
 
 
@@ -357,8 +358,12 @@ def _enrich_one(row):
             art = extractor.extract_article(soup, final)
             if art.get("content") and len(art["content"]) > 120:
                 summ = extractor.summarize(art["content"])
-        if summ and len(summ) > len(row.get("content") or ""):
-            out["content"] = summ  # 기존(짧은 RSS 요약)보다 길 때만 교체
+        existing = row.get("content") or ""
+        cleaned_existing = extractor.clean_summary_text(existing)
+        if cleaned_existing and cleaned_existing != extractor.clean_text(existing) and not extractor.looks_mojibake(cleaned_existing):
+            out["content"] = cleaned_existing
+        if summ and (extractor.summary_needs_refresh(existing) or len(summ) > len(existing)):
+            out["content"] = summ  # 깨진/도구문구 요약은 길이와 관계없이 정상 요약으로 교체
     except Exception as error:  # noqa: BLE001
         out["_image_status"] = type(error).__name__
     return out

@@ -5,6 +5,7 @@
 목록이 비어 보일 수 있다. 그때는 fetcher만 Playwright 기반으로 교체하면
 나머지 크롤러 로직은 그대로 재사용할 수 있도록 분리해 두었다.
 """
+import re
 import time
 
 import requests
@@ -36,6 +37,66 @@ DEFAULT_HEADERS = {
 # 안에서 안전한 선에서 넉넉히 둔다.
 TIMEOUT = 15
 
+_META_CHARSET_RE = re.compile(
+    rb'<meta[^>]+charset\s*=\s*["\']?\s*([A-Za-z0-9._-]+)', re.I
+)
+_META_CONTENT_CHARSET_RE = re.compile(
+    rb'<meta[^>]+content\s*=\s*["\'][^"\']*charset\s*=\s*([A-Za-z0-9._-]+)', re.I
+)
+
+
+def _response_encoding(resp):
+    """HTML 바이트를 실제 인코딩에 가깝게 해석한다."""
+    raw = resp.content or b""
+    if raw.startswith(b"\xef\xbb\xbf"):
+        return "utf-8-sig"
+
+    head = raw[:16384]
+    meta = None
+    for pattern in (_META_CHARSET_RE, _META_CONTENT_CHARSET_RE):
+        match = pattern.search(head)
+        if match:
+            meta = match.group(1).decode("ascii", "ignore").strip()
+            if meta:
+                break
+
+    header = requests.utils.get_encoding_from_headers(resp.headers)
+    weak = {"iso-8859-1", "latin-1", "latin1"}
+    candidates = []
+    if meta:
+        candidates.append(meta)
+    if header and header.lower() not in weak:
+        candidates.append(header)
+    if raw:
+        try:
+            raw.decode("utf-8", "strict")
+            candidates.append("utf-8")
+        except UnicodeDecodeError:
+            pass
+    try:
+        apparent = resp.apparent_encoding
+    except Exception:
+        apparent = None
+    if apparent:
+        candidates.append(apparent)
+    if header:
+        candidates.append(header)
+    candidates.extend(("cp949", "euc-kr", "utf-8"))
+
+    seen = set()
+    for enc in candidates:
+        key = (enc or "").lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        try:
+            raw.decode(enc, "strict")
+            return enc
+        except (LookupError, UnicodeDecodeError):
+            continue
+    return resp.encoding or "utf-8"
+
+
 
 def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=True):
     last_err = None
@@ -53,7 +114,7 @@ def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=Tr
                 )
                 if raise_status:  # 상태확인용은 4xx도 '연결됨'으로 보려고 예외를 끈다
                     resp.raise_for_status()
-                resp.encoding = resp.apparent_encoding or resp.encoding
+                resp.encoding = _response_encoding(resp)
                 return resp
             except requests.exceptions.SSLError as e:
                 last_err = e
@@ -82,6 +143,7 @@ def post(url, data=None, headers=None, retries=1, timeout=None, raise_status=Tru
             resp = requests.post(url, data=data, headers=merged, timeout=to)
             if raise_status:
                 resp.raise_for_status()
+            resp.encoding = _response_encoding(resp)
             return resp
         except requests.RequestException as e:  # noqa: PERF203
             last_err = e

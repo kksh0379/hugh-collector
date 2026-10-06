@@ -33,9 +33,62 @@ def clean_text(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+_SUMMARY_UI_TOKEN = (
+    r"(?:읽기\s*모드|다크\s*모드|라이트\s*모드|폰트\s*크기|글자\s*크기|"
+    r"북마크|공유하기|링크\s*복사|프린트|인쇄|기사\s*반응|바로가기|복사하기|"
+    r"본문\s*글씨\s*(?:줄이기|키우기)|스크롤\s*이동\s*상태바|"
+    r"가(?:\s*가){2,})"
+)
+_SUMMARY_UI_PREFIX_RE = re.compile(
+    rf"^\s*(?:(?:{_SUMMARY_UI_TOKEN})\s*[·|/,:;\-–—]*\s*)+", re.I
+)
+_MOJIBAKE_HINT_RE = re.compile(r"[ÃÂâ¤¦]|\ufffd")
+
+
+def clean_summary_text(s):
+    """카드 요약 앞에 섞인 기사도구/접근성 UI 문구를 제거한다."""
+    text = clean_text(s)
+    if not text:
+        return text
+    previous = None
+    while text and text != previous:
+        previous = text
+        text = _SUMMARY_UI_PREFIX_RE.sub("", text).strip(" \t\r\n·|/,:;-–—")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def looks_mojibake(text):
+    """잘못된 문자셋 해석으로 깨진 본문을 보수적으로 탐지한다."""
+    text = clean_text(text) or ""
+    if len(text) < 12:
+        return False
+    if "\ufffd" in text:
+        return True
+    hangul = sum("가" <= ch <= "힣" for ch in text)
+    latin1_noise = sum(0x80 <= ord(ch) <= 0xFF for ch in text)
+    hints = len(_MOJIBAKE_HINT_RE.findall(text))
+    visible = max(1, sum(not ch.isspace() for ch in text))
+    if latin1_noise >= 4 and latin1_noise / visible >= 0.025 and hangul / visible < 0.18:
+        return True
+    if hints >= 3 and hangul / visible < 0.18:
+        return True
+    return False
+
+
+def summary_needs_refresh(text):
+    raw = clean_text(text) or ""
+    if not raw:
+        return True
+    if looks_mojibake(raw):
+        return True
+    return clean_summary_text(raw) != raw
+
+
 def summarize(text, max_len=220):
     """본문을 카드에 보여줄 요약으로 자른다(공백 경계에서 자르고 말줄임 추가)."""
-    text = clean_text(text)
+    text = clean_summary_text(text)
+    if looks_mojibake(text):
+        return ""
     if not text or len(text) <= max_len:
         return text
     cut = text[:max_len]
@@ -183,11 +236,11 @@ def extract_image(soup, url=None):
 
 
 def extract_summary(soup):
-    """기사 요약(og:description/meta description)을 추출. 없으면 None."""
+    """기사 요약 메타를 추출하되 기사도구 문구·문자깨짐은 제외한다."""
     d = _meta(soup, "og:description", "description", "twitter:description")
     if d:
-        d = clean_text(d)
-        if len(d) >= 20:
+        d = clean_summary_text(d)
+        if len(d) >= 20 and not looks_mojibake(d):
             return d
     return None
 

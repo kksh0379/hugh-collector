@@ -528,7 +528,7 @@ def all_news_min(section="nc"):
     cond, args = _section_cond(section)
     with get_conn() as conn:
         rows = conn.execute(
-            _q(f"SELECT url, title, content FROM news WHERE {cond}"), args).fetchall()
+            _q(f"SELECT url, source_url, title, content, published_at FROM news WHERE {cond}"), args).fetchall()
         return [dict(r) for r in rows]
 
 
@@ -557,10 +557,20 @@ def all_news_urls():
 
 
 def news_needs_enrich(limit=200, section=None):
-    """미처리 후보를 화면과 같은 최신순으로 조회. 실패는 24시간 후 재시도."""
-    where = ["(image_url IS NULL OR image_url = '' OR content IS NULL OR LENGTH(content) < 80)",
-             "(enrich_checked_at IS NULL OR enrich_checked_at < ?)"]
-    params = [(datetime.now(timezone.utc) - timedelta(hours=24)).isoformat(timespec="seconds")]
+    """미처리 후보를 최신순으로 조회한다.
+
+    이미지/짧은 본문은 24시간 간격으로 재시도하되, 명백한 기사도구 문구나
+    문자깨짐 표식이 저장된 요약은 즉시 복구 후보로 잡는다.
+    """
+    stale = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat(timespec="seconds")
+    missing = "(image_url IS NULL OR image_url = '' OR content IS NULL OR LENGTH(content) < 80)"
+    quality_patterns = (
+        "읽기모드", "다크모드", "폰트크기", "글자크기", "본문 글씨",
+        "가 가 가", "�", "¦", "Ã", "Â", "¤",
+    )
+    bad = " OR ".join(["content LIKE ?"] * len(quality_patterns))
+    where = [f"(({missing} AND (enrich_checked_at IS NULL OR enrich_checked_at < ?)) OR ({bad}))"]
+    params = [stale, *[f"%{value}%" for value in quality_patterns]]
     if section:
         where.append("section = ?")
         params.append(section)
@@ -572,7 +582,6 @@ def news_needs_enrich(limit=200, section=None):
                "enrich_checked_at, published_at DESC, id DESC LIMIT ?"), tuple(params)
         ).fetchall()
         return [dict(r) for r in rows]
-
 
 def news_image_counts(section):
     """공개 진단용 집계만 반환. 기사 본문·계정 정보는 포함하지 않는다."""
