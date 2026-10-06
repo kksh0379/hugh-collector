@@ -21,6 +21,7 @@ from collector import (analysis, boards, db, dedup, event_curation, event_source
 
 from collector.identity import canonical_user, display_name, public_author
 from collector.service_registry import SERVICES
+from collector.maeum_gate import register_maeum_gate
 from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
 from collector.video_library import bp as video_library_bp
@@ -51,6 +52,7 @@ def _record_request_timing(response):
 # 초안 단계: 브라우저가 옛 JS/CSS를 캐시해 혼란을 주지 않도록 정적파일 캐시를 끈다.
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.secret_key = os.environ.get("SECRET_KEY", "ncfoundation-collector-secret-key")
+register_maeum_gate(app)
 
 KST = timezone(timedelta(hours=9))  # 마지막 수집 일시는 서버에서 KST로 기록
 
@@ -2564,3 +2566,4 @@ if __name__ == "__main__":
     # 로컬 실행. 호스팅 환경은 gunicorn이 app 객체를 직접 띄운다(Procfile 참고).
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
+
