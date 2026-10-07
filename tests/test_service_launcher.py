@@ -22,6 +22,19 @@ class LauncherTests(unittest.TestCase):
         exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
         return scope['launcher']()
 
+    def test_legacy_host_redirect_preserves_service_path_and_query(self):
+        tree = ast.parse((ROOT / 'app.py').read_text())
+        fn = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == '_start_request_timer')
+        fn.decorator_list = []
+        for path, query, expected in [('/', b'', '/hscope'), ('/hscope', b'video=3217', '/hscope?video=3217')]:
+            scope = dict(g=SimpleNamespace(), time=SimpleNamespace(perf_counter=lambda:0),
+                         request=SimpleNamespace(host='ncfoundation-collector.onrender.com', method='GET', path=path, query_string=query),
+                         redirect=lambda location, code:(location, code), _start_worker_jobs=lambda:None, _start_read_prewarm=lambda:None)
+            exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
+            self.assertEqual(scope['_start_request_timer'](), ('https://hscope.onrender.com' + expected, 308))
+        scope['request'].host = 'hscope.onrender.com'
+        self.assertIsNone(scope['_start_request_timer']())
+
     def test_root_opens_service_launcher(self):
         template, values = self.call_launcher()
         self.assertEqual(template, 'launcher.html')

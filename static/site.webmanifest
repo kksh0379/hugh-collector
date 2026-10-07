@@ -1,10 +1,10 @@
 {
-  "name": "서비스 홈",
-  "short_name": "서비스 홈",
+  "name": "휴스코프",
+  "short_name": "휴스코프",
   "lang": "ko",
-  "id": "/",
-  "start_url": "/",
-  "scope": "/",
+  "id": "https://hscope.onrender.com/",
+  "start_url": "https://hscope.onrender.com/hscope",
+  "scope": "https://hscope.onrender.com/",
   "display": "standalone",
   "theme_color": "#2d6cdf",
   "background_color": "#f6f8fc",
@@ -22,5 +22,5 @@
       "purpose": "any"
     }
   ],
-  "description": "개인 서비스 런처에서 휴스코프와 마음기록을 열어보세요."
+  "description": "설치한 아이콘으로 휴스코프를 바로 실행하세요."
 }

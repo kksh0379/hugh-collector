@@ -39,6 +39,11 @@ app.register_blueprint(video_library_bp)
 @app.before_request
 def _start_request_timer():
     g.request_started = time.perf_counter()
+    if request.host.split(':', 1)[0].lower() == 'ncfoundation-collector.onrender.com' and request.method in ('GET', 'HEAD'):
+        suffix = ('/hscope' if request.path == '/' else request.path)
+        if request.query_string:
+            suffix += '?' + request.query_string.decode('latin-1')
+        return redirect('https://hscope.onrender.com' + suffix, code=308)
     _start_worker_jobs()
     _start_read_prewarm()
 

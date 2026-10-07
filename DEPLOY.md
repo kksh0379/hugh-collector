@@ -15,7 +15,7 @@
    - 저장소가 안 보이면 **Configure account**로 Render에 저장소 접근 권한을 부여
 4. 저장소의 `render.yaml`을 자동으로 읽어 설정이 채워집니다 → **Apply / Create** 클릭
 5. 빌드가 시작됩니다 (처음 빌드는 형태소 분석기·scikit-learn 설치로 몇 분 소요)
-6. 완료되면 `https://ncfoundation-collector-xxxx.onrender.com` 형태의 **공개 URL**이 생깁니다
+6. 완료되면 `https://hscope.onrender.com` 형태의 **공개 URL**이 생깁니다
    → 이 URL을 누구에게나 공유하면 접속해서 화면을 볼 수 있습니다
 
 > Blueprint 대신 **New + → Web Service**로 만들 수도 있습니다.
@@ -83,7 +83,7 @@
 
 1. Render → Environment → `CRON_TOKEN` = 아무 긴 문자열(비밀) 추가 → 저장
 2. 무료 크론 서비스(예: **cron-job.org**) 가입 → 새 크론잡:
-   - URL: `https://ncfoundation-collector.onrender.com/api/cron?token=<CRON_TOKEN>`
+   - URL: `https://hscope.onrender.com/api/cron?token=<CRON_TOKEN>`
    - 주기: 예) 6시간마다 (원하는 대로)
    - 메서드: GET (또는 POST) 둘 다 됨
 3. 저장하면 그때부터 자동으로 수집·저장된다(응답은 즉시 200, 수집은 백그라운드 진행).

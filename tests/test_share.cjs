@@ -39,3 +39,10 @@ test('unsupported app sharing offers copy and cancellation leaves popup usable',
 test('invalid and credential-bearing URLs cannot be shared',()=>{
   for(const url of ['javascript:alert(1)','data:text/html,test','https://user:secret@paper.example']){const s=setup();s.open(url);assert.equal(s.dialog.open,false);}
 });
+
+test('obsolete service URLs are shared using the official hscope URL',async()=>{
+  const s=setup();s.open('https://ncfoundation-collector.onrender.com/');await s.buttons[0].handlers.click();
+  assert.equal(s.copied[0],'https://hscope.onrender.com/hscope');
+  s.open('https://ncfoundation-collector.onrender.com/hscope?video=3217');
+  assert.equal(s.field.value,'https://hscope.onrender.com/hscope?video=3217');
+});

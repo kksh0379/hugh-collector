@@ -24,6 +24,10 @@
     let parsed;
     try { parsed = new URL(url); } catch (_) { return; }
     if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password) return;
+    if (parsed.hostname === 'ncfoundation-collector.onrender.com') {
+      parsed.protocol = 'https:'; parsed.host = 'hscope.onrender.com';
+      if (parsed.pathname === '/') parsed.pathname = '/hscope';
+    }
     payload = {url: parsed.href, title: String(label || '휴스코프에서 공유한 링크').trim().slice(0, 200)};
     trigger = button;
     title.textContent = payload.title;
