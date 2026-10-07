@@ -14,7 +14,7 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from flask import Flask, Response, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, g, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 
 from collector import (ai_provider, analysis, boards, db, dedup, event_curation, event_images, event_sources, eventus, events, fetcher,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
@@ -137,6 +137,13 @@ def _db_wake_async():
                 _db_waking = False
 
     threading.Thread(target=_w, daemon=True).start()
+
+
+@app.get("/sw.js")
+def pwa_worker():
+    response = send_from_directory(app.static_folder, 'sw.js', mimetype='application/javascript')
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @app.get("/healthz")

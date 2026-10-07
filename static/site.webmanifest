@@ -1,15 +1,26 @@
 {
-  "name": "휴 스코프",
-  "short_name": "휴 스코프",
+  "name": "서비스 홈",
+  "short_name": "서비스 홈",
   "lang": "ko",
   "id": "/",
-  "start_url": "/hscope",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#f4f5f7",
+  "theme_color": "#2d6cdf",
+  "background_color": "#f6f8fc",
   "icons": [
-    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
+    {
+      "src": "/static/launcher-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/launcher-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "description": "개인 서비스 런처에서 휴스코프와 마음기록을 열어보세요."
 }
