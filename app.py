@@ -1414,6 +1414,12 @@ def launcher():
 
 @app.route("/hscope", strict_slashes=False)
 def index():
+    if request.args.get('app') == '1' and request.args.get('app_frame') != '1':
+        from urllib.parse import urlencode
+        args = request.args.to_dict(flat=False)
+        args.pop('app', None)
+        args['app_frame'] = ['1']
+        return render_template('pwa_shell.html', frame_url=url_for('index') + '?' + urlencode(args, doseq=True))
     _log_visit()  # 방문 기록(백그라운드, 페이지 로딩 안 막음)
     services = sorted({s["service"] for s in boards.SOURCES})
     channels = sorted({s["channel"] for s in social.SOURCES})

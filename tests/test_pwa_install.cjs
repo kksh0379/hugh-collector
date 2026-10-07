@@ -39,8 +39,8 @@ test('standalone app does not offer duplicate installation',async()=>{
 });
 test('manifest targets hscope and icons have their declared dimensions',()=>{
  const m=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));
- assert.equal(m.id,'/hscope');assert.equal(m.start_url,'/hscope');assert.equal(m.scope,'/');
- for(const icon of m.icons){const png=fs.readFileSync('.'+icon.src),size=Number(icon.sizes.split('x')[0]);assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);}
+ assert.equal(m.id,'/hscope');assert.equal(m.start_url,'/hscope?app=1');assert.equal(m.orientation,'portrait-primary');assert.equal(m.scope,'/');
+ for(const icon of m.icons){const png=fs.readFileSync('.'+icon.src.split('?')[0]),size=Number(icon.sizes.split('x')[0]);assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);}
 });
 test('launcher has no installation help or URL copy popup',()=>{
  const html=fs.readFileSync('templates/launcher.html','utf8');

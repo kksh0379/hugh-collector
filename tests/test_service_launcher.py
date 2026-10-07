@@ -35,6 +35,18 @@ class LauncherTests(unittest.TestCase):
         scope['request'].host = 'hscope.onrender.com'
         self.assertIsNone(scope['_start_request_timer']())
 
+    def test_pwa_shell_preserves_query_without_loading_collector_page(self):
+        from werkzeug.datastructures import MultiDict
+        tree = ast.parse((ROOT / 'app.py').read_text())
+        fn = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'index')
+        fn.decorator_list = []
+        scope = dict(request=SimpleNamespace(args=MultiDict([('app','1'),('video','3217'),('series','1')])),
+                     url_for=lambda name:'/hscope', render_template=lambda name, **values:(name,values))
+        exec(compile(ast.Module(body=[fn], type_ignores=[]), 'app.py', 'exec'), scope)
+        template, values = scope['index']()
+        self.assertEqual(template, 'pwa_shell.html')
+        self.assertEqual(values['frame_url'], '/hscope?video=3217&series=1&app_frame=1')
+
     def test_root_opens_service_launcher(self):
         template, values = self.call_launcher()
         self.assertEqual(template, 'launcher.html')
