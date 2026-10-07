@@ -216,10 +216,10 @@ function iconLabel(label) {
   return prefix ? uiIcon(icons[prefix]) + escapeHtml(label.slice(prefix.length).trimStart()) : escapeHtml(label);
 }
 
-// 카드 '링크 복사' 버튼
-function copyBtnHtml(url) {
+// 카드 공유 버튼
+function shareBtnHtml(url) {
   if (!url) return "";
-  return `<button type="button" class="copy-btn" data-url="${escapeHtml(url)}">${uiIcon("link")}링크 복사</button>`;
+  return `<button type="button" class="copy-btn share-btn" aria-haspopup="dialog" aria-controls="share-dialog" data-url="${escapeHtml(url)}"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4m-6.8 7 6.8 4"/></svg>공유</button>`;
 }
 // 링크가 소셜 매체면 매체별 딱지(배지) — 재단게시판/재단YT에서 유튜브·블로그·인스타 구분
 function socialMediaKind(url) {
@@ -277,20 +277,23 @@ async function copyToClipboard(text) {
   try {
     const ta = document.createElement("textarea");
     ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
+    const container = document.querySelector('dialog[open]') || document.body;
+    container.appendChild(ta); ta.select();
     const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
+    container.removeChild(ta);
     return ok;
   } catch (e) { return false; }
 }
-// 위임: 링크 복사 버튼 클릭
+// 위임: 공유 팝업 열기
 document.addEventListener("click", (e) => {
   const b = e.target.closest(".copy-btn");
   if (!b) return;
   e.preventDefault(); e.stopPropagation();
   const url = b.dataset.url;
   if (!url) return;
-  copyToClipboard(url).then((ok) => toast(ok ? "링크를 복사했어요" : "복사 실패 — 원문을 길게 눌러 복사해 주세요"));
+  const card = b.closest('.card, .lunch-card, .lrev-head, li');
+  const title = card?.querySelector('.card-title, .lunch-name, h3, h2')?.textContent || '';
+  window.HscopeShare?.open(url, title, b);
 });
 
 // Only UI notices: preserve dates, decimals, URLs and source article text.
@@ -696,7 +699,7 @@ function renderCard(item, opts) {
         ${summaryHtml}
         <div class="card-actions">
           ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : "data-reader"}>${opensOriginalSource(tab) ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
-          ${copyBtnHtml(link)}
+          ${shareBtnHtml(link)}
         </div>
       </div>
     </div>`;
@@ -1288,7 +1291,7 @@ function newsGroupNode(arr, tab) {
         ${secAiHtml(rep)}
         <div class="card-actions">
           ${repLink ? `<a class="read-action" href="${escapeHtml(repLink)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}
-          ${copyBtnHtml(repLink)}
+          ${shareBtnHtml(repLink)}
         </div>
       </div>
     </div>`;
@@ -1455,7 +1458,7 @@ function eventAlbumCard(s) {
       <h3 class="card-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
       ${place ? `<div class="event-place">${uiIcon("pin")} ${escapeHtml(place)}</div>` : ""}
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
-      <div class="card-actions">${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${copyBtnHtml(link)}</div>
+      <div class="card-actions">${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${shareBtnHtml(link)}</div>
     </div>`;
   return li;
 }
@@ -2279,7 +2282,7 @@ function scrapCardNode(s) {
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
         ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) ? "" : "data-reader"}>${opensOriginalSource(s.tab) ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
-        ${copyBtnHtml(link)}
+        ${shareBtnHtml(link)}
         <button class="grp-assign" type="button">${uiIcon("group")}그룹 지정</button>
       </div>
       <div class="grp-assign-panel">
@@ -3340,7 +3343,7 @@ function lunchLocationLabel(location) {
     const visit = r.visit_count ? `<span class="lvisit">${uiIcon("food")} ${r.visit_count}</span>` : "";
     const detail = r.place_url
       ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>` : "";
-    const copy = copyBtnHtml(link);
+    const copy = shareBtnHtml(link);
     const exBtn = isAdmin()
       ? `<button type="button" class="lbtn ex${r.excluded ? " on" : ""}" data-ex="${r.id}">${r.excluded ? "숨김해제" : "숨기기"}</button>` : "";
     const sub = r.sub_cat || r.cat_norm || "";
@@ -3405,7 +3408,7 @@ function lunchLocationLabel(location) {
   function renderReviews(r, revs) {
     const body = $("lunch-rev-body"); if (!body) return;
     const avg = r.avg_rating ? `${stars(r.avg_rating)} <b>${r.avg_rating}</b> · 후기 ${revs.length}개` : "아직 평가가 없어요";
-    const kakao = r.place_url ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>${copyBtnHtml(r.place_url)}` : "";
+    const kakao = r.place_url ? `<a class="lbtn kakao" href="${escapeHtml(r.place_url)}" target="_blank" rel="noopener">${kakaoIcon()}상세보기</a>${shareBtnHtml(r.place_url)}` : "";
     const list = revs.length
       ? revs.map((v) => `<div class="lrev">
           <div class="lrev-t"><span class="lrev-u">${escapeHtml(v.display_name || v.username || "익명")}</span> ${stars(v.rating)}
