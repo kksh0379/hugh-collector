@@ -192,7 +192,7 @@ def extract_image(soup, url=None):
         elif isinstance(value, dict):
             kinds = value.get("@type", [])
             kinds = [kinds] if isinstance(kinds, str) else kinds
-            if any(kind in ("Article", "NewsArticle", "BlogPosting", "ReportageNewsArticle")
+            if any(kind in ("Article", "NewsArticle", "BlogPosting", "ReportageNewsArticle", "Event", "BusinessEvent", "ExhibitionEvent", "Festival")
                    for kind in kinds or []):
                 yield from structured_images(value.get("image"))
                 yield from structured_images(value.get("thumbnailUrl"))

@@ -94,7 +94,9 @@ def parse(source, content, base):
             link = urljoin(base, 'view.do?sIdx=' + match[1]) if match else ''
         if not title or len(dates) != 2 or dates[1] < dates[0] or not link:
             continue
-        images = node.xpath('.//img/@src')
+        images = node.xpath('.//img/@data-original | .//img/@data-src | .//img/@data-lazy-src')
+        if not images:
+            images = node.xpath('.//img/@src')
         image = node.get('data-image') or (images[0] if images else '')
         items.append(_item(title, dates[0], dates[1],
             venue=source + (' ' + hall if hall else ''), region=SOURCES[source][0],

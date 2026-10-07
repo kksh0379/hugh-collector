@@ -34,7 +34,7 @@ class EventusTests(unittest.TestCase):
         result = eventus.parse(row(start_date='2026-10-19T15:30:00Z'), TODAY)
         self.assertEqual(result['start_date'], '2026-10-20')
         self.assertEqual(result['source_url'], 'https://event-us.kr/host/event/12345')
-        self.assertEqual(result['image_url'], 'https://event-us.kr/Image/host/12345/cover.jpg')
+        self.assertEqual(result['image_url'], 'https://eventusstorage.blob.core.windows.net/evs/Image/host/12345/cover.jpg')
         self.assertIn('무료', result['content'])
         self.assertEqual(result['author'], '주최기관')
 

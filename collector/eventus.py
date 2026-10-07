@@ -4,7 +4,7 @@ import html
 import os
 import re
 import time
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -41,6 +41,19 @@ def is_event(title, description='', event_type=''):
     if event_type in {'기업회의', '학술회의', '정부회의', '컨벤션', '축제'}:
         return not _LESSON.search(description)
     return False
+
+
+def normalize_image_url(value):
+    value = str(value or '').strip()
+    if not value:
+        return ''
+    parts = urlsplit(value)
+    if value.startswith('/Image/'):
+        return 'https://eventusstorage.blob.core.windows.net/evs' + value
+    if parts.hostname in {'event-us.kr', 'www.event-us.kr'} and parts.path.startswith('/Image/'):
+        suffix = parts.path + ('?' + parts.query if parts.query else '')
+        return 'https://eventusstorage.blob.core.windows.net/evs' + suffix
+    return urljoin(BASE, value)
 
 
 def _raw(row, key):
@@ -91,7 +104,7 @@ def parse(row, today=None):
     summary = ' · '.join(x for x in [text(_raw(row, 'category')), description[:800], price,
                                    '신청마감 ' + deadline.isoformat() if deadline else ''] if x)
     image = str(_raw(row, 'cover_image_url') or '')
-    image = urljoin(BASE, image) if image else ''
+    image = normalize_image_url(image)
     if not image.startswith(('https://', 'http://')):
         image = ''
     url = f'{BASE}{channel}/event/{event_id}'

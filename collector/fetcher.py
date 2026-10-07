@@ -114,7 +114,9 @@ def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=Tr
                 )
                 if raise_status:  # 상태확인용은 4xx도 '연결됨'으로 보려고 예외를 끈다
                     resp.raise_for_status()
-                resp.encoding = _response_encoding(resp)
+                content_type = (resp.headers.get('content-type') or '').lower()
+                if not content_type.startswith(('image/', 'application/octet-stream', 'binary/octet-stream')):
+                    resp.encoding = _response_encoding(resp)
                 return resp
             except requests.exceptions.SSLError as e:
                 last_err = e

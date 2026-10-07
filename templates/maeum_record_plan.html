@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>마음기록 · 서비스 기획서</title>
   <link rel="icon" href="{{ url_for('static', filename='launcher.svg') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.110') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.111') }}">
   <style>
     .plan-header{width:min(100%,1200px);margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.plan-header h1{font-size:22px;letter-spacing:-.5px;margin:0}.plan-header p{font-size:12px;color:#64748b;margin:7px 0 0}.plan-actions{display:flex;gap:8px;flex-wrap:wrap}.plan-actions a,.plan-back{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:700;background:white;border:1px solid #dce3ef}.plan-actions .plan-primary{background:#2d6cdf;color:white;border-color:#2d6cdf}.plan-main{width:min(100%,1200px);padding:0 20px 24px;margin:0 auto;flex:1}.plan-note{font-size:12px;line-height:1.6;color:#64748b;margin:0 0 14px}.plan-page{margin:0 0 24px}.plan-page a{display:block;background:#fff;border:1px solid #dce3ef;border-radius:12px;overflow:hidden}.plan-page img{display:block;width:100%;height:auto}.plan-page figcaption{text-align:center;color:#64748b;font-size:12px;margin-top:8px}.plan-back{margin-top:14px}.plan-actions a:hover,.plan-back:hover{filter:brightness(.97)}@media(max-width:600px){.plan-header{padding-bottom:14px}.plan-header h1{font-size:20px}.plan-main{padding:0 16px 24px}.plan-actions{width:100%}.plan-actions a{flex:1}}
   </style>
@@ -14,14 +14,14 @@
   <header class="plan-header">
     <div><h1>마음기록 기획서</h1><p>초기 기획 v0.1 · 40페이지</p></div>
     <nav class="plan-actions" aria-label="기획서 열기 및 다운로드">
-      <a class="plan-primary" href="{{ url_for('static', filename='plans/maeum-record-v01.pdf', v='3.110') }}" target="_blank" rel="noopener">PDF 열기 ↗</a>
+      <a class="plan-primary" href="{{ url_for('static', filename='plans/maeum-record-v01.pdf', v='3.111') }}" target="_blank" rel="noopener">PDF 열기 ↗</a>
       <a href="{{ url_for('static', filename='plans/maeum-record-v01.pptx') }}" download="마음기록_서비스기획서.pptx">PPT 다운로드</a>
     </nav>
   </header>
   <main class="plan-main">
     <p class="plan-note">아래로 스크롤하여 40페이지 전체를 읽을 수 있어요. 페이지를 누르면 크게 열립니다.</p>
     {% for page in range(1, 41) %}
-    {% set image_url = url_for('static', filename='plans/maeum-record-pages/page-%02d.jpg' % page, v='3.110') %}
+    {% set image_url = url_for('static', filename='plans/maeum-record-pages/page-%02d.jpg' % page, v='3.111') %}
     <figure class="plan-page">
       <a href="{{ image_url }}" target="_blank" rel="noopener" aria-label="{{ page }}페이지 크게 보기">
         <img src="{{ image_url }}" alt="마음기록 서비스 기획서 {{ page }}페이지" width="1467" height="825" loading="{{ 'eager' if page == 1 else 'lazy' }}" decoding="async"{% if page == 1 %} fetchpriority="high"{% endif %}>

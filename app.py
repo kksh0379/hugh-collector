@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, g, jsonify, redirect, render_template, request, session, url_for
 
-from collector import (analysis, boards, db, dedup, event_curation, event_sources, eventus, events, fetcher,
+from collector import (analysis, boards, db, dedup, event_curation, event_images, event_sources, eventus, events, fetcher,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
 
 from collector.identity import canonical_user, display_name, public_author
@@ -407,6 +407,7 @@ def eventcheck():
     dbcheck/newscheck처럼 로그인 없이도 열 수 있게 둔다."""
     result = ({'venue_schedules': venue_sources.diagnose()}
               if request.args.get('venues') == '1' else event_sources.diagnose())
+    result['image_enrichment'] = event_images.status()
     # A completed initial import survives worker restarts in DB metadata.
     try:
         if 'eventus' in result and not result['eventus'].get('checked'):
@@ -1519,16 +1520,19 @@ def img_proxy():
     u = request.args.get("u", "")
     if not u.startswith("http"):
         return ("", 404)
+    u = eventus.normalize_image_url(u)
     sp = urlsplit(u)
     ref = f"{sp.scheme}://{sp.netloc}/"
     try:
         r = fetcher.get(u, headers={"Referer": ref, "Accept": "image/avif,image/webp,image/*,*/*"},
                         retries=0, timeout=10, raise_status=False)
-        ct = (r.headers.get("content-type") or "").split(";")[0].strip()
-        if r.status_code >= 400 or not ct.startswith("image"):
+        from collector.image_response import image_content_type
+        ct = image_content_type(r.headers.get("content-type"), r.content)
+        if r.status_code >= 400 or not ct:
             return ("", 404)  # 실패 시 404 → 화면에서 onerror로 썸네일 제거
         resp = Response(r.content, content_type=ct)
         resp.headers["Cache-Control"] = "public, max-age=86400"
+        resp.headers["X-Content-Type-Options"] = "nosniff"
         return resp
     except Exception:  # noqa: BLE001
         return ("", 404)
@@ -2422,6 +2426,8 @@ def _start_scheduler():
     sched.add_job(_batch_all, "interval", hours=4, id="crawl_all", coalesce=True, max_instances=1)
     sched.add_job(_bootstrap_biz_images, "interval", minutes=2, id="biz_images",
                   coalesce=True, max_instances=1)
+    sched.add_job(_bootstrap_event_images, "interval", minutes=5, id="event_images",
+                  coalesce=True, max_instances=1)
     sched.start()
     print("[scheduler] 4시간 주기 수집 배치 시작", flush=True)
 
@@ -2470,6 +2476,17 @@ def _auto_backfill():
                 print(f"[backfill] {group} 오류: {e}", flush=True)
 
     threading.Thread(target=_run, daemon=True).start()
+
+
+def _bootstrap_event_images():
+    if os.environ.get('ENABLE_SCHEDULER', '1') != '1':
+        return
+    try:
+        if _ensure_db(force=True):
+            if event_images.enrich():
+                _invalidate_read_cache()
+    except Exception as exc:
+        print(f'[event-images] 보강 실패: {type(exc).__name__}', flush=True)
 
 
 def _bootstrap_eventus():
@@ -2580,7 +2597,7 @@ def _start_worker_jobs():
             return
         _worker_jobs_pid = pid
         _start_scheduler()
-        for target in (_auto_backfill, _bootstrap_venue_schedules, _bootstrap_eventus, _bootstrap_biz_images, _db_keepalive):
+        for target in (_auto_backfill, _bootstrap_venue_schedules, _bootstrap_eventus, _bootstrap_event_images, _bootstrap_biz_images, _db_keepalive):
             threading.Thread(target=target, daemon=True).start()
 
 

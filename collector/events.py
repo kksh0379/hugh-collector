@@ -246,7 +246,7 @@ def _fetch_body(entry):
             return "", None, None
         soup = BeautifulSoup(resp.text, "lxml")
         art = extractor.extract_article(soup, final)
-        return (art.get("content") or ""), (final or None), extractor.extract_image(soup)
+        return (art.get("content") or ""), (final or None), extractor.extract_image(soup, final)
     except Exception:  # noqa: BLE001
         return "", None, None
 
