@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <script src="{{ url_for('static', filename='js/pwa-layout.js', v='3.125') }}"></script>
+  <script src="{{ url_for('static', filename='js/pwa-layout.js', v='3.126') }}"></script>
   <title>휴 스코프</title>
   <meta name="description" content="재단·업계 뉴스와 재단 게시판·소셜 채널을 한 곳에서 모아보는 통합 스코프." />
   <meta name="theme-color" content="#ffffff" />
@@ -30,12 +30,10 @@
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg', v='145') }}" type="image/svg+xml" />
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
-  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.125') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.125") }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/share.css', v='3.125') }}">
-  {% for pose in range(6) %}
-  <link rel="preload" as="image" fetchpriority="low" href="{{ url_for('static', filename='slot-chinchilla-' ~ pose ~ '-v2.35.webp') }}" />
-  {% endfor %}
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.126') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.126") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/share.css', v='3.126') }}">
+  <link rel="preload" as="image" fetchpriority="high" media="(prefers-reduced-motion: no-preference)" href="{{ url_for('static', filename='cats-loading-smooth-v2.28.webp') }}" />
   <!-- 표시 설정(온오프) 첫 페인트 전 적용 → 새로고침 시 숨긴 항목이 깜빡이지 않게(FOUC 방지).
        직전 방문 상태를 캐시해 사용. 관리자면 전부 표시. 실제 상태는 로드 후 app.js가 재확정. -->
   <script>
@@ -48,12 +46,12 @@
       } catch (e) { /* 무시 */ }
     })();
   </script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.125') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.126') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver) }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.125') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.125") }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.126') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.126") }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.125') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.126') }}">
 <style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
 </head>
 <body>
@@ -87,7 +85,7 @@
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="cat" aria-label="냥정보"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14c-2 2-3 5-1 6 2 1 3-1 5-1s3 2 5 1c2-1 1-4-1-6-2-2-6-2-8 0Z"/><ellipse cx="5" cy="10" rx="2" ry="2.5"/><ellipse cx="10" cy="6" rx="2" ry="2.5"/><ellipse cx="15" cy="6" rx="2" ry="2.5"/><ellipse cx="20" cy="10" rx="2" ry="2.5"/></svg>냥정보</button>
       <button class="tab" data-tab="game" aria-label="게임정보"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h10c3 0 5 10 3 11-2 2-4-3-5-3H9c-1 0-3 5-5 3C2 18 4 8 7 8Z"/><path d="M7 10v5m-2.5-2.5h5"/><circle cx="16" cy="11" r=".8"/><circle cx="18" cy="14" r=".8"/></svg>게임정보</button>
-      <button class="tab" data-tab="news" aria-label="NC 뉴스"><img class="nc-mark" src="{{ url_for('static', filename='nc-symbol.png', v='3.125') }}" alt="" width="18" height="10">뉴스</button>
+      <button class="tab" data-tab="news" aria-label="NC 뉴스"><img class="nc-mark" src="{{ url_for('static', filename='nc-symbol.png', v='3.126') }}" alt="" width="18" height="10">뉴스</button>
       <button class="tab" data-tab="biz" aria-label="비영리재단 동향"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h17M8 15v-3m5 3V8m5 7V5"/></svg>비영리재단 동향</button>
       <button class="tab" data-tab="security" aria-label="보안뉴스"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6Z"/><rect x="9" y="10" width="6" height="6" rx="1"/><path d="M10 10V8a2 2 0 0 1 4 0v2"/></svg>보안뉴스</button>
       <button class="tab" data-tab="event" aria-label="행사일정"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3m-10 3h3"/></svg>행사일정</button>
@@ -505,7 +503,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.125 · build 261007</span>
+    <span class="ver">v3.126 · build 261007</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -548,14 +546,14 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.125") }}"></script>
-  <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.125') }}"></script>
-  <script src="{{ url_for('static', filename='js/share.js', v='3.125') }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.125") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.126") }}"></script>
+  <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.126') }}"></script>
+  <script src="{{ url_for('static', filename='js/share.js', v='3.126') }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.126") }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='vendor/hls-1.5.17.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/video-timeline.js', v='3.125') }}"></script>
-  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.125') }}"></script>
+  <script src="{{ url_for('static', filename='js/video-timeline.js', v='3.126') }}"></script>
+  <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.126') }}"></script>
   {% include 'service_notice.html' %}
 </body>
 </html>

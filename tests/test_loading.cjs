@@ -24,9 +24,24 @@ test('loader uses isolated animated image and a reduced-motion still source', ()
   const html = vm.runInContext('catSpin()', ctx);
   assert.match(html, /<picture>/);
   assert.match(html, /prefers-reduced-motion: reduce/);
-  assert.match(html, /cats-loading-still-v2.28.webp/);
+  assert.match(html, /srcset="data:image\/webp;base64,/);
+  assert.match(html, /class="cat-still" src="data:image\/webp;base64,/);
   assert.match(html, /cats-loading-smooth-v2.28.webp/);
   const css = fs.readFileSync('static/css/style.css', 'utf8');
   assert.doesNotMatch(css, /background-size:400%|step-end|@keyframes kitten-frames/);
   assert.match(css, /overflow:hidden/);
+});
+test('wheel is inline CSS, cats remain visible while animation downloads', () => {
+  const html = vm.runInContext('catSpin()', ctx);
+  assert.match(html, /cat-wheel-tread/);
+  assert.doesNotMatch(html, /cat-orbit/);
+  assert.match(html, /fetchpriority="high"/);
+  const css = fs.readFileSync('static/css/style.css','utf8');
+  assert.match(css, /\.cat-frames \{ opacity:0; \}/);
+  assert.match(css, /\.cat-frames\.is-ready \+ \.cat-still \{ display:none; \}/);
+  assert.match(css, /\.cat-wheel-tread \{ animation:none; \}/);
+  assert.match(source, /img\.naturalWidth > 0/);
+  const template=fs.readFileSync('templates/index.html','utf8');
+  assert.match(template, /fetchpriority="high"[^]*?cats-loading-smooth-v2\.28\.webp/);
+  assert.doesNotMatch(template, /rel="preload"[^\n]*slot-chinchilla/);
 });

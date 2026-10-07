@@ -207,15 +207,20 @@ body.is-loggedin .loggedout-only { display: none !important; }
 .cat-load-label { color:var(--muted); font-size:13px; font-weight:600; text-align:center; overflow-wrap:anywhere; }
 .cat-pair { position:relative; display:inline-block; width:160px; height:160px; flex:0 0 auto; overflow:hidden; isolation:isolate; }
 .cat-pair picture { position:relative; display:block; width:100%; height:100%; }
-.cat-frames { display:block; width:100%; height:100%; object-fit:contain; }
-.cat-orbit { position:absolute; inset:8% 18% 28%; border:3px dotted #efb3bd; border-bottom-color:transparent; border-radius:50%; animation:kitten-orbit 2.4s linear infinite; }
+.cat-frames, .cat-still { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
+.cat-frames { opacity:0; }
+.cat-frames.is-ready { opacity:1; }
+.cat-frames.is-ready + .cat-still { display:none; }
+.cat-wheel { position:absolute; left:12%; top:3%; width:76%; height:76%; box-sizing:border-box; border:7px solid #e5c6a2; border-radius:50%; background:radial-gradient(circle,transparent 59%,#f3e4d2 60%); box-shadow:inset 0 0 0 2px #b58b65,0 0 0 2px #b58b65; }
+.cat-wheel::after { content:""; position:absolute; width:70%; height:9%; left:15%; top:109%; border-radius:5px; background:#b58b65; box-shadow:0 -5px 0 -2px #e5c6a2; }
+.cat-wheel-tread { position:absolute; inset:-3px; border-radius:50%; background:repeating-conic-gradient(from 0deg,#b58b65 0deg 3deg,transparent 3deg 22.5deg); mask:radial-gradient(circle,transparent 65%,#000 66%); -webkit-mask:radial-gradient(circle,transparent 65%,#000 66%); animation:kitten-orbit 2.4s linear infinite; }
 .cat-inline { display:inline-flex; align-items:center; gap:8px; max-width:100%; color:var(--muted); font-size:13px; font-weight:600; vertical-align:middle; }
 .cat-inline .cat-pair { width:72px; height:72px; }
-.cat-inline .cat-orbit { border-width:2px; }
+.cat-inline .cat-wheel { border-width:4px; box-shadow:inset 0 0 0 1px #b58b65,0 0 0 1px #b58b65; }
 .cat-inline .ci-t { min-width:0; white-space:normal; overflow-wrap:anywhere; }
 @keyframes kitten-orbit { to { transform:rotate(360deg); } }
 @media(max-width:480px) { .cat-load { padding:18px 6px; } .cat-load .cat-pair { width:136px; height:136px; } .cat-inline .cat-pair { width:64px; height:64px; } }
-@media(prefers-reduced-motion:reduce) { .cat-orbit { animation:none; } }
+@media(prefers-reduced-motion:reduce) { .cat-wheel-tread { animation:none; } }
 
 /* 인스타 안내 메모 */
 .ig-note { font-size: 12.5px; color: var(--muted); margin: 2px 0 4px; }
