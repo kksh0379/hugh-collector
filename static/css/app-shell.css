@@ -80,3 +80,7 @@
 @media (prefers-reduced-motion: reduce) {
   .tabs > .tab { transition: none; }
 }
+
+/* User-provided NC mark keeps its original color on the light tab surface. */
+.tabs > .tab .nc-mark { width:26px; height:14px; object-fit:contain; }
+.tabs > .tab.active .nc-mark { filter:none; }
