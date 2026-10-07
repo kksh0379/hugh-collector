@@ -828,6 +828,13 @@ body.is-admin .legend.admin-only { display: flex !important; }
 .notes-md strong { color: #111; }
 .notes-md blockquote { margin: 8px 0; padding: 8px 12px; background: #fafbfc; border-left: 3px solid var(--primary); border-radius: 0 6px 6px 0; color: var(--muted); }
 .notes-md hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.notes-md a, .cl-body a { color: var(--primary-dark); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.notes-table-wrap { overflow-x: auto; margin: 10px 0 16px; border: 1px solid var(--border); border-radius: var(--r-sm); }
+.notes-table-wrap table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 12.5px; line-height: 1.65; }
+.notes-table-wrap th, .notes-table-wrap td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.notes-table-wrap th { background: #eef2ff; color: var(--primary-dark); font-weight: 700; }
+.notes-table-wrap tr:last-child td { border-bottom: 0; }
+.notes-table-wrap td:first-child { min-width: 110px; font-weight: 600; }
 
 /* ===== 읽음/최신(N)/스크랩/나의 스크랩 ===== */
 .card { position: relative; }

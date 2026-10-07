@@ -88,6 +88,13 @@
    - 메서드: GET (또는 POST) 둘 다 됨
 3. 저장하면 그때부터 자동으로 수집·저장된다(응답은 즉시 200, 수집은 백그라운드 진행).
 
+### 현재 운영 외부 Cron (2026-10-08 확인)
+
+- [콜렉터 수집 설정](https://console.cron-job.org/jobs/8497403): 매시간 정각 (`0 * * * *`, Asia/Seoul), `/api/cron` 호출. 인증은 Render의 `CRON_TOKEN` 사용. 위 6시간 주기는 예시이며 현재 운영값은 1시간이다.
+- [휴스코프 서버 유지 설정](https://console.cron-job.org/jobs/8599104): 5분 간격 (`*/5 * * * *`, Asia/Seoul), `https://hscope.onrender.com/healthz` 호출, 활성·응답 이력 저장. 수집 작업과 분리한다.
+- [유지 실행 이력](https://console.cron-job.org/jobs/8599104/history): 첫 정규 호출 2026-10-08 00:50:18 KST `200 OK` 확인. 일반 수집 호출·앱 내부 스케줄러·DB ping은 이 외부 유지 작업을 대체하지 않는다.
+- 전체 관리 링크·외부 API·수집 출처 목록은 `DEVNOTE.md`의 2.1~2.7절에 유지한다. 작업 URL을 공유할 때 실제 인증 토큰은 가린다.
+
 ### B. 상태확인/수집 버튼을 관리자 전용으로
 `ADMIN_KEY`를 설정하면 일반 방문자는 조회만, 관리자만 상태확인/수집 실행 가능.
 

@@ -2132,12 +2132,18 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
 const notesModal = document.getElementById("notes-modal");
 let _notesData = { devnote: "", changelog: "" };
 
-// 아주 가벼운 마크다운 → HTML (제목/굵게/코드/목록/인용/구분선)
+// 개발 문서용 마크다운: 안전한 외부 링크와 가로 스크롤 표 포함.
 function mdToHtml(md) {
-  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-  const inline = (s) => esc(s)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const inline = (s) => {
+    const tokens = [];
+    const hold = (html) => { tokens.push(html); return `\u0000${tokens.length - 1}\u0000`; };
+    let value = s.replace(/`([^`]+)`/g, (_, code) => hold(`<code>${esc(code)}</code>`));
+    value = value.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s<>"'()]+)\)/g, (_, label, url) =>
+      hold(`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`));
+    return esc(value).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\u0000(\d+)\u0000/g, (_, n) => tokens[Number(n)]);
+  };
   let html = "", inList = false;
   const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
   // 코드펜스(```) 처리: ```mermaid 는 다이어그램 div, 그 외는 <pre><code>. (다이어그램은 showNotes에서 렌더)
@@ -2159,6 +2165,20 @@ function mdToHtml(md) {
     const line = raw.replace(/\s+$/, "");
     const t = line.replace(/^\s+/, "");
     if (!t) { closeList(); continue; }
+    const cells = (row) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+    if (t.startsWith("|") && i + 1 < lines.length &&
+        cells(lines[i + 1]).every((cell) => /^:?-{3,}:?$/.test(cell))) {
+      closeList();
+      const headers = cells(t);
+      html += '<div class="notes-table-wrap"><table><thead><tr>' + headers.map((cell) => `<th scope="col">${inline(cell)}</th>`).join("") + '</tr></thead><tbody>';
+      i += 1;
+      while (i + 1 < lines.length && lines[i + 1].trim().startsWith("|")) {
+        const row = cells(lines[++i]);
+        html += '<tr>' + headers.map((_, n) => `<td>${inline(row[n] || "")}</td>`).join("") + '</tr>';
+      }
+      html += '</tbody></table></div>';
+      continue;
+    }
     if (/^#{1,6}\s/.test(t)) { closeList(); const lv = Math.min(t.match(/^#+/)[0].length + 1, 6); html += `<h${lv}>${inline(t.replace(/^#+\s/, ""))}</h${lv}>`; continue; }
     if (/^---+$/.test(t)) { closeList(); html += "<hr>"; continue; }
     if (/^>\s?/.test(t)) { closeList(); html += `<blockquote>${inline(t.replace(/^>\s?/, ""))}</blockquote>`; continue; }

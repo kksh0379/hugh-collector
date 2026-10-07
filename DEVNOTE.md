@@ -1,10 +1,12 @@
 # 개발자노트 — 휴 스코프
 
-현재 기준: **v3.126 · build 261007 · 2026-10-07**
+현재 기준: **v3.127 · build 261008 · 2026-10-08**
 
 휴 스코프는 김상화가 생활과 업무에 필요한 정보를 모아 쓰기 위해 제작·개선하는 개인 서비스다. 이 문서는 **현재 구현된 기능과 운영 방식**을 설명한다. 변경 당시의 내용과 적용 순서는 `CHANGELOG.md`에 보존한다.
 
 ## 1. 문서 기준과 최근 변경
+
+- v3.127: 운영 인프라, 외부 API, 직접 수집 사이트, 검색 기반 원문, 공유·영상·표시 라이브러리의 연동 주소·용도·설정을 아래 목록으로 정리. 개발노트 화면에서 링크 클릭과 표 표시를 지원한다. 10월 8일 추가한 외부 5분 유지 호출도 운영 구성에 반영했다.
 
 - v3.126: 공통 고양이 로딩의 첫 정지 장면을 코드에 포함해 즉시 표시하고 애니메이션을 우선 요청. 배경 점선 원을 CSS 캣휠로 변경. 이미지 실패 시에도 첫 장면을 유지하며 동작 줄이기 설정을 존중한다.
 
@@ -42,6 +44,117 @@ flowchart TB
 ```
 
 조회는 저장된 정보를 우선 읽는다. 수집은 외부 출처를 읽어 저장하고, 분석은 저장된 후보·기사와 근거를 사용한다. 재무세무의 일부 조회 결과와 브라우저 설정은 별도 캐시에 보관한다.
+
+### 2.1 운영 인프라·저장소·배포 연결
+
+**확인 기준: 2026-10-08 KST.** Render와 cron-job.org는 관리 콘솔에서 확인했고, 외부 API·수집 주소는 현재 운영 커밋의 호출 코드를 기준으로 정리했다. ‘키 필요’는 구현된 조건을 뜻하며 해당 키의 현재 활성화·잔액·최근 호출 성공을 모두 확인했다는 뜻은 아니다. 이 목록의 링크는 관리 화면 또는 키를 제외한 기본 호출 주소다. API 링크를 브라우저로 열면 인증 오류나 메서드 오류가 나올 수 있다.
+
+| 서비스 | 주소·관리 링크 | 연결 방식·사용 목적 | 운영 설정·확인 범위 |
+| --- | --- | --- | --- |
+| Render / hscope | [관리 콘솔](https://dashboard.render.com/web/srv-dauqmap7lnhs739ilqmg) · [런처](https://hscope.onrender.com/) · [휴스코프](https://hscope.onrender.com/hscope) | Flask 화면·API, 뉴스/행사 수집, AI 분석, DB 조회를 Gunicorn으로 실행 | 서비스 `srv-dauqmap7lnhs739ilqmg`, Oregon, Free, 1인스턴스. GitHub 운영 브랜치 커밋 자동 배포. 시작 명령은 `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300` |
+| GitHub | [저장소](https://github.com/kksh0379/ncfoundation-collector) · [운영 브랜치](https://github.com/kksh0379/ncfoundation-collector/tree/claude/quirky-euler-agfmp) · [커밋 이력](https://github.com/kksh0379/ncfoundation-collector/commits/claude/quirky-euler-agfmp) | 소스·정적 파일·개발노트·패치내역 보관. 운영 브랜치 변경 → Render 빌드/배포 | 운영 브랜치 `claude/quirky-euler-agfmp`. 저장소 이름에 남은 과거 명칭과 공개 서비스 주소는 별개이며 공유 주소는 hscope 사용 |
+| Supabase PostgreSQL | [DB 관리 콘솔](https://supabase.com/dashboard) · [연결 가이드](https://supabase.com/docs/guides/database/connecting-to-postgres) | Render 서버의 `DATABASE_URL`로 PostgreSQL에 연결. 뉴스·게시판·영상 수집 항목·행사·맛집·사용자 기록·리포트·메타데이터 영구 보관 | 운영자가 사용하는 DB 제공자는 Supabase. 실제 프로젝트·접속 호스트·포트·풀러 모드는 Render의 `DATABASE_URL`과 Supabase Connect에서 확인. 이 정비에서는 프로젝트 ID/풀러 모드를 재확인하지 않아 특정 프로젝트 링크를 추측하지 않는다. Supabase Auth/Storage/브라우저 SDK 연동은 현재 코드에 없음 |
+| cron-job.org / 수집 작업 | [콜렉터 수집 설정](https://console.cron-job.org/jobs/8497403) · [실행 이력](https://console.cron-job.org/jobs/8497403/history) | 외부 서버가 인증된 `GET /api/cron`을 호출 → 앱이 수집 배치를 백그라운드 실행 | 활성, KST 매시간 정각 `0 * * * *`. 요청은 hscope 도메인 사용. 인증값은 Render `CRON_TOKEN`과 일치해야 하며 문서에 토큰 포함 URL을 기록하지 않음 |
+| cron-job.org / 서버 유지 작업 | [휴스코프 서버 유지 설정](https://console.cron-job.org/jobs/8599104) · [실행 이력](https://console.cron-job.org/jobs/8599104/history) · [호출 주소](https://hscope.onrender.com/healthz) | 외부 서버에서 경량 HTTP 호출로 요청 공백을 줄임. 수집·AI 요청을 발생시키지 않는 상태 확인 경로 | 2026-10-08 추가, 활성, KST 5분 간격 `*/5 * * * *`, 응답 이력 저장. 첫 정규 호출 00:50:18 `200 OK`. 수집 작업과 별도 운영 |
+| 내부 APScheduler | 외부 주소 없음 · 실행 위치 `app.py` | 실행 중인 앱 프로세스 안에서 4시간 수집 배치, 2분 동향 이미지 보강, 5분 행사 이미지 보강 | `ENABLE_SCHEDULER`. 서버가 종료되면 함께 멈추므로 외부 Cron 유지 호출을 대신하지 않음 |
+| DB 연결 유지 | 외부 주소 없음 · `collector/db.py`, `app.py` | DB 연결 준비·주기적 DB 확인. 브라우저 공개 목록은 프로세스 캐시를 사용 | `DATABASE_URL`, `ENABLE_DB_PREWARM`, `DB_KEEPALIVE_SEC`. DB 확인과 Render 웹 서버 유지 호출은 서로 다른 목적 |
+
+Render의 비밀값은 **해당 서비스 → Environment**, DB 연결정보는 **Supabase 프로젝트 → Connect**, 외부 호출 주기·실패는 **cron-job.org 작업 → History**에서 관리한다. 사용자 로그인은 Flask 세션·앱 DB를 사용한다. GitHub/Render MCP는 개발·운영 시 사용하는 연결이고, 서비스 이용자 요청이 MCP를 거쳐 실행되는 구조는 아니다.
+
+**2026-10-07 저녁 지연 기록:** 외부 수집 호출의 일부 응답이 `503 Service Unavailable`, Render 응답 헤더가 `x-render-routing: hibernate-wake-error`였다. 외부 호출 누락으로 단정했던 설명은 실행 이력 확인 후 수정했다. 서버가 잠든 뒤 재기동 경로에서 실패한 사실은 확인했으나 오전과 달리 처음 잠든 계기까지 확정한 것은 아니다. 1시간 수집 호출 외에 5분 `/healthz` 호출을 추가했다. 최초 성공 확인과 장기간 재발 여부 검증을 구분한다.
+
+### 2.2 외부 API·AI 분석 연동
+
+| API·제공자 | 호출 주소·관리 링크 | 사용하는 기능·전달 내용 | 설정·코드 |
+| --- | --- | --- | --- |
+| Anthropic Claude / 분석·생성 | [Messages API](https://api.anthropic.com/v1/messages) · [사용 가능한 모델 조회](https://api.anthropic.com/v1/models) · [콘솔](https://platform.claude.com/) · [크레딧 관리](https://platform.claude.com/settings/billing) | AI 핵심 요약, 행사 AI 추천, 재단 동향 리포트, 보안뉴스 태그·중요도 분석, 월간 보안 리포트. 기사/후보/근거와 요청 조건을 서버에서 전송 | `ANTHROPIC_API_KEY`. `ANALYSIS_MODEL`, `READER_SUMMARY_MODEL`, `EVENT_CURATION_MODEL`로 작업별 모델 지정; 미지정 시 계정의 사용 가능 모델 조회 규칙 적용. `analysis.py`, `reader_summary.py`, `event_curation.py`, `security_ai.py`, `security_report.py`, `ai_provider.py` |
+| Kakao Local / 장소·식당 검색 | [키워드 API](https://dapi.kakao.com/v2/local/search/keyword.json) · [개발자 콘솔](https://developers.kakao.com/) · [Local 문서](https://developers.kakao.com/docs/en/local/dev-guide) | 기본 위치·GPS·지정 주소 주변 식당 수집, 장소명 검색. 검색어·좌표·반경을 서버에서 전송 | `KAKAO_REST_KEY`, `collector/lunch.py`. 사용자에게 식당 다운로드 확인 후 수집; 장소 ID로 중복 확인 |
+| Kakao Local / 주소→좌표 | [주소 검색 API](https://dapi.kakao.com/v2/local/search/address.json) | 사용자가 입력한 주소를 좌표·도로명/지번 주소로 변환해 위치 선택. 주소 검색 실패 시 장소 키워드 검색 보완 | 같은 `KAKAO_REST_KEY`, `lunch.py`. 키는 브라우저에 노출하지 않음 |
+| Kakao Local / 좌표→주소 | [역변환 API](https://dapi.kakao.com/v2/local/geo/coord2address.json) | GPS 좌표를 도로명 또는 지번 주소로 표시, 최근 위치 기록의 주소 보완 | 같은 `KAKAO_REST_KEY`, `lunch.py` |
+| YouTube Data API v3 | [재생목록 API](https://www.googleapis.com/youtube/v3/playlistItems) · [검색 API](https://www.googleapis.com/youtube/v3/search) · [Google Cloud 콘솔](https://console.cloud.google.com/) | NC문화재단 채널의 업로드 영상 수집, 주요 재단명으로 영상 검색. 제목·설명·발행일·썸네일·원문 링크 저장 | `YOUTUBE_API_KEY`, `collector/social.py`. 키가 없으면 NC 채널은 RSS 최신분으로 대체; 주요 재단 검색은 건너뜀 |
+| 한국관광공사 TourAPI | [행사·축제 API](https://apis.data.go.kr/B551011/KorService2/searchFestival2) · [공공데이터포털 서비스](https://www.data.go.kr/data/15101578/openapi.do) | 국내 행사·축제 제목, 개최기간, 장소, 이미지 수집 | `TOURAPI_KEY`, 선택 `TOURAPI_FESTIVAL_URL`, `collector/event_sources.py`. 키 없으면 건너뜀 |
+| 한국문화정보원 / 문화정보 | [공공데이터포털](https://www.data.go.kr/) · [문화포털](https://www.culture.go.kr/) | 문화·전시·행사 일정 수집, 순수 공연 분류 제외 | **실제 요청 주소는 `CULTURE_API_URL`**. `CULTURE_API_KEY`와 URL 둘 다 필요. 코드에 고정 기본 주소 없음; `/cultureinfo` 베이스 설정 시 `/period2` 추가. `event_sources.py` |
+| 한국은행 ECOS | [통계 API 관리·안내](https://ecos.bok.or.kr/api/) · [경제통계시스템](https://ecos.bok.or.kr/) | 재무세무 환율·기준금리·시장금리·물가지표의 관측값/발표일 조회. 요청 경로 `StatisticSearch/<키>/json/kr/...` | `ECOS_API_KEY`, `collector/finance.py`. 인증키가 경로에 들어가므로 완성된 실제 URL은 문서·로그 공유에서 제외 |
+| 금융감독원 Open DART | [공시 목록 API](https://opendart.fss.or.kr/api/list.json) · [고유번호 파일](https://opendart.fss.or.kr/api/corpCode.xml) · [인증키 관리·가이드](https://opendart.fss.or.kr/) · [DART 원문](https://dart.fss.or.kr/) | 종목코드에서 법인 고유번호를 찾아 공시 목록·원문 링크 표시 | `DART_API_KEY`, `NC_STOCK_CODE`, `finance.py`. 사업자번호 조회와 별개 |
+| 국세청 사업자등록 상태조회 | [상태조회 API](https://api.odcloud.kr/api/nts-businessman/v1/status) · [공공데이터포털](https://www.data.go.kr/) | 입력한 사업자등록번호의 계속/휴업/폐업 상태·과세유형 확인 요청 | `NTS_API_KEY`, `finance.py`. 사용자 요청 번호를 해당 API로 전송 |
+| 네이버 금융 일별 주가 | [차트 데이터 주소](https://fchart.stock.naver.com/sise.nhn) · [네이버 금융](https://finance.naver.com/) | 재무세무 엔씨 주가 관측값·추이 조회. 실시간 시세가 아닌 일별 데이터 | 기본 키 없음, `NC_STOCK_CODE`, `NC_STOCK_NAME`, `NC_STOCK_URL`, `finance.py` |
+| Jina Reader / 선택적 본문 추출 | [Reader 주소](https://r.jina.ai/) · [서비스 안내](https://jina.ai/reader/) | 일반 HTML 추출로 읽기 어려운 JS 기사에 외부 본문 추출을 선택적으로 시도. 공개 기사 URL을 전달 | `READER_JS_FALLBACK=1`일 때 사용, 기본 꺼짐. `collector/reader.py`; 일반 리더 본문 추출은 앱 서버에서 직접 수행 |
+
+**AI 토큰을 쓰지 않는 경로:** 저장 결과 열람, 일반 뉴스/행사 조회, 초기 행사 로컬 추천, 맛집 점수 추천, 주소/식당 수집, 외부 유지 호출. Kakao·YouTube·공공 API의 제공자별 호출 한도와 Claude AI 크레딧은 별개다. 현재 코드에서 OpenAI/Gemini API 호출은 확인되지 않았다.
+
+### 2.3 직접 수집하는 게시판·유튜브 출처
+
+| 출처 | 페이지·실제 수집 주소 | 수집 용도·방법 |
+| --- | --- | --- |
+| 나의AAC / 소식 | [목록](https://www.myaac.or.kr/info/announcement.do) · [상세 기본 주소](https://www.myaac.or.kr/info/announcementDetail.do) | 게시판 HTML 목록·글 번호 `seq`별 본문·이미지 수집. `boards.py` |
+| 나의AAC / 커뮤니티 | [목록](https://www.myaac.or.kr/info/community.do) · [상세 기본 주소](https://www.myaac.or.kr/info/communityDetail.do) | 커뮤니티 HTML 목록·본문·이미지 수집. `boards.py` |
+| 프로젝토리 / 공지 | [공지 목록](https://m.projectory.or.kr/news/notice-list) | 사이트의 목록 응답과 상세 글에서 공지 수집. `boards.py` |
+| 프로젝토리 / 이야기 | [이야기 목록](https://m.projectory.or.kr/news/projectory-story-list) | 프로젝토리 활동 이야기·본문·이미지 수집. `boards.py` |
+| 프로젝토리 / 갤러리 | [갤러리 목록](https://m.projectory.or.kr/news/gallery-list) | 갤러리 글·이미지 수집. 별도 Instagram API 연결을 뜻하지 않음 |
+| FAIR AI / 공지사항 | [사이트](https://fairai.or.kr/) · [공지 페이지](https://fairai.or.kr/about/notices/) · [실제 목록 API](https://api.fairai.or.kr/fair/api/ai-notice-page) | 페이지 HTML 대신 POST 목록 API의 제목·내용·등록일을 수집. 현재 출처 목록은 공지사항이며 인사이트 전용 수집 어댑터는 없음 |
+| NC문화재단 / 재단소식 | [재단소식](https://ncfoundation.or.kr/community/all) · [실제 목록 API](https://api.ncfoundation.or.kr/community/all) | 홈페이지 JSON API에서 소식과 등록된 YouTube/블로그/Instagram 연결 글 수집. 독립 블로그·Instagram API와 구분 |
+| NC문화재단 / YouTube | [채널](https://www.youtube.com/@nccf) · [RSS 기본 주소](https://www.youtube.com/feeds/videos.xml) · [썸네일 호스트](https://i.ytimg.com/) | `social.py`. 채널 ID를 확인한 뒤 업로드 재생목록 API 또는 `channel_id` 매개변수 RSS 사용. 저장된 영상 원문은 YouTube로 이동 |
+| 주요 재단 / YouTube 검색 | [YouTube](https://www.youtube.com/) · [실제 검색 API](https://www.googleapis.com/youtube/v3/search) | 아산나눔재단, 삼성문화재단, CJ문화재단, 롯데문화재단, 현대차 정몽구 재단, 포스코청암재단, 두산연강재단, LG연암문화재단, 카카오임팩트, 네이버문화재단 이름으로 검색. 각 기관 홈페이지 직접 크롤링·공식 채널 고정 연결이 아닌 검색 결과 수집 |
+
+### 2.4 직접 수집하는 행사 사이트
+
+| 출처 | 페이지·API 주소 | 수집 범위·연결 방식 |
+| --- | --- | --- |
+| 이벤터스 | [사이트](https://event-us.kr/) · [검색 API](https://api.event-us.kr/api/v1/engine/search) · [이미지 저장소 기본 주소](https://eventusstorage.blob.core.windows.net/evs) | 공개 검색 응답으로 국내·온라인 행사·주최자·기간·장소·포스터 수집. 특강·강좌·교육상품·장기 상시 프로그램 제외. `eventus.py`, `event_images.py`; `EVENTUS_OFF=1`이면 제외 |
+| 코엑스 | [월간 행사 일정](https://www.coex.co.kr/event/full-schedules/) | 공식 전시·컨벤션 일정 HTML 및 상세 링크 수집. `event_sources.py`, `COEX_OFF`, `COEX_SCHEDULE_URL` |
+| 킨텍스 | [행사 일정](https://www.kintex.com/web/ko/event/list.do) | 향후 6개월 공식 일정·상세 정보·이미지 수집. `venue_sources.py` |
+| 벡스코 | [행사 일정](https://www.bexco.co.kr/kor/CMS/EventScheduleMgr/list.do) | 향후 6개월 공식 일정·상세 정보·이미지 수집. `venue_sources.py` |
+| 대전컨벤션센터 | [행사 일정](https://www.dcckorea.or.kr/event/calendarList.do) | 향후 6개월 공식 일정·상세 정보·이미지 수집. `venue_sources.py` |
+| aT센터 | [행사 일정](https://www.at.or.kr/ac/event/acko311100/listList.action) | 향후 6개월 공식 일정·상세 정보·이미지 수집. `venue_sources.py` |
+| 수원메쎄 | [행사 일정](https://suwonmesse.com/event_schedule/event_list/) | 향후 6개월 공식 일정·상세 정보·이미지 수집. 수원컨벤션센터와 다른 출처. `venue_sources.py` |
+| 세텍 SETEC | [행사 일정](https://www.setec.or.kr/front/schedule/list.do) | 향후 6개월 공식 일정·상세 정보·이미지 수집. `venue_sources.py` |
+| 한국관광공사 | [TourAPI 행사·축제](https://apis.data.go.kr/B551011/KorService2/searchFestival2) · [Visit Korea 원문 기본 주소](https://korean.visitkorea.or.kr/detail/ms_detail.do) | API의 기간·주소·사진을 정규화. 원문 연결은 반환된 식별자를 사용 |
+| 한국문화정보원 | [문화포털](https://www.culture.go.kr/) · [공공데이터포털](https://www.data.go.kr/) | 설정된 `CULTURE_API_URL`을 읽는 조건부 출처. 현재 코드만으로 실제 운영 URL을 특정할 수 없어 고정 주소를 추측해 쓰지 않음 |
+
+킨텍스부터 세텍까지 6개 어댑터는 `VENUE_SOURCES_OFF=1`로 비활성화한다. 행사 이미지 보강은 저장된 행사 원문 페이지에도 직접 요청한다. 원문·포스터 호스트는 제공자가 반환한 URL을 사용하므로 사이트 표의 대표 도메인에만 한정되지 않는다.
+
+### 2.5 Google News와 재무세무 뉴스 출처
+
+| 구분 | 연결 주소 | 사용 목적·수집 방식 |
+| --- | --- | --- |
+| 공통 Google News RSS | [검색 RSS](https://news.google.com/rss/search) · [Google News](https://news.google.com/) | 냥정보·게임정보·NC뉴스·비영리재단 동향·보안뉴스·행사 뉴스의 공통 검색 출처. `q` 검색어와 `hl=ko`, `gl=KR`, `ceid=KR:ko`, 날짜 범위를 전달 |
+| Google 원문 주소 복원 | [주소 복원 요청 경로](https://news.google.com/_/DotsSplashUi/data/batchexecute) | RSS의 Google 기사 링크에서 실제 언론사 URL 복원 시도. `google_news.py`; 실패 시 수집 요약과 원문 링크 유지 |
+| 재정경제부(구 기획재정부) | [사이트](https://mofe.go.kr/) · [보도자료 RSS](https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028) | 재무세무 정책 브리핑. 기본 공식 RSS 사용. `finance.py`의 `MOEF` 출처 |
+| 국세청·국세 뉴스 | [국세청](https://www.nts.go.kr/) · [실제 기본 검색 RSS](https://news.google.com/rss/search?q=국세청%20세금%20세정&hl=ko&gl=KR&ceid=KR:ko) | 기본은 Google News 주제 검색. 국세청 사이트 전체를 직접 크롤링하는 방식이 아님 |
+| 삼일회계법인 PwC 뉴스 | [사이트](https://www.pwc.com/kr/ko.html) · [실제 기본 검색 RSS](https://news.google.com/rss/search?q=삼일회계법인%20PwC%20세무&hl=ko&gl=KR&ceid=KR:ko) | 회계·세무 가이드 브리핑. 기본 Google News 검색 |
+| 삼정KPMG 뉴스 | [사이트](https://kpmg.com/kr/ko/home.html) · [실제 기본 검색 RSS](https://news.google.com/rss/search?q=삼정KPMG%20세무&hl=ko&gl=KR&ceid=KR:ko) | 회계·세무 가이드 브리핑. 기본 Google News 검색 |
+| 조세일보 | [사이트](https://www.joseilbo.com/) · [실제 기본 검색 RSS](https://news.google.com/rss/search?q=조세일보&hl=ko&gl=KR&ceid=KR:ko) | 세무 뉴스 브리핑. 기본 Google News 검색 |
+| 세법 입법 동향 | [국회 입법예고](https://pal.assembly.go.kr/) · [실제 기본 검색 RSS](https://news.google.com/rss/search?q=세법%20개정%20입법예고&hl=ko&gl=KR&ceid=KR:ko) | 세법 개정·입법예고 기사 브리핑. 기본 Google News 검색이며 국회 입법예고 API 직접 연동은 아님 |
+
+재무세무 피드는 `FINANCE_RSS_MOEF`, `FINANCE_RSS_NTS`, `FINANCE_RSS_PWC`, `FINANCE_RSS_KPMG`, `FINANCE_RSS_JOSEILBO`, `FINANCE_RSS_ASSEMBLY`에 검증된 RSS 주소를 넣으면 해당 기본값 대신 사용한다.
+
+뉴스 검색 범위는 `google_news.py`와 `events.py`에 정의한다. 냥정보는 사료·영양/행동·심리/업계 트렌드/사회·제도/보험, 게임정보는 신작·업데이트·e스포츠·산업·평가, NC뉴스는 재단 및 본사/자회사, 동향은 비영리·공익·문화·기업재단과 위 10개 재단명, 보안뉴스는 개인정보/침해/취약점/정책/처분/보안 트렌드, 행사 뉴스는 국내 컨퍼런스·전시·포럼·기술·AI·윤리 행사 검색이다.
+
+**언론사·행사 원문은 동적 출처다.** RSS 결과의 `source_url`에 따라 각 언론사/주최자 페이지를 직접 읽어 본문·메타 이미지·포스터를 추출하고 `/api/img`에서 원본 이미지를 중계한다. 따라서 고정된 언론사 몇 곳의 전체 수집 목록으로 표현하지 않는다. 개별 저장 항목의 원문 링크가 실제 방문 출처의 기준이며, 원문 사이트 목록은 수집 시점마다 달라진다. ‘주요 재단명 검색’도 해당 재단 홈페이지 전체 크롤링을 뜻하지 않는다.
+
+### 2.6 영상·공유·브라우저·표시 도구
+
+| 서비스·기술 | 주소·연결 대상 | 용도·동작 범위 |
+| --- | --- | --- |
+| 링크애니 / 영상 카탈로그 | [원출처](https://linkani.tv/) | `video_library.py`가 작품 목록·검색·작품 상세·회차·재생 페이지를 조회. 원출처 경로 `/ani/<작품ID>/`, `/watch/<작품ID>/a<시리즈>/k<회차>/`. 외부 출처의 링크·제목·포스터·재생 정보를 사용 |
+| 외부 영상·자막 호스트 | 재생 응답이 반환하는 `https://aniplayer<숫자>.site` 형식의 주소 | `video_hls.py`가 검증한 HLS 목록·자막 URL만 연결. 미디어 실제 호스트/파일 경로는 작품·회차 응답에 따라 달라져 특정 숫자 도메인을 고정하지 않음. 영상 바이트는 외부 출처에서 제공; 일부 목록·자막은 서버 가공 |
+| hls.js | 앱 내부 `/static/vendor/hls-1.5.17.min.js` | HLS 재생용 라이브러리를 직접 호스팅. 브라우저가 외부 CDN에서 매번 받는 방식이 아님. AirPlay는 브라우저/기기 지원 기능 사용 |
+| 카카오톡·문자·다른 앱 공유 | 외부 API 고정 주소 없음 · 기기 Web Share API / SMS 작성창 | `share.js`가 제목·URL을 기기의 공유 목록에 전달. 사용자가 카카오톡/문자 앱을 선택. Kakao 메시지 API·카카오 로그인·카카오 JavaScript SDK 직접 전송은 현재 없음 |
+| URL 복사 | 외부 주소 없음 · 브라우저 Clipboard API | 공유 팝업의 URL 복사. 공유 URL은 공식 hscope 주소 사용 |
+| GPS | 외부 API 고정 주소 없음 · 브라우저 Geolocation API | 권한을 받은 기기 좌표를 맛집 조회에 사용. 주소 변환 단계에서만 Kakao Local 서버 API 요청 |
+| PWA 설치·홈 화면 | [휴스코프](https://hscope.onrender.com/hscope) · [모바일 설치 도움말](https://hscope.onrender.com/hscope/install) | 브라우저 설치 이벤트, 앱 매니페스트, 네트워크 전용 서비스 워커. 별도 앱스토어 서비스에 배포된 네이티브 앱이 아님 |
+| Mermaid / 개발노트 도식 | [실제 CDN 모듈](https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js) · [프로젝트](https://mermaid.js.org/) | 개발노트 도식을 표시할 때 라이브러리를 로드. 도식 내용을 AI 분석 서버에 보내는 기능이 아님 |
+| KoddiUD 온고딕 / 서체 | [한국장애인개발원](https://www.koddi.or.kr/) · 앱 내부 `/static/fonts/` | 글꼴 파일을 앱에서 직접 호스팅. 출처·CC BY-SA 표기는 소개페이지 참고. 외부 Google Fonts 연결 없음 |
+| 네이버 지도 단축 링크·장소 상세 | [네이버 지도](https://map.naver.com/) · [단축 링크 기본 주소](https://naver.me/) | 기존 점심 기록·식당 상세/원문 이동에 사용. 네이버 지도 검색 API로 식당 목록을 수집하는 기능과 구분 |
+
+### 2.7 연결 변경·장애 확인 순서
+
+- **화면/API 접속 지연:** [Render 서비스](https://dashboard.render.com/web/srv-dauqmap7lnhs739ilqmg)에서 배포·런타임 로그 확인 → [유지 작업 이력](https://console.cron-job.org/jobs/8599104/history)에서 5분 호출 성공 확인 → [healthz](https://hscope.onrender.com/healthz) 응답 확인. 내부 DB 확인이나 수집 작업만으로 서버 유지가 보장되는 것으로 판단하지 않는다.
+- **자료 미갱신:** [외부 수집 이력](https://console.cron-job.org/jobs/8497403/history) → 관리자 수집 로그 → 출처별 HTTP 오류/파싱 건수 확인. 외부 Cron 호출 성공은 개별 사이트 수집의 모두 성공을 의미하지 않는다.
+- **DB 오류:** Render `DATABASE_URL` 설정과 [Supabase 관리 콘솔](https://supabase.com/dashboard)의 프로젝트 상태·연결 모드·접속 한도 확인. 비밀번호 포함 접속 문자열은 노트·스크린샷·공유 로그에 기록하지 않는다.
+- **AI 오류:** [Claude 크레딧](https://platform.claude.com/settings/billing), `ANTHROPIC_API_KEY`, 사용 가능한 모델과 해당 기능의 오류 확인. AI 부족으로 일반 기사·기존 본문·규칙 추천을 차단하지 않는다.
+- **맛집/주소 오류:** [Kakao Developers](https://developers.kakao.com/)에서 앱의 REST 키·Local 사용 설정/한도와 Render `KAKAO_REST_KEY` 확인. 카카오톡 공유 설정과 혼동하지 않는다.
+- **공공·재무·영상 출처 오류:** 해당 표의 제공자 콘솔/원문 주소와 실제 응답 구조 확인. 환경변수로 덮어쓴 주소·동적 호스트는 코드 기본값과 구분하고 변경 시 이 목록도 함께 갱신한다.
 
 ## 3. 화면 구조와 디자인 기준
 
