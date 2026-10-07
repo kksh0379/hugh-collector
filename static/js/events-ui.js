@@ -120,7 +120,7 @@
     if(initialized){renderResult();return;}
     initialized=true;
     const root=document.getElementById('event-curation');
-    root.innerHTML=`<div class="ed-curation-toolbar"><button type="button" id="ed-settings">AI 추천받기</button></div><p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기">×</button></div><p>미선택 시 전체 행사에서 추천해요.</p>
+    root.innerHTML=`<p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기">×</button></div><p>미선택 시 전체 행사에서 추천해요.</p>
       <fieldset><legend>관심 분야 · 여러 개 선택</legend><div class="ed-topics">${topics.map(t=>`<label><input type="checkbox" value="${esc(t)}" ${prefs.topics.includes(t)?'checked':''}>${esc(t)}</label>`).join('')}</div></fieldset>
       <label for="ed-keyword-input" class="ed-label">관심 키워드</label><div id="ed-keywords" class="ed-chips"></div>
       <form id="ed-keyword-form"><input id="ed-keyword-input" maxlength="40" placeholder="키워드 직접 입력" aria-label="관심 키워드"><button type="submit">추가</button></form>
@@ -131,7 +131,10 @@
     root.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.keyword)addKeyword(b.dataset.keyword);if(b.dataset.remove!==undefined){prefs.keywords.splice(+b.dataset.remove,1);persist();chips();}};
     root.querySelector('#ed-keyword-form').onsubmit=e=>{e.preventDefault();const input=root.querySelector('#ed-keyword-input');addKeyword(input.value);input.value='';};
     const dialog=root.querySelector('#ed-dialog');
-    root.querySelector('#ed-settings').onclick=()=>dialog.showModal();
+    const settings=document.getElementById('ed-settings');
+    settings.disabled=false;
+    settings.onclick=()=>{document.getElementById('event-mode-toggle')?.querySelector('[data-emode="curation"]')?.click?.();dialog.showModal();};
+    dialog.onclose=()=>settings.focus();
     root.querySelector('#ed-close').onclick=()=>dialog.close();
     dialog.onclick=e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}};
     root.querySelector('#ed-recommend').onclick=()=>{dialog.close();requestVersion++;busy=false;result=localRecommendations(available,prefs);return recommend();};

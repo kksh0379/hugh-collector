@@ -7,9 +7,9 @@ function setup(options={}, state) {
  const button={disabled:false,textContent:'',handlers:{},addEventListener(name,fn){this.handlers[name]=fn;}};
  const card={hidden:true},events={};
  const navigator={userAgent:'Chrome',...options};
- const window={location:{origin:'https://hscope.onrender.com'},HscopeInstallState:state,matchMedia:()=>({matches:false,addEventListener(){}}),addEventListener(name,fn){events[name]=fn;}};
+ const window={location:{origin:'https://hscope.onrender.com',assign(value){this.assigned=value;}},HscopeInstallState:state,matchMedia:()=>({matches:false,addEventListener(){}}),addEventListener(name,fn){events[name]=fn;}};
  vm.runInNewContext(source,{window,navigator,URL,document:{getElementById:id=>id==='app-install'?button:id==='install-card'?card:null}});
- return {button,card,events};
+ return {button,card,events,window};
 }
 test('only a real install request enables the installation button',async()=>{
  const s=setup();assert.equal(s.card.hidden,true);assert.equal(s.button.disabled,true);
@@ -52,4 +52,17 @@ test('bootstrap keeps early native requests until UI initialization',()=>{
  vm.runInNewContext(fs.readFileSync('static/js/pwa-prompt.js','utf8'),{window});
  const e={preventDefault(){}};events.beforeinstallprompt(e);assert.equal(window.HscopeInstallState.prompt,e);
  events.appinstalled();assert.equal(window.HscopeInstallState.prompt,null);
+});
+
+test('iPhone provides an illustrated installation help entry',async()=>{
+ const s=setup({userAgent:'iPhone Safari'});assert.equal(s.card.hidden,false);assert.equal(s.button.textContent,'홈 화면에 추가');
+ await s.button.handlers.click();assert.equal(s.window.location.assigned,'/hscope/install');
+});
+test('iPad desktop user agent also offers mobile installation help',async()=>{
+ const s=setup({userAgent:'Safari',platform:'MacIntel',maxTouchPoints:5});assert.equal(s.card.hidden,false);
+ await s.button.handlers.click();assert.equal(s.window.location.assigned,'/hscope/install');
+});
+test('ordinary desktop still uses the native request and never navigates to iOS help',async()=>{
+ let calls=0;const s=setup();s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>calls++,userChoice:Promise.resolve({outcome:'accepted'})});
+ await s.button.handlers.click();assert.equal(calls,1);assert.equal(s.window.location.assigned,undefined);
 });

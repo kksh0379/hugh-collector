@@ -17,7 +17,7 @@ const events=[{url:'https://events.example/cat',title:'궁디팡팡 캣페스타
 test('initial curation, repeat tab visits and settings opening display banners without network calls',()=>{
  const s=setup({topics:['반려동물'],keywords:[]});
  s.api.curation(events);assert.match(s.el('ed-results').innerHTML,/궁디팡팡/);assert.doesNotMatch(s.el('ed-results').innerHTML,/AI 컨퍼런스|고양이 행사/);
- s.api.curation(events);s.el('#ed-settings').onclick();assert.equal(s.requests(),0);assert.equal(s.el('ed-status').hidden,true);assert.match(s.el('ed-results').innerHTML,/궁디팡팡/);
+ s.api.curation(events);s.el('ed-settings').onclick();assert.equal(s.requests(),0);assert.equal(s.el('ed-status').hidden,true);assert.match(s.el('ed-results').innerHTML,/궁디팡팡/);
 });
 test('instant recommendations use current search results and omit expired or unrelated events',()=>{
  const s=setup({topics:[],keywords:['궁디팡팡']});s.api.curation(events);s.api.curation([events[1]]);assert.doesNotMatch(s.el('ed-results').innerHTML,/궁디팡팡/);assert.match(s.el('ed-results').innerHTML,/표시할 추천이 없어요/);assert.equal(s.requests(),0);
@@ -29,8 +29,21 @@ test('unselected interests show a bounded diverse feed without calling AI',()=>{
 test('AI is requested only after confirming the interest dialog',async()=>{
  const s=setup({topics:['반려동물'],keywords:[]});s.api.curation(events);
  assert.doesNotMatch(s.el('event-curation').innerHTML,/id="ed-mode"|id="ed-ai-recommend"/);
- assert.match(s.el('event-curation').innerHTML,/id="ed-settings">AI 추천받기/);
- s.el('#ed-settings').onclick();assert.equal(s.requests(),0);
+ assert.doesNotMatch(s.el('event-curation').innerHTML,/id="ed-settings"/);
+ assert.equal(s.el('ed-settings').disabled,false);
+ s.el('ed-settings').onclick();assert.equal(s.requests(),0);
  await s.el('#ed-recommend').onclick();assert.equal(s.requests(),1);
  assert.equal(s.el('ed-status').hidden,false);
+});
+
+test('recommendation action sits beside curation tab and is outside the tablist',()=>{
+ const html=fs.readFileSync('templates/index.html','utf8');
+ const group=html.slice(html.indexOf('class="event-mode-actions"'),html.indexOf('id="event-view-toggle"'));
+ assert.match(group,/data-emode="curation"/);assert.match(group,/<\/div>\s*<button type="button" id="ed-settings"/);
+ assert.equal((html.match(/id="ed-settings"/g)||[]).length,1);
+});
+test('global shortage banner is absent while feature result notice is preserved',()=>{
+ assert.doesNotMatch(fs.readFileSync('templates/index.html','utf8'),/js\/ai-status.js/);
+ assert.doesNotMatch(fs.readFileSync('static/js/ai-status.js','utf8'),/prepend|setInterval|fetch\(/);
+ assert.match(script,/result\.notice/);
 });

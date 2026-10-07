@@ -1436,6 +1436,11 @@ def index():
     )
 
 
+@app.get("/hscope/install")
+def mobile_install_help():
+    return render_template('mobile_install.html')
+
+
 @app.get("/maeum-record")
 def maeum_record_plan():
     return render_template("maeum_record_plan.html")
