@@ -55,7 +55,7 @@ def enrich(limit=12):
         return 0
     try:
         now = time.time()
-        attempts = json.loads(db.get_meta('event_image_attempts_v1', '{}'))
+        attempts = json.loads(db.get_meta('event_image_attempts_v2', '{}'))
         attempts = {key: ts for key, ts in attempts.items() if now - ts < 7 * 86400}
         with db.get_conn() as conn:
             rows = conn.execute(db._q("SELECT url, source_url FROM events WHERE "
@@ -70,13 +70,13 @@ def enrich(limit=12):
             if len(selected) >= limit:
                 break
         # Persist attempts before network work; a restart must not repeat the batch.
-        db.set_meta('event_image_attempts_v1', json.dumps(attempts))
+        db.set_meta('event_image_attempts_v2', json.dumps(attempts))
         with ThreadPoolExecutor(max_workers=2) as pool:
             results = list(pool.map(fetch, selected))
         images = [(image, url) for url, image, _ in results if image]
         if images:
             with db.get_conn() as conn:
-                conn.executemany(db._q("UPDATE events SET image_url=? WHERE url=? AND "
+                conn.cursor().executemany(db._q("UPDATE events SET image_url=? WHERE url=? AND "
                     "(image_url IS NULL OR image_url='')"), images)
         _status.update(checked=True, checked_at=now, attempted=len(results), images=len(images),
                        reasons=dict(Counter(reason for _, _, reason in results)))
