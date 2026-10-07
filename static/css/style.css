@@ -260,7 +260,7 @@ body.is-loggedin .loggedout-only { display: none !important; }
 .tab.active .security-screen { fill:#1c1e21; }
 .tab .cat-photo { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; object-fit: cover; display: block; }
 .tab .cat-paw { flex: 0 0 auto; width: 20px; height: 20px; display: block; }
-.tab .nc-mark { flex:0 0 auto; display:block; width:26px; height:14px; object-fit:contain; }
+.tab .nc-mark { flex:0 0 auto; display:block; width:18px; height:10px; object-fit:contain; }
 .toolbar-title { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); align-self: center; }
 .tab.active {
   background: #1c1e21;         /* 활성 칩: 진한 채움 + 흰 글자(유튜브식 대비) */

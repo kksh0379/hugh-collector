@@ -82,5 +82,5 @@
 }
 
 /* User-provided NC mark keeps its original color on the light tab surface. */
-.tabs > .tab .nc-mark { width:26px; height:14px; object-fit:contain; }
+.tabs > .tab .nc-mark { width:18px; height:10px; object-fit:contain; }
 .tabs > .tab.active .nc-mark { filter:none; }
