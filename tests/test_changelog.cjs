@@ -26,3 +26,29 @@ test('patch content is escaped before formatting',()=>{
  const html=ctx.renderChangelog('### v2.43 — <img src=x onerror=alert(1)>\n- **<script>alert(1)</script>**\n');
  assert.doesNotMatch(html,/<img|<script/);assert.match(html,/&lt;img/);assert.match(html,/<strong>&lt;script/);
 });
+test('every v3 release appears once with detailed content in descending order',()=>{
+ const html=ctx.renderChangelog(markdown);
+ const versions=[...markdown.matchAll(/^### (v3\.(\d+))\b/gm)];
+ assert.ok(versions.length>=122);
+ for(const [,version] of versions){
+  const rows=html.match(new RegExp(`<details class="cl-item"><summary>${version.replace('.','\\.')}\\b[\\s\\S]*?</details>`,'g'))||[];
+  assert.equal(rows.length,1,version);
+  assert.match(rows[0],/<div class="cl-body"><ul><li>/,version);
+ }
+ for(let i=1;i<versions.length;i++) assert.ok(Number(versions[i-1][2])>Number(versions[i][2]));
+ assert.equal((markdown.match(/^# /gm)||[]).length,1);
+ assert.doesNotMatch(markdown,/^## v\d/m);
+});
+test('legacy level-two release titles preserve their detail',()=>{
+ const html=ctx.renderChangelog('## v3.121 (2026-10-07)\n- 첫 변경\n## v3.120 (2026-10-07)\n- 둘째 변경\n## 2026-10-06\n### v3.119 — 이전\n- 이전 변경');
+ assert.equal((html.match(/<details class="cl-item">/g)||[]).length,3);
+ assert.match(html,/v3\.121[^]*?첫 변경[^]*?<\/details>/);
+ assert.match(html,/<div class="cl-date">2026-10-06<\/div>/);
+});
+test('developer note and visible version track latest documented release',()=>{
+ const latest=markdown.match(/^### (v\d+\.\d+)/m)[1];
+ const dev=fs.readFileSync('DEVNOTE.md','utf8');
+ assert.ok(dev.includes(`현재 기준: **${latest} · build 261007`));
+ assert.ok(fs.readFileSync('templates/index.html','utf8').includes(latest));
+ for(const phrase of ['영상 탐색과 재생','서비스 런처·기획서·설치','공통 공유','AI 크레딧과 기부 안내','이벤터스','상단 공통 배너와 상태 반복 조회는 제거']) assert.ok(dev.includes(phrase),phrase);
+});

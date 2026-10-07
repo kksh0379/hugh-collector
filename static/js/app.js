@@ -2173,9 +2173,9 @@ function renderChangelog(md) {
   (md || "").split(/\r?\n/).forEach((raw) => {
     const t = raw.trim();
     if (!t) return;
-    if (t.startsWith("### ")) {
+    if (/^#{2,3} v\d+\.\d+\b/.test(t) || t.startsWith("### ")) {
       flush();
-      html += `<details class="cl-item"><summary>${esc(t.slice(4))}</summary>`;
+      html += `<details class="cl-item"><summary>${esc(t.replace(/^#{2,3}\s+/, ""))}</summary>`;
       open = true;
     } else if (t.startsWith("## ")) {
       flush();
