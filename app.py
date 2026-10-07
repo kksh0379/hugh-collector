@@ -173,7 +173,7 @@ def me():
 
 @app.get("/api/notes")
 def notes():
-    """개발노트/패치내역 문서 반환(관리자 전용)."""
+    """패치내역 문서 반환(관리자 전용). 개발노트는 런처의 원문 링크로 제공."""
     if not _admin_ok():
         return jsonify({"error": "unauthorized"}), 401
     base = os.path.dirname(os.path.abspath(__file__))
@@ -185,7 +185,7 @@ def notes():
         except Exception as e:  # noqa: BLE001
             return f"({name} 읽기 실패: {e})"
 
-    return jsonify({"devnote": _read("DEVNOTE.md"), "changelog": _read("CHANGELOG.md")})
+    return jsonify({"changelog": _read("CHANGELOG.md")})
 
 
 @app.post("/api/login")

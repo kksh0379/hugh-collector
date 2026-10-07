@@ -2130,7 +2130,7 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
 
 // ----------------------------- 개발노트/패치내역 -----------------------------
 const notesModal = document.getElementById("notes-modal");
-let _notesData = { devnote: "", changelog: "" };
+let _notesData = { changelog: "" };
 
 // 개발 문서용 마크다운: 안전한 외부 링크와 가로 스크롤 표 포함.
 function mdToHtml(md) {
@@ -2146,7 +2146,7 @@ function mdToHtml(md) {
   };
   let html = "", inList = false;
   const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
-  // 코드펜스(```) 처리: ```mermaid 는 다이어그램 div, 그 외는 <pre><code>. (다이어그램은 showNotes에서 렌더)
+  // 패치내역의 코드펜스는 원문 코드로 표시한다. 개발노트 도식은 GitHub 원문에서 제공한다.
   let fence = null, fenceLang = "", fenceBuf = [];
   const lines = (md || "").split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
@@ -2155,8 +2155,7 @@ function mdToHtml(md) {
     if (fence !== null) {
       if (fm) { // 닫힘
         const body = fenceBuf.join("\n");
-        if (fenceLang === "mermaid") html += `<div class="mermaid">${esc(body)}</div>`;
-        else html += `<pre class="codeblock"><code>${esc(body)}</code></pre>`;
+        html += `<pre class="codeblock"><code>${esc(body)}</code></pre>`;
         fence = null; fenceLang = ""; fenceBuf = [];
       } else { fenceBuf.push(raw); }
       continue;
@@ -2216,56 +2215,22 @@ function renderChangelog(md) {
   return html;
 }
 
-// 개발노트의 ```mermaid``` 도식을 그림으로 렌더. mermaid.js는 처음 필요할 때만 CDN에서 로드.
-let _mermaidLoad = null;
-function _loadMermaid() {
-  if (window.mermaid) return Promise.resolve(window.mermaid);
-  if (_mermaidLoad) return _mermaidLoad;
-  _mermaidLoad = new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js";
-    s.onload = () => { try { window.mermaid.initialize({ startOnLoad: false, theme: "default" }); } catch (e) {} resolve(window.mermaid); };
-    s.onerror = () => reject(new Error("mermaid load fail"));
-    document.head.appendChild(s);
-  });
-  return _mermaidLoad;
-}
-async function _renderMermaid(container) {
-  const nodes = container.querySelectorAll(".mermaid");
-  if (!nodes.length) return;
-  try {
-    const m = await _loadMermaid();
-    await m.run({ nodes });
-  } catch (e) {
-    // 오프라인 등으로 렌더 실패 시: 원본 소스를 코드블록으로라도 보이게 폴백.
-    nodes.forEach((n) => { if (!n.querySelector("svg")) { const pre = document.createElement("pre"); pre.className = "codeblock"; pre.textContent = n.textContent; n.replaceWith(pre); } });
-  }
-}
-function showNotes(which) {
-  const el = document.getElementById("notes-content");
-  if (which === "changelog") {
-    el.innerHTML = `<div class="changelog">${renderChangelog(_notesData.changelog || "")}</div>`;
-  } else {
-    el.innerHTML = mdToHtml(_notesData[which] || "(내용 없음)");
-    _renderMermaid(el);
-  }
-  document.querySelectorAll(".notes-tab").forEach((b) =>
-    b.classList.toggle("active", b.dataset.notes === which));
+// 관리자 패치내역 표시. 개발자 노트는 런처에서 GitHub 원문으로 연결한다.
+function showNotes() {
+  document.getElementById("notes-content").innerHTML = `<div class="changelog">${renderChangelog(_notesData.changelog || "")}</div>`;
 }
 document.getElementById("notes-btn").addEventListener("click", async () => {
   notesModal.hidden = false;
   document.getElementById("notes-content").innerHTML = catSpin("불러오는 중…");
   try {
     _notesData = await (await fetch("/api/notes")).json();
-    showNotes("devnote");
+    showNotes();
   } catch (e) {
     document.getElementById("notes-content").textContent = "불러오기 실패: " + e.message;
   }
 });
 document.getElementById("notes-close").addEventListener("click", () => (notesModal.hidden = true));
 notesModal.addEventListener("click", (e) => { if (e.target === notesModal) notesModal.hidden = true; });
-document.querySelectorAll(".notes-tab").forEach((b) =>
-  b.addEventListener("click", () => showNotes(b.dataset.notes)));
 
 // ----------------------------- 나의 스크랩(풀팝업) -----------------------------
 function updateScrapBadge() {
