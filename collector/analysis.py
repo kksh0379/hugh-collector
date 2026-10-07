@@ -8,6 +8,8 @@
 - 모델은 ANALYSIS_MODEL(기본 claude-3-5-sonnet-latest)로 지정.
 - 뉴스는 group_key로 중복 보도를 묶어 '미디어 노출량'과 '실제 활동'을 구분한다.
 """
+from . import ai_provider
+
 import datetime
 import json
 import os
@@ -217,7 +219,7 @@ def _post_messages(key, model, user, no_think=True):
     if no_think:
         # 내부 추론(thinking)을 꺼서 출력 예산을 JSON에만 쓰게 한다(잘림 방지 + 비용 절감).
         body["thinking"] = {"type": "disabled"}
-    return requests.post(API_URL, headers={
+    return ai_provider.post(API_URL, feature="재단 동향 리포트", headers={
         "x-api-key": key, "anthropic-version": "2023-06-01",
         "content-type": "application/json",
     }, data=json.dumps(body), timeout=240)
@@ -293,6 +295,8 @@ def _call_llm(payload_text, prev_text):
                 used = alt
                 res = _attempt(key, used, u)
         if res.get("err"):
+            if ai_provider.is_credit_error(res["err"]):
+                return None, None, ai_provider.NOTICE
             avail = ", ".join(list_models(key)[:8]) or "(목록 조회 실패)"
             errs.append(f"파트{idx} {res['err']} · 가용 모델 예: {avail}")
             continue
@@ -328,8 +332,8 @@ def friendly_llm_error(raw):
     """LLM 원문 에러(길고 지저분한 JSON/모델목록)를 사용자용 한 줄 안내로 변환."""
     r = str(raw or "")
     low = r.lower()
-    if "credit balance is too low" in low or "purchase credits" in low:
-        return "AI 크레딧이 부족해요 💳 — Anthropic(console.anthropic.com → Billing)에서 크레딧을 충전하면 바로 됩니다."
+    if ai_provider.is_credit_error(raw):
+        return ai_provider.NOTICE
     if "환경변수가 없습니다" in r or "api_key" in low and "없" in r:
         return "AI 키가 설정되지 않았어요 — 관리자가 Render에 ANTHROPIC_API_KEY를 넣어야 해요."
     if "401" in r or "invalid x-api-key" in low or "authentication" in low:

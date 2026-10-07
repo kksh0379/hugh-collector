@@ -1657,3 +1657,7 @@ body.chrome-hidden .view-head { position: static; }
 .collection-details ul { margin: .25rem 0; padding-left: 1.3rem; }
 .collection-details li { margin: .4rem 0; overflow-wrap: anywhere; }
 .collection-details p { margin: .5rem 0; }
+
+.ai-credit-notice { padding:12px 16px; background:#fff4e5; color:#873f09; font-size:13px; line-height:1.6; border-bottom:1px solid #f2cd91; overflow-wrap:anywhere; }
+.ai-credit-notice[hidden] { display:none; }
+.ai-credit-notice a { color:inherit; font-weight:700; text-decoration:underline; white-space:nowrap; }

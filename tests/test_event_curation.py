@@ -7,6 +7,14 @@ from unittest.mock import patch, Mock
 from collector import event_curation as cur
 
 class CurationTests(unittest.TestCase):
+    def setUp(self):
+        cur.ai_provider._state.clear()
+        cur.ai_provider._blocked_until = 0
+
+    def tearDown(self):
+        cur.ai_provider._state.clear()
+        cur.ai_provider._blocked_until = 0
+
     def prefs(self, topics=None, keywords=None):
         return cur.preferences({'topics':topics or [],'keywords':keywords or []})
 
@@ -62,4 +70,4 @@ class CurationTests(unittest.TestCase):
             with self.assertRaises(RuntimeError) as error:
                 cur.generate([],self.prefs())
         self.assertEqual(error.exception.curation_reason,'credit_balance')
-        self.assertEqual(str(error.exception),'AI provider unavailable')
+        self.assertEqual(str(error.exception),cur.ai_provider.NOTICE)

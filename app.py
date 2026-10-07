@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from flask import Flask, Response, g, jsonify, redirect, render_template, request, session, url_for
 
-from collector import (analysis, boards, db, dedup, event_curation, event_images, event_sources, eventus, events, fetcher,
+from collector import (ai_provider, analysis, boards, db, dedup, event_curation, event_images, event_sources, eventus, events, fetcher,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
 
 from collector.identity import canonical_user, display_name, public_author
@@ -144,6 +144,13 @@ def healthz():
     """킵얼라이브용 초경량 엔드포인트(DB 접속 안 함). 외부 크론이 이걸 주기적으로
     호출하면 Render 무료 앱이 잠들지 않아 방문자가 cold start를 안 겪는다."""
     return "ok", 200
+
+
+@app.get("/api/ai/status")
+def ai_status():
+    response = jsonify(ai_provider.status())
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @app.get("/api/me")
@@ -2242,10 +2249,10 @@ def _security_ai_run(limit):
         data, err = security_ai.analyze(rows, progress=lambda m: st.update(progress=m))
         if data:
             n = db.apply_security_ai(data)
-            st["result"] = {"ok": True, "analyzed": n, "error": err}
+            st["result"] = {"ok": True, "analyzed": n, "error": analysis.friendly_llm_error(err) if err else None}
             st["progress"] = f"완료 · {n}건 분석" + (" (일부 실패)" if err else "")
         else:
-            st["result"] = {"ok": False, "error": err or "분석 결과 없음"}
+            st["result"] = {"ok": False, "error": analysis.friendly_llm_error(err) if err else "분석 결과 없음"}
             st["progress"] = f"오류: {err or '결과 없음'}"
     except Exception as e:  # noqa: BLE001
         st["result"] = {"ok": False, "error": str(e)}

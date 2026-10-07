@@ -11,6 +11,8 @@
 LLM 연결부(모델 자동선택·응답 파싱·JSON 추출)는 collector.analysis의 것을 재사용.
 ANTHROPIC_API_KEY 가 있을 때만 동작한다(없으면 호출측이 '키 없음' 메시지).
 """
+from . import ai_provider
+
 import json
 import os
 
@@ -60,7 +62,7 @@ def _post(key, model, user):
     body = {"model": model, "max_tokens": MAX_TOKENS, "system": SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": user}],
             "thinking": {"type": "disabled"}}
-    return requests.post(analysis.API_URL, headers={
+    return ai_provider.post(analysis.API_URL, feature="보안뉴스 자동 분석", headers={
         "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json",
     }, data=json.dumps(body), timeout=180)
 
@@ -90,7 +92,7 @@ def _call_batch(key, model, items):
             body = {"model": model, "max_tokens": MAX_TOKENS, "system": SYSTEM_PROMPT,
                     "messages": [{"role": "user", "content": user}]}
             import requests as _rq
-            r = _rq.post(analysis.API_URL, headers={
+            r = ai_provider.post(analysis.API_URL, feature="보안뉴스 자동 분석", headers={
                 "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json",
             }, data=json.dumps(body), timeout=180)
         except Exception as e:  # noqa: BLE001
@@ -161,6 +163,8 @@ def analyze(rows, progress=None):
         chunk = rows[start:start + BATCH]
         items = [{"i": start + k, **chunk[k]} for k in range(len(chunk))]
         res, err = _call_batch(key, model, items)
+        if err and ai_provider.is_credit_error(err):
+            return out, ai_provider.NOTICE
         if err and res is None:
             # 모델 문제면 한 번 대체 모델로 재시도
             alt = analysis._pick_model(analysis.list_models(key))

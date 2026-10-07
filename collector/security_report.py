@@ -5,6 +5,8 @@
 LLM 연결부(모델 자동선택·응답 파싱)는 collector.analysis의 것을 재사용.
 ANTHROPIC_API_KEY 가 있을 때만 동작한다.
 """
+from . import ai_provider
+
 import datetime
 import json
 import os
@@ -115,7 +117,7 @@ def _post(key, model, user):
     import requests
     body = {"model": model, "max_tokens": MAX_TOKENS, "system": SYSTEM_PROMPT,
             "messages": [{"role": "user", "content": user}], "thinking": {"type": "disabled"}}
-    return requests.post(analysis.API_URL, headers={
+    return ai_provider.post(analysis.API_URL, feature="월간 보안 리포트", headers={
         "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json",
     }, data=json.dumps(body), timeout=200)
 
@@ -132,7 +134,7 @@ def _call_llm(key, model, inp):
             # thinking 미지원 모델: 파라미터 없이 재시도
             try:
                 import requests as _rq
-                r = _rq.post(analysis.API_URL, headers={
+                r = ai_provider.post(analysis.API_URL, feature="월간 보안 리포트", headers={
                     "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json",
                 }, data=json.dumps({"model": used, "max_tokens": MAX_TOKENS, "system": SYSTEM_PROMPT,
                                     "messages": [{"role": "user", "content": user}]}), timeout=200)
