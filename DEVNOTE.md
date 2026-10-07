@@ -145,6 +145,7 @@ Render의 비밀값은 **해당 서비스 → Environment**, DB 연결정보는 
 | PWA 설치·홈 화면 | [휴스코프](https://hscope.onrender.com/hscope) · [모바일 설치 도움말](https://hscope.onrender.com/hscope/install) | 브라우저 설치 이벤트, 앱 매니페스트, 네트워크 전용 서비스 워커. 별도 앱스토어 서비스에 배포된 네이티브 앱이 아님 |
 | Mermaid / 개발노트 도식 | [실제 CDN 모듈](https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js) · [프로젝트](https://mermaid.js.org/) | 개발노트 도식을 표시할 때 라이브러리를 로드. 도식 내용을 AI 분석 서버에 보내는 기능이 아님 |
 | KoddiUD 온고딕 / 서체 | [한국장애인개발원](https://www.koddi.or.kr/) · 앱 내부 `/static/fonts/` | 글꼴 파일을 앱에서 직접 호스팅. 출처·CC BY-SA 표기는 소개페이지 참고. 외부 Google Fonts 연결 없음 |
+| 금융감독원 전자공시 고유번호 조회 | [고유번호 조회 화면](https://filer.fss.or.kr/raaa001/goIndex.do) | 재무세무 공시 검색에서 법인 고유번호를 찾도록 연결하는 외부 안내 링크. 앱이 이 페이지를 API로 수집하는 기능은 없음 |
 | 네이버 지도 단축 링크·장소 상세 | [네이버 지도](https://map.naver.com/) · [단축 링크 기본 주소](https://naver.me/) | 기존 점심 기록·식당 상세/원문 이동에 사용. 네이버 지도 검색 API로 식당 목록을 수집하는 기능과 구분 |
 
 ### 2.7 연결 변경·장애 확인 순서
