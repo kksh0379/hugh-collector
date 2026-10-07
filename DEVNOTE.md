@@ -1,10 +1,12 @@
 # 개발자노트 — 휴 스코프
 
-현재 기준: **v3.128 · build 261008 · 2026-10-08**
+현재 기준: **v3.129 · build 261008 · 2026-10-08**
 
 휴 스코프는 김상화가 생활과 업무에 필요한 정보를 모아 쓰기 위해 제작·개선하는 개인 서비스다. 이 문서는 **현재 구현된 기능과 운영 방식**을 설명한다. 변경 당시의 내용과 적용 순서는 `CHANGELOG.md`에 보존한다.
 
 ## 1. 문서 기준과 최근 변경
+
+- **v3.129**: 런처에 [기능명세서·IA 표](https://hscope.onrender.com/static/docs/function-spec.html)를 추가했다. 화면별 탑·바디·푸터·팝업, 버튼·입력·선택·표시 상태·동적 기능을 Depth 1~5로 정리하고 동작·조건·결과·예외·권한·저장·근거를 기재했다. 검색/화면/영역/권한 필터, Markdown 표 원문 다운로드, 인쇄/PDF 저장을 지원한다. 생성 근거는 `scripts/build_function_spec.py`와 `static/docs/function-spec-coverage.json`에 보관한다.
 
 - **v3.128**: 관리자 화면의 개발자 노트 탭·본문 제공을 제거하고, 런처에서 [GitHub 개발자 노트 원문](https://github.com/kksh0379/ncfoundation-collector/blob/claude/quirky-euler-agfmp/DEVNOTE.md)으로 직접 연결한다. 관리자는 패치내역만 조회한다. 맛집 점수·성향·조건 완화·대체 추천, 행사 후보 생성·AI 호출·검증·캐시·오류 처리를 코드와 대조하고 6개 상세 프로세스 도식을 정리했다.
 
