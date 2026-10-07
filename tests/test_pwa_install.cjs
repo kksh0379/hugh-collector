@@ -3,77 +3,53 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync('static/js/pwa-install.js','utf8');
-function setup(options={}, origin='https://hscope.onrender.com', installState) {
-  function element(){return {handlers:{},textContent:'',value:'',children:[],disabled:false,addEventListener(name,fn){this.handlers[name]=fn;},replaceChildren(){this.children=[];},append(node){this.children.push(node);},focus(){this.focused=true;},select(){this.selected=true;}};}
-  const ids={};for(const id of ['app-install','install-status','install-steps','install-address','install-description','install-copy','install-help'])ids[id]=element();
-  const close=element(),dialog={...element(),open:false,showModal(){this.open=true;},close(){this.open=false;this.handlers.close?.();},querySelector:()=>close};ids['install-guide']=dialog;
-  const events={},media={matches:false,addEventListener(){}};
-  const navigator={userAgent:'Chrome Windows',platform:'Win32',maxTouchPoints:0,clipboard:{writeText:async()=>{}},...options};
-  const ctx=vm.createContext({navigator,document:{getElementById:id=>ids[id],createElement:()=>element()},URL,window:{HscopeInstallState:installState,matchMedia:()=>media,location:{origin,assign(url){this.assigned=url;}},addEventListener(name,fn){events[name]=fn;}}});
-  vm.runInContext(source,ctx);return {ids,dialog,events,ctx};
+function setup(options={}, state) {
+ const button={disabled:false,textContent:'',handlers:{},addEventListener(name,fn){this.handlers[name]=fn;}};
+ const card={hidden:true},events={};
+ const navigator={userAgent:'Chrome',...options};
+ const window={location:{origin:'https://hscope.onrender.com'},HscopeInstallState:state,matchMedia:()=>({matches:false,addEventListener(){}}),addEventListener(name,fn){events[name]=fn;}};
+ vm.runInNewContext(source,{window,navigator,URL,document:{getElementById:id=>id==='app-install'?button:id==='install-card'?card:null}});
+ return {button,card,events};
 }
-test('native install prompt is deferred until user clicks and cancellation reenables button',async()=>{
-  const s=setup();let prevented=false,calls=0;
-  s.events.beforeinstallprompt({preventDefault(){prevented=true;},prompt:async()=>calls++,userChoice:Promise.resolve({outcome:'dismissed'})});
-  assert.ok(prevented);assert.equal(calls,0);await s.ids['app-install'].handlers.click();assert.equal(calls,1);assert.equal(s.ids['app-install'].disabled,false);
+test('only a real install request enables the installation button',async()=>{
+ const s=setup();assert.equal(s.card.hidden,true);assert.equal(s.button.disabled,true);
+ await s.button.handlers.click();
+ let calls=0;s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>calls++,userChoice:Promise.resolve({outcome:'accepted'})});
+ assert.equal(s.card.hidden,false);assert.equal(s.button.disabled,false);
+ await s.button.handlers.click();assert.equal(calls,1);assert.equal(s.button.textContent,'설치 완료');assert.equal(s.button.disabled,true);
 });
-test('accepted installation shows completion and appinstalled closes guide',async()=>{
-  const s=setup();s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>{},userChoice:Promise.resolve({outcome:'accepted'})});
-  await s.ids['app-install'].handlers.click();assert.equal(s.ids['app-install'].textContent,'설치 완료');assert.equal(s.ids['app-install'].disabled,true);
-  s.dialog.showModal();s.events.appinstalled();assert.equal(s.dialog.open,false);
+test('early captured install request opens the native confirmation once',async()=>{
+ let calls=0;const state={prompt:{prompt:async()=>calls++,userChoice:Promise.resolve({outcome:'dismissed'})}};
+ const s=setup({},state);await s.button.handlers.click();await s.button.handlers.click();
+ assert.equal(calls,1);assert.equal(state.prompt,null);assert.equal(s.card.hidden,true);
 });
-test('iPhone shows Safari home screen instructions with official service URL',async()=>{
-  const s=setup({userAgent:'iPhone Safari'});assert.equal(s.ids['app-install'].textContent,'홈 화면에 추가');await s.ids['app-install'].handlers.click();
-  assert.equal(s.dialog.open,true);assert.match(s.ids['install-steps'].children[1].textContent,/홈 화면에 추가/);assert.equal(s.ids['install-address'].value,'https://hscope.onrender.com/hscope');
+test('Web Install API is called directly when supported',async()=>{
+ let calls=0;const s=setup({install:async()=>{calls++;}});
+ assert.equal(s.card.hidden,false);await s.button.handlers.click();assert.equal(calls,1);
+ s.events.appinstalled();assert.equal(s.button.textContent,'설치 완료');assert.equal(s.button.disabled,true);
 });
-test('installed iOS app does not offer another installation',async()=>{
-  const s=setup({standalone:true});assert.equal(s.ids['app-install'].disabled,true);await s.ids['app-install'].handlers.click();assert.equal(s.dialog.open,false);
+test('native install errors do not open a help popup or display preparation text',async()=>{
+ const s=setup();s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>{throw Error('unavailable');}});
+ await s.button.handlers.click();assert.equal(s.card.hidden,true);assert.equal(s.button.textContent,'앱 설치');
+ assert.doesNotMatch(source,/showModal|alert\(|confirm\(|설치창을 아직|install-guide|install-help|clipboard/);
 });
-test('clipboard failure selects launcher address for manual copying',async()=>{
-  const s=setup({userAgent:'iPhone Safari',clipboard:{writeText:async()=>{throw Error();}}});await s.ids['app-install'].handlers.click();await s.ids['install-copy'].handlers.click();assert.equal(s.ids['install-address'].selected,true);assert.match(s.ids['install-status'].textContent,/복사/);
+test('standalone app does not offer duplicate installation',async()=>{
+ const s=setup({standalone:true});assert.equal(s.card.hidden,false);assert.equal(s.button.disabled,true);
+ await s.button.handlers.click();
 });
-test('manifest starts at official hscope service and raster app icons have declared dimensions',()=>{
-  const manifest=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));assert.equal(new URL(manifest.start_url,'https://hscope.onrender.com').href,'https://hscope.onrender.com/hscope');assert.equal(manifest.id,'/hscope');assert.equal(manifest.scope,'/');assert.equal(manifest.display,'standalone');
-  for(const icon of manifest.icons){const png=fs.readFileSync('.'+icon.src);const size=Number(icon.sizes.split('x')[0]);assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);}
+test('manifest targets hscope and icons have their declared dimensions',()=>{
+ const m=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));
+ assert.equal(m.id,'/hscope');assert.equal(m.start_url,'/hscope');assert.equal(m.scope,'/');
+ for(const icon of m.icons){const png=fs.readFileSync('.'+icon.src),size=Number(icon.sizes.split('x')[0]);assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);}
 });
-
-test('legacy host installs only after moving to official service and never registers worker',async()=>{
-  let workers=0,prompts=0;const s=setup({serviceWorker:{register:async()=>{workers++;}}},'https://ncfoundation-collector.onrender.com');
-  s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>{prompts++;},userChoice:Promise.resolve({outcome:'accepted'})});
-  await s.ids['app-install'].handlers.click();
-  assert.equal(s.ctx.window.location.assigned,'https://hscope.onrender.com/hscope');assert.equal(workers,0);assert.equal(prompts,0);
+test('launcher has no installation help or URL copy popup',()=>{
+ const html=fs.readFileSync('templates/launcher.html','utf8');
+ assert.doesNotMatch(html,/install-help|install-guide|install-copy|install-address|설치 도움말/);
+ assert.match(html,/id="install-card"[^>]+hidden/);
 });
-test('install guide clipboard copies the exact official service URL',async()=>{
-  let copied;const s=setup({userAgent:'iPhone Safari',clipboard:{writeText:async value=>{copied=value;}}});
-  await s.ids['app-install'].handlers.click();await s.ids['install-copy'].handlers.click();
-  assert.equal(copied,'https://hscope.onrender.com/hscope');
-});
-
-test('Chrome primary button does not replace installation with a copy popup',async()=>{
-  const s=setup();await s.ids['app-install'].handlers.click();assert.equal(s.dialog.open,false);
-  let prompted=0;s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>{prompted++;},userChoice:Promise.resolve({outcome:'accepted'})});
-  await s.ids['app-install'].handlers.click();assert.equal(prompted,1);assert.equal(s.dialog.open,false);
-});
-test('an install event captured before UI initialization opens the native prompt',async()=>{
-  let prompted=0;const early={prompt:{prompt:async()=>{prompted++;},userChoice:Promise.resolve({outcome:'accepted'})}};
-  const s=setup({},'https://hscope.onrender.com',early);await s.ids['app-install'].handlers.click();
-  assert.equal(prompted,1);assert.equal(early.prompt,null);assert.equal(s.dialog.open,false);
-});
-test('Chrome install help is a separate explicit action',async()=>{
-  const s=setup();s.ids['install-help'].handlers.click();assert.equal(s.dialog.open,true);
-  let prompts=0;s.events.beforeinstallprompt({preventDefault(){},prompt:async()=>{prompts++;},userChoice:Promise.resolve({outcome:'dismissed'})});
-  assert.equal(s.dialog.open,false);await s.ids['app-install'].handlers.click();assert.equal(prompts,1);
-});
-test('early bootstrap retains install events and clears them after installation',()=>{
-  const events={},window={addEventListener:(name,fn)=>{events[name]=fn;}};
-  vm.runInNewContext(fs.readFileSync('static/js/pwa-prompt.js','utf8'),{window});
-  let prevented=false;const event={preventDefault(){prevented=true;}};events.beforeinstallprompt(event);
-  assert.equal(prevented,true);assert.equal(window.HscopeInstallState.prompt,event);
-  events.appinstalled();assert.equal(window.HscopeInstallState.prompt,null);assert.equal(window.HscopeInstallState.installed,true);
-});
-
-test('hscope installation is distinct from the previously installed launcher',()=>{
-  const manifest=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));
-  assert.equal(manifest.id,manifest.start_url);
-  assert.notEqual(new URL(manifest.id,'https://hscope.onrender.com').href,'https://hscope.onrender.com/');
+test('bootstrap keeps early native requests until UI initialization',()=>{
+ const events={},window={addEventListener:(name,fn)=>events[name]=fn};
+ vm.runInNewContext(fs.readFileSync('static/js/pwa-prompt.js','utf8'),{window});
+ const e={preventDefault(){}};events.beforeinstallprompt(e);assert.equal(window.HscopeInstallState.prompt,e);
+ events.appinstalled();assert.equal(window.HscopeInstallState.prompt,null);
 });
