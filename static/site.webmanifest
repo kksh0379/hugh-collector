@@ -2,7 +2,7 @@
   "name": "휴스코프",
   "short_name": "휴스코프",
   "lang": "ko",
-  "id": "/",
+  "id": "/hscope",
   "start_url": "/hscope",
   "scope": "/",
   "display": "standalone",

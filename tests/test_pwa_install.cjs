@@ -33,7 +33,7 @@ test('clipboard failure selects launcher address for manual copying',async()=>{
   const s=setup({userAgent:'iPhone Safari',clipboard:{writeText:async()=>{throw Error();}}});await s.ids['app-install'].handlers.click();await s.ids['install-copy'].handlers.click();assert.equal(s.ids['install-address'].selected,true);assert.match(s.ids['install-status'].textContent,/복사/);
 });
 test('manifest starts at official hscope service and raster app icons have declared dimensions',()=>{
-  const manifest=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));assert.equal(new URL(manifest.start_url,'https://hscope.onrender.com').href,'https://hscope.onrender.com/hscope');assert.equal(manifest.id,'/');assert.equal(manifest.scope,'/');assert.equal(manifest.display,'standalone');
+  const manifest=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));assert.equal(new URL(manifest.start_url,'https://hscope.onrender.com').href,'https://hscope.onrender.com/hscope');assert.equal(manifest.id,'/hscope');assert.equal(manifest.scope,'/');assert.equal(manifest.display,'standalone');
   for(const icon of manifest.icons){const png=fs.readFileSync('.'+icon.src);const size=Number(icon.sizes.split('x')[0]);assert.equal(png.readUInt32BE(16),size);assert.equal(png.readUInt32BE(20),size);}
 });
 
@@ -70,4 +70,10 @@ test('early bootstrap retains install events and clears them after installation'
   let prevented=false;const event={preventDefault(){prevented=true;}};events.beforeinstallprompt(event);
   assert.equal(prevented,true);assert.equal(window.HscopeInstallState.prompt,event);
   events.appinstalled();assert.equal(window.HscopeInstallState.prompt,null);assert.equal(window.HscopeInstallState.installed,true);
+});
+
+test('hscope installation is distinct from the previously installed launcher',()=>{
+  const manifest=JSON.parse(fs.readFileSync('static/site.webmanifest','utf8'));
+  assert.equal(manifest.id,manifest.start_url);
+  assert.notEqual(new URL(manifest.id,'https://hscope.onrender.com').href,'https://hscope.onrender.com/');
 });
