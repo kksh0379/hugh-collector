@@ -6,12 +6,13 @@
   <meta name="theme-color" content="#f6f8fc">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="휴스코프">
-  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.116') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='launcher-180.png', v='3.116') }}">
+  <script src="{{ url_for('static', filename='js/pwa-prompt.js', v='3.117') }}"></script>
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.117') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='launcher-180.png', v='3.117') }}">
   <title>서비스 홈</title>
   <meta name="description" content="김상화의 개인 서비스. 사용할 서비스를 선택해 주세요.">
-  <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.116') }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.116') }}">
+  <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.117') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.117') }}">
 </head>
 <body>
   <a class="skip-link" href="#services">서비스 목록으로 이동</a>
@@ -30,7 +31,7 @@
     </section>
     <section class="launcher-install" aria-labelledby="install-card-title">
       <div><h2 id="install-card-title">앱처럼 실행하기</h2><p id="install-description">바탕화면이나 홈 화면에 아이콘을 추가해 앱처럼 실행하세요.</p></div>
-      <button type="button" id="app-install" aria-haspopup="dialog" aria-controls="install-guide">앱 설치</button>
+      <div class="install-actions"><button type="button" id="app-install">앱 설치</button><button type="button" id="install-help" aria-haspopup="dialog" aria-controls="install-guide">설치 도움말</button></div>
     </section>
     <section id="services" aria-labelledby="services-title">
       <div class="section-heading"><h2 id="services-title">서비스</h2><span>{{ services | length }}개</span></div>
@@ -58,7 +59,7 @@
     </section>
     <a class="service-intro-link" href="{{ url_for('intro') }}">휴스코프가 궁금하다면 <span>서비스 소개 ↗</span></a>
   </main>
-  <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.116</span></footer>
+  <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.117</span></footer>
   <dialog id="install-guide" class="install-guide" aria-labelledby="install-guide-title">
     <div class="install-guide-heading"><h2 id="install-guide-title">휴스코프 설치</h2><button type="button" data-install-close aria-label="설치 안내 닫기">×</button></div>
     <ol id="install-steps"></ol>
@@ -66,6 +67,6 @@
     <div class="install-address-row"><input id="install-address" type="text" readonly><button type="button" id="install-copy">주소 복사</button></div>
     <p id="install-status" role="status" aria-live="polite"></p>
   </dialog>
-  <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.116') }}"></script>
+  <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.117') }}"></script>
 </body>
 </html>
