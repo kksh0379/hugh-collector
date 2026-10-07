@@ -103,7 +103,8 @@ def article_summary(article):
         except Exception as error:
             if ai_provider.is_credit_error(error):
                 result = {"status": "unavailable", "ai_error": "credit_balance",
-                          "notice": ai_provider.NOTICE + " 본문은 아래에서 읽을 수 있어요.",
+                          "notice": ai_provider.NOTICE,
+                          "body_notice": "본문은 아래에서 읽을 수 있어요.",
                           "billing_url": ai_provider.BILLING_URL}
             else:
                 result = {"status": "unavailable", "notice": "지금은 AI 요약을 만들지 못했어요. 본문은 아래에서 읽을 수 있어요."}

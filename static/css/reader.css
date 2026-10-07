@@ -42,3 +42,7 @@
 .reader-view.dark .reader-source { color:#8ab4ff; background:#232b37; border-color:#485b78; }
 .reader-view.dark .reader-source:hover { background:#2c394c; }
 .reader-view.dark .reader-body { color:#e7e8ea; }
+
+.reader-summary-note { white-space:pre-line; }
+.reader-credit-note { padding:12px 14px; border:1px solid #e7b46a; border-radius:10px; background:#fff4e5; color:#873f09; font-size:1em; font-weight:600; line-height:1.75; }
+.reader-view.dark .reader-credit-note { color:#ffd394; background:#392a19; border-color:#a57535; }

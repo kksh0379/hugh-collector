@@ -61,7 +61,7 @@
     }
   }
 
-  function showSummary(points, notice, highlights, excerpt = false) {
+  function showSummary(points, notice, highlights, excerpt = false, credit = false, bodyNotice = "") {
     status.replaceChildren();
     const heading = document.createElement('strong');
     heading.className = 'reader-summary-title';
@@ -78,9 +78,15 @@
       status.append(list);
     }
     const note = document.createElement('p');
-    note.className = 'reader-summary-note';
+    note.className = 'reader-summary-note' + (credit ? ' reader-credit-note' : '');
     note.textContent = String(notice || '').replace(/([가-힣][.!?]) +(?=[가-힣])/g, '$1\n');
     status.append(note);
+    if (bodyNotice) {
+      const bodyNote = document.createElement('p');
+      bodyNote.className = 'reader-summary-note';
+      bodyNote.textContent = bodyNotice;
+      status.append(bodyNote);
+    }
   }
 
   function appendSummaryHighlights(item, point, phrases) {
@@ -126,7 +132,7 @@
           return;
         }
         if (data.status !== 'pending') {
-          showSummary(null, typeof data.notice === 'string' ? data.notice : '지금은 요약을 만들지 못했어요.\n본문은 아래에서 읽을 수 있어요.');
+          showSummary(null, typeof data.notice === 'string' ? data.notice : '지금은 요약을 만들지 못했어요.\n본문은 아래에서 읽을 수 있어요.', null, false, data.ai_error === 'credit_balance', data.body_notice || '');
 
           return;
         }

@@ -128,3 +128,6 @@ body.view-list #list-event .event-card .event-place {margin-bottom:0;}
   .ed-banner .ed-art:has(.ed-banner-visual.is-no-image)::after {display:none;}
   .ed-banner-visual.is-no-image {display:none;}
 }
+
+#ed-status { white-space:pre-line; }
+#ed-status[data-ai-error="credit_balance"] { padding:12px 14px; border:1px solid #e7b46a; border-radius:10px; background:#fff4e5; color:#873f09; font-size:14px; font-weight:600; line-height:1.75; }

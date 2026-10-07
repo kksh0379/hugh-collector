@@ -64,7 +64,8 @@ class CreditTests(unittest.TestCase):
                 threading.Event().wait(.01)
         self.assertEqual(result['ai_error'], 'credit_balance')
         self.assertIn('9003-3068-2476-1', result['notice'])
-        self.assertIn('본문은 아래', result['notice'])
+        self.assertEqual(result['notice'].splitlines(), ['AI 크레딧이 부족해요.', '기부해 주시면 AI 크레딧을 충전할게요.', '새마을금고 9003-3068-2476-1', '예금주: 김상화'])
+        self.assertEqual(result['body_notice'], '본문은 아래에서 읽을 수 있어요.')
 
     def test_reports_and_security_use_same_credit_message(self):
         with patch.object(ai_provider.requests, 'post', return_value=self.response()):

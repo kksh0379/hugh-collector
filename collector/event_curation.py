@@ -149,7 +149,7 @@ def recommend(prefs):
                     status = getattr(getattr(error, 'response', None), 'status_code', None)
                     result['ai_error'] = getattr(error, 'curation_reason', None) or (str(status) if isinstance(status, int) else type(error).__name__)
                     logging.getLogger(__name__).warning('Event curation AI unavailable: %s', result['ai_error'])
-                    result['notice'] = (ai_provider.NOTICE + ' 관심 분야·키워드 기준 추천을 대신 표시했어요.' if result['ai_error'] == 'credit_balance' else 'AI 연결이 지연돼 관심 분야·키워드 일치 기준으로 추천했어요.')
+                    result['notice'] = (ai_provider.NOTICE + '\n\n관심 분야·키워드 기준 추천을 대신 표시했어요.' if result['ai_error'] == 'credit_balance' else 'AI 연결이 지연돼 관심 분야·키워드 일치 기준으로 추천했어요.')
             if not rows:
                 result['notice'] = '관심사에 맞는 수집 행사가 없어요. 분야나 키워드를 바꿔 보세요.'
         except Exception:

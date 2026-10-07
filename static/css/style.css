@@ -1661,3 +1661,6 @@ body.chrome-hidden .view-head { position: static; }
 .ai-credit-notice { padding:12px 16px; background:#fff4e5; color:#873f09; font-size:13px; line-height:1.6; border-bottom:1px solid #f2cd91; overflow-wrap:anywhere; }
 .ai-credit-notice[hidden] { display:none; }
 .ai-credit-notice a { color:inherit; font-weight:700; text-decoration:underline; white-space:nowrap; }
+
+.ai-credit-notice { white-space:pre-line; font-size:14px; font-weight:600; line-height:1.75; }
+.result-msg { white-space:pre-line; }

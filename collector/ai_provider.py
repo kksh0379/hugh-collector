@@ -3,8 +3,8 @@ import threading
 import time
 import requests
 
-NOTICE = ('AI 크레딧이 부족해요. 기부해 주시면 AI 크레딧을 충전할게요. '
-          '새마을금고 9003-3068-2476-1 · 예금주: 김상화')
+NOTICE = ('AI 크레딧이 부족해요.\n기부해 주시면 AI 크레딧을 충전할게요.\n'
+          '새마을금고 9003-3068-2476-1\n예금주: 김상화')
 BILLING_URL = 'https://platform.claude.com/settings/billing'
 _lock = threading.Lock()
 _state = {}
