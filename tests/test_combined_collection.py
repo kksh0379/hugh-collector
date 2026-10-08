@@ -98,7 +98,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(self.metadata['last_crawl_biz'], 'now')
     def test_status_after_restart_restores_saved_failure(self):
         result = {'error': 'HTTP 503', 'attempted_at': 'now'}
-        ctx = {'_JOBS': {}, '_last_result': {}, 'json': json,
+        ctx = {'_JOBS': {}, '_last_result': {}, 'json': json, '_admin_ok': lambda: True,
                'db': SimpleNamespace(get_meta=lambda *args: json.dumps(result)), 'jsonify': lambda x: x}
         state = function('crawl_job_status', ctx)('biz')
         self.assertFalse(state['running'])

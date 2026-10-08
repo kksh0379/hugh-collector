@@ -12,6 +12,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from collector.healthcheck_results import category
 
 
 def node_results(path, output, elapsed):
@@ -26,6 +27,7 @@ def node_results(path, output, elapsed):
             if match:row['duration_ms']=round(float(match[1]))
             if row['status']=='failed' and re.search(r'(error:|name:)',line):row['detail']=(row['detail']+' · '+line.strip())[:240]
     if row:rows.append(row)
+    for item in rows: item['category']=category(item)
     return rows
 
 
@@ -60,8 +62,8 @@ def run(output, filename=None):
             def addError(self, test, err):
                 super().addError(test, err)
                 if self.active is None:
-                    rows.append(dict(group='Python 회귀 테스트',name=str(test),status='failed',detail='테스트 준비 오류 · '+err[0].__name__,duration_ms=0));save()
-                else: self.row.update(status='failed', detail=('실행 오류 · ' + err[0].__name__+' · '+str(err[1]))[:240])
+                    rows.append(dict(group='Python 회귀 테스트',name=str(test),status='failed',category='test_environment',error_stage='preparation',detail='테스트 준비 오류 · '+err[0].__name__,duration_ms=0));save()
+                else: self.row.update(status='failed', error_stage='execution',detail=('실행 오류 · ' + err[0].__name__+' · '+str(err[1]))[:240])
             def addSkip(self, test, reason):
                 super().addSkip(test, reason)
                 self.row.update(status='skipped', detail=str(reason)[:160])
@@ -76,6 +78,7 @@ def run(output, filename=None):
                 if err: self.row.update(status='failed', detail='하위 검증 실패 · ' + err[0].__name__)
             def stopTest(self, test):
                 self.row['duration_ms'] = round((time.perf_counter() - self.started) * 1000)
+                self.row['category'] = category(self.row)
                 rows.append(self.row)
                 save()
                 self.active = None

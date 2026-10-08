@@ -25,3 +25,16 @@ test('external details are escaped and an empty history allows manual execution'
   assert.match(el('healthcheck-results').innerHTML,/&lt;script&gt;/);
   const empty=await screen(null);assert.equal(empty('healthcheck-run').disabled,false);
 });
+test('regression and tooling failures are displayed separately from service failures',async()=>{
+  const el=await screen({id:'audit',status:'failed',assessment_status:'needs_review',duration_ms:364096,results:[
+    {group:'관리자',name:'계정',status:'failed',category:'probe_error',detail:'HTTP 401',assessment_note:'점검 도구 수정 완료',duration_ms:2},
+    {group:'JavaScript 회귀 테스트',name:'fixture',status:'failed',category:'test_environment',detail:'ReferenceError',duration_ms:2},
+    {group:'Python 회귀 테스트',name:'assertion',status:'failed',category:'test_failure',detail:'AssertionError',duration_ms:2}]});
+  assert.match(el('healthcheck-summary').innerHTML,/서비스 점검 실패 0/);
+  assert.match(el('healthcheck-summary').innerHTML,/테스트 검증 실패 1/);
+  assert.match(el('healthcheck-summary').innerHTML,/테스트 환경 오류 1/);
+  assert.match(el('healthcheck-summary').innerHTML,/점검 도구 오류 1/);
+  assert(!el('healthcheck-summary').innerHTML.includes('오류 3'));
+  assert.match(el('healthcheck-history').innerHTML,/점검 결과 확인 필요/);
+  assert.match(el('healthcheck-results').innerHTML,/점검 도구 수정 완료/);
+});

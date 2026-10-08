@@ -9,7 +9,7 @@ test('review filter combines with category and text search without excluding unr
   {id:1,name:'국밥 A',cat_norm:'한식',review_count:0},
   {id:2,name:'국밥 B',cat_norm:'한식',review_count:'1'},
   {id:3,name:'샌드위치',cat_norm:'양식',review_count:2}]};
- const ctx = {LUNCH}; vm.createContext(ctx); vm.runInContext(fn,ctx);
+ const ctx = {LUNCH}; vm.createContext(ctx); vm.runInContext(source.slice(source.indexOf('const HJ_CHO ='),source.indexOf('function searchTokens(')),ctx); vm.runInContext(fn,ctx);
  const ids = () => Array.from(ctx.filtered(),x=>x.id);
  assert.deepEqual(ids(),[1,2,3]);
  LUNCH.reviewedOnly=true; assert.deepEqual(ids(),[2,3]);

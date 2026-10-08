@@ -40,6 +40,20 @@ class HealthCheckTests(unittest.TestCase):
         self.assertEqual(status,'passed')
         self.assertEqual(data['report']['id'],run_id)
         self.assertEqual(self.service.request('/api/admin/healthchecks')[0],'failed')
+    def test_api_and_history_classify_legacy_records_without_erasing_failure(self):
+        from collector.healthcheck_results import FIRST_RUN
+        report=dict(id=FIRST_RUN,status='failed',started_at=healthchecks.now(),finished_at=healthchecks.now(),duration_ms=364096,results=[dict(group='관리자',name='계정 목록',status='failed',detail='HTTP 401',duration_ms=2)])
+        self.service.schema()
+        with db.get_conn() as conn:
+            conn.execute('INSERT INTO healthcheck_runs (id,started_at,trigger,status,duration_ms,report) VALUES (?,?,?,?,?,?)',(FIRST_RUN,report['started_at'],'verification','failed',364096,json.dumps(report)))
+        self.admin();data=self.client.get('/api/admin/healthchecks?id='+FIRST_RUN).json
+        self.assertEqual(data['report']['summary_counts']['service_failure'],0)
+        self.assertEqual(data['report']['summary_counts']['probe_error'],1)
+        self.assertEqual(data['history'][0]['assessment_status'],'needs_review')
+        self.assertEqual(data['history'][0]['duration_ms'],364096)
+        with db.get_conn() as conn:
+            raw=json.loads(conn.execute('SELECT report FROM healthcheck_runs WHERE id=?',(FIRST_RUN,)).fetchone()['report'])
+        self.assertEqual(raw,report)
     def test_daily_idempotency_survives_service_restart(self):
         first,_=self.service.start('scheduled',daily=True)
         with db.get_conn() as conn:conn.execute('DELETE FROM healthcheck_lock')

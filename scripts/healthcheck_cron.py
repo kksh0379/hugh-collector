@@ -32,8 +32,8 @@ def main():
         state=call({'action':'status','id':run_id}).get('report')
         if not state: raise RuntimeError('Health-check result missing')
         if state['status']!='running':
-            print(json.dumps({'status':state['status'],'duration_ms':state['duration_ms'],
-                'counts':state.get('counts',{}),'id':run_id},ensure_ascii=False),flush=True)
+            print(json.dumps({'status':state.get('assessment_status',state['status']),'duration_ms':state['duration_ms'],
+                'counts':state.get('summary_counts',state.get('counts',{})),'id':run_id},ensure_ascii=False),flush=True)
             return 1 if state['status'] in ('failed','interrupted') else 0
         time.sleep(10)
     raise RuntimeError('Health check exceeded 25-minute execution limit')

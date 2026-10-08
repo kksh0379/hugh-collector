@@ -17,6 +17,7 @@ import requests
 from bs4 import BeautifulSoup
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from flask import jsonify, request, session
+from .healthcheck_results import assess
 
 KST = timezone(timedelta(hours=9))
 PUBLIC_KEY = '4a3405fe444aec8aedbb1663275bded6973c2c68cd52b2e3b237b7fa9f3ba29a'
@@ -58,15 +59,21 @@ class HealthChecks:
         if report['status'] == 'running' and report['elapsed_ms'] > 1800000:
             report.update(status='interrupted', finished_at=now(), duration_ms=report['elapsed_ms'], phase='서버 재시작 또는 실행 제한 시간 초과')
             self.save(report)
-        return report
+        return assess(report)
 
     def history(self):
         self.schema()
         with self.db.get_conn() as conn:
-            rows = conn.execute('SELECT id, started_at, finished_at, trigger, status, duration_ms FROM healthcheck_runs ORDER BY started_at DESC LIMIT 30').fetchall()
-        return [dict(row) for row in rows]
+            rows = conn.execute('SELECT id, started_at, finished_at, trigger, status, duration_ms, report FROM healthcheck_runs ORDER BY started_at DESC LIMIT 30').fetchall()
+        history=[]
+        for row in rows:
+            item=dict(row); report=assess(json.loads(item.pop('report')))
+            item.update(assessment_status=report['assessment_status'],summary_counts=report['summary_counts'])
+            history.append(item)
+        return history
 
     def save(self, report):
+        assess(report)
         with self.db.get_conn() as conn:
             conn.execute(self.db._q('UPDATE healthcheck_runs SET status=?, finished_at=?, duration_ms=?, report=? WHERE id=?'),
                 (report['status'], report.get('finished_at'), report.get('duration_ms', 0), json.dumps(report, ensure_ascii=False), report['id']))
@@ -272,6 +279,7 @@ class HealthChecks:
             report.update(counts=counts,total=len(report['results']),status='failed' if counts['failed'] else 'warning' if counts['warning'] or counts['skipped'] else 'passed',phase='완료')
         except Exception as exc:
             report.update(status='failed',phase='점검 중단 · '+type(exc).__name__)
+            report['results'].append(dict(group='점검 도구',name='전체 점검 수행',status='failed',category='probe_error',detail='점검 도구 실행 중단 · '+type(exc).__name__,duration_ms=round((time.perf_counter()-start)*1000)))
         finally:
             report.update(finished_at=now(),duration_ms=round((time.perf_counter()-start)*1000))
             try:
