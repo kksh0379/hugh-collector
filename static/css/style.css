@@ -892,7 +892,8 @@ body.is-admin .legend.admin-only { display: flex !important; }
   background: rgba(28, 30, 33, 0.94); color: #fff;
   font-size: 13px; font-weight: 600; padding: 10px 16px; border-radius: var(--r-lg);
   z-index: 60; opacity: 0; pointer-events: none;
-  max-width: min(86vw, 420px); white-space: normal; text-align: center; line-height: 1.4;
+  box-sizing: border-box; width: max-content; max-width: min(86vw, 420px);
+  white-space: pre-line; word-break: keep-all; overflow-wrap: anywhere; text-align: center; line-height: 1.6;
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

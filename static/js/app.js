@@ -318,8 +318,11 @@ let _toastTimer = null;
 function toast(msg) {
   let t = document.getElementById("toast");
   if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
-  t.textContent = msg; t.classList.add("show");
-  clearTimeout(_toastTimer); _toastTimer = setTimeout(() => t.classList.remove("show"), 1400);
+  const text = uiNoticeText(msg);
+  t.textContent = text; t.setAttribute("role", "status"); t.setAttribute("aria-live", "polite"); t.classList.add("show");
+  clearTimeout(_toastTimer);
+  const duration = Math.min(6500, Math.max(2200, text.length * 80, text.includes("\n") ? 3500 : 0));
+  _toastTimer = setTimeout(() => t.classList.remove("show"), duration);
 }
 // 하단 대메뉴(푸터 탭): 뉴스(콜렉터)/맛집 = 본문 전환, 리포트/스크랩 = 각자 모달(전환 아님).
 (function initFootnav() {
@@ -459,13 +462,13 @@ function toggleScrap(key) {
     const backup = SCRAP[key];
     delete SCRAP[key];
     syncScrapUI(key, true); toast("스크랩을 취소했어요");
-    api("/api/scrap", { op: "del", key }).catch(() => { SCRAP[key] = backup; syncScrapUI(key); toast("저장 실패 — 다시 시도해 주세요"); });
+    api("/api/scrap", { op: "del", key }).catch(() => { SCRAP[key] = backup; syncScrapUI(key); toast("저장하지 못했어요.\n다시 시도해 주세요."); });
   } else {
     const snap = ITEM_INDEX[key];
     if (!snap) return;
     SCRAP[key] = Object.assign({}, snap, { ts: Date.now() });
     syncScrapUI(key); toast("스크랩했어요");
-    api("/api/scrap", { op: "add", key, item: snap }).catch(() => { delete SCRAP[key]; syncScrapUI(key); toast("저장 실패 — 다시 시도해 주세요"); });
+    api("/api/scrap", { op: "add", key, item: snap }).catch(() => { delete SCRAP[key]; syncScrapUI(key); toast("저장하지 못했어요.\n다시 시도해 주세요."); });
   }
 }
 function syncScrapUI(key, animateRemoval = false) {
@@ -1088,7 +1091,7 @@ async function loadSecurity() {
     // 중요도순인데 아직 AI 분석된 기사가 없으면 안내(=최신순과 동일하게 보임)
     if (secSort === "importance") {
       const items = (TAB_DATA.security && TAB_DATA.security.items) || [];
-      if (!items.some((it) => it.ai_importance)) toast("재수집하면 자동 분석돼 중요도순 적용 (AI 크레딧 필요)");
+      if (!items.some((it) => it.ai_importance)) toast("다시 수집하면 AI가 중요도를 분석해요.\nAI 크레딧이 필요해요.");
     }
   });
 })();
@@ -2136,10 +2139,10 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
     await loadMyData();
     loginModal.hidden = true;
     document.getElementById("login-fields").replaceChildren();
-    toast((res.display_name || (res.user === "admin" ? "관리자" : res.user)) + " 님, 로그인되었어요");
+    toast((res.display_name || (res.user === "admin" ? "관리자" : res.user)) + "님,\n로그인했어요.");
     if (pendingScrapKey) { const k = pendingScrapKey; pendingScrapKey = null; toggleScrap(k); }
   } else {
-    loginErr.textContent = (res && res.error) || "로그인에 실패했습니다.";
+    loginErr.textContent = uiNoticeText((res && res.error) || "로그인하지 못했어요. 다시 시도해 주세요.");
   }
 });
 document.getElementById("logout-btn").addEventListener("click", async () => {
@@ -2149,7 +2152,7 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
   applyUserStateToDom(); updateScrapBadge();
   const m = document.getElementById("view-scrap");
   if (m && !m.hidden && typeof window.gotoView === "function") window.gotoView("collector");  // 스크랩 뷰였으면 뉴스로
-  toast("로그아웃되었어요");
+  toast("로그아웃했어요.");
 });
 
 // ----------------------------- 개발노트/패치내역 -----------------------------
@@ -2367,7 +2370,7 @@ async function toggleMembership(key, gid, on) {
   const set = new Set(SCRAP[key].groups || []);
   if (on) set.add(gid); else set.delete(gid);
   const arr = Array.from(set);
-  try { await setMembership(key, arr); } catch (e) { toast("저장 실패 — 다시 시도해 주세요"); return; }
+  try { await setMembership(key, arr); } catch (e) { toast("저장하지 못했어요.\n다시 시도해 주세요."); return; }
   renderScrapControls();
   updateCardGroupChips(key);
   if (scrapFilterGroup !== "all") renderScrapList();
@@ -2380,14 +2383,14 @@ async function createGroupFlow(assignKey) {
     GROUPS = r.groups || GROUPS;
     if (assignKey && r.id) { const gs = (SCRAP[assignKey].groups || []).slice(); gs.push(r.id); await setMembership(assignKey, gs); }
     renderScraps(); toast("그룹을 만들었어요");
-  } catch (e) { toast("그룹 생성 실패"); }
+  } catch (e) { toast("그룹을 만들지 못했어요.\n다시 시도해 주세요."); }
 }
 async function renameGroupFlow(gid) {
   const cur = groupName(gid);
   const name = (prompt("그룹 이름 변경", cur) || "").trim();
   if (!name || name === cur) return;
   try { const r = await api("/api/groups", { op: "rename", id: gid, name }); GROUPS = r.groups || GROUPS; renderScraps(); }
-  catch (e) { toast("이름변경 실패"); }
+  catch (e) { toast("이름을 변경하지 못했어요.\n다시 시도해 주세요."); }
 }
 async function deleteGroupFlow(gid) {
   try {
@@ -2396,7 +2399,7 @@ async function deleteGroupFlow(gid) {
     Object.values(SCRAP).forEach((s) => { if (s.groups) s.groups = s.groups.filter((x) => x !== gid); });
     if (scrapFilterGroup === gid) scrapFilterGroup = "all";
     renderScraps(); toast("그룹을 삭제했어요");
-  } catch (e) { toast("삭제 실패"); }
+  } catch (e) { toast("삭제하지 못했어요.\n다시 시도해 주세요."); }
 }
 // 나의 스크랩 팝업 내 상호작용(위임)
 document.addEventListener("click", (e) => {
@@ -3260,7 +3263,7 @@ function lunchLocationLabel(location) {
     if (!LUNCH.kakao) { toast("현재 맛집 다운로드를 이용할 수 없어요."); return; }
     const dialog = $("lunch-download-dialog");
     if (!dialog || typeof dialog.showModal !== "function") {
-      if (confirm("선택한 위치 주변의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 그대로 유지됩니다.")) downloadGps();
+      if (confirm("선택한 위치 주변의 맛집 정보를 다운로드할까요?\n\n기존 맛집과 리뷰·방문기록은 그대로 유지돼요.")) downloadGps();
       return;
     }
     $("lunch-download-desc").textContent = `${lunchLocationLabel(LUNCH.curLoc)} 반경 ${LUNCH.curLoc.radius}m의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 그대로 유지하고, 없는 맛집만 추가해요.`;
@@ -3292,7 +3295,7 @@ function lunchLocationLabel(location) {
         gpsDownloading = false; gpsJob = null; renderLocBar();
         if (data.result?.ok) {
           if (LUNCH.curLoc?.id === "gps") await loadNearby();
-          const summary = `신규 ${data.result.new}곳 추가 · 기존 ${data.result.existing}곳 불러옴`;
+          const summary = `맛집 다운로드를 완료했어요.\n신규 ${data.result.new}곳 · 기존 ${data.result.existing}곳`;
           if (key === gpsKey()) msg(summary);
           toast(summary);
         } else if (key === gpsKey()) msg(data.result?.error || "다운로드하지 못했어요. 다시 시도해 주세요.", true);
@@ -3470,13 +3473,13 @@ function lunchLocationLabel(location) {
           comment: ($("lw-comment").value || "").trim(),
           visit: $("lw-visit").checked,
         });
-        toast("등록했어요, 고마워요!");
+        toast("리뷰를 등록했어요.");
         await loadRestaurants();          // 집계 갱신
         const fresh = rowById(rid);
         let revs = []; try { revs = await getJSON("/api/lunch/reviews?rid=" + rid); } catch (e2) {}
         if (fresh) renderReviews(fresh, revs);
       } catch (err) {
-        toast("등록 실패 — 로그인 상태를 확인해 주세요");
+        toast("등록하지 못했어요.\n로그인 상태를 확인해 주세요.");
         if (btn) btn.disabled = false;
       }
     });
@@ -3701,7 +3704,7 @@ function lunchLocationLabel(location) {
     try {
       await api("/api/lunch/restaurant", { loc_id: LUNCH.curLoc.id, name, category, place_url });
       toast("추가했어요"); loadRestaurants();
-    } catch (e) { toast("추가 실패(권한 확인)"); }
+    } catch (e) { toast("추가하지 못했어요.\n관리자 로그인 상태를 확인해 주세요."); }
   }
 
   // ---- 이벤트 바인딩 ----
@@ -3786,7 +3789,7 @@ function lunchLocationLabel(location) {
       if (ex && isAdmin()) {
         const id = ex.dataset.ex, r = rowById(id);
         try { await api("/api/lunch/exclude", { id: +id, excluded: !(r && r.excluded) }); loadRestaurants(); }
-        catch (err) { toast("변경 실패"); }
+        catch (err) { toast("변경하지 못했어요.\n다시 시도해 주세요."); }
       }
     });
 
