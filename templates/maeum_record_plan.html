@@ -9,6 +9,7 @@
   <style>
     .plan-header{width:min(100%,1200px);margin:0 auto;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.plan-header h1{font-size:22px;letter-spacing:-.5px;margin:0}.plan-header p{font-size:12px;color:#64748b;margin:7px 0 0}.plan-actions{display:flex;gap:8px;flex-wrap:wrap}.plan-actions a,.plan-back{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:700;background:white;border:1px solid #dce3ef}.plan-actions .plan-primary{background:#2d6cdf;color:white;border-color:#2d6cdf}.plan-main{width:min(100%,1200px);padding:0 20px 24px;margin:0 auto;flex:1}.plan-note{font-size:12px;line-height:1.6;color:#64748b;margin:0 0 14px}.plan-page{margin:0 0 24px}.plan-page a{display:block;background:#fff;border:1px solid #dce3ef;border-radius:12px;overflow:hidden}.plan-page img{display:block;width:100%;height:auto}.plan-page figcaption{text-align:center;color:#64748b;font-size:12px;margin-top:8px}.plan-back{margin-top:14px}.plan-actions a:hover,.plan-back:hover{filter:brightness(.97)}@media(max-width:600px){.plan-header{padding-bottom:14px}.plan-header h1{font-size:20px}.plan-main{padding:0 16px 24px}.plan-actions{width:100%}.plan-actions a{flex:1}}
   </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v='20261008-1') }}">
 </head>
 <body>
   <header class="plan-header">
@@ -31,5 +32,6 @@
     {% endfor %}
     <a class="plan-back" href="{{ url_for('launcher') }}">← 서비스 홈</a>
   </main>
+  <script src="{{ url_for('static', filename='js/mouse-scroll.js', v='20261008-1') }}"></script>
 </body>
 </html>

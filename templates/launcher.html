@@ -13,6 +13,7 @@
   <meta name="description" content="김상화의 개인 서비스. 사용할 서비스를 선택해 주세요.">
   <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.129') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.129') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v='20261008-1') }}">
 </head>
 <body>
   <a class="skip-link" href="#services">서비스 목록으로 이동</a>
@@ -63,5 +64,6 @@
   </main>
   <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.129</span></footer>
   <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.129') }}"></script>
+  <script src="{{ url_for('static', filename='js/mouse-scroll.js', v='20261008-1') }}"></script>
 </body>
 </html>

@@ -54,6 +54,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.129') }}">
 <style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v='20261008-1') }}">
 </head>
 <body>
   <header class="app-header">
@@ -589,5 +590,6 @@
   <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.129') }}"></script>
   <script src="{{ url_for('static', filename='js/accounts.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
+  <script src="{{ url_for('static', filename='js/mouse-scroll.js', v='20261008-1') }}"></script>
 </body>
 </html>
