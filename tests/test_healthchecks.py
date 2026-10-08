@@ -34,6 +34,12 @@ class HealthCheckTests(unittest.TestCase):
         first,started=self.service.start();second,again=self.service.start()
         self.assertTrue(started);self.assertFalse(again);self.assertEqual(first,second)
         self.assertEqual(len(self.service.history()),1)
+    def test_internal_admin_probe_uses_same_host_as_session_cookie(self):
+        run_id,_=self.service.start()
+        status,data=self.service.request('/api/admin/healthchecks?id='+run_id,admin=True)
+        self.assertEqual(status,'passed')
+        self.assertEqual(data['report']['id'],run_id)
+        self.assertEqual(self.service.request('/api/admin/healthchecks')[0],'failed')
     def test_daily_idempotency_survives_service_restart(self):
         first,_=self.service.start('scheduled',daily=True)
         with db.get_conn() as conn:conn.execute('DELETE FROM healthcheck_lock')

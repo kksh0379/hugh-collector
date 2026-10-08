@@ -100,7 +100,7 @@ class HealthChecks:
         deadline = time.monotonic() + 25
         with self.app.test_client() as client:
             if admin:
-                with client.session_transaction() as state:
+                with client.session_transaction(base_url='https://hscope.onrender.com') as state:
                     state.update(user='admin', admin=True)
             while True:
                 response = client.get(path, base_url='https://hscope.onrender.com')
