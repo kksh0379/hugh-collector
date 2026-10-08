@@ -20,6 +20,7 @@ from collector import (ai_provider, analysis, boards, db, dedup, event_curation,
                        google_news, lunch, security_ai, security_report, social, venue_sources)
 
 from collector.identity import canonical_user, display_name, public_author
+from collector import accounts
 from collector.service_registry import SERVICES
 from collector.maeum_gate import register_maeum_gate
 from collector.reader import bp as reader_bp
@@ -63,8 +64,7 @@ KST = timezone(timedelta(hours=9))  # 마지막 수집 일시는 서버에서 KS
 
 # 관리자 로그인: 로그인해야 상태확인/수집 실행이 보이고 동작한다(뷰어는 조회만).
 ADMIN_PW = os.environ.get("ADMIN_PW", "rlatkdghk12#")
-# 일반 테스트 계정: test1(로그인 별칭 tester1), 표시 이름 김테스터
-TEST_USERS = {"test1": "1234"}   # 일반 테스트 계정 1개(로그인창 자동입력)
+# 일반 계정은 DB에서 관리한다. 기존 test1/tester1은 최초 1회 이관한다.
 
 
 def _admin_ok():
@@ -73,6 +73,22 @@ def _admin_ok():
 
 def _current_user():
     return canonical_user(session.get("user"))
+
+
+@app.before_request
+def _validate_account_session():
+    username = _current_user()
+    if not username or _admin_ok() or not request.path.startswith('/api/') or request.path in ('/api/login', '/api/logout'):
+        return
+    if not _ensure_db(force=True):
+        return jsonify({'error': 'DB에 연결할 수 없어요.'}), 503
+    row = accounts.get_account(username)
+    if not row or session.get('account_version', 1) != row['version']:
+        session.pop('user', None)
+        session.pop('admin', None)
+        session.pop('account_version', None)
+    else:
+        g.account_display_name = row['display_name']
 
 
 def _now_kst():
@@ -167,7 +183,7 @@ def ai_status():
 
 @app.get("/api/me")
 def me():
-    return jsonify({"user": _current_user(), "display_name": display_name(_current_user()) if _current_user() else None, "admin": _admin_ok(),
+    return jsonify({"user": _current_user(), "display_name": getattr(g, 'account_display_name', display_name(_current_user())) if _current_user() else None, "admin": _admin_ok(),
                     "logged_in": bool(session.get("user"))})
 
 
@@ -201,10 +217,14 @@ def login():
             return jsonify({"ok": True, "user": "admin", "display_name": display_name("admin"), "admin": True})
         return jsonify({"ok": False, "error": "비밀번호가 올바르지 않습니다."}), 401
     username = canonical_user((data.get("username") or "").strip().lower())
-    if username in TEST_USERS and pw == TEST_USERS[username]:
+    if not _ensure_db(force=True):
+        return jsonify({"ok": False, "error": "DB에 연결할 수 없어요. 잠시 후 다시 시도해 주세요."}), 503
+    row = accounts.authenticate(username, pw)
+    if row:
         session["user"] = username
         session["admin"] = False
-        return jsonify({"ok": True, "user": username, "display_name": display_name(username), "admin": False})
+        session['account_version'] = row['version']
+        return jsonify({"ok": True, "user": username, "display_name": row['display_name'], "admin": False})
     return jsonify({"ok": False, "error": "아이디 또는 비밀번호가 올바르지 않습니다."}), 401
 
 
@@ -212,7 +232,11 @@ def login():
 def logout():
     session.pop("admin", None)
     session.pop("user", None)
+    session.pop('account_version', None)
     return jsonify({"ok": True})
+
+
+accounts.register(app, _ensure_db, _admin_ok)
 
 
 # ---------------------------- 개인 데이터(스크랩/읽음/그룹) ----------------------------

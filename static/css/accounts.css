@@ -1,0 +1,19 @@
+.accounts-box { max-width: 640px; }
+.accounts-list { display: grid; gap: 10px; }
+.account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; }
+.account-info { min-width: 0; display: grid; gap: 5px; overflow-wrap: anywhere; }
+.account-info small { color: var(--muted); }
+.account-actions, .accounts-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.accounts-toolbar { margin-top: 16px; }
+.account-actions button, .accounts-toolbar button { min-height: 44px; }
+.account-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.account-delete { color: #b42318; }
+.account-form { margin-top: 18px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 14px; }
+.account-form[hidden] { display: none !important; }
+.account-form h3 { margin: 0; font-size: 15px; }
+.account-form label { display: grid; gap: 6px; font-size: 13px; }
+.account-form input { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+.account-form input[readonly] { background: #f1f5f9; color: var(--muted); }
+.account-form small { color: var(--muted); line-height: 1.5; }
+#accounts-status.account-error { color: #b42318; }
+@media(max-width: 420px) { .account-row { align-items: stretch; flex-direction: column; } .account-actions button { flex: 1; } }
