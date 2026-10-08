@@ -2615,6 +2615,12 @@ def _db_keepalive():
 def _prewarm_reads():
     _LOCATION_READS.get("locations", _load_lunch_locations, ttl=300, wait=0)
     _read_metadata()
+    # 일반 로그인 첫 요청에서 계정 테이블 준비를 기다리지 않도록 워커에서 미리 준비.
+    try:
+        if _ensure_db(force=True):
+            accounts.init_store()
+    except Exception as exc:
+        print(f"[prewarm] accounts: {type(exc).__name__}", flush=True)
 
 
 _prewarm_started = False

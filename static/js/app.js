@@ -35,9 +35,11 @@ async function fetchData(url) {
 
 
 // ===== 인증 상태(아이디 기반) =====
+let AUTH_GENERATION = 0;
 let CURRENT_USER = null;      // null=미로그인, "admin" 또는 "tester1"…
 function isLoggedIn() { return !!CURRENT_USER; }
 function applyAuthUI(user, admin, displayName) {
+  if (CURRENT_USER !== (user || null)) AUTH_GENERATION++;
   CURRENT_USER = user || null;
   document.body.classList.toggle("is-admin", !!admin);
   document.body.classList.toggle("is-loggedin", !!user);
@@ -102,8 +104,10 @@ async function loadFeatures() {
 }
 // 세션 확인 → 로그인 상태면 개인 데이터(스크랩/읽음) 로드
 async function initAuth() {
+  const generation = AUTH_GENERATION;
   let me = { user: null, admin: false };
   try { me = await (await fetch("/api/me")).json(); } catch (e) { /* 무시 */ }
+  if (generation !== AUTH_GENERATION) return;
   applyAuthUI(me.user, me.admin, me.display_name);
   if (me.user) { await loadMyData(); }
 }
@@ -136,16 +140,47 @@ async function api(path, body, options = {}) {
   return r.ok ? r.json() : Promise.reject(r);
 }
 // 로그인 시 개인 데이터 로드 → 화면 반영
-async function loadMyData() {
-  try {
-    const d = await (await fetchData("/api/mydata")).json();
-    READ = new Set(d.reads || []);
-    SCRAP = {};
-    (d.scraps || []).forEach((s) => { if (s.key) { s.groups = s.groups || []; SCRAP[s.key] = s; } });
-    GROUPS = d.groups || [];
-  } catch (e) { READ = new Set(); SCRAP = {}; GROUPS = []; }
-  applyUserStateToDom();
-  updateScrapBadge();
+let MY_DATA_REQUEST = null;
+let MY_DATA_STATE = "idle";
+function loadMyData() {
+  const user = CURRENT_USER, generation = AUTH_GENERATION;
+  if (!user) return Promise.resolve(false);
+  if (MY_DATA_REQUEST && MY_DATA_REQUEST.generation === generation) return MY_DATA_REQUEST.promise;
+  MY_DATA_STATE = "loading";
+  const request = {generation, promise:null};
+  request.promise = (async () => {
+    try {
+      const d = await (await fetchData("/api/mydata?auth=" + generation)).json();
+      if (CURRENT_USER !== user || AUTH_GENERATION !== generation) return false;
+      READ = new Set(d.reads || []);
+      SCRAP = {};
+      (d.scraps || []).forEach((s) => { if (s.key) { s.groups = s.groups || []; SCRAP[s.key] = s; } });
+      GROUPS = d.groups || [];
+      MY_DATA_STATE = "ready";
+      return true;
+    } catch (e) {
+      if (CURRENT_USER === user && AUTH_GENERATION === generation) {
+        MY_DATA_STATE = "error";
+        toast("로그인은 완료됐어요.\n개인 데이터를 불러오지 못했어요. 스크랩에서 다시 시도해 주세요.");
+      }
+      return false;
+    } finally {
+      if (MY_DATA_REQUEST === request) MY_DATA_REQUEST = null;
+      if (CURRENT_USER === user && AUTH_GENERATION === generation) {
+        applyUserStateToDom(); updateScrapBadge();
+        const view = document.getElementById("view-scrap");
+        if (view && !view.hidden) renderScraps();
+      }
+    }
+  })();
+  MY_DATA_REQUEST = request;
+  return request.promise;
+}
+function deferUserAction(action) {
+  if (MY_DATA_STATE === "ready") return false;
+  const user = CURRENT_USER, generation = AUTH_GENERATION;
+  loadMyData().then(ok => { if (ok && CURRENT_USER === user && AUTH_GENERATION === generation) action(); });
+  return true;
 }
 // 이미 렌더된 카드에 읽음/스크랩 상태를 반영(로그인 직후 등)
 function applyUserStateToDom() {
@@ -159,6 +194,7 @@ function applyUserStateToDom() {
 // 읽음 처리(로그인 사용자만, 서버 저장)
 function markRead(k) {
   if (!k || !isLoggedIn() || READ.has(k)) return;
+  if (deferUserAction(() => markRead(k))) return;
   READ.add(k);
   api("/api/read", { key: k }).catch(() => { /* 실패해도 화면은 유지 */ });
 }
@@ -457,6 +493,7 @@ function toggleScrap(key) {
     openLogin();
     return;
   }
+  if (deferUserAction(() => toggleScrap(key))) return;
   const wasOn = isScrapped(key);
   if (wasOn) {
     const backup = SCRAP[key];
@@ -2125,22 +2162,30 @@ document.querySelectorAll("#login-role button").forEach((b) =>
   b.addEventListener("click", () => setLoginRole(b.dataset.role)));
 document.getElementById("login-other").addEventListener("click", () => setLoginRole("user", !loginManual));
 
+let loginSubmitting = false;
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  loginErr.textContent = "";
+  if (loginSubmitting) return;
   const body = loginRequestBody();
+  loginSubmitting = true;
+  const submit = document.getElementById("login-submit");
+  const label = submit.textContent; submit.disabled = true; submit.textContent = "로그인 중…";
+  loginErr.textContent = "";
   let res = null;
   try {
     const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     res = await r.json();
   } catch (err) { loginErr.textContent = "로그인 요청 실패.\n잠시 후 다시 시도해 주세요."; return; }
+  finally { loginSubmitting = false; submit.disabled = false; submit.textContent = label; }
   if (res && res.ok) {
     applyAuthUI(res.user, res.admin, res.display_name);
-    await loadMyData();
+    READ = new Set(); SCRAP = {}; GROUPS = []; MY_DATA_STATE = "idle";
+    applyUserStateToDom(); updateScrapBadge();
     loginModal.hidden = true;
     document.getElementById("login-fields").replaceChildren();
     toast((res.display_name || (res.user === "admin" ? "관리자" : res.user)) + "님,\n로그인했어요.");
-    if (pendingScrapKey) { const k = pendingScrapKey; pendingScrapKey = null; toggleScrap(k); }
+    const user = CURRENT_USER, generation = AUTH_GENERATION, key = pendingScrapKey; pendingScrapKey = null;
+    loadMyData().then(ok => { if (ok && key && CURRENT_USER === user && AUTH_GENERATION === generation) toggleScrap(key); });
   } else {
     loginErr.textContent = uiNoticeText((res && res.error) || "로그인하지 못했어요. 다시 시도해 주세요.");
   }
@@ -2148,7 +2193,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
 document.getElementById("logout-btn").addEventListener("click", async () => {
   try { await fetch("/api/logout", { method: "POST" }); } catch (e) { /* 무시 */ }
   applyAuthUI(null, false);
-  READ = new Set(); SCRAP = {};
+  READ = new Set(); SCRAP = {}; GROUPS = []; MY_DATA_STATE = "idle";
   applyUserStateToDom(); updateScrapBadge();
   const m = document.getElementById("view-scrap");
   if (m && !m.hidden && typeof window.gotoView === "function") window.gotoView("collector");  // 스크랩 뷰였으면 뉴스로
@@ -2351,6 +2396,15 @@ function renderScrapList() {
   el.appendChild(frag);
 }
 function renderScraps() {
+  if (MY_DATA_STATE !== "ready" && isLoggedIn()) {
+    const controls = document.getElementById("scrap-controls"), list = document.getElementById("scrap-list");
+    if (controls) controls.replaceChildren();
+    if (list) {
+      if (MY_DATA_STATE === "error") list.innerHTML = '<li class="empty-msg">개인 데이터를 불러오지 못했어요.<br><button type="button" class="search-btn" data-mydata-retry>다시 불러오기</button></li>';
+      else HScopeSkeleton.render(list, "card", {label:"스크랩을 불러오는 중이에요."});
+    }
+    return;
+  }
   if (SCRAP_REMOVALS.size) return;
   renderScrapControls(); renderScrapList();
 }
@@ -2361,6 +2415,9 @@ function updateCardGroupChips(key) {
     if (el) el.innerHTML = groupChipsHtml(SCRAP[key]);
   });
 }
+document.getElementById("scrap-list").addEventListener("click", e => {
+  if (e.target.closest("[data-mydata-retry]")) { loadMyData(); renderScraps(); }
+});
 // 그룹 API
 async function setMembership(key, groupIds) {
   SCRAP[key].groups = groupIds.slice();
@@ -2376,6 +2433,7 @@ async function toggleMembership(key, gid, on) {
   if (scrapFilterGroup !== "all") renderScrapList();
 }
 async function createGroupFlow(assignKey) {
+  if (deferUserAction(() => createGroupFlow(assignKey))) return;
   const name = (prompt("새 그룹 이름을 입력하세요") || "").trim();
   if (!name) return;
   try {
@@ -2386,6 +2444,7 @@ async function createGroupFlow(assignKey) {
   } catch (e) { toast("그룹을 만들지 못했어요.\n다시 시도해 주세요."); }
 }
 async function renameGroupFlow(gid) {
+  if (deferUserAction(() => renameGroupFlow(gid))) return;
   const cur = groupName(gid);
   const name = (prompt("그룹 이름 변경", cur) || "").trim();
   if (!name || name === cur) return;
@@ -2393,6 +2452,7 @@ async function renameGroupFlow(gid) {
   catch (e) { toast("이름을 변경하지 못했어요.\n다시 시도해 주세요."); }
 }
 async function deleteGroupFlow(gid) {
+  if (deferUserAction(() => deleteGroupFlow(gid))) return;
   try {
     const r = await api("/api/groups", { op: "del", id: gid });
     GROUPS = r.groups || [];
