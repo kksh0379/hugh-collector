@@ -6,7 +6,7 @@
   let selected='',timer=null,report=null,busy=false;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const duration=ms=>{ms=Math.max(0,Number(ms)||0);if(ms<1000)return Math.round(ms)+'ms';if(ms<60000)return (ms/1000).toFixed(1)+'초';return Math.floor(ms/60000)+'분 '+Math.floor(ms%60000/1000)+'초';};
-  const stamp=value=>value?new Date(value).toLocaleString('ko-KR',{hour12:false}):'—';
+  const stamp=value=>value?new Date(value).toLocaleString('ko-KR',{hour12:false,timeZone:'Asia/Seoul'}):'—';
   async function request(url,options={}){
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
     try{const response=await fetch(url,{cache:'no-store',...options,signal:controller.signal});const data=await response.json();if(!response.ok)throw Error(data.error||'점검 결과를 불러오지 못했어요.');return data;}
