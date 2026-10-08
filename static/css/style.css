@@ -1692,3 +1692,11 @@ body.is-admin .admin-controls .auth-btn.admin-only {
 }
 .admin-controls #purge-db-btn { color: #b42318; background: #fff4f2; border-color: #f3c6c1; }
 @media print { body.is-admin .admin-controls.admin-only { display: none !important; } }
+
+/* 표시 설정: 하단 메뉴·통합 소스에도 hidden 우선 적용 */
+.fnav[hidden], #biz-cats label[hidden] { display: none !important; }
+html.pre-hide-food .fnav[data-nav="food"],
+html.pre-hide-videos .fnav[data-nav="videos"],
+html.pre-hide-finance .fnav[data-nav="finance"],
+html.pre-hide-boards #biz-cats label:has([data-cat="게시판"]),
+html.pre-hide-social #biz-cats label:has([data-cat="영상"]) { display: none !important; }

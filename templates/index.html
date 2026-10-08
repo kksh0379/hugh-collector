@@ -31,7 +31,7 @@
   <link rel="icon" href="{{ url_for('static', filename='icon-192.png', v='145') }}" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.129') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.129-admin-layout") }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.129-features") }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/share.css', v='3.129') }}">
   <link rel="preload" as="image" fetchpriority="high" media="(prefers-reduced-motion: no-preference)" href="{{ url_for('static', filename='cats-loading-smooth-v2.28.webp') }}" />
   <!-- 표시 설정(온오프) 첫 페인트 전 적용 → 새로고침 시 숨긴 항목이 깜빡이지 않게(FOUC 방지).
@@ -41,7 +41,7 @@
       try {
         if (localStorage.getItem("hue_admin") === "1") return;
         var f = JSON.parse(localStorage.getItem("hue_feat") || "{}"), el = document.documentElement;
-        ["game", "news", "biz", "security", "event", "boards", "social", "report", "scrap"]
+        ["game", "news", "biz", "security", "event", "boards", "social", "food", "videos", "finance", "report", "scrap"]
           .forEach(function (k) { if (f[k] === false) el.classList.add("pre-hide-" + k); });
       } catch (e) { /* 무시 */ }
     })();
@@ -466,7 +466,16 @@
       </div>
       <div class="modal-body">
         <p class="feat-note">끈 항목은 <b>일반 사용자·방문자에게 숨겨져요</b>.<br>관리자는 항상 보입니다. (변경 즉시 저장)</p>
-        <div class="feat-group-title">탭</div>
+        <div class="feat-group-title">주요 메뉴</div>
+        <div class="feat-list">
+          <label class="feat-locked"><input type="checkbox" checked disabled> 뉴스 <span class="feat-tag">기본</span></label>
+          <label><input type="checkbox" data-feat="food"> 맛집</label>
+          <label><input type="checkbox" data-feat="videos"> 영상</label>
+          <label><input type="checkbox" data-feat="finance"> 재무세무 <span class="feat-tag">beta</span></label>
+          <label><input type="checkbox" data-feat="report"> AI 리포트</label>
+          <label><input type="checkbox" data-feat="scrap"> 스크랩</label>
+        </div>
+        <div class="feat-group-title">뉴스 세부 탭</div>
         <div class="feat-list">
           <label class="feat-locked"><input type="checkbox" data-feat="cat" checked disabled> 냥정보 <span class="feat-tag">기본</span></label>
           <label><input type="checkbox" data-feat="game"> 게임정보</label>
@@ -475,10 +484,11 @@
           <label><input type="checkbox" data-feat="security"> 보안뉴스</label>
           <label><input type="checkbox" data-feat="event"> 행사일정</label>
         </div>
-        <div class="feat-group-title">기능</div>
+        <div class="feat-group-title">비영리재단 동향 · 통합 소스</div>
+        <p class="feat-note">동향 탭 안의 자료 유형을 선택해요. 위의 영상 메뉴와는 별도 설정입니다.</p>
         <div class="feat-list">
-          <label><input type="checkbox" data-feat="report"> AI 리포트</label>
-          <label><input type="checkbox" data-feat="scrap"> 스크랩</label>
+          <label><input type="checkbox" data-feat="boards"> 재단 게시판</label>
+          <label><input type="checkbox" data-feat="social"> 재단 소셜 영상</label>
         </div>
         <div class="result-msg" id="msg-features"></div>
       </div>
@@ -548,7 +558,7 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.129") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-cats-v3.129-features") }}"></script>
   <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.129') }}"></script>
   <script src="{{ url_for('static', filename='js/share.js', v='3.129') }}"></script>
   <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.129") }}"></script>

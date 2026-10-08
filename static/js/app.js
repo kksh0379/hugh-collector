@@ -48,7 +48,9 @@ function applyAuthUI(user, admin, displayName) {
 
 // ===== 표시 설정(탭·리포트·스크랩 온오프) =====
 const FEATURE_TABS = ["cat", "game", "news", "biz", "security", "event", "boards", "social"];
-const FEATURE_ALL = FEATURE_TABS.concat(["report", "scrap"]);
+const FEATURE_MAIN = ["food", "videos", "finance", "report", "scrap"];
+const FEATURE_ALL = FEATURE_TABS.concat(FEATURE_MAIN);
+function featureHidden(key) { return !document.body.classList.contains("is-admin") && FEATURES[key] === false; }
 let FEATURES = {};  // {키:bool}. 저장 전이면 비어 있어 전체 표시.
 function applyFeatures() {
   const admin = document.body.classList.contains("is-admin");
@@ -62,6 +64,19 @@ function applyFeatures() {
     const btn = document.querySelector('.tab[data-tab="' + t + '"]');
     if (btn) btn.hidden = hide(t);
   });
+  FEATURE_MAIN.forEach((key) => {
+    const button = document.querySelector('.fnav[data-nav="' + key + '"]');
+    if (button) button.hidden = hide(key);
+  });
+  [["게시판", "boards"], ["영상", "social"]].forEach(([label, key]) => {
+    const input = document.querySelector('#biz-cats [data-cat="' + label + '"]');
+    if (input) input.closest("label").hidden = hide(key);
+  });
+  if (window.gotoView) {
+    const current = document.querySelector(".fnav.active");
+    if (current && current.hidden) window.gotoView("collector");
+  }
+  if (typeof TAB_DATA !== "undefined" && TAB_DATA.biz) renderTab("biz");
   const rep = document.getElementById("report-open-btn");
   if (rep) rep.hidden = hide("report");
   const scr = document.getElementById("scrap-open-btn");
@@ -319,6 +334,7 @@ function toast(msg) {
     scrap: document.getElementById("view-scrap"),
   };
   function switchTo(n) {
+    if (featureHidden(n)) n = "collector";
     closeEventCalendarPopover();
     if (n !== "videos" && window.onHideVideos) window.onHideVideos();
     // 스크랩은 로그인 필요 → 미로그인 시 전환하지 않고 로그인 유도
@@ -1143,9 +1159,9 @@ async function loadGame() {
 // ===== 비영리재단 동향: 동향(뉴스)+게시판+영상 통합 피드 + 소스 체크박스 필터(전체/동향/게시판/영상) =====
 let bizSrc = new Set(["news", "board", "video"]);   // 기본 전체 선택
 function filterBizBySrc(items) {
-  if (bizSrc.size >= 3) return items;
-  if (bizSrc.size === 0) return [];
-  return items.filter((it) => bizSrc.has(it._src));
+  return items.filter((it) => bizSrc.has(it._src)
+    && !(it._src === "board" && featureHidden("boards"))
+    && !(it._src === "video" && featureHidden("social")));
 }
 function bizBadge(it) {
   if (it._src === "board") return it.service ? `게시판 · ${it.service}` : "게시판";
@@ -2852,7 +2868,9 @@ async function loadReport(id) {
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
   modal.addEventListener("change", async (e) => {
     const cb = e.target.closest("[data-feat]");
-    if (!cb) return;
+    if (!cb || cb.disabled) return;
+    const controls = [...modal.querySelectorAll("[data-feat]")].filter((control) => !control.disabled);
+    controls.forEach((control) => { control.disabled = true; });
     if (msg) { msg.style.color = ""; msg.innerHTML = catRunInline("저장 중…"); }
     try {
       const r = await fetch("/api/features", {
@@ -2861,11 +2879,13 @@ async function loadReport(id) {
       });
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error || ("오류 " + r.status));
-      FEATURES = j.features; applyFeatures();
+      FEATURES = j.features; applyFeatures(); syncChecks();
       if (msg) { msg.style.color = "#16a34a"; msg.textContent = "저장됐어요 · 일반 사용자 화면에 반영돼요."; }
     } catch (err) {
       cb.checked = !cb.checked;
       if (msg) { msg.style.color = "#dc2626"; msg.textContent = "저장 실패: " + err.message; }
+    } finally {
+      controls.forEach((control) => { control.disabled = false; });
     }
   });
 })();

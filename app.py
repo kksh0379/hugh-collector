@@ -750,7 +750,7 @@ def meta():
 
 # ---- 기능/탭 표시 설정(관리자 온오프) ----
 # 끈 항목은 일반/방문자에게 숨김(관리자는 항상 노출·미리보기). 기본 전체 ON.
-_FEATURE_KEYS = ["cat", "game", "news", "biz", "security", "event", "boards", "social", "report", "scrap"]
+_FEATURE_KEYS = ["cat", "game", "news", "biz", "security", "event", "boards", "social", "food", "videos", "finance", "report", "scrap"]
 
 
 def _load_features(fresh=False, metadata=None):
@@ -787,6 +787,7 @@ def features_set():
     for k in _FEATURE_KEYS:
         if k in data:
             cur[k] = bool(data[k])
+    cur["cat"] = True  # 기본 탭은 부분 갱신에서도 항상 유지
     db.set_meta("feature_flags", json.dumps(cur, ensure_ascii=False))
     _PUBLIC_READS.invalidate("meta")
     return jsonify({"ok": True, "features": cur})
