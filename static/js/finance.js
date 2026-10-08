@@ -77,9 +77,9 @@
     if (!currency || !String(r.code || '').startsWith('731Y001/')) return '';
     const quote = fxData?.quotes?.[currency];
     const value = key => quote && Number.isFinite(quote[key]) && quote[key]>0 ? Number(quote[key]).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})+'원' : '—';
-    const when = key => quote?.[key] ? esc(quote[key].replace('T',' ').replace('+09:00','')) : '';
+    const when = key => quote?.[key] ? esc(quote[key].slice(5,16).replace('T',' ').replace('-','.')) : '';
     const status = !fxData || fxData.pending ? '은행 고시 환율을 불러오는 중이에요.' : !quote ? (fxData.mode==='live'?'이 고시표에서 제공하지 않는 통화예요.':'은행 거래 환율을 불러오지 못했어요.') : '';
-    return `<section class="finance-fx" aria-label="${currency} 은행 거래 환율"><p class="finance-fx-label">하나은행 · ${currency==='JPY'?'100엔':'1 '+currency} 기준</p><dl><dt>현찰 살 때</dt><dd>${value('cash_buy')}</dd><dt>현찰 팔 때</dt><dd>${value('cash_sell')}</dd></dl>${when('cash_at')?`<p class="finance-fx-time">현찰 고시 ${when('cash_at')}</p>`:''}<dl><dt>송금 보낼 때</dt><dd>${value('send')}</dd><dt>송금 받을 때</dt><dd>${value('receive')}</dd></dl>${when('remittance_at')?`<p class="finance-fx-time">송금 고시 ${when('remittance_at')}</p>`:''}${status?`<p class="finance-fx-time">${status}</p>`:''}<p class="finance-fx-time">${Number.isInteger(quote?.round)?esc(quote.round)+'회차 · ':''}고객 기준 · 우대 적용 전</p>${link('https://www.kebhana.com/cont/mall/mall15/mall1501/index.jsp','은행 고시표')}</section>`;
+    return `<section class="finance-fx" aria-label="${currency} 은행 거래 환율"><p class="finance-fx-label">하나은행 · ${currency==='JPY'?'100엔':'1 '+currency} 기준</p><dl><dt>현찰 살 때</dt><dd>${value('cash_buy')}</dd><dt>현찰 팔 때</dt><dd>${value('cash_sell')}</dd></dl>${when('cash_at')?`<p class="finance-fx-time">현찰 ${when('cash_at')}</p>`:''}<dl><dt>송금 보낼 때</dt><dd>${value('send')}</dd><dt>송금 받을 때</dt><dd>${value('receive')}</dd></dl>${when('remittance_at')?`<p class="finance-fx-time">송금 ${when('remittance_at')}</p>`:''}${status?`<p class="finance-fx-time">${status}</p>`:''}<p class="finance-fx-time" title="고객 기준 · 우대 적용 전">${Number.isInteger(quote?.round)?esc(quote.round)+'회 · ':''}고객 · 우대 전</p>${link('https://www.kebhana.com/cont/mall/mall15/mall1501/index.jsp','은행 고시표')}</section>`;
   }
   async function loadExchange() {
     if (fxLoading) return;
@@ -340,4 +340,11 @@
 
   // 재무세무 진입 시: 체크되어 있으면 (주)엔씨, 아니면(기본) 전체 공시를 조회.
   window.onShowFinance=()=>{load();loadStock();loadExchange(); loadDart(dartNc && dartNc.checked ? NC_CORP : null);};
+  window.refreshFinance=()=>{
+    const panel=document.querySelector('#fin-tabs [data-fintab].active')?.dataset.fintab;
+    if(panel==='calc') return Promise.resolve();
+    if(panel==='tax') return loadDart(dartNc?.checked ? NC_CORP : ($('finance-corp-code').value.trim() || null));
+    if(panel==='news') return load();
+    return Promise.all([load(),loadStock(),loadExchange()]);
+  };
 })();

@@ -594,6 +594,16 @@
     const id = new URL(location.href).searchParams.get('video');
     if (id && /^[1-9]\d{0,8}$/.test(id) && selected?.id !== id) selectWork(allWorks.find(x => x.id === id) || {id,series:1,episode:1,title:`작품 ${id}`}, false);
   };
+  window.refreshVideos = async () => {
+    if ($('videos-detail').hidden || !selected) return loadIndex();
+    const version = requestVersion, id = selected.id;
+    const response = await fetch(`/api/videos/catalog?id=${id}&series=${selected.series}&episode=${selected.episode}`, {cache:'no-store'});
+    if (!response.ok) throw Error('회차 목록을 불러오지 못했어요.');
+    const result = await response.json();
+    if (version !== requestVersion || selected?.id !== id) return;
+    result.fetchedAt = Date.now(); cache.set(id, result); catalog = result;
+    renderEpisodePage();
+  };
   window.onHideVideos = () => {
     if (!$('videos-detail').hidden) { history.replaceState(history.state ? {...history.state,hscopeVideo:null} : null, '', detailUrl(null)); showBrowse(false); } else stop();
   };

@@ -3918,6 +3918,10 @@ function lunchLocationLabel(location) {
     if (LUNCH.curLoc) loadRestaurants(true);
     loadLocations();
   };
+  window.refreshLunch = async function () {
+    await loadLocations();
+    await loadRestaurants(false);
+  };
   // 헤더 🗑 초기화 버튼의 대메뉴별 분기용(맛집 화면일 때 이 컨텍스트로 동작)
   window.lunchPurgeCtx = {
     active: function () { const v = document.getElementById("view-food"); return !!(v && !v.hidden); },
@@ -3937,3 +3941,59 @@ loadBiz();   // 동향 뉴스 + 재단게시판 + 재단영상 통합 로드
 loadSecurity();
 loadEvent();
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
+
+// Pull refresh updates the visible view without navigating or recreating the document.
+async function refreshCurrentPage() {
+  const view = document.querySelector('.fnav.active')?.dataset.nav || 'collector';
+  if (view === 'finance') return window.refreshFinance?.();
+  if (view === 'videos') return window.refreshVideos?.();
+  if (view === 'food') return window.refreshLunch?.();
+  if (view === 'report') return loadReport(document.getElementById('report-snap')?.value);
+  if (view === 'scrap') { await loadMyData(); renderScraps(); return; }
+  const loaders = {cat:loadCat, game:loadGame, news:loadNews, biz:loadBiz,
+    security:loadSecurity, event:loadEvent, boards:loadBoards, social:loadSocial};
+  return loaders[activeTab()]?.();
+}
+(function initPullRefresh() {
+  let start = null, distance = 0, busy = false;
+  const threshold = 72;
+  const hint = document.createElement('div');
+  hint.id = 'pull-refresh-status'; hint.hidden = true;
+  hint.setAttribute('role', 'status'); hint.setAttribute('aria-live', 'polite');
+  hint.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);z-index:10000;background:var(--card,#fff);color:var(--primary,#2563eb);border:1px solid var(--border,#ddd);border-radius:24px;padding:10px 18px;font-size:12px;box-shadow:0 3px 16px #0002;pointer-events:none;white-space:nowrap';
+  document.body.appendChild(hint);
+  // Stop the browser's document reload once a vertical pull is recognized.
+  function reset() { start = null; distance = 0; if (!busy) hint.hidden = true; }
+  function blocked(target) {
+    if (document.querySelector('dialog[open], .modal:not([hidden])')) return true;
+    if (target.closest('input,textarea,select,button,a,video,[contenteditable="true"]')) return true;
+    for (let el = target; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      if (el.scrollHeight > el.clientHeight + 1 && /auto|scroll/.test(style.overflowY)) return true;
+    }
+    return false;
+  }
+  document.addEventListener('touchstart', e => {
+    reset();
+    if (busy || e.touches.length !== 1 || window.scrollY > 1 || blocked(e.target)) return;
+    start = {x:e.touches[0].clientX, y:e.touches[0].clientY};
+  }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    if (!start || e.touches.length !== 1) { reset(); return; }
+    const dx = Math.abs(e.touches[0].clientX - start.x), dy = e.touches[0].clientY - start.y;
+    if (dy <= 0 || dx > Math.max(12, dy)) { reset(); return; }
+    if (!e.cancelable) { reset(); return; }
+    e.preventDefault(); distance = dy;
+    hint.hidden = false;
+    hint.textContent = dy >= threshold ? '놓으면 새로고침해요' : '아래로 당겨 새로고침';
+  }, {passive:false});
+  document.addEventListener('touchend', async () => {
+    if (!start || distance < threshold || busy) { reset(); return; }
+    start = null; distance = 0; busy = true;
+    hint.hidden = false; hint.textContent = '새로고침 중…';
+    try { await refreshCurrentPage(); }
+    catch (_) { toast('새로고침하지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+    finally { busy = false; hint.hidden = true; }
+  }, {passive:true});
+  document.addEventListener('touchcancel', reset, {passive:true});
+})();
