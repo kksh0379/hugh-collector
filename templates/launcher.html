@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f8fc">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="휴스코프">
+  <script src="{{ url_for('static', filename='js/pwa-prompt.js', v='3.129') }}"></script>
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.129') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='3.129') }}">
+  <title>서비스 홈</title>
+  <meta name="description" content="김상화의 개인 서비스. 사용할 서비스를 선택해 주세요.">
+  <link rel="icon" href="{{ url_for('static', filename='launcher.svg', v='3.129') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/launcher.css', v='3.129') }}">
+</head>
+<body>
+  <a class="skip-link" href="#services">서비스 목록으로 이동</a>
+  <header class="launcher-header">
+    <a class="launcher-brand" href="{{ url_for('launcher') }}" aria-label="서비스 홈">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+      <span>서비스 홈</span>
+    </a>
+    <span class="owner">김상화의 개인 서비스</span>
+  </header>
+  <main class="launcher-main">
+    <section class="launcher-intro" aria-labelledby="launcher-title">
+      <span class="eyebrow">나의 서비스 공간</span>
+      <h1 id="launcher-title">나의 서비스</h1>
+      <p>아이콘을 눌러 서비스를 열어보세요.</p>
+    </section>
+    <section id="install-card" class="launcher-install" aria-labelledby="install-card-title" hidden>
+      <div><h2 id="install-card-title">앱처럼 실행하기</h2><p id="install-description">바탕화면이나 홈 화면에 아이콘을 추가해 앱처럼 실행하세요.</p></div>
+      <button type="button" id="app-install">앱 설치</button>
+    </section>
+    <section id="services" aria-labelledby="services-title">
+      <div class="section-heading"><h2 id="services-title">서비스</h2><span>{{ services | length }}개</span></div>
+      <div class="service-grid">
+        {% for service in services %}
+        <a class="service-app" href="{{ service.href }}" {% if service.new_tab | default(false) %}target="_blank" rel="noopener noreferrer"{% endif %} title="{{ service.description }}" aria-label="{{ service.name }} {{ service.badge | default('') }} 열기{% if service.new_tab | default(false) %} (새 창){% endif %}" aria-describedby="service-desc-{{ service.id }}">
+          <span class="service-icon" data-service="{{ service.id }}">
+            {% if service.icon_url | default('') %}
+            <img src="{{ service.icon_url }}" alt="" width="80" height="80" loading="lazy">
+            {% elif service.icon == 'scope' %}
+            <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="3" fill="currentColor" stroke="none"/><path d="M16 1v6m0 18v6M1 16h6m18 0h6"/></svg>
+            {% elif service.icon == 'heart' %}
+            <svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 26 5 15C-2 8 8 0 16 9c8-9 18-1 11 6Z"/><path d="M10 15h4l2-4 3 8 2-4h3"/></svg>
+            {% else %}
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 12h16M12 4v16"/></svg>
+            {% endif %}
+          </span>
+          <span class="service-name">{{ service.name }}</span>
+          {% if service.badge | default('') %}<span class="service-badge">{{ service.badge }}</span>{% endif %}
+          {% if service.note | default('') %}<span class="service-note">{{ service.note }}</span>{% endif %}
+          <span id="service-desc-{{ service.id }}" class="sr-only">{{ service.description }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    <a class="service-intro-link" href="{{ url_for('intro') }}">휴스코프가 궁금하다면 <span>서비스 소개 ↗</span></a>
+    <a class="service-intro-link" href="{{ url_for('static', filename='docs/function-spec.html', v='3.129') }}">화면·버튼·기능의 상세 정보구조 <span>기능명세서 · IA ↗</span></a>
+    <a class="service-intro-link" href="https://github.com/kksh0379/ncfoundation-collector/blob/claude/quirky-euler-agfmp/DEVNOTE.md" target="_blank" rel="noopener noreferrer">서비스 구성과 동작 방식 <span>개발자 노트 원문 ↗</span></a>
+  </main>
+  <footer class="launcher-footer"><span>© {{ year }} 김상화</span><span>개인용 · 비공개 서비스</span><span>v3.129</span></footer>
+  <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.129') }}"></script>
+</body>
+</html>

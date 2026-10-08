@@ -1,0 +1,86 @@
+/* v3.101: shared header and collector navigation. */
+:root { --app-header-height: 56px; }
+.launcher-return{display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;height:40px;border-radius:10px;color:#64748b;text-decoration:none;}.launcher-return svg{width:20px;height:20px;}.launcher-return:hover{background:#edf3ff;color:var(--primary);}.launcher-return:focus-visible{outline:2px solid var(--primary);outline-offset:-2px;}
+
+.app-header {
+  height: calc(var(--app-header-height) + var(--sat));
+  padding: calc(6px + var(--sat)) calc(16px + var(--sar)) 6px calc(16px + var(--sal));
+  background: var(--card);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+  gap: 12px;
+}
+.brand { color: var(--text); gap: 8px; }
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  padding: 5px;
+  color: var(--primary);
+  background: #eef4ff;
+  border-radius: 12px;
+}
+.brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.4px; }
+.brand-name b { font-weight: 800; }
+.header-actions { gap: 6px; }
+.app-header .foot-user {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 2px;
+}
+.app-header .auth-btn {
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #f4f5f7;
+  color: #495466;
+  font-size: 12px;
+  font-weight: 700;
+}
+.app-header .auth-btn.admin-only { background: transparent; color: var(--muted); }
+.app-header #login-btn { background: #edf3ff; color: var(--primary-dark); }
+.app-header .auth-btn:active { background: #e8edf5; }
+.brand:focus-visible, .app-header .auth-btn:focus-visible, .tabs .tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.tabs-wrap { top: calc(var(--app-header-height) + var(--sat)); }
+.tabs { gap: 6px; padding: 9px 12px; }
+.tabs > .tab {
+  height: auto;
+  min-height: 36px;
+  padding: 7px 9px;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.25;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #f5f6f8;
+  color: #596273;
+  transition: background .15s ease, color .15s ease;
+}
+.tabs > .tab .tab-icon { width: 17px; height: 17px; flex-basis: 17px; }
+.tabs > .tab.active {
+  color: var(--primary-dark);
+  background: #edf3ff;
+  border-color: #d5e2fb;
+  font-weight: 800;
+}
+.tabs .tab.active .tab-icon { color: var(--tab-icon-color); }
+@media (hover: hover) {
+  .app-header .auth-btn:hover { background: #e8edf5; }
+  .tabs > .tab:not(.active):hover { color: var(--text); background: #ebedf2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabs > .tab { transition: none; }
+}
+
+/* User-provided NC mark keeps its original color on the light tab surface. */
+.tabs > .tab .nc-mark { width:18px; height:10px; object-fit:contain; }
+.tabs > .tab.active .nc-mark { filter:none; }

@@ -1,0 +1,50 @@
+<main class="view-body" id="view-videos" hidden>
+  <section class="videos-shell" aria-labelledby="videos-heading">
+    <section id="videos-browse">
+    <header class="videos-masthead"><div><span class="videos-eyebrow">HSCOPE CINEMA</span><h2 id="videos-heading">오늘의 감상</h2></div><p>보고 싶은 이야기, 멈췄던 순간부터.</p></header>
+    <section id="videos-hero" class="videos-hero" hidden aria-label="추천 작품"></section>
+    <p id="videos-status" role="status" aria-live="polite" hidden></p>
+    <div class="videos-discovery">
+      <label class="sr-only" for="videos-search">애니메이션 검색</label>
+      <input id="videos-search" type="search" placeholder="애니메이션 제목 검색" autocomplete="off">
+      <div class="videos-filters" aria-label="작품 범위"><button type="button" id="videos-all" aria-pressed="true">전체 작품</button><button type="button" id="videos-saved" aria-pressed="false">내 목록</button></div>
+      <p id="videos-count" role="status" aria-live="polite"></p>
+    </div>
+    <div id="videos-shelves">
+      <section id="videos-continue-section" class="videos-shelf" hidden><h3>이어보기</h3><div id="videos-continue" class="videos-rail"></div></section>
+      <section id="videos-my-section" class="videos-shelf" hidden><h3>내 목록</h3><div id="videos-my-rail" class="videos-rail"></div></section>
+      <section id="videos-picks-section" class="videos-shelf" hidden><h3>추천 작품</h3><div id="videos-picks" class="videos-rail"></div></section>
+    </div>
+    <h3 id="videos-grid-heading" class="videos-grid-heading">모든 작품</h3>
+    <div id="videos-library" class="videos-library" aria-label="작품 목록"></div>
+    <div id="videos-sentinel" class="videos-sentinel" role="status" aria-live="polite"></div>
+    </section>
+    <section id="videos-detail" hidden aria-label="선택한 작품">
+      <div class="videos-detail-nav"><button type="button" id="videos-back">← 뒤로가기</button><button type="button" id="videos-detail-save" aria-pressed="false">내 목록에 추가</button></div>
+      <h3 id="videos-title"></h3>
+      <p id="videos-detail-status" role="status" aria-live="polite" hidden></p>
+      <div id="videos-detail-body" hidden>
+      <section id="videos-inspection" class="videos-inspection" hidden aria-label="회차 재생 검사"><div><span class="videos-inspection-pulse" aria-hidden="true"></span><span id="videos-inspection-status" role="status" aria-live="polite"></span></div><progress id="videos-inspection-progress" max="100" value="0" aria-label="회차 검사 진행률"></progress><div class="videos-inspection-actions"><button type="button" id="videos-inspection-toggle">검사 중지</button><button type="button" id="videos-inspection-all" hidden>전체 회차 검사</button></div></section>
+      <div class="videos-watch-head"><strong id="videos-selected"></strong><a id="videos-original" class="admin-only" target="_blank" rel="noopener noreferrer">원본 사이트에서 보기 ↗</a></div>
+      <div id="videos-player" class="videos-player"><p>회차를 선택한 뒤 재생을 눌러 주세요.</p></div>
+      <div id="videos-timeline" class="videos-timeline" hidden><div class="videos-timeline-track"><input type="range" id="videos-seek" min="0" max="1" step="0.1" value="0" disabled aria-label="재생 위치"><output id="videos-time">0:00 / 0:00</output></div><div class="videos-timeline-actions"><button type="button" id="videos-rewind" aria-label="10초 뒤로">−10초</button><button type="button" id="videos-toggle-play">재생</button><button type="button" id="videos-forward" aria-label="10초 앞으로">+10초</button><span id="videos-seek-status" role="status" aria-live="polite"></span></div></div>
+      <div id="videos-airplay-controls" class="videos-airplay-controls" hidden><button type="button" id="videos-airplay">AirPlay</button><button type="button" id="videos-airplay-return" hidden>이 기기로 전환</button><span id="videos-airplay-status" role="status" aria-live="polite"></span></div>
+      <div id="videos-subtitle-sync" class="videos-subtitle-sync" hidden><span class="videos-subtitle-label">자막 시간</span><button type="button" id="videos-subtitle-earlier" aria-label="자막을 0.1초 빠르게">−0.1초</button><output id="videos-subtitle-delay" aria-live="polite">+1.5초</output><button type="button" id="videos-subtitle-later" aria-label="자막을 0.1초 늦게">+0.1초</button><small>−는 빠르게, +는 늦게. 적용 후 AirPlay 기기를 다시 선택해 주세요.</small></div>
+      <div class="videos-controls"><button type="button" id="videos-prev">이전 화</button><button type="button" id="videos-picker-open" aria-haspopup="dialog" aria-controls="videos-picker" aria-expanded="false">회차 선택 ▾</button><button type="button" id="videos-next">다음 화</button></div>
+      <p class="videos-picker-hint">회차를 누르면 목록이 열려요.</p>
+      <button type="button" id="videos-play" class="videos-resume"><span class="videos-resume-icon" aria-hidden="true">▶</span><span><strong id="videos-resume-title">재생하기</strong><small id="videos-resume-info"></small></span><span class="videos-resume-arrow" aria-hidden="true">›</span></button>
+      <p class="videos-help">영상이 재생되지 않으면 다시 불러오거나 다른 회차를 선택해 주세요.</p>
+      <dialog id="videos-picker" class="videos-episode-picker" aria-labelledby="videos-episode-heading"><div class="videos-sheet-handle" aria-hidden="true"></div>
+        <div class="videos-episode-heading"><h4 id="videos-episode-heading">회차 선택</h4><button type="button" id="videos-picker-close" aria-label="회차 선택 닫기">×</button></div>
+        <div class="videos-series-row"><label id="videos-series-label" class="videos-series-label" for="videos-series">시리즈 <select id="videos-series"></select></label><span id="videos-episode-count"></span></div>
+        <div class="videos-quick-pages"><button type="button" id="videos-current-page">현재 회차</button><button type="button" id="videos-latest-page">최신 회차</button></div>
+        <div id="videos-range-row" class="videos-range-row" hidden><button type="button" id="videos-range-prev" aria-label="이전 100화 구간">‹</button><label for="videos-range" class="videos-range-label">회차 구간<select id="videos-range"></select></label><button type="button" id="videos-range-next" aria-label="다음 100화 구간">›</button></div>
+        <form id="videos-jump-form" class="videos-jump"><label for="videos-jump">회차 바로가기</label><input id="videos-jump" type="number" min="1" step="1" inputmode="numeric" placeholder="회차 번호 입력" required><button type="submit">이동</button></form>
+        <p id="videos-jump-status" role="status" aria-live="polite" hidden></p>
+        <p id="videos-range-info" class="videos-range-info"></p>
+        <div id="videos-episodes" class="videos-episodes" aria-label="회차 선택"></div><p class="videos-sheet-help videos-availability-legend"><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="m8 6 6 4-6 4Z" fill="currentColor" stroke="none"/></svg> 재생 확인</span><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="m4.4 4.4 11.2 11.2"/></svg> 재생 확인 실패</span></p>
+      </dialog>
+      </div>
+    </section>
+  </section>
+</main>

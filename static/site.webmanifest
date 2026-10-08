@@ -1,0 +1,27 @@
+{
+  "name": "휴스코프",
+  "short_name": "휴스코프",
+  "lang": "ko",
+  "id": "/hscope",
+  "start_url": "/hscope?app=1",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#2d6cdf",
+  "background_color": "#f6f8fc",
+  "icons": [
+    {
+      "src": "/static/icon-192.png?v=3.120",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512.png?v=3.120",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "description": "설치한 아이콘으로 휴스코프를 바로 실행하세요.",
+  "orientation": "portrait-primary"
+}
