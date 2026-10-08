@@ -1,0 +1,13 @@
+.hs-skeleton{box-sizing:border-box;min-width:0;padding:16px;margin:0 0 12px;border:1px solid var(--border,#e4e6eb);border-radius:12px;background:var(--card,#fff);list-style:none;overflow:hidden;pointer-events:none}
+.hs-sk-visual{display:flex;gap:16px;min-width:0}.hs-sk-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}.hs-sk-block{display:block;position:relative;overflow:hidden;flex-shrink:0;background:#e9edf3;border-radius:6px;height:14px;width:100%}
+.hs-sk-block::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 15%,rgba(255,255,255,.65) 50%,transparent 85%);transform:translateX(-100%);animation:hs-sk-shimmer 1.65s ease-in-out infinite}
+.hs-sk-meta{width:32%;height:12px}.hs-sk-title{width:82%;height:21px}.hs-sk-short{width:58%}.hs-sk-media{width:148px;height:120px;border-radius:8px}.hs-sk-actions{display:flex;gap:8px;padding-top:4px}.hs-sk-button{width:86px;height:32px}
+.hs-sk-video{margin:0;padding:0;border:0;background:transparent}.hs-sk-video .hs-sk-visual{display:block}.hs-sk-video .hs-sk-media{width:100%;height:auto;aspect-ratio:2/3}.hs-sk-video .hs-sk-copy{padding:12px 0}.hs-sk-video .hs-sk-meta{display:none}
+.hs-sk-metrics .hs-sk-title{width:62%;height:32px}.hs-sk-reader{border:0;background:transparent;padding:12px 0}.hs-sk-reader .hs-sk-copy{gap:18px}.hs-sk-reader .hs-sk-line{height:16px}
+.hs-sk-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+body.view-list .hs-sk-card .hs-sk-media,body.view-list .hs-sk-card .hs-sk-actions,body.view-list .hs-sk-card .hs-sk-line,body.view-list .hs-sk-card .hs-sk-short{display:none}
+body.view-list .hs-sk-card{padding:12px;margin-bottom:6px}.hs-sk-table{padding:12px}.hs-sk-table .hs-sk-copy{flex-direction:row}.hs-sk-table .hs-sk-block{width:23%}
+.reader-view.dark .hs-sk-block{background:#2c3547}.reader-view.dark .hs-sk-block::after{opacity:.22}
+@keyframes hs-sk-shimmer{to{transform:translateX(100%)}}
+@media(max-width:600px){.hs-sk-card .hs-sk-media,.hs-sk-event .hs-sk-media{display:none}.hs-skeleton{padding:14px}.hs-sk-video{padding:0}}
+@media(prefers-reduced-motion:reduce){.hs-sk-block::after{animation:none;display:none}}

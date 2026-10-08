@@ -86,7 +86,7 @@
     const target=document.getElementById('ed-results');if(!target)return;
     const notice=document.getElementById('ed-status');
     if(busy){notice.textContent='AI 추천 중…';notice.hidden=false;}
-    if(!result){notice.textContent='';notice.hidden=true;target.innerHTML='';return;}
+    if(!result){if(busy) HScopeSkeleton.render(target,'event',{count:3,label:'행사를 추천하는 중이에요.'});else{notice.textContent='';notice.hidden=true;target.innerHTML='';}return;}
     if(!busy) notice.textContent=(result.ai_error || !result.items?.length ? result.notice||'' : '').replace(/([가-힣][.!?]) +(?=[가-힣])/g,'$1\n');notice.hidden=!notice.textContent;notice.dataset.aiError=result.ai_error||'';
 
     const keys=new Set(available.map(s=>s.url));

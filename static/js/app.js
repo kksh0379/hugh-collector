@@ -638,7 +638,8 @@ async function requestLunchRecommendation(payload, timeoutMs = 5000) {
 }
 
 function showLoading(el) {
-  el.innerHTML = `<li class="empty">${catSpin("불러오는 중…")}</li>`;
+  if (el.querySelector(".card, [data-key]")) return;
+  HScopeSkeleton.render(el, el.id === "list-event" ? "event" : "card");
 }
 
 // 리스트 엘리먼트 id(list-cat 등)에서 탭 키를 얻는다.
@@ -1441,12 +1442,19 @@ let eventCalYM = null;                    // 캘린더가 보는 [year, month(0-
 async function loadEvent() {
   const el = document.getElementById("list-event");
   showLoading(el);
+  const curation = document.getElementById("event-curation");
+  const calendar = document.getElementById("cal-event");
+  if (curation && !document.getElementById("ed-results")) HScopeSkeleton.render(curation,"event");
+  if (calendar && !calendar.children.length) HScopeSkeleton.render(calendar,"event");
   try {
     const res = await fetchData("/api/events");
     setTabData("event", el, await res.json(), renderEvents);
     TAB_DATA.event.prefilter = filterEventsByCategory;
     renderTab("event");
-  } catch (e) { emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요."); }
+  } catch (e) {
+    emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+    for (const target of [curation,calendar]) if (target?.querySelector(".hs-skeleton")) target.innerHTML='<p class="empty">행사를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>';
+  }
 }
 function eventDateBadge(s) {
   if (!s.start_date) return "일정 미정";
@@ -2664,7 +2672,7 @@ function renderSecurityReport(payload) {
 let reportKind = "foundation";
 async function loadReport(id) {
   const el = document.getElementById("report-body");
-  if (!el.dataset.loaded) el.innerHTML = `<li class="empty">${catSpin("리포트 불러오는 중…")}</li>`;
+  if (!el.dataset.loaded) HScopeSkeleton.render(el, "report", {count:2,label:"리포트를 불러오는 중이에요."});
   try {
     const getUrl = id ? ("/api/report/get?id=" + id) : ("/api/report/get?kind=" + reportKind);
     const [snaps, rep] = await Promise.all([
@@ -3127,7 +3135,7 @@ function lunchLocationLabel(location) {
       renderCats(); renderList(); msg("");
       if (Date.now() - cached.at < 30000) return;
     } else if (list) {
-      list.innerHTML = `<li class="lunch-loading">${catSpin("주변 맛집 불러오는 중…")}</li>`;
+      HScopeSkeleton.render(list,"food",{label:"맛집 목록을 불러오는 중이에요."});
     }
     try {
       const d = await getJSON("/api/lunch/restaurants?loc=" + locId);
@@ -3228,7 +3236,7 @@ function lunchLocationLabel(location) {
     const loc = {...LUNCH.curLoc}, key = gpsKey(loc), sequence = ++restaurantSequence;
     const list = $("lunch-list");
     LUNCH.rows = [];
-    if (list) list.innerHTML = `<li class="lunch-loading">${catSpin("저장된 주변 맛집 불러오는 중…")}</li>`;
+    if (list) HScopeSkeleton.render(list,"food",{label:"맛집 목록을 불러오는 중이에요."});
     try {
       const data = await gpsApi("/api/lunch/nearby", gpsPayload(loc));
       if (sequence !== restaurantSequence || key !== gpsKey()) return;
@@ -3411,7 +3419,7 @@ function lunchLocationLabel(location) {
     const nameEl = $("lunch-rev-name"), body = $("lunch-rev-body");
     if (nameEl) nameEl.textContent = r.name || "식당";
     showView("view-lunch-reviews");
-    if (body) body.innerHTML = `<div class="lrev-head">${catRunInline("평점·후기 불러오는 중…")}</div>`;
+    HScopeSkeleton.render(body,"reader",{count:2,label:"평점과 후기를 불러오는 중이에요."});
     let revs = [];
     try { revs = await getJSON("/api/lunch/reviews?rid=" + id); } catch (e) { revs = []; }
     renderReviews(r, revs);

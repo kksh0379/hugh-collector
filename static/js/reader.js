@@ -24,7 +24,7 @@
     controller = new AbortController();
     const currentController = controller;
     const current = ++sequence;
-    body.replaceChildren();
+    HScopeSkeleton.render(body, "reader", {count:2,label:"기사 본문을 불러오는 중이에요."});
     body.setAttribute("aria-busy", "true");
     // 본문 로딩: 텍스트 우측에 조그만 달리는 고양이(app.js의 catRunInline, 없으면 텍스트만)
     if (typeof window.catRunInline === "function") status.innerHTML = window.catRunInline("기사 본문을 불러오고 있어요…");
@@ -41,6 +41,7 @@
       source.href = safeUrl(data.url) || url;
       status.textContent = data.mode === "excerpt" ? data.notice : "AI 요약을 준비하고 있어요…";
       retry.hidden = data.mode !== "excerpt";
+      body.replaceChildren();
       for (const text of data.paragraphs) {
         const p = document.createElement("p");
         p.textContent = text; // Never execute publisher HTML.
@@ -54,6 +55,7 @@
         : (error instanceof SyntaxError || error instanceof TypeError)
           ? "본문을 불러오지 못했습니다. 다시 시도하거나 원문을 확인해 주세요."
           : error.message;
+      body.replaceChildren();
       retry.hidden = false;
     } finally {
       clearTimeout(timer);

@@ -31,7 +31,7 @@
   }
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
   const LOADING_MSG = '재무세무 소식을 불러오고 있어요…';
-  const loadingHtml = () => `<p class="finance-empty finance-loading">${typeof window.catRunInline === 'function' ? window.catRunInline(LOADING_MSG) : esc(LOADING_MSG)}</p>`;
+  const loadingHtml = () => HScopeSkeleton.html('card', {count:3,label:LOADING_MSG});
   function renderNews() {
     if (!data) return;
     if (data.pending) { $('finance-news').innerHTML = loadingHtml(); return; }  // 로딩 중 표시
@@ -112,7 +112,7 @@
   async function load() {
     if (loading) return;
     loading=true;
-    if (!data || !data.items || !data.items.length) $('finance-news').innerHTML = loadingHtml();  // 즉시 로딩 표시
+    if (!data || !data.items || !data.items.length) { $('finance-news').innerHTML = loadingHtml(); HScopeSkeleton.render($('finance-indicators'),'metrics',{count:4}); }  // 즉시 로딩 표시
     try {
       for (let attempt=0; attempt<12; attempt++) {
         const result=await json('/api/finance/dashboard'); render(result);
@@ -121,7 +121,9 @@
       }
       $('finance-status').textContent='연결 확인이 지연되고 있습니다.\n잠시 후 새로고침해 주세요.\n표시된 숫자는 예시입니다.';
     } catch { $('finance-status').textContent='정보를 불러오지 못했습니다.\n새로고침으로 다시 시도해 주세요.'; }
-    finally { loading=false; }
+    finally { loading=false;
+      for (const id of ['finance-indicators','finance-news']) { const el=$(id); if(el.querySelector('.hs-skeleton')) el.innerHTML='<p class="finance-empty">정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>'; }
+    }
   }
   async function loadStock() {
     const spin = add => { const b=document.querySelector('.finance-stock-refresh'); if(b) b.classList.toggle('spin', add); };

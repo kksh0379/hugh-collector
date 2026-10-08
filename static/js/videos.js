@@ -156,6 +156,7 @@
     if (append) $('videos-library').append(...cards); else { $('videos-library').replaceChildren(...cards); renderShelves(query); }
     const more = rows.length > visibleCount;
     $('videos-sentinel').hidden = !more; $('videos-sentinel').textContent = more ? '스크롤하면 다음 작품을 불러와요' : '';
+    if (!rows.length && indexLoading && scope === 'all' && !query) { HScopeSkeleton.render($('videos-library'), 'video', {count:6,label:'작품 목록을 불러오는 중이에요.'}); return; }
     if (!rows.length) { const p = document.createElement('p'); p.className = 'videos-empty'; p.textContent = indexLoading && scope === 'all' ? '전체 작품 목록을 불러오고 있어요…' : scope === 'saved' && !query ? '마음에 드는 작품을 내 목록에 추가해 보세요.' : '검색 결과가 없어요. 다른 제목으로 찾아보세요.'; $('videos-library').append(p); }
   }
   let loadingMore = false;

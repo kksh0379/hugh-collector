@@ -1,0 +1,6 @@
+{% for i in range(3) %}
+<li class="hs-skeleton hs-sk-card" {% if loop.first %}role="status"{% endif %}>
+  {% if loop.first %}<span class="hs-sk-sr">정보를 불러오는 중이에요.</span>{% endif %}
+  <div class="hs-sk-visual" aria-hidden="true"><span class="hs-sk-block hs-sk-media"></span><div class="hs-sk-copy"><span class="hs-sk-block hs-sk-meta"></span><span class="hs-sk-block hs-sk-title"></span><span class="hs-sk-block hs-sk-line"></span><span class="hs-sk-block hs-sk-short"></span><div class="hs-sk-actions"><span class="hs-sk-block hs-sk-button"></span><span class="hs-sk-block hs-sk-button"></span></div></div></div>
+</li>
+{% endfor %}
