@@ -28,3 +28,12 @@ test('a stale reader failure cannot erase the next article loading state',async(
 test('finance failure and exhausted polling remove pending skeletons',async()=>{
  for(const fail of [true,false]){const els=Object.fromEntries(['finance-news','finance-indicators','finance-status'].map(k=>[k,node()]));const ctx=context({$:id=>els[id],loading:false,data:null,json:async()=>{if(fail)throw Error('offline');return {pending:true};},render(){},pause:async()=>{}});ctx.loadingHtml=()=>ctx.HScopeSkeleton.html('card');const src=fs.readFileSync('static/js/finance.js','utf8');vm.runInContext(src.slice(src.indexOf('  async function load()'),src.indexOf('  async function loadStock()')),ctx);await ctx.load();assert.doesNotMatch(els['finance-news'].innerHTML,/hs-skeleton/);assert.doesNotMatch(els['finance-indicators'].innerHTML,/hs-skeleton/);assert.equal(ctx.loading,false);}
 });
+test('finance suppresses legacy demo values, change and charts while keeping live observations',()=>{
+ const ctx=vm.createContext({esc:String,fmtDate:String,modes:{unconfigured:'연결 준비',live:'실데이터'}});
+ const src=fs.readFileSync('static/js/finance.js','utf8');
+ vm.runInContext(src.slice(src.indexOf('  function indicatorCardHtml('),src.indexOf('  function render(result)')),ctx);
+ const sample={name:'환율',code:'ECOS/USD',unit:'원',value:98765,change:12345,ratio:99,date:'20990101',mode:'demo',history:[{value:1},{value:2}]};
+ const html=ctx.indicatorCardHtml(sample);
+ assert.match(html,/연결 준비/);assert.match(html,/<strong>—<\/strong>/);assert.doesNotMatch(html,/98,765|12345|20990101|<svg/);
+ const live=ctx.indicatorCardHtml({...sample,mode:'live'});assert.match(live,/98,765/);assert.match(live,/<svg/);
+});

@@ -18,7 +18,9 @@ class FinanceTests(unittest.TestCase):
 
     def test_missing_keys_are_not_real_values(self):
         row = finance.indicator(finance.INDICATORS[0])
-        self.assertEqual(row['mode'], 'demo')
+        self.assertEqual(row['mode'], 'unconfigured')
+        self.assertIsNone(row['value'])
+        self.assertEqual(row['history'], [])
         self.assertIsNone(row['date'])
         self.assertIsNone(row['change'])
         result = self.client.post('/api/finance/business-status', json={'number': '123-45-67890'})
@@ -26,6 +28,15 @@ class FinanceTests(unittest.TestCase):
         self.assertEqual(result.headers['Cache-Control'], 'no-store')
         self.assertNotIn('계속사업자', str(result.json))
         self.assertEqual(finance.disclosures('')['mode'], 'unconfigured')
+
+    def test_pending_dashboard_has_no_example_values(self):
+        with patch.object(finance.cache, 'get', return_value=None):
+            result = self.client.get('/api/finance/dashboard').json
+        self.assertTrue(result['pending'])
+        for row in result['indicators']:
+            self.assertEqual(row['mode'], 'loading')
+            self.assertIsNone(row['value'])
+            self.assertEqual(row['history'], [])
 
     def test_invalid_business_input_never_calls_provider(self):
         with patch.object(finance.requests, 'post') as post:

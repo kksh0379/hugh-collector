@@ -3,7 +3,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const labels = {policy:'세법·보도자료',guide:'회계·세무 가이드',legislation:'입법예고'};
-  const modes = {live:'실데이터',demo:'예시 데이터',unconfigured:'연결 준비',unavailable:'일시 중단',loading:'불러오는 중'};
+  const modes = {live:'실데이터',demo:'연결 준비',unconfigured:'연결 준비',unavailable:'일시 중단',loading:'불러오는 중'};
   let data = null, category = 'all', loading = false, dartVersion = 0, ncData = null;
   const NC_CODE = '036570';
   const NC_CORP = '00261443';   // (주)엔씨 DART 고유번호(화면에 노출하지 않고 내부에서만 사용)
@@ -72,6 +72,8 @@
     $('finance-calendar-message').textContent = cal ? (cal.message || '') : '';
   }
   function indicatorCardHtml(r) {
+    // 이전 응답에 예시값이 남아 있어도 숫자·추이·기준일을 표시하지 않는다.
+    if (r.mode === 'demo') r = {...r, value:null, change:null, ratio:null, date:null, history:[], mode:'unconfigured'};
     let chart = '';
     if (r.history && r.history.length > 1) {
       // 값 범위로 정규화해 세로 4~32 영역에 맞춘다(환율처럼 큰 수도 박스를 벗어나지 않게).
@@ -80,26 +82,26 @@
       chart = `<svg viewBox="0 0 160 36" role="img" aria-label="${esc(r.name)} 최근 6개월 추이"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span class="finance-spark-label">최근 6개월 추이</span>`;
     }
     const help = r.desc ? `<button type="button" class="finance-help" aria-label="${esc(r.name)} 설명 보기" aria-expanded="false" data-tip="${esc(r.desc)}">?</button>` : '';
-    const dateLine = r.date ? esc(fmtDate(r.date))+' 기준' : (r.mode === 'loading' ? '불러오는 중…' : '실제 시세 아님');
+    const dateLine = r.date ? esc(fmtDate(r.date))+' 기준' : (r.mode === 'loading' ? '불러오는 중…' : '기준일 없음');
     let changeLine;
-    if (r.change == null) changeLine = r.mode === 'loading' ? '주가를 불러오고 있습니다.' : '비교 데이터 없음';
+    if (r.change == null) changeLine = r.mode === 'loading' ? '지표를 불러오고 있습니다.' : '비교 데이터 없음';
     else if (r.ratio != null) changeLine = `전일 종가 대비 ${r.change>0?'+':''}${esc(Number(r.change).toLocaleString('ko-KR'))}원 (${r.ratio>0?'+':''}${esc(r.ratio)}%)`;
     else changeLine = `직전 관측 대비 ${r.change>0?'+':''}${esc(r.change)}${r.unit==='%'?'%p':esc(r.unit)}`;
     const isNc = String(r.code||'').startsWith('KRX');
     const idAttr = isNc ? ' id="finance-nc"' : '';
     const refresh = isNc ? `<button type="button" class="finance-stock-refresh" aria-label="주가 새로고침" title="주가 새로고침">↻</button>` : '';
-    // '실데이터' 딱지는 숨기고(요청), '예시 데이터·일시 중단·불러오는 중'만 경고로 표시(데이터 정직성).
+    // 실제 관측값만 표시하고 연결·조회 상태를 안내한다.
     const badge = r.mode === 'live' ? '' : `<span class="finance-mode">${esc(modes[r.mode])}</span>`;
     return `<article class="finance-indicator"${idAttr}>${badge}${refresh}<h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;
   }
   function render(result) {
     data = result;
     // 지표 3종(ECOS) + 엔씨 주가(별도 /stock 로드). 엔씨 카드는 ncData를 사용해 폴링에도 유지.
-    $('finance-indicators').innerHTML = data.indicators.map(indicatorCardHtml).join('') + indicatorCardHtml(ncData || ncPlaceholder());
+    if (data.pending) HScopeSkeleton.render($('finance-indicators'),'metrics',{count:4});
+    else $('finance-indicators').innerHTML = data.indicators.map(indicatorCardHtml).join('') + indicatorCardHtml(ncData || ncPlaceholder());
     renderCalendar();
     $('finance-sources').innerHTML = data.sources.map(s => `<div class="finance-source">${link(s.url,s.name)}<span class="finance-mode">${esc(modes[s.mode])}${s.mode==='live' ? ' · '+s.count+'건' : ''}</span></div>`).join('');
-    const hasDemo = data.indicators.some(r => r.mode==='demo');
-    $('finance-status').textContent = data.pending ? '연결 상태를 확인하고 있습니다. 아래 숫자는 화면 예시입니다.' : (hasDemo ? '예시 데이터가 포함되어 있습니다. 실제 시세·판단 근거로 사용할 수 없습니다.' : '지표별 기준일과 출처별 연결 상태를 확인하세요.');
+    $('finance-status').textContent = data.pending ? '경제지표와 소식을 불러오고 있습니다.' : '지표별 기준일과 출처별 연결 상태를 확인하세요.';
     // 데이터를 가져온 시점(연·월·일 시:분)을 표기. 초는 생략.
     const fe = $('finance-fetched');
     if (fe) {
@@ -119,7 +121,7 @@
         if (!result.pending) return;
         await pause(2000);
       }
-      $('finance-status').textContent='연결 확인이 지연되고 있습니다.\n잠시 후 새로고침해 주세요.\n표시된 숫자는 예시입니다.';
+      $('finance-status').textContent='연결 확인이 지연되고 있습니다.\n잠시 후 새로고침해 주세요.';
     } catch { $('finance-status').textContent='정보를 불러오지 못했습니다.\n새로고침으로 다시 시도해 주세요.'; }
     finally { loading=false;
       for (const id of ['finance-indicators','finance-news']) { const el=$(id); if(el.querySelector('.hs-skeleton')) el.innerHTML='<p class="finance-empty">정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>'; }

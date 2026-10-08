@@ -221,8 +221,8 @@ def indicator(spec):
     # spec: (table, code, name, unit, sample, desc[, freq]) — freq 생략 시 일(D).
     table, code, name, unit, sample, desc = spec[:6]
     freq = spec[6] if len(spec) > 6 else 'D'
-    result = dict(code=f'{table}/{code}', name=name, unit=unit, value=sample,
-                  change=None, ratio=None, date=None, mode='demo', history=[], desc=desc)
+    result = dict(code=f'{table}/{code}', name=name, unit=unit, value=None,
+                  change=None, ratio=None, date=None, mode='unconfigured', history=[], desc=desc)
     key = os.getenv('ECOS_API_KEY')
     if not key:
         return result
@@ -363,8 +363,8 @@ def dashboard():
 def dashboard_route():
     data = cache.get('dashboard', dashboard, ttl=900, wait=0)
     if data is None:
-        indicators = [dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3], value=s[4], change=None,
-            ratio=None, date=None, mode='demo', history=[], desc=s[5]) for s in INDICATORS]
+        indicators = [dict(code=s[0]+'/'+s[1], name=s[2], unit=s[3], value=None, change=None,
+            ratio=None, date=None, mode='loading', history=[], desc=s[5]) for s in INDICATORS]
         return jsonify(dict(pending=True, indicators=indicators,
             items=[], sources=[], calendar=tax_calendar()))
     # 브리핑 기사를 리더(본문 읽기·AI 요약)로 열 수 있도록 메모리에 등록한다.
