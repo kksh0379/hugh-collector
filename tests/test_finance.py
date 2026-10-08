@@ -38,17 +38,23 @@ class FinanceTests(unittest.TestCase):
             self.assertIsNone(row['value'])
             self.assertEqual(row['history'], [])
 
-    def test_bank_cash_and_remittance_are_distinct_and_yen_is_100_units(self):
-        html = b'<div id="subtabtest01"><span>2026/10/08 22:10:14</span><table><thead><tr><th>Currency</th><th>Buy</th><th>Sell</th></tr></thead><tbody><tr><td>JPY</td><td>864.41</td><td>834.69</td></tr></tbody></table></div><div id="subtabtest02"><span>2026/10/08 22:10:14</span><table><thead><tr><th>Currency</th><th>Send</th><th>Receive</th></tr></thead><tbody><tr><td>JPY</td><td>857.79</td><td>841.31</td></tr></tbody></table></div>'
-        row = finance.parse_exchange_quotes(html)['JPY']
-        self.assertEqual((row['cash_buy'],row['cash_sell'],row['send'],row['receive'],row['basis']), (864.41,834.69,857.79,841.31,100))
-        self.assertTrue(row['cash_at'].endswith('+09:00'))
-        for bad in [html.replace(b'Buy',b'Sell'), html.replace(b'864.41',b'NaN'), html.replace(b'2026/10/08 22:10:14',b''), html.replace(b'subtabtest01',b'subtabtest03')]:
-            rows = finance.parse_exchange_quotes(bad) if b'subtabtest02' in bad and b'2026/10/08' in bad else {}
-            self.assertNotIn('cash_buy', rows.get('JPY',{}))
+    def test_hana_cash_and_remittance_columns_yen_unit_and_cny(self):
+        from pathlib import Path
+        html = (Path(__file__).parent/'fixtures/hana_exchange.html').read_text()
+        quotes = finance.parse_exchange_quotes(html)
+        self.assertEqual(set(quotes), {'USD','JPY','EUR','CNY'})
+        row = quotes['JPY']
+        self.assertEqual((row['cash_buy'],row['cash_sell'],row['send'],row['receive'],row['basis']), (864.24,834.52,857.70,841.06,100))
+        self.assertEqual(row['cash_at'], '2026-10-08T21:02:00+09:00')
+        self.assertEqual(row['round'],717)
+        self.assertEqual(quotes['CNY']['cash_buy'],210.39)
+        for bad in [html.replace('현찰','다른 가격'),html.replace('고시일시','조회일시')]:
+            with self.assertRaises(ValueError): finance.parse_exchange_quotes(bad)
+        for bad in [html.replace('864.24','NaN'),html.replace('864.24','0.00'),html.replace('JPY (100)','JPY')]:
+            self.assertNotIn('JPY',finance.parse_exchange_quotes(bad))
 
     def test_exchange_failure_is_empty_and_pending_has_no_numbers(self):
-        with patch.object(finance.requests,'get',side_effect=TimeoutError):
+        with patch.object(finance.requests,'post',side_effect=TimeoutError):
             self.assertEqual(finance.exchange_quotes()['quotes'],{})
             self.assertEqual(finance.exchange_quotes()['mode'],'unavailable')
         with patch.object(finance.cache,'get',return_value=None):

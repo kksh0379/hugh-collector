@@ -255,56 +255,63 @@ def indicator(spec):
 
 
 # 공개 은행 고시표: 현찰과 송금을 섞지 않고 고객 관점 가격을 전달한다.
-FX_SOURCE_URL = 'https://sbiz.wooribank.com/biz/Dream?withyou=ENENG0189'
+FX_SOURCE_URL = 'https://www.kebhana.com/cont/mall/mall15/mall1501/index.jsp'
+FX_QUERY_URL = 'https://www.kebhana.com/cms/rate/wpfxd651_01i_01.do'
 FX_CODES = {'0000001':'USD', '0000002':'JPY', '0000003':'EUR', '0000053':'CNY'}
 
 
 def parse_exchange_quotes(content):
     soup = BeautifulSoup(content, 'html.parser')
+    text = soup.get_text(' ', strip=True)
+    stamp = re.search(r'고시일시\s*:\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\d{1,2})시\s*(\d{1,2})분\s*(\d{1,2})초\s*\((\d+)회차\)', text)
+    if not stamp:
+        raise ValueError('Missing Hana published time')
+    quoted_at = datetime(*map(int, stamp.groups()[:6]), tzinfo=KST).isoformat()
     quotes = {}
-    for panel_id, fields, headers in [
-        ('subtabtest01', ('cash_buy','cash_sell'), ['Currency','Buy','Sell']),
-        ('subtabtest02', ('send','receive'), ['Currency','Send','Receive'])]:
-        panel = soup.find(id=panel_id)
-        if not panel:
+    expected = ['통화','현찰','송금','외화수표파실때','매매기준율','환가료율','미화환산율','사실때','파실때','보낼때','받을때','환율','Spread','환율','Spread']
+    for table in soup.select('table.tblBasic'):
+        headers = [re.sub(r'\s+', '', x.get_text()) for x in table.select('thead th')]
+        if headers != expected:
             continue
-        table = panel.find('table')
-        if not table or [x.get_text(strip=True) for x in table.select('thead th')] != headers:
-            continue
-        timestamp = re.search(r'\b(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})\b', panel.get_text(' ', strip=True))
-        if not timestamp:
-            continue
-        quoted_at = datetime.strptime(timestamp[1], '%Y/%m/%d %H:%M:%S').replace(tzinfo=KST).isoformat()
         for tr in table.select('tbody tr'):
-            cells = [x.get_text(strip=True) for x in tr.select('td')]
-            if len(cells) != 3 or cells[0] not in FX_CODES.values():
+            cells = [x.get_text(' ', strip=True) for x in tr.select('td')]
+            if len(cells) != 11:
                 continue
-            values = [_num(x) for x in cells[1:]]
-            if not all(v is not None and math.isfinite(v) and v > 0 for v in values) or values[0] < values[1]:
+            match = re.search(r'\b(USD|JPY|EUR|CNY)\b', cells[0])
+            if not match:
                 continue
-            row = quotes.setdefault(cells[0], {'currency':cells[0], 'basis':100 if cells[0]=='JPY' else 1})
-            row.update(zip(fields, values))
-            row['cash_at' if panel_id=='subtabtest01' else 'remittance_at'] = quoted_at
+            currency = match[1]
+            if currency == 'JPY' and not re.search(r'JPY\s*\(100\)', cells[0]):
+                continue
+            values = [_num(cells[i]) for i in (1,3,5,6)]
+            if not all(v is not None and math.isfinite(v) and v > 0 for v in values):
+                continue
+            if values[0] < values[1] or values[2] < values[3]:
+                continue
+            quotes[currency] = dict(zip(('cash_buy','cash_sell','send','receive'), values),
+                currency=currency, basis=100 if currency=='JPY' else 1,
+                cash_at=quoted_at, remittance_at=quoted_at, round=int(stamp[7]))
     if not quotes:
-        raise ValueError('No verified exchange quotes')
+        raise ValueError('No verified Hana exchange quotes')
     return quotes
 
 
 def exchange_quotes():
     try:
-        response = requests.get(FX_SOURCE_URL, timeout=(3,7))
+        response = requests.post(FX_QUERY_URL, data={'curCd':'','inqStrDt':now().strftime('%Y%m%d'),
+            'inqKindCd':'1','pbldDvCd':'3','pbldSqn':''}, timeout=(3,7))
         response.raise_for_status()
         quotes = parse_exchange_quotes(response.content)
-        return {'mode':'live', 'quotes':quotes, 'source':'우리은행', 'source_url':FX_SOURCE_URL}
+        return {'mode':'live', 'quotes':quotes, 'source':'하나은행', 'source_url':FX_SOURCE_URL}
     except Exception:
-        return {'mode':'unavailable', 'quotes':{}, 'source':'우리은행', 'source_url':FX_SOURCE_URL}
+        return {'mode':'unavailable', 'quotes':{}, 'source':'하나은행', 'source_url':FX_SOURCE_URL}
 
 
 @bp.get('/exchange')
 def exchange_route():
-    result = cache.get('exchange-quotes', exchange_quotes, ttl=300, wait=0)
+    result = cache.get('exchange-hana-quotes', exchange_quotes, ttl=300, wait=0)
     return jsonify(dict(result, pending=False) if result is not None else
-                   {'mode':'loading','quotes':{},'pending':True,'source':'우리은행','source_url':FX_SOURCE_URL})
+                   {'mode':'loading','quotes':{},'pending':True,'source':'하나은행','source_url':FX_SOURCE_URL})
 
 
 def _num(value):
