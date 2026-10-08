@@ -254,6 +254,59 @@ def indicator(spec):
     return result
 
 
+# 공개 은행 고시표: 현찰과 송금을 섞지 않고 고객 관점 가격을 전달한다.
+FX_SOURCE_URL = 'https://sbiz.wooribank.com/biz/Dream?withyou=ENENG0189'
+FX_CODES = {'0000001':'USD', '0000002':'JPY', '0000003':'EUR', '0000053':'CNY'}
+
+
+def parse_exchange_quotes(content):
+    soup = BeautifulSoup(content, 'html.parser')
+    quotes = {}
+    for panel_id, fields, headers in [
+        ('subtabtest01', ('cash_buy','cash_sell'), ['Currency','Buy','Sell']),
+        ('subtabtest02', ('send','receive'), ['Currency','Send','Receive'])]:
+        panel = soup.find(id=panel_id)
+        if not panel:
+            continue
+        table = panel.find('table')
+        if not table or [x.get_text(strip=True) for x in table.select('thead th')] != headers:
+            continue
+        timestamp = re.search(r'\b(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})\b', panel.get_text(' ', strip=True))
+        if not timestamp:
+            continue
+        quoted_at = datetime.strptime(timestamp[1], '%Y/%m/%d %H:%M:%S').replace(tzinfo=KST).isoformat()
+        for tr in table.select('tbody tr'):
+            cells = [x.get_text(strip=True) for x in tr.select('td')]
+            if len(cells) != 3 or cells[0] not in FX_CODES.values():
+                continue
+            values = [_num(x) for x in cells[1:]]
+            if not all(v is not None and math.isfinite(v) and v > 0 for v in values) or values[0] < values[1]:
+                continue
+            row = quotes.setdefault(cells[0], {'currency':cells[0], 'basis':100 if cells[0]=='JPY' else 1})
+            row.update(zip(fields, values))
+            row['cash_at' if panel_id=='subtabtest01' else 'remittance_at'] = quoted_at
+    if not quotes:
+        raise ValueError('No verified exchange quotes')
+    return quotes
+
+
+def exchange_quotes():
+    try:
+        response = requests.get(FX_SOURCE_URL, timeout=(3,7))
+        response.raise_for_status()
+        quotes = parse_exchange_quotes(response.content)
+        return {'mode':'live', 'quotes':quotes, 'source':'우리은행', 'source_url':FX_SOURCE_URL}
+    except Exception:
+        return {'mode':'unavailable', 'quotes':{}, 'source':'우리은행', 'source_url':FX_SOURCE_URL}
+
+
+@bp.get('/exchange')
+def exchange_route():
+    result = cache.get('exchange-quotes', exchange_quotes, ttl=300, wait=0)
+    return jsonify(dict(result, pending=False) if result is not None else
+                   {'mode':'loading','quotes':{},'pending':True,'source':'우리은행','source_url':FX_SOURCE_URL})
+
+
 def _num(value):
     try:
         return float(str(value).replace(',', '').strip())

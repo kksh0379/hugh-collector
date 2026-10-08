@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const labels = {policy:'세법·보도자료',guide:'회계·세무 가이드',legislation:'입법예고'};
   const modes = {live:'실데이터',demo:'연결 준비',unconfigured:'연결 준비',unavailable:'일시 중단',loading:'불러오는 중'};
-  let data = null, category = 'all', loading = false, dartVersion = 0, ncData = null;
+  let data = null, category = 'all', loading = false, dartVersion = 0, ncData = null, fxData = null, fxLoading = false;
   const NC_CODE = '036570';
   const NC_CORP = '00261443';   // (주)엔씨 DART 고유번호(화면에 노출하지 않고 내부에서만 사용)
   const ncPlaceholder = () => ({code:'KRX/'+NC_CODE, name:'(주)엔씨', unit:'원', value:null, change:null, ratio:null, date:null, mode:'loading', history:[], desc:''});
@@ -71,6 +71,32 @@
     }).join('') : '<li class="finance-calendar-empty">다가오는 신고·납부 기한이 없습니다.</li>';
     $('finance-calendar-message').textContent = cal ? (cal.message || '') : '';
   }
+  const fxCodes = {'0000001':'USD','0000002':'JPY','0000003':'EUR','0000053':'CNY'};
+  function exchangeHtml(r) {
+    const currency = fxCodes[String(r.code || '').split('/')[1]];
+    if (!currency || !String(r.code || '').startsWith('731Y001/')) return '';
+    const quote = fxData?.quotes?.[currency];
+    const value = key => quote && Number.isFinite(quote[key]) && quote[key]>0 ? Number(quote[key]).toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2})+'원' : '—';
+    const when = key => quote?.[key] ? esc(quote[key].replace('T',' ').replace('+09:00','')) : '';
+    const status = !fxData || fxData.pending ? '은행 고시 환율을 불러오는 중이에요.' : !quote ? (fxData.mode==='live'?'이 고시표에서 제공하지 않는 통화예요.':'은행 거래 환율을 불러오지 못했어요.') : '';
+    return `<section class="finance-fx" aria-label="${currency} 은행 거래 환율"><p class="finance-fx-label">우리은행 · ${currency==='JPY'?'100엔':'1 '+currency} 기준</p><dl><dt>현찰 살 때</dt><dd>${value('cash_buy')}</dd><dt>현찰 팔 때</dt><dd>${value('cash_sell')}</dd></dl>${when('cash_at')?`<p class="finance-fx-time">현찰 고시 ${when('cash_at')}</p>`:''}<dl><dt>송금 보낼 때</dt><dd>${value('send')}</dd><dt>송금 받을 때</dt><dd>${value('receive')}</dd></dl>${when('remittance_at')?`<p class="finance-fx-time">송금 고시 ${when('remittance_at')}</p>`:''}${status?`<p class="finance-fx-time">${status}</p>`:''}<p class="finance-fx-time">고객 기준 · 우대 적용 전</p>${link('https://sbiz.wooribank.com/biz/Dream?withyou=ENENG0189','은행 고시표')}</section>`;
+  }
+  async function loadExchange() {
+    if (fxLoading) return;
+    fxLoading = true;
+    try {
+      for (let attempt=0; attempt<8; attempt++) {
+        fxData = await json('/api/finance/exchange');
+        if (!fxData.pending) break;
+        await pause(1500);
+      }
+      if (fxData?.pending) fxData = {mode:'unavailable',quotes:{}};
+    } catch { fxData = {mode:'unavailable',quotes:{}}; }
+    finally {
+      fxLoading = false;
+      if (data && !data.pending) $('finance-indicators').innerHTML = data.indicators.map(indicatorCardHtml).join('') + indicatorCardHtml(ncData || ncPlaceholder());
+    }
+  }
   function indicatorCardHtml(r) {
     // 이전 응답에 예시값이 남아 있어도 숫자·추이·기준일을 표시하지 않는다.
     if (r.mode === 'demo') r = {...r, value:null, change:null, ratio:null, date:null, history:[], mode:'unconfigured'};
@@ -92,7 +118,7 @@
     const refresh = isNc ? `<button type="button" class="finance-stock-refresh" aria-label="주가 새로고침" title="주가 새로고침">↻</button>` : '';
     // 실제 관측값만 표시하고 연결·조회 상태를 안내한다.
     const badge = r.mode === 'live' ? '' : `<span class="finance-mode">${esc(modes[r.mode])}</span>`;
-    return `<article class="finance-indicator"${idAttr}>${badge}${refresh}<h3>${esc(r.name)}${help}</h3><strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p></article>`;
+    return `<article class="finance-indicator"${idAttr}>${badge}${refresh}<h3>${esc(r.name)}${help}</h3>${String(r.code||'').startsWith('731Y001/')?'<p class="finance-fx-time">한국은행 ECOS</p>':''}<strong>${r.value == null ? '—' : Number(r.value).toLocaleString('ko-KR',{maximumFractionDigits:2})}</strong><span class="finance-unit">${esc(r.unit)}</span>${chart}<p>${dateLine}</p><p>${changeLine}</p>${exchangeHtml(r)}</article>`;
   }
   function render(result) {
     data = result;
@@ -313,5 +339,5 @@
   { const t=$('calc-save-type'); if(t)t.addEventListener('change',()=>{ const lb=$('calc-save-amount-label'); if(lb)lb.textContent = t.value==='lump'?'예치금 (원)':'월 납입액 (원)'; }); }
 
   // 재무세무 진입 시: 체크되어 있으면 (주)엔씨, 아니면(기본) 전체 공시를 조회.
-  window.onShowFinance=()=>{load();loadStock(); loadDart(dartNc && dartNc.checked ? NC_CORP : null);};
+  window.onShowFinance=()=>{load();loadStock();loadExchange(); loadDart(dartNc && dartNc.checked ? NC_CORP : null);};
 })();

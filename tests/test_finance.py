@@ -38,6 +38,24 @@ class FinanceTests(unittest.TestCase):
             self.assertIsNone(row['value'])
             self.assertEqual(row['history'], [])
 
+    def test_bank_cash_and_remittance_are_distinct_and_yen_is_100_units(self):
+        html = b'<div id="subtabtest01"><span>2026/10/08 22:10:14</span><table><thead><tr><th>Currency</th><th>Buy</th><th>Sell</th></tr></thead><tbody><tr><td>JPY</td><td>864.41</td><td>834.69</td></tr></tbody></table></div><div id="subtabtest02"><span>2026/10/08 22:10:14</span><table><thead><tr><th>Currency</th><th>Send</th><th>Receive</th></tr></thead><tbody><tr><td>JPY</td><td>857.79</td><td>841.31</td></tr></tbody></table></div>'
+        row = finance.parse_exchange_quotes(html)['JPY']
+        self.assertEqual((row['cash_buy'],row['cash_sell'],row['send'],row['receive'],row['basis']), (864.41,834.69,857.79,841.31,100))
+        self.assertTrue(row['cash_at'].endswith('+09:00'))
+        for bad in [html.replace(b'Buy',b'Sell'), html.replace(b'864.41',b'NaN'), html.replace(b'2026/10/08 22:10:14',b''), html.replace(b'subtabtest01',b'subtabtest03')]:
+            rows = finance.parse_exchange_quotes(bad) if b'subtabtest02' in bad and b'2026/10/08' in bad else {}
+            self.assertNotIn('cash_buy', rows.get('JPY',{}))
+
+    def test_exchange_failure_is_empty_and_pending_has_no_numbers(self):
+        with patch.object(finance.requests,'get',side_effect=TimeoutError):
+            self.assertEqual(finance.exchange_quotes()['quotes'],{})
+            self.assertEqual(finance.exchange_quotes()['mode'],'unavailable')
+        with patch.object(finance.cache,'get',return_value=None):
+            result=self.client.get('/api/finance/exchange').json
+        self.assertTrue(result['pending'])
+        self.assertEqual(result['quotes'],{})
+
     def test_invalid_business_input_never_calls_provider(self):
         with patch.object(finance.requests, 'post') as post:
             for value in ('abc1234567890', '123', '<script>', ['1234567890'], None):
