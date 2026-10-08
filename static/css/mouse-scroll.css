@@ -1,1 +1,2 @@
-html.mouse-scrolling, html.mouse-scrolling * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
+html.mouse-scroll-ready, html.mouse-scroll-ready * { cursor: grab !important; }
+html.mouse-scroll-pressed, html.mouse-scroll-pressed * { cursor: grabbing !important; user-select: none !important; -webkit-user-select: none !important; }
