@@ -1,5 +1,6 @@
 """Source metadata and short-lived playback URLs; media is never proxied."""
 import re
+import json
 import time
 import math
 import threading
@@ -28,7 +29,7 @@ def episode_states(title_id):
         if title_id not in _EPISODE_STATES:
             try:
                 import json
-                saved = json.loads(db.get_meta('video_availability_' + title_id, '{}') or '{}')
+                saved = json.loads(db.get_meta('video_availability_v2_' + title_id, '{}') or '{}')
             except Exception:
                 saved = {}
             if len(_EPISODE_STATES) >= 128:
@@ -47,7 +48,7 @@ def record_episode(title_id, series, episode, state):
         _EPISODE_STATES[title_id] = values
         try:
             import json
-            db.set_meta('video_availability_' + title_id, json.dumps(values))
+            db.set_meta('video_availability_v2_' + title_id, json.dumps(values))
         except Exception:
             pass
 
@@ -86,7 +87,7 @@ def check_episode(title_id, series, episode):
                 canonical = soup.select_one('link[rel="canonical"][href], meta[property="og:url"][content]')
                 page_path = urlparse(canonical.get('href') or canonical.get('content') or '').path if canonical else ''
                 # A captcha/error page or unsupported embedded player is not a missing video.
-                if (page_path.rstrip('/') == path.rstrip('/') or soup.select_one('#linktv-video')) and not soup.select_one('video[src], video source[src], iframe[src]'):
+                if (page_path.rstrip('/') == path.rstrip('/') or soup.select_one('#linktv-video')) and not has_player_markup(soup):
                     state = 'missing'
         if state == 'unknown':
             print(f'[video] 회차 사전 확인 보류: {title_id}/{series}/{episode} · HTTP {response.status_code}', flush=True)
@@ -114,19 +115,43 @@ def availability():
         return jsonify(states={f'{series}:{ep}': 'unknown' for ep in raw})
 
 
+def has_player_markup(soup):
+    return bool(soup.select_one('video[src], video source[src], iframe[src]') or any(
+        re.search(r'\b(?:var|let|const)\s+player_aaaa\s*=', script.string or script.get_text())
+        for script in soup.find_all('script', src=False)))
+
+
 def parse_playback(html):
     soup = BeautifulSoup(html, 'html.parser')
     video = soup.select_one('video#linktv-video')
-    if not video:
-        return None
-    source = video.find('source', src=True)
-    url = video.get('src') or (source.get('src') if source else '')
     safe = video_hls.safe_media_url
-    if not safe(url):
-        return None
-    tracks = [dict(src=t['src'], language=t.get('srclang', 'ko'), label=t.get('label', '한국어'))
-              for t in video.select('track[src]') if safe(t['src'])]
-    return dict(src=url, tracks=tracks)
+    if video:
+        source = video.find('source', src=True)
+        url = video.get('src') or (source.get('src') if source else '')
+        if safe(url):
+            tracks = [dict(src=t['src'], language=t.get('srclang', 'ko'), label=t.get('label', '한국어'))
+                      for t in video.select('track[src]') if safe(t['src'])]
+            return dict(src=url, tracks=tracks)
+    # The source now creates its video element in JS. Decode only its JSON data;
+    # never execute source scripts or accept hosts outside the media allowlist.
+    for script in soup.find_all('script', src=False):
+        text = script.string or script.get_text()
+        match = re.search(r'\b(?:var|let|const)\s+player_aaaa\s*=\s*', text)
+        if not match:
+            continue
+        try:
+            config, _ = json.JSONDecoder().raw_decode(text[match.end():])
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(config, dict):
+            continue
+        url = config.get('actual_url') or (config.get('url') if config.get('encrypt', 0) == 0 else '')
+        if not isinstance(url, str) or not safe(url):
+            continue
+        subtitle = config.get('subtitle_url')
+        tracks = [dict(src=subtitle, language='ko', label='한국어')] if isinstance(subtitle, str) and safe(subtitle) else []
+        return dict(src=url, tracks=tracks)
+    return None
 
 
 @lru_cache(maxsize=128)
@@ -162,7 +187,7 @@ def playback():
         if data and data.get('tracks') and request.args.get('probe') != '1':
             data['subtitle_delay'] = subtitle_delay
             data['native_src'] = url_for('video_library.native_manifest', token=video_hls.encode_playback(data), _external=True, _scheme='https')
-        absent = response.status_code == 200 and not BeautifulSoup(response.text, 'html.parser').select_one('video[src], video source[src], iframe[src]')
+        absent = response.status_code == 200 and not has_player_markup(BeautifulSoup(response.text, 'html.parser'))
         result = jsonify(data or dict(error='원출처에서 재생 가능한 영상을 찾지 못했어요. 다른 회차를 선택해 주세요.' if absent else '영상 연결 형식을 확인하지 못했어요. 다시 시도해 주세요.', code='video_missing' if absent else 'unsupported_player'))
         result.status_code = 200 if data else 404 if absent else 409
     except requests.RequestException:

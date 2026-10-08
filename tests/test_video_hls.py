@@ -14,6 +14,8 @@ DATA = {'src': 'https://aniplayer1.site/video/index.m3u8', 'tracks': [{'src': 'h
 
 class VideoHLSTests(unittest.TestCase):
     def setUp(self):
+        from collector.video_library import _watch_response
+        _watch_response.cache_clear()
         self.app = Flask(__name__)
         self.app.secret_key = 'test-key'
         self.app.register_blueprint(bp)

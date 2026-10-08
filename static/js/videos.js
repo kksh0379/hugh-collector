@@ -174,7 +174,7 @@
     $('videos-resume-info').textContent = `${selected.episode}화${seconds ? ' · ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') : ''}`;
   }
   let rangeStart = 1;
-  const VERIFIED = 'hscope-video-playback-check-v396';
+  const VERIFIED = 'hscope-video-playback-check-v397';
   let verified = {};
   try { verified = JSON.parse(localStorage.getItem(VERIFIED)) || {}; } catch {}
   if (!verified || typeof verified !== 'object' || Array.isArray(verified)) verified = {};

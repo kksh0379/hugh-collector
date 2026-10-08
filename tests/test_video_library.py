@@ -8,6 +8,8 @@ from collector.video_library import bp, parse_page, parse_playback
 
 class VideoLibraryTests(unittest.TestCase):
     def setUp(self):
+        from collector.video_library import _watch_response
+        _watch_response.cache_clear()
         app = Flask(__name__)
         app.register_blueprint(bp)
         self.client = app.test_client()
@@ -17,6 +19,40 @@ class VideoLibraryTests(unittest.TestCase):
         self.assertEqual(data['src'], 'https://aniplayer1.site/x/index.m3u8?expires=1&md5=abc')
         self.assertEqual(len(data['tracks']), 1)
         self.assertIsNone(parse_playback('<video id="linktv-video" src="https://evil.example/file"></video>'))
+
+    def test_script_player_json_extracts_media_and_subtitles(self):
+        html = r'''<script>var player_aaaa={"encrypt":0,"actual_url":"https://aniplayer1.site/h/steel/index.m3u8?md5=test\u0026expires=123","subtitle_url":"https://aniplayer1.site/s/steel/sub.vtt"};</script>'''
+        result = parse_playback(html)
+        self.assertEqual(result['src'], 'https://aniplayer1.site/h/steel/index.m3u8?md5=test&expires=123')
+        self.assertEqual(result['tracks'], [{'src':'https://aniplayer1.site/s/steel/sub.vtt', 'language':'ko', 'label':'한국어'}])
+        self.assertIsNone(parse_playback(html.replace('aniplayer1.site/h/', 'evil.example/h/')))
+        self.assertEqual(parse_playback(html.replace('aniplayer1.site/s/', 'evil.example/s/'))['tracks'], [])
+
+    def test_script_player_is_json_only_and_rejects_encrypted_urls(self):
+        for value in ['alert(1)', '{url: "https://aniplayer1.site/a.m3u8"}', '{"encrypt":1,"url":"https://aniplayer1.site/a.m3u8"}']:
+            self.assertIsNone(parse_playback('<script>var player_aaaa=' + value + ';</script>'))
+
+    @patch('collector.video_library.requests.get')
+    def test_script_player_route_is_available_not_missing(self, get):
+        from collector.video_library import _watch_response
+        _watch_response.cache_clear()
+        get.return_value.status_code = 200
+        get.return_value.text = '<script>var player_aaaa={"url":"https://aniplayer1.site/steel.m3u8"};</script>'
+        result = self.client.get('/api/videos/playback?id=19240&series=1&episode=8&probe=1')
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.json['src'], 'https://aniplayer1.site/steel.m3u8')
+        _watch_response.cache_clear()
+
+    @patch('collector.video_library.requests.get')
+    def test_unsupported_script_player_is_not_reported_deleted(self, get):
+        from collector.video_library import _watch_response
+        _watch_response.cache_clear()
+        get.return_value.status_code = 200
+        get.return_value.text = '<script>var player_aaaa={"url":"https://other.example/video"};</script>'
+        result = self.client.get('/api/videos/playback?id=19240&series=1&episode=8')
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(result.json['code'], 'unsupported_player')
+        _watch_response.cache_clear()
 
     @patch('collector.video_library.requests.get')
     def test_playback_validates_coordinates_and_never_caches_expiring_urls(self, get):
