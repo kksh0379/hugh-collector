@@ -237,6 +237,8 @@ def logout():
 
 
 accounts.register(app, _ensure_db, _admin_ok)
+from collector.healthchecks import register as register_healthchecks
+register_healthchecks(app, db, _ensure_db)
 
 
 # ---------------------------- 개인 데이터(스크랩/읽음/그룹) ----------------------------

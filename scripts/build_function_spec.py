@@ -3,14 +3,29 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import html, json, re
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='3.129'
-SOURCE='7d758358c84cff11dbd077eef2316d673a417b36'
+VERSION='3.138'
+SOURCE='b5964658e53840b9708f62849b389fbff895d091'
 REPO='https://github.com/kksh0379/ncfoundation-collector/blob/'
 rows=[]
 # description / inputs / result / exceptional state / access / persistence / API
 D={}
 def define(key,desc,inputs='해당 화면에서 선택 또는 실행',result='해당 조건의 화면 상태를 갱신',error='실패·빈 결과 상태를 해당 영역에 표시',access='방문자·로그인 사용자·관리자',store='화면 상태',api=''):
  D[key]=[desc,inputs,result,error,access,store,api]
+define('accounts-btn','관리자 계정 관리 팝업에서 일반 계정의 추가·이름 변경·암호 재설정·삭제를 관리한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('account-add','일반 계정 추가 입력 폼을 연다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('accounts-refresh','계정 목록을 다시 조회한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('account-username','추가할 일반 계정의 아이디를 입력한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('account-name','일반 계정 표시 이름을 입력한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('account-password','추가하거나 변경할 계정의 새 비밀번호를 입력한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('account-cancel','계정 입력을 취소하고 폼을 닫는다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('accounts-close','계정 관리 팝업을 닫는다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('account-form','입력한 계정 정보의 유효성을 검증하고 일반 계정을 생성하거나 수정한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
+define('healthchecks-btn','자동 기능 점검 기록 팝업을 연다. 운영 연결과 격리 환경의 전체 등록 테스트 결과를 표시한다.',access='관리자',store='DB 점검 기록',api='GET /api/admin/healthchecks')
+define('healthcheck-run','백그라운드 전체 점검을 수동으로 실행한다. 동시 실행은 기존 작업으로 연결한다.',result='진행률·경과 시간·항목별 결과 표시',access='관리자',store='DB 시작·종료 시각 및 전체·항목별 소요 시간',api='POST /api/admin/healthchecks/run')
+define('healthcheck-refresh','현재 선택한 점검 기록의 최신 진행 상태와 결과를 다시 조회한다.',access='관리자',store='조회만',api='GET /api/admin/healthchecks')
+define('healthcheck-history','최근 30회 점검 기록을 선택하여 결과·시작·종료 시각·소요 시간을 조회한다.',access='관리자',store='조회만',api='GET /api/admin/healthchecks?id=실행ID')
+define('healthcheck-problems','정상 결과를 숨기고 주의·오류·미점검 결과만 표시한다.',access='관리자',store='화면 필터')
+define('healthcheck-close','기능 점검 결과 팝업을 닫는다. 진행 중 백그라운드 점검은 계속된다.',access='관리자',store='화면 상태')
 for key,desc in {
  'features-btn':'일반 사용자와 방문자에게 보일 탭·기능의 표시 설정 팝업을 연다. 관리자는 숨긴 항목도 볼 수 있다.',
  'notes-btn':'관리자 패치내역 팝업에서 날짜별 버전과 변경 사항을 조회한다. 개발자 노트 본문은 이 팝업에서 제공하지 않는다.',
@@ -324,7 +339,7 @@ feature('행사일정','바디','캘린더','달력 펼치기·목록 크게 보
 EXTRA=[(*x[:4], [*x[4][:4], '방문자·로그인 사용자·관리자', *x[4][5:]], x[5]) if x[0]=='마음기록 기획서' else x for x in EXTRA]
 PANELS={'cat':'냥정보','game':'게임정보','news':'NC뉴스','biz':'비영리재단 동향','security':'보안뉴스','event':'행사일정'}
 VIEWS={'view-collector':'뉴스 공통','view-food':'맛집 목록','view-lunch-reviews':'식당 평점·후기','view-lunch-ai':'점심 추천','view-report':'AI 리포트','view-scrap':'스크랩'}
-MODALS={'login-modal':'로그인','status-modal':'수집 상태','runlog-modal':'관리자 로그','notes-modal':'관리자 패치내역','features-modal':'관리자 표시 설정','share-dialog':'공유하기','reader-view':'기사 본문 리더','lunch-address-dialog':'주소 검색','lunch-download-dialog':'맛집 다운로드 확인'}
+MODALS={'accounts-modal':'관리자 계정 관리','healthcheck-dialog':'관리자 기능 점검','login-modal':'로그인','status-modal':'수집 상태','runlog-modal':'관리자 로그','notes-modal':'관리자 패치내역','features-modal':'관리자 표시 설정','share-dialog':'공유하기','reader-view':'기사 본문 리더','lunch-address-dialog':'주소 검색','lunch-download-dialog':'맛집 다운로드 확인'}
 FILES={'index':'휴스코프','launcher':'런처','videos':'영상','finance':'재무세무','intro':'서비스 소개','mobile_install':'설치 도움말','maeum_record_plan':'마음기록 기획서','service_notice':'이용 전 안내'}
 SECTIONS=[
  ('런처','/','공통','서비스 선택·설치·소개·개발노트·기능명세 문서 진입'),
@@ -363,9 +378,11 @@ def context(t,file):
 def details(t,file):
  key=t.get('id','')
  form=t.find_parent('form')
+ if form and form.get('id')=='account-form' and t.name=='button' and t.get('type')=='submit':return D['account-form'][:]
  if t.name=='button' and not key and form:
   key={'finance-business-form':'finance-business-submit','finance-dart-form':'finance-dart-submit','videos-jump-form':'videos-jump-submit'}.get(form.get('id'),key)
  if key in D:return D[key].copy()
+ if t.name=='input' and t.has_attr('disabled') and t.find_parent(id='features-modal'):return ['항상 노출되는 기본 뉴스 메뉴를 표시한다. 설정에서 끌 수 없다.','기본 표시','뉴스 메뉴 항상 노출','변경 불가','관리자','고정 설정','GET /api/features']
  if t.name=='button' and (key.endswith('-close') or key=='reader-close'):
   return ['현재 대화상자를 닫고 원래 화면으로 돌아간다. 닫기만으로 데이터 삭제·수집·AI 요청을 하지 않는다.','팝업이 열린 상태','팝업 닫힘','외부 닫기/기본 포커스는 각 대화상자 구현에 따름','방문자·로그인 사용자·관리자','화면 상태','']
  attr=next(((k,v) for k,v in t.attrs.items() if k.startswith('data-')),None)
