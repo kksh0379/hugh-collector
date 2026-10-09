@@ -2,6 +2,7 @@ import json
 import tempfile
 import time
 import unittest
+from threading import Thread, Event
 from pathlib import Path
 from unittest.mock import patch
 from flask import Flask
@@ -104,6 +105,39 @@ class HealthCheckTests(unittest.TestCase):
         source=(Path(__file__).resolve().parents[1]/'collector/healthchecks.py').read_text()
         self.assertIn("('PATH','LANG','LC_ALL','PYTHONPATH','PYTHONHOME')",source)
         self.assertNotIn('env=os.environ.copy()',source)
+
+    def test_waiting_check_persists_elapsed_then_executes_after_collection(self):
+        from collector.background_budget import BackgroundBudget
+        run_id,_=self.service.start();report=self.service.read(run_id)
+        self.thread.stop()
+        budget=BackgroundBudget(cleanup=lambda:None)
+        queued=Event();executed=[]
+        real_save=self.service.save
+        def save(data):
+            real_save(data)
+            if data['phase']=='다른 수집 작업 종료 대기':queued.set()
+        with patch.object(healthchecks,'budget',budget),patch.object(self.service,'save',side_effect=save),patch.object(self.service,'checks',return_value=[('test','probe',lambda:executed.append(True) or ('passed','OK'))]),patch.object(self.service,'suite'):
+            with budget.hold():
+                worker=Thread(target=self.service.execute,args=(report,));worker.start()
+                self.assertTrue(queued.wait(2));self.assertEqual(executed,[])
+                self.assertEqual(self.service.read(report['id'])['phase'],'다른 수집 작업 종료 대기')
+                time.sleep(.01)
+            worker.join(3);self.assertFalse(worker.is_alive())
+        saved=self.service.read(report['id'])
+        self.assertEqual(executed,[True]);self.assertGreaterEqual(saved['duration_ms'],10)
+        self.assertEqual(saved['status'],'passed')
+
+    def test_wait_timeout_is_incomplete_environment_result_and_releases_lock(self):
+        from contextlib import contextmanager
+        @contextmanager
+        def unavailable(**kwargs):yield False
+        run_id,_=self.service.start();report=self.service.read(run_id)
+        with patch.object(healthchecks.budget,'hold',unavailable):self.service.execute(report)
+        saved=self.service.read(run_id)
+        self.assertEqual(saved['summary_counts']['test_environment'],1)
+        self.assertEqual(saved['summary_counts']['service_failure'],0)
+        self.assertIsNotNone(saved['finished_at'])
+        with db.get_conn() as conn:self.assertIsNone(conn.execute('SELECT * FROM healthcheck_lock').fetchone())
 
 
 if __name__=='__main__':unittest.main()

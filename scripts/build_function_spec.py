@@ -3,7 +3,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import html, json, re
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='3.139'
+VERSION='3.140'
 SOURCE='c53de2b69f87dac105424e17b8e0a79971009a2f'
 REPO='https://github.com/kksh0379/ncfoundation-collector/blob/'
 rows=[]
@@ -21,7 +21,7 @@ define('account-cancel','계정 입력을 취소하고 폼을 닫는다.',access
 define('accounts-close','계정 관리 팝업을 닫는다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
 define('account-form','입력한 계정 정보의 유효성을 검증하고 일반 계정을 생성하거나 수정한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
 define('healthchecks-btn','자동 기능 점검 기록 팝업을 연다. 운영 연결과 격리 환경의 전체 등록 테스트 결과를 구분하여 표시한다. 테스트 실패를 서비스 장애로 확정하지 않는다.',access='관리자',store='DB 점검 기록',api='GET /api/admin/healthchecks')
-define('healthcheck-run','백그라운드 전체 점검을 수동으로 실행한다. 동시 실행은 기존 작업으로 연결한다.',result='진행률·경과 시간·항목별 결과 표시',access='관리자',store='DB 시작·종료 시각 및 전체·항목별 소요 시간',api='POST /api/admin/healthchecks/run')
+define('healthcheck-run','백그라운드 전체 점검을 수동으로 실행한다. 동시 점검은 기존 작업으로 연결하며 수집 종료를 기다린 후 우선 실행한다. 대기 경과 시간도 기록한다.',result='진행률·경과 시간·항목별 결과 표시',access='관리자',store='DB 시작·종료 시각 및 전체·항목별 소요 시간',api='POST /api/admin/healthchecks/run')
 define('healthcheck-refresh','현재 선택한 점검 기록의 최신 진행 상태와 결과를 다시 조회한다.',access='관리자',store='조회만',api='GET /api/admin/healthchecks')
 define('healthcheck-history','최근 30회 점검 기록을 선택하여 결과·시작·종료 시각·소요 시간을 조회한다.',access='관리자',store='조회만',api='GET /api/admin/healthchecks?id=실행ID')
 define('healthcheck-problems','정상 결과를 숨기고 주의·서비스 점검 실패·테스트 검증 실패·실행 예외·환경 오류·점검 도구 오류·미점검 결과만 표시한다.',access='관리자',store='화면 필터')

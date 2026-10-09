@@ -118,7 +118,11 @@ def _clean_title(raw):
 def _snippet(description_html):
     if not description_html:
         return ""
-    return extractor.clean_summary_text(BeautifulSoup(description_html, "lxml").get_text(" ", strip=True))
+    soup = BeautifulSoup(description_html, "lxml")
+    try:
+        return extractor.clean_summary_text(soup.get_text(" ", strip=True))
+    finally:
+        soup.decompose()
 
 
 def _collect_items(query, after=None, before=None):
@@ -158,26 +162,29 @@ def _collect_items(query, after=None, before=None):
                     raise
                 print(f"[google] RSS 일시 오류 {status or type(error).__name__} · {wait:.0f}초 후 재시도 {attempt + 1}/2", flush=True)
     soup = BeautifulSoup(resp.content, "xml")
-    if not soup.find("rss"):
-        raise RuntimeError("뉴스 RSS 대신 다른 응답을 받았어요.")
-    out = []
-    for it in soup.find_all("item"):
-        link = it.find("link")
-        link = link.text if link else None
-        if not link:
-            continue
-        source = it.find("source")
-        title = it.find("title")
-        pub = it.find("pubDate")
-        desc = it.find("description")
-        out.append({
-            "title": _clean_title(title.text if title else None),
-            "url": link,
-            "published_at": _parse_pubdate(pub.text if pub else None),
-            "author": source.text.strip() if source else None,
-            "snippet": _snippet(desc.text if desc else None),
-        })
-    return out
+    try:
+        if not soup.find("rss"):
+            raise RuntimeError("뉴스 RSS 대신 다른 응답을 받았어요.")
+        out = []
+        for it in soup.find_all("item"):
+            link = it.find("link")
+            link = link.text if link else None
+            if not link:
+                continue
+            source = it.find("source")
+            title = it.find("title")
+            pub = it.find("pubDate")
+            desc = it.find("description")
+            out.append({
+                "title": _clean_title(title.text if title else None),
+                "url": link,
+                "published_at": _parse_pubdate(pub.text if pub else None),
+                "author": source.text.strip() if source else None,
+                "snippet": _snippet(desc.text if desc else None),
+            })
+        return out
+    finally:
+        soup.decompose()
 
 
 def _decode_google_url(url):
@@ -303,6 +310,7 @@ def _summary_from_article(entry):
     """구글 링크를 원문으로 복원해 본문에서 요약을 추출한다.
     출처(언론사)는 본문 요약에 넣지 않는다. 복원 실패 시 요약은 비워 둔다."""
     summary = ""
+    page_soup = None
     try:
         real = _decode_google_url(entry.get("url", ""))
         if not real and time.time() < _DECODE_RETRY_AT:
@@ -325,6 +333,8 @@ def _summary_from_article(entry):
                 entry["published_at"] = entry.get("published_at") or art.get("published_at")
     except Exception:  # noqa: BLE001
         pass
+    finally:
+        if page_soup is not None: page_soup.decompose()
     # 원문 추출에 실패하면(구글 리다이렉트라 대부분 실패) RSS 요약(snippet)을
     # 본문으로 사용한다. 그래야 본문이 비어 키워드 필터에서 탈락하는 일이 없다.
     fallback = extractor.clean_summary_text(entry.get("snippet") or "")
@@ -336,6 +346,7 @@ def _enrich_one(row):
     """저장된 뉴스 1건의 원문을 열어 대표 이미지(og:image)와 요약(og:description/본문)을
     함께 복원한다. 반환: {"image_url": ..., "content": ..., "source_url": ...} (없는 값은 생략)."""
     out = {}
+    soup = None
     try:
         gl = row.get("url", "")
         real = _publisher_url(row.get("source_url")) or _decode_google_url(gl) or gl
@@ -366,6 +377,8 @@ def _enrich_one(row):
             out["content"] = summ  # 깨진/도구문구 요약은 길이와 관계없이 정상 요약으로 교체
     except Exception as error:  # noqa: BLE001
         out["_image_status"] = type(error).__name__
+    finally:
+        if soup is not None: soup.decompose()
     return out
 
 
@@ -376,7 +389,7 @@ def enrich_articles(rows, max_workers=4, progress=None):
     if not rows:
         return {}
     out, done, statuses = {}, 0, Counter()
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+    with ThreadPoolExecutor(max_workers=min(max_workers, 2)) as pool:
         futs = {pool.submit(_enrich_one, r): r for r in rows}
         for fut in as_completed(futs):
             r = futs[fut]
@@ -529,7 +542,7 @@ def crawl(max_workers=24, max_items=0, progress=None, known_urls=None, days=None
             entry["content"] = entry.get("snippet") or ""
             processed.append(entry)
         progress(f"최신 기사 원문·이미지 처리 0/{len(originals)} · 후속 보강 {len(deferred)}건")
-        with ThreadPoolExecutor(max_workers=min(max_workers, 4)) as pool:
+        with ThreadPoolExecutor(max_workers=min(max_workers, 2)) as pool:
             futures = [pool.submit(_summary_from_article, entry) for entry in originals]
             for done, future in enumerate(as_completed(futures), 1):
                 processed.append(future.result())

@@ -2009,6 +2009,8 @@ def _do_crawl(group, progress=None, days=None, replace=False):
 # 브라우저가 백그라운드로 가도 수집은 서버에서 끝까지 진행된다. 프론트는 상태를
 # 폴링해서 진행률/결과를 표시하고, 돌아왔을 때 자동으로 다시 붙는다.
 _JOBS = {}  # group -> {running, progress, result, started_at}
+_JOB_THREADS = {}
+_JOB_START_LOCK = threading.Lock()
 
 
 def _job_run(group, days=None, replace=False):
@@ -2027,18 +2029,23 @@ def _job_run(group, days=None, replace=False):
         st["running"] = False
 
 
-_JOB_STALE_SEC = 1800  # 30분 넘게 '실행 중'이면 멈춘 것으로 간주(재시작 허용/UI 해제)
+_JOB_STALE_SEC = 1800  # 종료된 작업의 잔여 실행 상태 해제 기준
 
 
 def _start_job(group, days=None, replace=False):
-    """백그라운드 수집 작업 시작. 이미 진행 중이면 False.
-    단, 30분 넘게 진행 중(멈춘 것으로 추정)이면 새로 시작한다."""
-    st = _JOBS.get(group)
-    if st and st.get("running") and (time.time() - st.get("started_ts", 0) < _JOB_STALE_SEC):
-        return False
-    _JOBS[group] = {"running": True, "progress": "수집 대기…", "result": None,
-                    "started_at": _now_kst(), "started_ts": time.time()}
-    threading.Thread(target=_job_run, args=(group, days, replace), daemon=True).start()
+    """실제 스레드가 살아 있는 대기·실행 작업은 시간과 관계없이 중복 시작하지 않는다."""
+    with _JOB_START_LOCK:
+        thread = _JOB_THREADS.get(group)
+        st = _JOBS.get(group)
+        if thread and thread.is_alive():
+            return False
+        if st and st.get("running") and time.time() - st.get("started_ts", 0) < _JOB_STALE_SEC:
+            return False
+        _JOBS[group] = {"running": True, "progress": "수집 대기…", "result": None,
+                        "started_at": _now_kst(), "started_ts": time.time()}
+        thread = threading.Thread(target=_job_run, args=(group, days, replace), daemon=True)
+        _JOB_THREADS[group] = thread
+        thread.start()
     print(f"[crawl] {group} 백그라운드 수집 시작 (days={days})", flush=True)
     return True
 
@@ -2069,8 +2076,9 @@ def crawl_job_status(group):
             except Exception:
                 result = None
         return jsonify({"running": False, "progress": None, "result": result})
-    # 30분 넘게 '실행 중'이면 멈춘 것으로 간주 → UI가 풀리도록 완료 처리
-    if st.get("running") and (time.time() - st.get("started_ts", 0) > _JOB_STALE_SEC):
+    # 실제 스레드가 끝난 오래된 상태만 해제. 대기 중인 작업은 유지.
+    thread = _JOB_THREADS.get(group)
+    if st.get("running") and not (thread and thread.is_alive()) and (time.time() - st.get("started_ts", 0) > _JOB_STALE_SEC):
         st["running"] = False
         st["progress"] = "중단됨(시간 초과) — 다시 시도해 주세요"
     return jsonify(st)
@@ -2481,9 +2489,9 @@ def _start_scheduler():
     sched = BackgroundScheduler(daemon=True, timezone=KST)
     # 첫 실행은 4시간 뒤. 즉시 수집은 관리자가 버튼으로.
     sched.add_job(_batch_all, "interval", hours=4, id="crawl_all", coalesce=True, max_instances=1)
-    sched.add_job(_bootstrap_biz_images, "interval", minutes=2, id="biz_images",
+    sched.add_job(_bootstrap_biz_images, "interval", minutes=10, id="biz_images",
                   coalesce=True, max_instances=1)
-    sched.add_job(_bootstrap_event_images, "interval", minutes=5, id="event_images",
+    sched.add_job(_bootstrap_event_images, "interval", minutes=15, id="event_images",
                   coalesce=True, max_instances=1)
     sched.start()
     print("[scheduler] 4시간 주기 수집 배치 시작", flush=True)
@@ -2642,6 +2650,18 @@ def _start_read_prewarm():
 
 _worker_jobs_pid = None
 _worker_jobs_lock = threading.Lock()
+
+# Heavy collection and checks share one slot; ordinary reads do not acquire it.
+# Nested article repair within a collector reuses its slot. Periodic repair skips
+# a busy slot and retries at its next scheduled interval.
+from collector.background_budget import budget as _background_budget
+_do_crawl = _background_budget.serialized(_do_crawl)
+_enrich_news_images = _background_budget.serialized(_enrich_news_images, wait=False)
+_bootstrap_biz_images = _background_budget.serialized(_bootstrap_biz_images, wait=False)
+_bootstrap_event_images = _background_budget.serialized(_bootstrap_event_images, wait=False)
+_bootstrap_eventus = _background_budget.serialized(_bootstrap_eventus)
+_bootstrap_venue_schedules = _background_budget.serialized(_bootstrap_venue_schedules)
+_lunch_refresh_all = _background_budget.serialized(_lunch_refresh_all)
 
 
 def _start_worker_jobs():

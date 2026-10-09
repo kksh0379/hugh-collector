@@ -15,6 +15,19 @@ sys.path.insert(0, str(ROOT))
 from collector.healthcheck_results import category
 
 
+def limit_python_memory():
+    """Bound only the isolated Python test module, never the web process."""
+    try:
+        import resource
+    except ImportError:
+        return
+    limit = 256 * 1024 * 1024
+    # RLIMIT_AS counts glibc's reserved thread arenas even when no RAM is used.
+    # Linux RLIMIT_DATA also bounds writable mmap allocations, without counting
+    # those uncommitted reservations or runtime code mappings.
+    resource.setrlimit(resource.RLIMIT_DATA, (limit, limit))
+
+
 def node_results(path, output, elapsed):
     rows=[];row=None
     for line in output.splitlines():
@@ -32,6 +45,7 @@ def node_results(path, output, elapsed):
 
 
 def run(output, filename=None):
+    if filename: limit_python_memory()
     rows = []
     state = {'results': rows, 'total': 0, 'done': False, 'phase': 'Python 회귀 테스트'}
     def save():
@@ -63,7 +77,10 @@ def run(output, filename=None):
                 super().addError(test, err)
                 if self.active is None:
                     rows.append(dict(group='Python 회귀 테스트',name=str(test),status='failed',category='test_environment',error_stage='preparation',detail='테스트 준비 오류 · '+err[0].__name__,duration_ms=0));save()
-                else: self.row.update(status='failed', error_stage='execution',detail=('실행 오류 · ' + err[0].__name__+' · '+str(err[1]))[:240])
+                else:
+                    self.row.update(status='failed', error_stage='execution',detail=('실행 오류 · ' + err[0].__name__+' · '+str(err[1]))[:240])
+                    if issubclass(err[0], MemoryError):
+                        self.row.update(category='test_environment',detail='격리 테스트 메모리 제한 초과 · 미완료')
             def addSkip(self, test, reason):
                 super().addSkip(test, reason)
                 self.row.update(status='skipped', detail=str(reason)[:160])
@@ -99,7 +116,7 @@ def run(output, filename=None):
                 row.update(status='skipped', detail='서버에 Node.js 런타임이 없어 실행하지 못함')
             else:
                 try:
-                    result = subprocess.run([node, str(path)], cwd=ROOT, timeout=45,
+                    result = subprocess.run([node, '--max-old-space-size=96', str(path)], cwd=ROOT, timeout=45,
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     row.update(status='passed' if result.returncode == 0 else 'failed',
                         detail='격리 환경 검사 통과' if result.returncode == 0 else f'검증 실패 · 종료 코드 {result.returncode}')
@@ -140,7 +157,11 @@ def all_tests(output):
             if not node:row.update(status='skipped',detail='Node.js 런타임이 없어 실행하지 못함')
             else:
                 try:
-                    result=subprocess.run([node,'--test','--test-reporter=tap',str(path)],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=45)
+                    result=subprocess.run([node,'--max-old-space-size=96','--test','--test-reporter=tap',str(path)],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=45)
+                    if re.search(r'(heap out of memory|Allocation failed|SIGABRT|SIGKILL)', result.stdout, re.I):
+                        row.update(status='failed',category='test_environment',detail='격리 테스트 메모리 제한 또는 프로세스 강제 종료 · 미완료')
+                        row['duration_ms']=round((time.perf_counter()-began)*1000)
+                        rows.append(row);save();continue
                     parsed=node_results(path,result.stdout,round((time.perf_counter()-began)*1000))
                     if parsed:
                         rows.extend(parsed);save();continue
@@ -151,5 +172,12 @@ def all_tests(output):
 
 
 if __name__ == '__main__':
-    if len(sys.argv)>2:run(Path(sys.argv[1]),sys.argv[2])
-    else:all_tests(Path(sys.argv[1]))
+    try:
+        if len(sys.argv)>2:run(Path(sys.argv[1]),sys.argv[2])
+        else:all_tests(Path(sys.argv[1]))
+    except MemoryError:
+        output=Path(sys.argv[1])
+        state=json.loads(output.read_text()) if output.exists() else dict(results=[],total=0)
+        state['results'].append(dict(group='Python 회귀 테스트',name=sys.argv[2] if len(sys.argv)>2 else '전체 테스트 실행 완료 여부',status='failed',category='test_environment',detail='격리 테스트 메모리 제한 초과 · 미완료',duration_ms=0))
+        state.update(done=True,total=len(state['results']),phase='메모리 제한으로 미완료')
+        output.write_text(json.dumps(state,ensure_ascii=False))

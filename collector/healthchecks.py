@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from flask import jsonify, request, session
 from .healthcheck_results import assess
+from .background_budget import budget
 
 KST = timezone(timedelta(hours=9))
 PUBLIC_KEY = '4a3405fe444aec8aedbb1663275bded6973c2c68cd52b2e3b237b7fa9f3ba29a'
@@ -264,6 +265,30 @@ class HealthChecks:
 
     def execute(self, report):
         start = time.perf_counter()
+        last_save = [0]
+        def waiting():
+            if time.monotonic() - last_save[0] < 5: return
+            last_save[0] = time.monotonic()
+            report.update(phase='다른 수집 작업 종료 대기',duration_ms=round((time.perf_counter()-start)*1000))
+            self.save(report)
+        try:
+            with budget.hold(priority=True,timeout=900,on_wait=waiting) as acquired:
+                if acquired:
+                    return self._execute(report, start)
+                report.update(status='failed',finished_at=now(),duration_ms=round((time.perf_counter()-start)*1000),phase='대기 제한 시간 초과')
+                report['results'].append(dict(group='회귀 테스트',name='전체 테스트 실행 완료 여부',status='failed',category='test_environment',detail='다른 수집 작업 종료 대기 15분 제한 초과 · 미완료',duration_ms=report['duration_ms']))
+                self.save(report)
+        except Exception as exc:
+            report.update(status='failed',finished_at=now(),duration_ms=round((time.perf_counter()-start)*1000),phase='점검 대기 중단')
+            report['results'].append(dict(group='점검 도구',name='전체 점검 수행',status='failed',category='probe_error',detail='점검 대기 중단 · '+type(exc).__name__,duration_ms=report['duration_ms']))
+            try: self.save(report)
+            except Exception: pass
+        finally:
+            try:
+                with self.db.get_conn() as conn:conn.execute(self.db._q('DELETE FROM healthcheck_lock WHERE run_id=?'),(report['id'],))
+            except Exception as exc: print('[healthcheck] 잠금 해제 실패 · '+type(exc).__name__,flush=True)
+
+    def _execute(self, report, start):
         try:
             checks = self.checks();report['total']=len(checks)+1
             for group, name, function in checks:

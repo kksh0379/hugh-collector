@@ -36,6 +36,27 @@ DEFAULT_HEADERS = {
 # 상태확인/수집이 ReadTimeout으로 실패한다. 무료 호스팅 gunicorn timeout(300s)
 # 안에서 안전한 선에서 넉넉히 둔다.
 TIMEOUT = 15
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+
+
+class ResponseTooLarge(ValueError):
+    pass
+
+
+def _read_bounded(resp):
+    """Reject oversized decoded bodies instead of constructing partial documents."""
+    try:
+        chunks, size = [], 0
+        for chunk in resp.iter_content(chunk_size=65536):
+            size += len(chunk)
+            if size > MAX_RESPONSE_BYTES:
+                raise ResponseTooLarge('Response exceeds 4 MiB collection limit')
+            chunks.append(chunk)
+        resp._content = b''.join(chunks)
+        resp._content_consumed = True
+        return resp
+    finally:
+        resp.close()
 
 _META_CHARSET_RE = re.compile(
     rb'<meta[^>]+charset\s*=\s*["\']?\s*([A-Za-z0-9._-]+)', re.I
@@ -73,16 +94,6 @@ def _response_encoding(resp):
             candidates.append("utf-8")
         except UnicodeDecodeError:
             pass
-    try:
-        apparent = resp.apparent_encoding
-    except Exception:
-        apparent = None
-    if apparent:
-        candidates.append(apparent)
-    if header:
-        candidates.append(header)
-    candidates.extend(("cp949", "euc-kr", "utf-8"))
-
     seen = set()
     for enc in candidates:
         key = (enc or "").lower()
@@ -94,7 +105,19 @@ def _response_encoding(resp):
             return enc
         except (LookupError, UnicodeDecodeError):
             continue
-    return resp.encoding or "utf-8"
+    # Known/valid UTF-8 never needs an expensive full-body detector. Legacy
+    # encodings are inferred from a bounded sample after those checks fail.
+    try:
+        apparent = requests.models.chardet.detect(raw[:65536]).get('encoding')
+    except Exception:
+        apparent = None
+    for enc in (apparent, 'cp949', 'euc-kr', header, 'utf-8'):
+        if not enc or enc.lower() in seen: continue
+        try:
+            raw.decode(enc, 'strict')
+            return enc
+        except (LookupError, UnicodeDecodeError): pass
+    return resp.encoding or 'utf-8'
 
 
 
@@ -110,10 +133,14 @@ def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=Tr
         for verify in (True, False):
             try:
                 resp = requests.get(
-                    url, params=params, headers=merged, timeout=to, verify=verify
+                    url, params=params, headers=merged, timeout=to, verify=verify, stream=True
                 )
-                if raise_status:  # 상태확인용은 4xx도 '연결됨'으로 보려고 예외를 끈다
-                    resp.raise_for_status()
+                try:
+                    if raise_status: resp.raise_for_status()
+                    _read_bounded(resp)
+                except Exception:
+                    resp.close()
+                    raise
                 content_type = (resp.headers.get('content-type') or '').lower()
                 if not content_type.startswith(('image/', 'application/octet-stream', 'binary/octet-stream')):
                     resp.encoding = _response_encoding(resp)
@@ -142,9 +169,13 @@ def post(url, data=None, headers=None, retries=1, timeout=None, raise_status=Tru
         merged.update(headers)
     for attempt in range(retries + 1):
         try:
-            resp = requests.post(url, data=data, headers=merged, timeout=to)
-            if raise_status:
-                resp.raise_for_status()
+            resp = requests.post(url, data=data, headers=merged, timeout=to, stream=True)
+            try:
+                if raise_status: resp.raise_for_status()
+                _read_bounded(resp)
+            except Exception:
+                resp.close()
+                raise
             resp.encoding = _response_encoding(resp)
             return resp
         except requests.RequestException as e:  # noqa: PERF203
