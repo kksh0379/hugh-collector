@@ -1472,12 +1472,13 @@ function eventCategories(item) {
   return tags.length ? tags : ["기타"];
 }
 const filterEventsByCategory = makeCheckFilter("event", "event-cats", eventCategories);
-let eventView = "curation"; // curation | list | album | calendar
+let eventView = "list"; // curation | list | album | calendar
 let eventScheduleView = "list";
 try {
   const saved = localStorage.getItem("eventScheduleView");
   if (["list", "album", "calendar"].includes(saved)) eventScheduleView = saved;
 } catch (_) {}
+eventView = eventScheduleView;
 let eventCalYM = null;                    // 캘린더가 보는 [year, month(0-11)]
 async function loadEvent() {
   const el = document.getElementById("list-event");

@@ -14,7 +14,7 @@ function setup(saved='list') {
  return {c,storage,classes,modes,views,picker,setActive:v=>active=v,renders:()=>renders};
 }
 test('two tabs preserve all three ordinary schedule views across curation visits',()=>{
- const s=setup();assert.equal(s.picker.hidden,true);assert.equal(s.modes[1].attrs['aria-selected'],'true');
+ const s=setup();assert.equal(s.picker.hidden,false);assert.equal(s.modes[0].attrs['aria-selected'],'true');
  s.modes[0].click();assert.equal(s.views[0].attrs['aria-pressed'],'true');assert.ok(s.classes.has('view-list'));
  for(const v of s.views){v.click();s.modes[1].click();assert.equal(s.picker.hidden,true);s.modes[0].click();assert.equal(v.active,true);assert.equal(s.storage.get('eventScheduleView'),v.dataset.eview);}
  assert.equal(s.storage.get('nvView'),'list');

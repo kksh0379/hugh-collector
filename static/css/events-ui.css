@@ -1,5 +1,6 @@
 #event-view-toggle,#event-mode-toggle {flex:0 0 auto;}
-#event-mode-toggle button {width:auto;min-width:48px;font-size:13px;font-weight:700;white-space:nowrap;padding:7px 10px;}
+#event-mode-toggle button {display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-width:48px;font-size:13px;font-weight:700;white-space:nowrap;padding:7px 10px;}
+#event-mode-toggle button svg {width:17px;height:17px;flex:none;pointer-events:none;}
 #event-mode-toggle {display:none;}
 body.tab-event #event-mode-toggle {display:inline-flex;}
 #event-view-toggle[hidden] {display:none!important;}

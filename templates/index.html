@@ -252,12 +252,12 @@
     <div class="event-navigation">
     <div class="event-mode-actions">
     <div class="viewseg" id="event-mode-toggle" role="tablist" aria-label="행사일정 탭">
-      <button type="button" role="tab" data-emode="schedule" aria-selected="false">일반 일정</button>
-      <button type="button" role="tab" data-emode="curation" aria-selected="true" class="active">AI 큐레이션</button>
+      <button type="button" role="tab" data-emode="schedule" aria-selected="true" class="active"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3m-10 3h3"/></svg>일정</button>
+      <button type="button" role="tab" data-emode="curation" aria-selected="false" aria-label="AI 큐레이션"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m10 5 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"/><path d="m19 2 1 3 3 1-3 1-1 3-1-3-3-1 3-1Z"/></svg>큐레이션</button>
     </div>
     <button type="button" id="ed-settings" class="event-recommend-action" aria-haspopup="dialog" aria-controls="ed-dialog" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></svg>AI 추천받기</button>
     </div>
-    <div class="viewseg" id="event-view-toggle" role="group" aria-label="일반 일정 보기 방식" hidden>
+    <div class="viewseg" id="event-view-toggle" role="group" aria-label="일정 보기 방식">
       <button type="button" data-eview="list" aria-label="행사 리스트 보기" title="리스트">☰</button>
       <button type="button" data-eview="album" aria-label="행사 앨범 보기" title="앨범">▭</button>
       <button type="button" data-eview="calendar" aria-label="행사 캘린더 보기" title="캘린더"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3m-10 3h3"/></svg></button>
@@ -288,8 +288,8 @@
     <div class="last-crawl" id="last-event"></div>
     <div class="result-msg admin-only collection-admin" id="msg-event"></div>
     <div class="event-body">
-      <div id="event-curation"></div>
-      <ul class="list album-grid" id="list-event" hidden></ul>
+      <div id="event-curation" hidden></div>
+      <ul class="list album-grid" id="list-event"></ul>
       <div class="calendar" id="cal-event" hidden></div>
     </div>
   </section>
@@ -540,7 +540,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.140 · build 261009</span>
+    <span class="ver">v3.141 · build 261009</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
