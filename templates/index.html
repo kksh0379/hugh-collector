@@ -59,7 +59,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v='20261008-2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/skeleton.css', v='3.135') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css', v='3.145') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/window-controls.css', v='3.148') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/window-controls.css', v='3.149') }}">
 </head>
 <body>
   <header class="app-header">
@@ -546,7 +546,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.148 · build 261011</span>
+    <span class="ver">v3.149 · build 261011</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -585,13 +585,13 @@
 
   <dialog id="reader-view" class="reader-view" aria-labelledby="reader-title">
     <div class="reader-toolbar">
-      <span class="reader-brand">휴 스코프 · Reader</span>
+      <span class="reader-brand" tabindex="-1" autofocus>휴 스코프 · Reader</span>
       <div class="reader-tools" aria-label="글자 크기">
         <button type="button" data-reader-size="-2" aria-label="글자 작게">가−</button>
         <button type="button" data-reader-size="2" aria-label="글자 크게">가+</button>
         <button type="button" id="reader-theme" data-theme-toggle aria-label="블랙테마로 전환" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/></svg></button>
       </div>
-      <button type="button" id="reader-close" autofocus class="window-close" aria-label="창 닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      <button type="button" id="reader-close" class="window-close" aria-label="창 닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
     </div>
     <article class="reader-content">
       <h2 id="reader-title">본문 읽기</h2>

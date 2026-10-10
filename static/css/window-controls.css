@@ -36,13 +36,14 @@ html[data-theme="black"] button.window-close:active { background: #292929 !impor
 #admin-controls-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
 #admin-controls-grid { margin-top: 10px; }
 #admin-controls-grid[hidden] { display: none !important; }
-/* Keep Reader's close control at the right edge, even on narrow screens. */
+/* One compact toolbar row; automatic focus stays on the Reader label. */
 .reader-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; }
-.reader-brand { min-width: 0; }
-@media (max-width: 420px) {
-  .reader-toolbar { grid-template-columns: minmax(0, 1fr) 44px; }
-  .reader-brand { grid-column: 1; grid-row: 1; }
-  #reader-close { grid-column: 2; grid-row: 1; }
-  .reader-tools { grid-column: 1 / -1; grid-row: 2; }
+.reader-brand { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reader-brand:focus { outline: none; }
+.reader-tools { flex-wrap: nowrap; }
+.reader-tools button { box-sizing: border-box; width: 44px; height: 44px; min-width: 44px; padding: 0; flex: 0 0 44px; }
+@media (max-width: 600px) {
+  .reader-brand { font-size: 0; }
+  .reader-brand::before { content: "Reader"; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { #admin-controls-toggle svg { transition: none; } }
