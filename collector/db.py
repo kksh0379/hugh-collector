@@ -129,6 +129,13 @@ def get_conn():
 _AUTO_PK = "SERIAL PRIMARY KEY" if _PG else "INTEGER PRIMARY KEY AUTOINCREMENT"
 
 _DDL = [
+    """CREATE TABLE IF NOT EXISTS ai_usage (
+        id TEXT PRIMARY KEY, created_at TEXT NOT NULL, feature TEXT, model TEXT,
+        status INTEGER, input_tokens INTEGER, output_tokens INTEGER,
+        cache_write_tokens INTEGER, cache_read_tokens INTEGER,
+        cost_micro BIGINT, elapsed_ms INTEGER
+    )""",
+    "CREATE INDEX IF NOT EXISTS idx_ai_usage_date ON ai_usage(created_at)",
     f"""CREATE TABLE IF NOT EXISTS news (
         id {_AUTO_PK}, title TEXT, published_at TEXT, author TEXT, content TEXT,
         url TEXT UNIQUE, content_hash TEXT, group_key TEXT, source_url TEXT,

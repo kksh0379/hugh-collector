@@ -2684,8 +2684,32 @@ def _start_worker_jobs():
             threading.Thread(target=target, daemon=True).start()
 
 
+@app.route('/api/admin/ai-usage', methods=['GET', 'POST'])
+def admin_ai_usage():
+    if not _admin_ok():
+        return jsonify({'error': '관리자 로그인이 필요해요.'}), 403
+    if not _ensure_db():
+        return jsonify({'error': 'DB에 연결할 수 없어요.'}), 503
+    from collector import ai_usage
+    if request.method == 'POST':
+        from urllib.parse import urlsplit
+        if request.headers.get('Origin'):
+            origin, host = urlsplit(request.headers['Origin']), urlsplit(request.host_url)
+            if (origin.scheme, origin.netloc) != (host.scheme, host.netloc):
+                return jsonify({'error': '잘못된 요청 출처예요.'}), 403
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({'error': '잔액을 입력해 주세요.'}), 400
+        try:
+            ai_usage.set_balance(data.get('balance_usd'))
+        except ValueError as error:
+            return jsonify({'error': str(error)}), 400
+    response = jsonify(ai_usage.dashboard())
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
+
 if __name__ == "__main__":
     # 로컬 실행. 호스팅 환경은 gunicorn이 app 객체를 직접 띄운다(Procfile 참고).
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
-

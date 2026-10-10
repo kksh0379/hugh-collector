@@ -85,6 +85,7 @@
   <section class="admin-controls admin-only" aria-labelledby="admin-controls-title">
     <h2 id="admin-controls-title">관리자 도구</h2>
     <div class="admin-controls-grid">
+    <button type="button" class="auth-btn admin-only" id="ai-usage-btn">토큰 사용량</button>
     <a class="auth-btn admin-only" id="token-billing-btn" href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener noreferrer" style="text-decoration:none" aria-label="토큰 결제 (새 탭)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg> 토큰 결제</a>
     <button type="button" class="auth-btn admin-only" id="healthchecks-btn">기능 점검</button>
     <button type="button" class="auth-btn admin-only" id="accounts-btn">계정 관리</button>
@@ -544,7 +545,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.146 · build 261010</span>
+    <span class="ver">v3.147 · build 261010</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -616,5 +617,7 @@
   <script src="{{ url_for('static', filename='js/healthchecks.js', v='20261009-2') }}"></script>
   {% include 'service_notice.html' %}
   <script src="{{ url_for('static', filename='js/mouse-scroll.js', v='20261008-2') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai-usage.css', v='3.147') }}">
+<script src="{{ url_for('static', filename='js/ai-usage.js', v='3.147') }}"></script>
 </body>
 </html>

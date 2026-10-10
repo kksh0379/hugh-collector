@@ -41,7 +41,10 @@ def post(url, *, feature, **kwargs):
     with _lock:
         if time.monotonic() < _blocked_until:
             raise CreditUnavailable()
+    started = time.monotonic()
     response = requests.post(url, **kwargs)
+    from . import ai_usage
+    ai_usage.record(response, feature, kwargs.get('json') or {}, int((time.monotonic() - started) * 1000))
     if response.status_code >= 400:
         # Inspect the complete provider payload before any caller truncates it.
         if is_credit_error(response.text):
