@@ -8,7 +8,7 @@ from . import db
 
 KST = timezone(timedelta(hours=9))
 # USD / million tokens; verified against Claude pricing on 2026-10-10.
-RATES = {'claude-haiku-4-5': (1, 5), 'claude-3-5-haiku': (.8, 4),
+RATES = {'claude-haiku-5-5': (.1, .5), 'claude-sonnet-5-5': (2, 10), 'claude-opus-5-5': (4, 20), 'claude-opus-5': (5, 25), 'claude-fable-5-1': (10, 50), 'claude-mythos-5-1': (10, 50), 'claude-fable-5': (10, 50), 'claude-mythos-5': (10, 50), 'claude-haiku-4-5': (1, 5), 'claude-3-5-haiku': (.8, 4),
          'claude-sonnet-4-6': (3, 15), 'claude-sonnet-4-5': (3, 15), 'claude-sonnet-4': (3, 15), 'claude-3-5-sonnet': (3, 15),
          'claude-3-7-sonnet': (3, 15), 'claude-sonnet-5': (2, 10),
          'claude-opus-4-5': (5, 25), 'claude-opus-4-6': (5, 25),
@@ -25,14 +25,17 @@ def estimate(model, usage, body):
         return None
     def n(key):
         return Decimal(str(usage.get(key, 0) or 0))
-    inp, out = map(lambda x: Decimal(str(x)), rates)
     context_tokens = n('input_tokens') + n('cache_creation_input_tokens') + n('cache_read_input_tokens')
-    if context_tokens > 200000 and not model.startswith(('claude-sonnet-4-6', 'claude-sonnet-5', 'claude-opus-4-6', 'claude-opus-4-7', 'claude-opus-4-8')):
+    if model.startswith('claude-haiku-5-5') and context_tokens > 100000:
+        rates = (.5, 2.5)
+    inp, out = map(lambda x: Decimal(str(x)), rates)
+    cache_read_multiplier = Decimal('.025') if model.startswith(('claude-fable-5-1', 'claude-mythos-5-1')) else (Decimal('.05') if model.startswith(('claude-opus-5-5', 'claude-sonnet-5-5')) else Decimal('.1'))
+    if context_tokens > 200000 and not model.startswith(('claude-haiku-5-5', 'claude-opus-5', 'claude-fable-5', 'claude-mythos-5', 'claude-sonnet-4-6', 'claude-sonnet-5', 'claude-opus-4-6', 'claude-opus-4-7', 'claude-opus-4-8')):
         return None
     cache = usage.get('cache_creation') or {}
     one_hour = Decimal(str(cache.get('ephemeral_1h_input_tokens', 0) or 0))
     five_min = n('cache_creation_input_tokens') - one_hour
-    cost = inp * (n('input_tokens') + max(five_min, 0) * Decimal('1.25') + one_hour * 2 + n('cache_read_input_tokens') * Decimal('.1')) + out * n('output_tokens')
+    cost = inp * (n('input_tokens') + max(five_min, 0) * Decimal('1.25') + one_hour * 2 + n('cache_read_input_tokens') * cache_read_multiplier) + out * n('output_tokens')
     if body.get('inference_geo') == 'us':
         cost *= Decimal('1.1')
     return int(cost.quantize(Decimal('1'), rounding=ROUND_HALF_UP))  # micro USD

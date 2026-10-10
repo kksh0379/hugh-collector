@@ -39,6 +39,9 @@ class UsageTests(unittest.TestCase):
         usage={'input_tokens':0,'output_tokens':0,'cache_creation_input_tokens':1000,'cache_creation':{'ephemeral_1h_input_tokens':1000}}
         self.assertEqual(ai_usage.estimate('claude-haiku-4-5',usage,{}),2000)
         self.assertIsNone(ai_usage.estimate('unknown-model',usage,{}))
+        self.assertEqual(ai_usage.estimate('claude-haiku-5-5',{'input_tokens':1000,'output_tokens':200},{}),200)
+        self.assertEqual(ai_usage.estimate('claude-haiku-5-5',{'input_tokens':100001,'output_tokens':200},{}),50501)
+        self.assertEqual(ai_usage.estimate('claude-sonnet-5-5',{'input_tokens':0,'output_tokens':0,'cache_read_input_tokens':1000},{}),100)
         self.assertIsNone(ai_usage.estimate('claude-haiku-4-5',{},{}))
         ai_usage.set_balance('5')
         ai_usage.record(self.response('unknown-model'),'요약',{},1)
