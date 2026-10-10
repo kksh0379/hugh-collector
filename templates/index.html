@@ -7,6 +7,7 @@
   <title>휴 스코프</title>
   <meta name="description" content="재단·업계 뉴스와 재단 게시판·소셜 채널을 한 곳에서 모아보는 통합 스코프." />
   <meta name="theme-color" content="#ffffff" />
+  <script src="{{ url_for('static', filename='js/theme.js', v='3.145') }}"></script>
 
   <!-- 링크 미리보기(카톡·슬랙·트위터 등) Open Graph -->
   {% set og_base = 'https://' + request.host %}
@@ -57,6 +58,7 @@
 <style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v='20261008-2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/skeleton.css', v='3.135') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css', v='3.145') }}">
 </head>
 <body>
   <header class="app-header">
@@ -73,7 +75,8 @@
       <span class="brand-name">휴 <b>스코프</b></span>
     </a>
     <div class="header-actions" id="header-actions">
-    <span class="foot-user loggedin-only" id="foot-user"></span>
+    <a class="header-donation" id="header-donation" href="https://aq.gy/f/C4DRg" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg><span>후원하기</span></a>
+    <button type="button" class="header-theme" id="theme-toggle" data-theme-toggle aria-label="블랙테마로 전환" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/></svg></button>
     <button class="auth-btn loggedout-only" id="login-btn">로그인</button>
     <button class="auth-btn loggedin-only" id="logout-btn">로그아웃</button>
     </div>
@@ -540,7 +543,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.144 · build 261010</span>
+    <span class="ver">v3.145 · build 261010</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -583,7 +586,7 @@
       <div class="reader-tools" aria-label="글자 크기">
         <button type="button" data-reader-size="-2" aria-label="글자 작게">가−</button>
         <button type="button" data-reader-size="2" aria-label="글자 크게">가+</button>
-        <button type="button" id="reader-theme" aria-label="다크 테마 전환"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/></svg></button>
+        <button type="button" id="reader-theme" data-theme-toggle aria-label="블랙테마로 전환" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z"/></svg></button>
       </div>
       <button type="button" id="reader-close" autofocus>닫기 ×</button>
     </div>
@@ -598,7 +601,7 @@
   </dialog>
 
   <script src="{{ url_for('static', filename='js/skeleton.js', v='3.135') }}"></script>
-  <script src="{{ url_for('static', filename='js/credit-help.js', v='3.144') }}"></script>
+  <script src="{{ url_for('static', filename='js/credit-help.js', v='3.145') }}"></script>
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-pull-v3.136") }}"></script>
   <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.135') }}"></script>

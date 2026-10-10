@@ -1,7 +1,7 @@
 {
-  "version": "3.144",
+  "version": "3.145",
   "source": "c53de2b69f87dac105424e17b8e0a79971009a2f",
-  "row_count": 496,
+  "row_count": 498,
   "template_controls": [
     {
       "file": "index",
@@ -15,1328 +15,1338 @@
     },
     {
       "file": "index",
-      "selector": "#login-btn",
+      "selector": "#header-donation",
       "id": "IA-0003"
     },
     {
       "file": "index",
-      "selector": "#logout-btn",
+      "selector": "#theme-toggle",
       "id": "IA-0004"
     },
     {
       "file": "index",
-      "selector": "#healthchecks-btn",
+      "selector": "#login-btn",
       "id": "IA-0005"
     },
     {
       "file": "index",
-      "selector": "#accounts-btn",
+      "selector": "#logout-btn",
       "id": "IA-0006"
     },
     {
       "file": "index",
-      "selector": "#features-btn",
+      "selector": "#healthchecks-btn",
       "id": "IA-0007"
     },
     {
       "file": "index",
-      "selector": "#notes-btn",
+      "selector": "#accounts-btn",
       "id": "IA-0008"
     },
     {
       "file": "index",
-      "selector": "#runlog-btn",
+      "selector": "#features-btn",
       "id": "IA-0009"
     },
     {
       "file": "index",
-      "selector": "#purge-db-btn",
+      "selector": "#notes-btn",
       "id": "IA-0010"
     },
     {
       "file": "index",
-      "selector": "[data-tab=\"cat\"]",
+      "selector": "#runlog-btn",
       "id": "IA-0011"
     },
     {
       "file": "index",
-      "selector": "[data-tab=\"game\"]",
+      "selector": "#purge-db-btn",
       "id": "IA-0012"
     },
     {
       "file": "index",
-      "selector": "[data-tab=\"news\"]",
+      "selector": "[data-tab=\"cat\"]",
       "id": "IA-0013"
     },
     {
       "file": "index",
-      "selector": "[data-tab=\"biz\"]",
+      "selector": "[data-tab=\"game\"]",
       "id": "IA-0014"
     },
     {
       "file": "index",
-      "selector": "[data-tab=\"security\"]",
+      "selector": "[data-tab=\"news\"]",
       "id": "IA-0015"
     },
     {
       "file": "index",
-      "selector": "[data-tab=\"event\"]",
+      "selector": "[data-tab=\"biz\"]",
       "id": "IA-0016"
     },
     {
       "file": "index",
-      "selector": "#tab-search",
+      "selector": "[data-tab=\"security\"]",
       "id": "IA-0017"
     },
     {
       "file": "index",
-      "selector": "#search-clear",
+      "selector": "[data-tab=\"event\"]",
       "id": "IA-0018"
     },
     {
       "file": "index",
-      "selector": "#search-btn",
+      "selector": "#tab-search",
       "id": "IA-0019"
     },
     {
       "file": "index",
-      "selector": "[data-view=\"list\"]",
+      "selector": "#search-clear",
       "id": "IA-0020"
     },
     {
       "file": "index",
-      "selector": "[data-view=\"card\"]",
+      "selector": "#search-btn",
       "id": "IA-0021"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"all\"]",
+      "selector": "[data-view=\"list\"]",
       "id": "IA-0022"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"{{ c }}\"]",
+      "selector": "[data-view=\"card\"]",
       "id": "IA-0023"
     },
     {
       "file": "index",
-      "selector": "#status-cat-btn",
+      "selector": "[data-cat=\"all\"]",
       "id": "IA-0024"
     },
     {
       "file": "index",
-      "selector": "#collect-cat",
+      "selector": "[data-cat=\"{{ c }}\"]",
       "id": "IA-0025"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"all\"]",
+      "selector": "#status-cat-btn",
       "id": "IA-0026"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"{{ c }}\"]",
+      "selector": "#collect-cat",
       "id": "IA-0027"
     },
     {
       "file": "index",
-      "selector": "#status-game-btn",
+      "selector": "[data-cat=\"all\"]",
       "id": "IA-0028"
     },
     {
       "file": "index",
-      "selector": "#collect-game",
+      "selector": "[data-cat=\"{{ c }}\"]",
       "id": "IA-0029"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"all\"]",
+      "selector": "#status-game-btn",
       "id": "IA-0030"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"재단\"]",
+      "selector": "#collect-game",
       "id": "IA-0031"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"본사\"]",
+      "selector": "[data-cat=\"all\"]",
       "id": "IA-0032"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"자회사\"]",
+      "selector": "[data-cat=\"재단\"]",
       "id": "IA-0033"
     },
     {
       "file": "index",
-      "selector": "#status-news-btn",
+      "selector": "[data-cat=\"본사\"]",
       "id": "IA-0034"
     },
     {
       "file": "index",
-      "selector": "#collect-news",
+      "selector": "[data-cat=\"자회사\"]",
       "id": "IA-0035"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"all\"]",
+      "selector": "#status-news-btn",
       "id": "IA-0036"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"동향\"]",
+      "selector": "#collect-news",
       "id": "IA-0037"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"게시판\"]",
+      "selector": "[data-cat=\"all\"]",
       "id": "IA-0038"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"영상\"]",
+      "selector": "[data-cat=\"동향\"]",
       "id": "IA-0039"
     },
     {
       "file": "index",
-      "selector": "#status-biz-btn",
+      "selector": "[data-cat=\"게시판\"]",
       "id": "IA-0040"
     },
     {
       "file": "index",
-      "selector": "#collect-biz",
+      "selector": "[data-cat=\"영상\"]",
       "id": "IA-0041"
     },
     {
       "file": "index",
-      "selector": "#collect-boards",
+      "selector": "#status-biz-btn",
       "id": "IA-0042"
     },
     {
       "file": "index",
-      "selector": "#collect-social",
+      "selector": "#collect-biz",
       "id": "IA-0043"
     },
     {
       "file": "index",
-      "selector": "#biz-reset-scope",
+      "selector": "#collect-boards",
       "id": "IA-0044"
     },
     {
       "file": "index",
+      "selector": "#collect-social",
+      "id": "IA-0045"
+    },
+    {
+      "file": "index",
+      "selector": "#biz-reset-scope",
+      "id": "IA-0046"
+    },
+    {
+      "file": "index",
       "selector": "[data-cat=\"all\"]",
-      "id": "IA-0049"
-    },
-    {
-      "file": "index",
-      "selector": "[data-cat=\"개인정보\"]",
-      "id": "IA-0050"
-    },
-    {
-      "file": "index",
-      "selector": "[data-cat=\"해킹·침해\"]",
       "id": "IA-0051"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"취약점\"]",
+      "selector": "[data-cat=\"개인정보\"]",
       "id": "IA-0052"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"정책·규제\"]",
+      "selector": "[data-cat=\"해킹·침해\"]",
       "id": "IA-0053"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"개보위·처분\"]",
+      "selector": "[data-cat=\"취약점\"]",
       "id": "IA-0054"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"보안트렌드\"]",
+      "selector": "[data-cat=\"정책·규제\"]",
       "id": "IA-0055"
     },
     {
       "file": "index",
-      "selector": "[data-sort=\"date\"]",
+      "selector": "[data-cat=\"개보위·처분\"]",
       "id": "IA-0056"
     },
     {
       "file": "index",
-      "selector": "[data-sort=\"importance\"]",
+      "selector": "[data-cat=\"보안트렌드\"]",
       "id": "IA-0057"
     },
     {
       "file": "index",
-      "selector": "#status-security-btn",
+      "selector": "[data-sort=\"date\"]",
       "id": "IA-0058"
     },
     {
       "file": "index",
-      "selector": "#collect-security",
+      "selector": "[data-sort=\"importance\"]",
       "id": "IA-0059"
     },
     {
       "file": "index",
-      "selector": "[data-emode=\"schedule\"]",
+      "selector": "#status-security-btn",
       "id": "IA-0060"
     },
     {
       "file": "index",
-      "selector": "[data-emode=\"curation\"]",
+      "selector": "#collect-security",
       "id": "IA-0061"
     },
     {
       "file": "index",
-      "selector": "#ed-settings",
+      "selector": "[data-emode=\"schedule\"]",
       "id": "IA-0062"
     },
     {
       "file": "index",
-      "selector": "[data-eview=\"list\"]",
+      "selector": "[data-emode=\"curation\"]",
       "id": "IA-0063"
     },
     {
       "file": "index",
-      "selector": "[data-eview=\"album\"]",
+      "selector": "#ed-settings",
       "id": "IA-0064"
     },
     {
       "file": "index",
-      "selector": "[data-eview=\"calendar\"]",
+      "selector": "[data-eview=\"list\"]",
       "id": "IA-0065"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"all\"]",
+      "selector": "[data-eview=\"album\"]",
       "id": "IA-0066"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"IT·기술\"]",
+      "selector": "[data-eview=\"calendar\"]",
       "id": "IA-0067"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"AI·데이터\"]",
+      "selector": "[data-cat=\"all\"]",
       "id": "IA-0068"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"AI 윤리\"]",
+      "selector": "[data-cat=\"IT·기술\"]",
       "id": "IA-0069"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"산업·비즈니스\"]",
+      "selector": "[data-cat=\"AI·데이터\"]",
       "id": "IA-0070"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"문화·전시\"]",
+      "selector": "[data-cat=\"AI 윤리\"]",
       "id": "IA-0071"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"교육·공익\"]",
+      "selector": "[data-cat=\"산업·비즈니스\"]",
       "id": "IA-0072"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"반려동물\"]",
+      "selector": "[data-cat=\"문화·전시\"]",
       "id": "IA-0073"
     },
     {
       "file": "index",
-      "selector": "[data-cat=\"기타\"]",
+      "selector": "[data-cat=\"교육·공익\"]",
       "id": "IA-0074"
     },
     {
       "file": "index",
-      "selector": "#status-event-btn",
+      "selector": "[data-cat=\"반려동물\"]",
       "id": "IA-0075"
     },
     {
       "file": "index",
-      "selector": "#collect-event",
+      "selector": "[data-cat=\"기타\"]",
       "id": "IA-0076"
     },
     {
       "file": "index",
-      "selector": "#lunch-loc-btn",
+      "selector": "#status-event-btn",
       "id": "IA-0077"
     },
     {
       "file": "index",
-      "selector": "#lunch-search",
+      "selector": "#collect-event",
       "id": "IA-0078"
     },
     {
       "file": "index",
-      "selector": "#lunch-search-btn",
+      "selector": "#lunch-loc-btn",
       "id": "IA-0079"
     },
     {
       "file": "index",
-      "selector": "#lunch-address-open",
+      "selector": "#lunch-search",
       "id": "IA-0080"
     },
     {
       "file": "index",
-      "selector": "#lunch-address-close",
+      "selector": "#lunch-search-btn",
       "id": "IA-0081"
     },
     {
       "file": "index",
-      "selector": "#lunch-address-query",
+      "selector": "#lunch-address-open",
       "id": "IA-0082"
     },
     {
       "file": "index",
-      "selector": "#lunch-address-submit",
+      "selector": "#lunch-address-close",
       "id": "IA-0083"
     },
     {
       "file": "index",
-      "selector": "#lunch-gps-radius",
+      "selector": "#lunch-address-query",
       "id": "IA-0084"
     },
     {
       "file": "index",
+      "selector": "#lunch-address-submit",
+      "id": "IA-0085"
+    },
+    {
+      "file": "index",
+      "selector": "#lunch-gps-radius",
+      "id": "IA-0086"
+    },
+    {
+      "file": "index",
       "selector": "#lunch-gps-refresh",
-      "id": "IA-0088"
-    },
-    {
-      "file": "index",
-      "selector": "#lunch-gps-download",
-      "id": "IA-0089"
-    },
-    {
-      "file": "index",
-      "selector": "#lunch-download-cancel",
       "id": "IA-0090"
     },
     {
       "file": "index",
-      "selector": "#lunch-download-confirm",
+      "selector": "#lunch-gps-download",
       "id": "IA-0091"
     },
     {
       "file": "index",
-      "selector": "#lunch-ai-btn",
+      "selector": "#lunch-download-cancel",
       "id": "IA-0092"
     },
     {
       "file": "index",
-      "selector": "#lunch-collect",
+      "selector": "#lunch-download-confirm",
       "id": "IA-0093"
     },
     {
       "file": "index",
-      "selector": "#lunch-add",
+      "selector": "#lunch-ai-btn",
       "id": "IA-0094"
     },
     {
       "file": "index",
-      "selector": "#lunch-diag",
+      "selector": "#lunch-collect",
       "id": "IA-0095"
     },
     {
       "file": "index",
-      "selector": "#lunch-rev-back",
+      "selector": "#lunch-add",
       "id": "IA-0096"
     },
     {
       "file": "index",
-      "selector": "#lunch-ai-back",
+      "selector": "#lunch-diag",
       "id": "IA-0097"
     },
     {
       "file": "index",
-      "selector": "[data-kind=\"foundation\"]",
+      "selector": "#lunch-rev-back",
       "id": "IA-0098"
     },
     {
       "file": "index",
-      "selector": "[data-kind=\"security\"]",
+      "selector": "#lunch-ai-back",
       "id": "IA-0099"
     },
     {
       "file": "index",
-      "selector": "#report-snap",
+      "selector": "[data-kind=\"foundation\"]",
       "id": "IA-0100"
     },
     {
       "file": "index",
-      "selector": "#report-pdf",
+      "selector": "[data-kind=\"security\"]",
       "id": "IA-0101"
     },
     {
       "file": "index",
-      "selector": "#run-report",
+      "selector": "#report-snap",
       "id": "IA-0102"
     },
     {
       "file": "index",
-      "selector": "#report-del",
+      "selector": "#report-pdf",
       "id": "IA-0103"
     },
     {
       "file": "index",
-      "selector": "#report-purge",
+      "selector": "#run-report",
       "id": "IA-0104"
     },
     {
       "file": "index",
-      "selector": "#status-close",
+      "selector": "#report-del",
       "id": "IA-0105"
     },
     {
       "file": "index",
-      "selector": "#login-close",
+      "selector": "#report-purge",
       "id": "IA-0106"
     },
     {
       "file": "index",
-      "selector": "[data-role=\"user\"]",
+      "selector": "#status-close",
       "id": "IA-0107"
     },
     {
       "file": "index",
-      "selector": "[data-role=\"admin\"]",
+      "selector": "#login-close",
       "id": "IA-0108"
     },
     {
       "file": "index",
-      "selector": "#login-submit",
+      "selector": "[data-role=\"user\"]",
       "id": "IA-0109"
     },
     {
       "file": "index",
-      "selector": "#login-other",
+      "selector": "[data-role=\"admin\"]",
       "id": "IA-0110"
     },
     {
       "file": "index",
-      "selector": "#runlog-close",
+      "selector": "#login-submit",
       "id": "IA-0111"
     },
     {
       "file": "index",
-      "selector": "[data-log=\"run\"]",
+      "selector": "#login-other",
       "id": "IA-0112"
     },
     {
       "file": "index",
-      "selector": "[data-log=\"visit\"]",
+      "selector": "#runlog-close",
       "id": "IA-0113"
     },
     {
       "file": "index",
-      "selector": "#notes-close",
+      "selector": "[data-log=\"run\"]",
       "id": "IA-0114"
     },
     {
       "file": "index",
-      "selector": "#accounts-close",
+      "selector": "[data-log=\"visit\"]",
       "id": "IA-0115"
     },
     {
       "file": "index",
-      "selector": "#account-add",
+      "selector": "#notes-close",
       "id": "IA-0116"
     },
     {
       "file": "index",
-      "selector": "#accounts-refresh",
+      "selector": "#accounts-close",
       "id": "IA-0117"
     },
     {
       "file": "index",
-      "selector": "#account-username",
+      "selector": "#account-add",
       "id": "IA-0118"
     },
     {
       "file": "index",
-      "selector": "#account-name",
+      "selector": "#accounts-refresh",
       "id": "IA-0119"
     },
     {
       "file": "index",
-      "selector": "#account-password",
+      "selector": "#account-username",
       "id": "IA-0120"
     },
     {
       "file": "index",
-      "selector": "button(114)",
+      "selector": "#account-name",
       "id": "IA-0121"
     },
     {
       "file": "index",
-      "selector": "#account-cancel",
+      "selector": "#account-password",
       "id": "IA-0122"
     },
     {
       "file": "index",
-      "selector": "#features-close",
+      "selector": "button(116)",
       "id": "IA-0123"
     },
     {
       "file": "index",
-      "selector": "input(117)",
+      "selector": "#account-cancel",
       "id": "IA-0124"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"food\"]",
+      "selector": "#features-close",
       "id": "IA-0125"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"videos\"]",
+      "selector": "input(119)",
       "id": "IA-0126"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"finance\"]",
+      "selector": "[data-feat=\"food\"]",
       "id": "IA-0127"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"report\"]",
+      "selector": "[data-feat=\"videos\"]",
       "id": "IA-0128"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"scrap\"]",
+      "selector": "[data-feat=\"finance\"]",
       "id": "IA-0129"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"cat\"]",
+      "selector": "[data-feat=\"report\"]",
       "id": "IA-0130"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"game\"]",
+      "selector": "[data-feat=\"scrap\"]",
       "id": "IA-0131"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"news\"]",
+      "selector": "[data-feat=\"cat\"]",
       "id": "IA-0132"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"biz\"]",
+      "selector": "[data-feat=\"game\"]",
       "id": "IA-0133"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"security\"]",
+      "selector": "[data-feat=\"news\"]",
       "id": "IA-0134"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"event\"]",
+      "selector": "[data-feat=\"biz\"]",
       "id": "IA-0135"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"boards\"]",
+      "selector": "[data-feat=\"security\"]",
       "id": "IA-0136"
     },
     {
       "file": "index",
-      "selector": "[data-feat=\"social\"]",
+      "selector": "[data-feat=\"event\"]",
       "id": "IA-0137"
     },
     {
       "file": "index",
-      "selector": "[data-nav=\"collector\"]",
+      "selector": "[data-feat=\"boards\"]",
       "id": "IA-0138"
     },
     {
       "file": "index",
-      "selector": "[data-nav=\"food\"]",
+      "selector": "[data-feat=\"social\"]",
       "id": "IA-0139"
     },
     {
       "file": "index",
-      "selector": "[data-nav=\"videos\"]",
+      "selector": "[data-nav=\"collector\"]",
       "id": "IA-0140"
     },
     {
       "file": "index",
-      "selector": "[data-nav=\"finance\"]",
+      "selector": "[data-nav=\"food\"]",
       "id": "IA-0141"
     },
     {
       "file": "index",
-      "selector": "#report-open-btn",
+      "selector": "[data-nav=\"videos\"]",
       "id": "IA-0142"
     },
     {
       "file": "index",
-      "selector": "#scrap-open-btn",
+      "selector": "[data-nav=\"finance\"]",
       "id": "IA-0143"
     },
     {
       "file": "index",
-      "selector": "a(137)",
+      "selector": "#report-open-btn",
       "id": "IA-0144"
     },
     {
       "file": "index",
-      "selector": "#to-top",
+      "selector": "#scrap-open-btn",
       "id": "IA-0145"
     },
     {
       "file": "index",
-      "selector": "#healthcheck-close",
+      "selector": "a(139)",
       "id": "IA-0146"
     },
     {
       "file": "index",
-      "selector": "#healthcheck-run",
+      "selector": "#to-top",
       "id": "IA-0147"
     },
     {
       "file": "index",
-      "selector": "#healthcheck-refresh",
+      "selector": "#healthcheck-close",
       "id": "IA-0148"
     },
     {
       "file": "index",
-      "selector": "#healthcheck-problems",
+      "selector": "#healthcheck-run",
       "id": "IA-0149"
     },
     {
       "file": "index",
-      "selector": "#healthcheck-history",
+      "selector": "#healthcheck-refresh",
       "id": "IA-0150"
     },
     {
       "file": "index",
-      "selector": "[data-share-close=\"\"]",
+      "selector": "#healthcheck-problems",
+      "id": "IA-0151"
+    },
+    {
+      "file": "index",
+      "selector": "#healthcheck-history",
       "id": "IA-0152"
     },
     {
       "file": "index",
-      "selector": "[data-share-action=\"copy\"]",
-      "id": "IA-0153"
-    },
-    {
-      "file": "index",
-      "selector": "[data-share-action=\"kakao\"]",
+      "selector": "[data-share-close=\"\"]",
       "id": "IA-0154"
     },
     {
       "file": "index",
-      "selector": "#share-sms",
+      "selector": "[data-share-action=\"copy\"]",
       "id": "IA-0155"
     },
     {
       "file": "index",
-      "selector": "[data-share-action=\"other\"]",
+      "selector": "[data-share-action=\"kakao\"]",
       "id": "IA-0156"
     },
     {
       "file": "index",
-      "selector": "#share-url",
+      "selector": "#share-sms",
       "id": "IA-0157"
     },
     {
       "file": "index",
-      "selector": "[data-reader-size=\"-2\"]",
+      "selector": "[data-share-action=\"other\"]",
       "id": "IA-0158"
     },
     {
       "file": "index",
-      "selector": "[data-reader-size=\"2\"]",
+      "selector": "#share-url",
       "id": "IA-0159"
     },
     {
       "file": "index",
-      "selector": "#reader-theme",
+      "selector": "[data-reader-size=\"-2\"]",
       "id": "IA-0160"
     },
     {
       "file": "index",
-      "selector": "#reader-close",
+      "selector": "[data-reader-size=\"2\"]",
       "id": "IA-0161"
     },
     {
       "file": "index",
-      "selector": "#reader-retry",
+      "selector": "#reader-theme",
       "id": "IA-0162"
     },
     {
       "file": "index",
-      "selector": "#reader-source",
+      "selector": "#reader-close",
       "id": "IA-0163"
     },
     {
-      "file": "launcher",
-      "selector": "a(1)",
+      "file": "index",
+      "selector": "#reader-retry",
       "id": "IA-0164"
     },
     {
-      "file": "launcher",
-      "selector": "a(2)",
+      "file": "index",
+      "selector": "#reader-source",
       "id": "IA-0165"
     },
     {
       "file": "launcher",
-      "selector": "#app-install",
+      "selector": "a(1)",
       "id": "IA-0166"
     },
     {
       "file": "launcher",
-      "selector": "a(4)",
+      "selector": "a(2)",
       "id": "IA-0167"
     },
     {
       "file": "launcher",
-      "selector": "a(5)",
+      "selector": "#app-install",
       "id": "IA-0168"
     },
     {
       "file": "launcher",
-      "selector": "a(6)",
+      "selector": "a(4)",
       "id": "IA-0169"
     },
     {
       "file": "launcher",
-      "selector": "a(7)",
+      "selector": "a(5)",
       "id": "IA-0170"
     },
     {
-      "file": "videos",
-      "selector": "#videos-search",
+      "file": "launcher",
+      "selector": "a(6)",
       "id": "IA-0171"
     },
     {
-      "file": "videos",
-      "selector": "#videos-all",
+      "file": "launcher",
+      "selector": "a(7)",
       "id": "IA-0172"
     },
     {
       "file": "videos",
-      "selector": "#videos-saved",
+      "selector": "#videos-search",
       "id": "IA-0173"
     },
     {
       "file": "videos",
-      "selector": "#videos-back",
+      "selector": "#videos-all",
       "id": "IA-0174"
     },
     {
       "file": "videos",
-      "selector": "#videos-detail-save",
+      "selector": "#videos-saved",
       "id": "IA-0175"
     },
     {
       "file": "videos",
-      "selector": "#videos-inspection-toggle",
+      "selector": "#videos-back",
       "id": "IA-0176"
     },
     {
       "file": "videos",
-      "selector": "#videos-inspection-all",
+      "selector": "#videos-detail-save",
       "id": "IA-0177"
     },
     {
       "file": "videos",
-      "selector": "#videos-original",
+      "selector": "#videos-inspection-toggle",
       "id": "IA-0178"
     },
     {
       "file": "videos",
-      "selector": "#videos-seek",
+      "selector": "#videos-inspection-all",
       "id": "IA-0179"
     },
     {
       "file": "videos",
-      "selector": "#videos-rewind",
+      "selector": "#videos-original",
       "id": "IA-0180"
     },
     {
       "file": "videos",
-      "selector": "#videos-toggle-play",
+      "selector": "#videos-seek",
       "id": "IA-0181"
     },
     {
       "file": "videos",
-      "selector": "#videos-forward",
+      "selector": "#videos-rewind",
       "id": "IA-0182"
     },
     {
       "file": "videos",
-      "selector": "#videos-airplay",
+      "selector": "#videos-toggle-play",
       "id": "IA-0183"
     },
     {
       "file": "videos",
-      "selector": "#videos-airplay-return",
+      "selector": "#videos-forward",
       "id": "IA-0184"
     },
     {
       "file": "videos",
-      "selector": "#videos-subtitle-earlier",
+      "selector": "#videos-airplay",
       "id": "IA-0185"
     },
     {
       "file": "videos",
-      "selector": "#videos-subtitle-later",
+      "selector": "#videos-airplay-return",
       "id": "IA-0186"
     },
     {
       "file": "videos",
-      "selector": "#videos-prev",
+      "selector": "#videos-subtitle-earlier",
       "id": "IA-0187"
     },
     {
       "file": "videos",
-      "selector": "#videos-picker-open",
+      "selector": "#videos-subtitle-later",
       "id": "IA-0188"
     },
     {
       "file": "videos",
-      "selector": "#videos-next",
+      "selector": "#videos-prev",
       "id": "IA-0189"
     },
     {
       "file": "videos",
-      "selector": "#videos-play",
+      "selector": "#videos-picker-open",
       "id": "IA-0190"
     },
     {
       "file": "videos",
-      "selector": "#videos-picker-close",
+      "selector": "#videos-next",
       "id": "IA-0191"
     },
     {
       "file": "videos",
-      "selector": "#videos-series",
+      "selector": "#videos-play",
       "id": "IA-0192"
     },
     {
       "file": "videos",
-      "selector": "#videos-current-page",
+      "selector": "#videos-picker-close",
       "id": "IA-0193"
     },
     {
       "file": "videos",
-      "selector": "#videos-latest-page",
+      "selector": "#videos-series",
       "id": "IA-0194"
     },
     {
       "file": "videos",
-      "selector": "#videos-range-prev",
+      "selector": "#videos-current-page",
       "id": "IA-0195"
     },
     {
       "file": "videos",
-      "selector": "#videos-range",
+      "selector": "#videos-latest-page",
       "id": "IA-0196"
     },
     {
       "file": "videos",
-      "selector": "#videos-range-next",
+      "selector": "#videos-range-prev",
       "id": "IA-0197"
     },
     {
       "file": "videos",
-      "selector": "#videos-jump",
+      "selector": "#videos-range",
       "id": "IA-0198"
     },
     {
       "file": "videos",
-      "selector": "button(29)",
+      "selector": "#videos-range-next",
       "id": "IA-0199"
     },
     {
-      "file": "finance",
-      "selector": "[data-fintab=\"indicators\"]",
+      "file": "videos",
+      "selector": "#videos-jump",
       "id": "IA-0200"
     },
     {
-      "file": "finance",
-      "selector": "[data-fintab=\"calc\"]",
+      "file": "videos",
+      "selector": "button(29)",
       "id": "IA-0201"
     },
     {
       "file": "finance",
-      "selector": "[data-fintab=\"tax\"]",
+      "selector": "[data-fintab=\"indicators\"]",
       "id": "IA-0202"
     },
     {
       "file": "finance",
-      "selector": "[data-fintab=\"news\"]",
+      "selector": "[data-fintab=\"calc\"]",
       "id": "IA-0203"
     },
     {
       "file": "finance",
-      "selector": "a(5)",
+      "selector": "[data-fintab=\"tax\"]",
       "id": "IA-0204"
     },
     {
       "file": "finance",
-      "selector": "#calc-salary-annual",
+      "selector": "[data-fintab=\"news\"]",
       "id": "IA-0205"
     },
     {
       "file": "finance",
-      "selector": "#calc-salary-family",
+      "selector": "a(5)",
       "id": "IA-0206"
     },
     {
       "file": "finance",
-      "selector": "#calc-salary-nontax",
+      "selector": "#calc-salary-annual",
       "id": "IA-0207"
     },
     {
       "file": "finance",
-      "selector": "a(9)",
+      "selector": "#calc-salary-family",
       "id": "IA-0208"
     },
     {
       "file": "finance",
-      "selector": "#calc-save-type",
+      "selector": "#calc-salary-nontax",
       "id": "IA-0209"
     },
     {
       "file": "finance",
+      "selector": "a(9)",
+      "id": "IA-0210"
+    },
+    {
+      "file": "finance",
+      "selector": "#calc-save-type",
+      "id": "IA-0211"
+    },
+    {
+      "file": "finance",
       "selector": "#calc-save-comp",
-      "id": "IA-0212"
+      "id": "IA-0214"
     },
     {
       "file": "finance",
       "selector": "#calc-save-amount",
-      "id": "IA-0215"
-    },
-    {
-      "file": "finance",
-      "selector": "#calc-save-rate",
-      "id": "IA-0216"
-    },
-    {
-      "file": "finance",
-      "selector": "#calc-save-months",
       "id": "IA-0217"
     },
     {
       "file": "finance",
-      "selector": "#calc-loan-amount",
+      "selector": "#calc-save-rate",
       "id": "IA-0218"
     },
     {
       "file": "finance",
-      "selector": "#calc-loan-rate",
+      "selector": "#calc-save-months",
       "id": "IA-0219"
     },
     {
       "file": "finance",
-      "selector": "#calc-loan-months",
+      "selector": "#calc-loan-amount",
       "id": "IA-0220"
     },
     {
       "file": "finance",
-      "selector": "#calc-loan-type",
+      "selector": "#calc-loan-rate",
       "id": "IA-0221"
     },
     {
       "file": "finance",
+      "selector": "#calc-loan-months",
+      "id": "IA-0222"
+    },
+    {
+      "file": "finance",
+      "selector": "#calc-loan-type",
+      "id": "IA-0223"
+    },
+    {
+      "file": "finance",
       "selector": "#finance-business-number",
-      "id": "IA-0224"
-    },
-    {
-      "file": "finance",
-      "selector": "button(20)",
-      "id": "IA-0225"
-    },
-    {
-      "file": "finance",
-      "selector": "a(21)",
       "id": "IA-0226"
     },
     {
       "file": "finance",
-      "selector": "a(22)",
+      "selector": "button(20)",
       "id": "IA-0227"
     },
     {
       "file": "finance",
-      "selector": "#finance-dart-nc",
+      "selector": "a(21)",
       "id": "IA-0228"
     },
     {
       "file": "finance",
-      "selector": "#finance-corp-code",
+      "selector": "a(22)",
       "id": "IA-0229"
     },
     {
       "file": "finance",
-      "selector": "button(25)",
+      "selector": "#finance-dart-nc",
       "id": "IA-0230"
     },
     {
       "file": "finance",
-      "selector": "a(26)",
+      "selector": "#finance-corp-code",
       "id": "IA-0231"
     },
     {
       "file": "finance",
-      "selector": "[data-category=\"all\"]",
+      "selector": "button(25)",
       "id": "IA-0232"
     },
     {
       "file": "finance",
-      "selector": "[data-category=\"policy\"]",
+      "selector": "a(26)",
       "id": "IA-0233"
     },
     {
       "file": "finance",
-      "selector": "[data-category=\"guide\"]",
+      "selector": "[data-category=\"all\"]",
       "id": "IA-0234"
     },
     {
       "file": "finance",
-      "selector": "[data-category=\"legislation\"]",
+      "selector": "[data-category=\"policy\"]",
       "id": "IA-0235"
     },
     {
       "file": "finance",
-      "selector": "#finance-search",
+      "selector": "[data-category=\"guide\"]",
       "id": "IA-0236"
     },
     {
       "file": "finance",
-      "selector": "summary(32)",
+      "selector": "[data-category=\"legislation\"]",
       "id": "IA-0237"
     },
     {
-      "file": "intro",
-      "selector": "a(1)",
+      "file": "finance",
+      "selector": "#finance-search",
       "id": "IA-0238"
     },
     {
-      "file": "intro",
-      "selector": "a(2)",
+      "file": "finance",
+      "selector": "summary(32)",
       "id": "IA-0239"
     },
     {
       "file": "intro",
-      "selector": "a(3)",
+      "selector": "a(1)",
       "id": "IA-0240"
     },
     {
       "file": "intro",
-      "selector": "a(4)",
+      "selector": "a(2)",
       "id": "IA-0241"
     },
     {
       "file": "intro",
-      "selector": "a(5)",
+      "selector": "a(3)",
       "id": "IA-0242"
     },
     {
       "file": "intro",
-      "selector": "a(6)",
+      "selector": "a(4)",
       "id": "IA-0243"
     },
     {
       "file": "intro",
-      "selector": "a(7)",
+      "selector": "a(5)",
       "id": "IA-0244"
     },
     {
       "file": "intro",
-      "selector": "a(8)",
+      "selector": "a(6)",
       "id": "IA-0245"
     },
     {
       "file": "intro",
-      "selector": "a(9)",
+      "selector": "a(7)",
       "id": "IA-0246"
     },
     {
       "file": "intro",
-      "selector": "a(10)",
+      "selector": "a(8)",
       "id": "IA-0247"
     },
     {
       "file": "intro",
-      "selector": "a(11)",
+      "selector": "a(9)",
       "id": "IA-0248"
     },
     {
       "file": "intro",
-      "selector": "a(12)",
+      "selector": "a(10)",
       "id": "IA-0249"
     },
     {
       "file": "intro",
-      "selector": "a(13)",
+      "selector": "a(11)",
       "id": "IA-0250"
     },
     {
       "file": "intro",
-      "selector": "a(14)",
+      "selector": "a(12)",
       "id": "IA-0251"
     },
     {
       "file": "intro",
-      "selector": "a(15)",
+      "selector": "a(13)",
       "id": "IA-0252"
     },
     {
       "file": "intro",
-      "selector": "a(16)",
+      "selector": "a(14)",
       "id": "IA-0253"
     },
     {
       "file": "intro",
-      "selector": "a(17)",
+      "selector": "a(15)",
       "id": "IA-0254"
     },
     {
       "file": "intro",
-      "selector": "a(18)",
+      "selector": "a(16)",
       "id": "IA-0255"
     },
     {
       "file": "intro",
-      "selector": "a(19)",
+      "selector": "a(17)",
       "id": "IA-0256"
     },
     {
       "file": "intro",
-      "selector": "a(20)",
+      "selector": "a(18)",
       "id": "IA-0257"
     },
     {
       "file": "intro",
-      "selector": "a(21)",
+      "selector": "a(19)",
       "id": "IA-0258"
     },
     {
       "file": "intro",
-      "selector": "a(22)",
+      "selector": "a(20)",
       "id": "IA-0259"
     },
     {
       "file": "intro",
-      "selector": "a(23)",
+      "selector": "a(21)",
       "id": "IA-0260"
     },
     {
       "file": "intro",
-      "selector": "a(24)",
+      "selector": "a(22)",
       "id": "IA-0261"
     },
     {
       "file": "intro",
-      "selector": "a(25)",
+      "selector": "a(23)",
       "id": "IA-0262"
     },
     {
       "file": "intro",
-      "selector": "a(26)",
+      "selector": "a(24)",
       "id": "IA-0263"
     },
     {
       "file": "intro",
-      "selector": "a(27)",
+      "selector": "a(25)",
       "id": "IA-0264"
     },
     {
       "file": "intro",
-      "selector": "a(28)",
+      "selector": "a(26)",
       "id": "IA-0265"
     },
     {
       "file": "intro",
-      "selector": "a(29)",
+      "selector": "a(27)",
       "id": "IA-0266"
     },
     {
       "file": "intro",
-      "selector": "a(30)",
+      "selector": "a(28)",
       "id": "IA-0267"
     },
     {
       "file": "intro",
-      "selector": "summary(31)",
+      "selector": "a(29)",
       "id": "IA-0268"
     },
     {
       "file": "intro",
-      "selector": "summary(32)",
+      "selector": "a(30)",
       "id": "IA-0269"
     },
     {
       "file": "intro",
-      "selector": "summary(33)",
+      "selector": "summary(31)",
       "id": "IA-0270"
     },
     {
       "file": "intro",
-      "selector": "a(34)",
+      "selector": "summary(32)",
       "id": "IA-0271"
     },
     {
-      "file": "mobile_install",
-      "selector": "a(1)",
+      "file": "intro",
+      "selector": "summary(33)",
       "id": "IA-0272"
     },
     {
-      "file": "mobile_install",
-      "selector": "a(2)",
+      "file": "intro",
+      "selector": "a(34)",
       "id": "IA-0273"
     },
     {
       "file": "mobile_install",
-      "selector": "#mobile-install-url",
+      "selector": "a(1)",
       "id": "IA-0274"
     },
     {
       "file": "mobile_install",
-      "selector": "#mobile-install-copy",
+      "selector": "a(2)",
       "id": "IA-0275"
     },
     {
       "file": "mobile_install",
-      "selector": "a(5)",
+      "selector": "#mobile-install-url",
       "id": "IA-0276"
     },
     {
-      "file": "maeum_record_plan",
-      "selector": "a(1)",
+      "file": "mobile_install",
+      "selector": "#mobile-install-copy",
       "id": "IA-0277"
     },
     {
-      "file": "maeum_record_plan",
-      "selector": "a(2)",
+      "file": "mobile_install",
+      "selector": "a(5)",
       "id": "IA-0278"
     },
     {
       "file": "maeum_record_plan",
-      "selector": "a(3)",
+      "selector": "a(1)",
       "id": "IA-0279"
     },
     {
       "file": "maeum_record_plan",
-      "selector": "a(4)",
+      "selector": "a(2)",
       "id": "IA-0280"
+    },
+    {
+      "file": "maeum_record_plan",
+      "selector": "a(3)",
+      "id": "IA-0281"
+    },
+    {
+      "file": "maeum_record_plan",
+      "selector": "a(4)",
+      "id": "IA-0282"
     },
     {
       "file": "service_notice",
       "selector": "button(1)",
-      "id": "IA-0281"
+      "id": "IA-0283"
     }
   ],
   "rows": [
@@ -1378,6 +1388,38 @@
       "d2": "공통",
       "d3": "탑",
       "d4": "브랜드·인증·관리자",
+      "d5": "후원하기",
+      "type": "링크",
+      "description": "로그인 여부와 무관하게 고정 헤더의 후원하기에서 개인 AQR 은행 앱 선택 화면을 팝업 또는 새 탭으로 연다.",
+      "input": "해당 화면에서 선택 또는 실행",
+      "result": "해당 조건의 화면 상태를 갱신",
+      "exception": "실패·빈 결과 상태를 해당 영역에 표시",
+      "permission": "모든 방문자",
+      "storage": "조회만",
+      "source": "templates/index.html · #header-donation · https://aq.gy/f/C4DRg"
+    },
+    {
+      "id": "IA-0004",
+      "d1": "휴스코프",
+      "d2": "공통",
+      "d3": "탑",
+      "d4": "브랜드·인증·관리자",
+      "d5": "블랙테마로 전환",
+      "type": "버튼",
+      "description": "전체 화면의 밝은 테마와 블랙테마를 전환하며 리더와 팝업에도 함께 적용한다. 선택을 첫 페인트 전 복원한다.",
+      "input": "해당 화면에서 선택 또는 실행",
+      "result": "해당 조건의 화면 상태를 갱신",
+      "exception": "실패·빈 결과 상태를 해당 영역에 표시",
+      "permission": "모든 방문자",
+      "storage": "localStorage hscopeTheme",
+      "source": "templates/index.html · #theme-toggle · 없음"
+    },
+    {
+      "id": "IA-0005",
+      "d1": "휴스코프",
+      "d2": "공통",
+      "d3": "탑",
+      "d4": "브랜드·인증·관리자",
       "d5": "로그인",
       "type": "버튼",
       "description": "일반 사용자 기본 로그인 모드로 로그인 팝업을 연다. 관리자/다른 계정 모드로 전환 가능하다.",
@@ -1389,7 +1431,7 @@
       "source": "templates/index.html · #login-btn"
     },
     {
-      "id": "IA-0004",
+      "id": "IA-0006",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "탑",
@@ -1405,7 +1447,7 @@
       "source": "templates/index.html · #logout-btn · POST /api/logout"
     },
     {
-      "id": "IA-0005",
+      "id": "IA-0007",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -1421,7 +1463,7 @@
       "source": "templates/index.html · #healthchecks-btn · GET /api/admin/healthchecks"
     },
     {
-      "id": "IA-0006",
+      "id": "IA-0008",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -1437,7 +1479,7 @@
       "source": "templates/index.html · #accounts-btn · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0007",
+      "id": "IA-0009",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -1453,7 +1495,7 @@
       "source": "templates/index.html · #features-btn · GET/POST /api/features"
     },
     {
-      "id": "IA-0008",
+      "id": "IA-0010",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -1469,7 +1511,7 @@
       "source": "templates/index.html · #notes-btn · GET /api/notes"
     },
     {
-      "id": "IA-0009",
+      "id": "IA-0011",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -1485,7 +1527,7 @@
       "source": "templates/index.html · #runlog-btn · GET /api/runlog · /api/visitlog"
     },
     {
-      "id": "IA-0010",
+      "id": "IA-0012",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -1501,7 +1543,7 @@
       "source": "templates/index.html · #purge-db-btn · POST /api/admin/purge"
     },
     {
-      "id": "IA-0011",
+      "id": "IA-0013",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "탑",
@@ -1517,7 +1559,7 @@
       "source": "templates/index.html · [data-tab=\"cat\"]"
     },
     {
-      "id": "IA-0012",
+      "id": "IA-0014",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "탑",
@@ -1533,7 +1575,7 @@
       "source": "templates/index.html · [data-tab=\"game\"]"
     },
     {
-      "id": "IA-0013",
+      "id": "IA-0015",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "탑",
@@ -1549,7 +1591,7 @@
       "source": "templates/index.html · [data-tab=\"news\"]"
     },
     {
-      "id": "IA-0014",
+      "id": "IA-0016",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "탑",
@@ -1565,7 +1607,7 @@
       "source": "templates/index.html · [data-tab=\"biz\"]"
     },
     {
-      "id": "IA-0015",
+      "id": "IA-0017",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "탑",
@@ -1581,7 +1623,7 @@
       "source": "templates/index.html · [data-tab=\"security\"]"
     },
     {
-      "id": "IA-0016",
+      "id": "IA-0018",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "탑",
@@ -1597,7 +1639,7 @@
       "source": "templates/index.html · [data-tab=\"event\"]"
     },
     {
-      "id": "IA-0017",
+      "id": "IA-0019",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -1613,7 +1655,7 @@
       "source": "templates/index.html · #tab-search"
     },
     {
-      "id": "IA-0018",
+      "id": "IA-0020",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -1629,7 +1671,7 @@
       "source": "templates/index.html · #search-clear"
     },
     {
-      "id": "IA-0019",
+      "id": "IA-0021",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -1645,7 +1687,7 @@
       "source": "templates/index.html · #search-btn"
     },
     {
-      "id": "IA-0020",
+      "id": "IA-0022",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -1661,7 +1703,7 @@
       "source": "templates/index.html · [data-view=\"list\"]"
     },
     {
-      "id": "IA-0021",
+      "id": "IA-0023",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -1677,7 +1719,7 @@
       "source": "templates/index.html · [data-view=\"card\"]"
     },
     {
-      "id": "IA-0022",
+      "id": "IA-0024",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -1693,7 +1735,7 @@
       "source": "templates/index.html · [data-cat=\"all\"]"
     },
     {
-      "id": "IA-0023",
+      "id": "IA-0025",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -1709,7 +1751,7 @@
       "source": "templates/index.html · [data-cat=\"{{ c }}\"]"
     },
     {
-      "id": "IA-0024",
+      "id": "IA-0026",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -1725,7 +1767,7 @@
       "source": "templates/index.html · #status-cat-btn · GET /api/crawl/status 및 그룹별 진단"
     },
     {
-      "id": "IA-0025",
+      "id": "IA-0027",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -1741,7 +1783,7 @@
       "source": "templates/index.html · #collect-cat · POST /api/crawl/<group>/start · GET /api/crawl/<group>/status"
     },
     {
-      "id": "IA-0026",
+      "id": "IA-0028",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -1757,7 +1799,7 @@
       "source": "templates/index.html · [data-cat=\"all\"]"
     },
     {
-      "id": "IA-0027",
+      "id": "IA-0029",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -1773,7 +1815,7 @@
       "source": "templates/index.html · [data-cat=\"{{ c }}\"]"
     },
     {
-      "id": "IA-0028",
+      "id": "IA-0030",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -1789,7 +1831,7 @@
       "source": "templates/index.html · #status-game-btn · GET /api/crawl/status 및 그룹별 진단"
     },
     {
-      "id": "IA-0029",
+      "id": "IA-0031",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -1805,7 +1847,7 @@
       "source": "templates/index.html · #collect-game · POST /api/crawl/<group>/start · GET /api/crawl/<group>/status"
     },
     {
-      "id": "IA-0030",
+      "id": "IA-0032",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -1821,7 +1863,7 @@
       "source": "templates/index.html · [data-cat=\"all\"]"
     },
     {
-      "id": "IA-0031",
+      "id": "IA-0033",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -1837,7 +1879,7 @@
       "source": "templates/index.html · [data-cat=\"재단\"]"
     },
     {
-      "id": "IA-0032",
+      "id": "IA-0034",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -1853,7 +1895,7 @@
       "source": "templates/index.html · [data-cat=\"본사\"]"
     },
     {
-      "id": "IA-0033",
+      "id": "IA-0035",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -1869,7 +1911,7 @@
       "source": "templates/index.html · [data-cat=\"자회사\"]"
     },
     {
-      "id": "IA-0034",
+      "id": "IA-0036",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -1885,7 +1927,7 @@
       "source": "templates/index.html · #status-news-btn · GET /api/crawl/status 및 그룹별 진단"
     },
     {
-      "id": "IA-0035",
+      "id": "IA-0037",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -1901,7 +1943,7 @@
       "source": "templates/index.html · #collect-news · POST /api/crawl/<group>/start · GET /api/crawl/<group>/status"
     },
     {
-      "id": "IA-0036",
+      "id": "IA-0038",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -1917,7 +1959,7 @@
       "source": "templates/index.html · [data-cat=\"all\"]"
     },
     {
-      "id": "IA-0037",
+      "id": "IA-0039",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -1933,7 +1975,7 @@
       "source": "templates/index.html · [data-cat=\"동향\"]"
     },
     {
-      "id": "IA-0038",
+      "id": "IA-0040",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -1949,7 +1991,7 @@
       "source": "templates/index.html · [data-cat=\"게시판\"]"
     },
     {
-      "id": "IA-0039",
+      "id": "IA-0041",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -1965,7 +2007,7 @@
       "source": "templates/index.html · [data-cat=\"영상\"]"
     },
     {
-      "id": "IA-0040",
+      "id": "IA-0042",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -1981,7 +2023,7 @@
       "source": "templates/index.html · #status-biz-btn · GET /api/crawl/status 및 그룹별 진단"
     },
     {
-      "id": "IA-0041",
+      "id": "IA-0043",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -1997,7 +2039,7 @@
       "source": "templates/index.html · #collect-biz · POST /api/crawl/<group>/start · GET /api/crawl/<group>/status"
     },
     {
-      "id": "IA-0042",
+      "id": "IA-0044",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2013,7 +2055,7 @@
       "source": "templates/index.html · #collect-boards · POST /api/crawl/<group>/start"
     },
     {
-      "id": "IA-0043",
+      "id": "IA-0045",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2029,7 +2071,7 @@
       "source": "templates/index.html · #collect-social · POST /api/crawl/<group>/start"
     },
     {
-      "id": "IA-0044",
+      "id": "IA-0046",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2045,7 +2087,7 @@
       "source": "templates/index.html · #biz-reset-scope"
     },
     {
-      "id": "IA-0045",
+      "id": "IA-0047",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2061,7 +2103,7 @@
       "source": "templates/index.html · #biz-reset-scope"
     },
     {
-      "id": "IA-0046",
+      "id": "IA-0048",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2077,7 +2119,7 @@
       "source": "templates/index.html · #biz-reset-scope"
     },
     {
-      "id": "IA-0047",
+      "id": "IA-0049",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2093,7 +2135,7 @@
       "source": "templates/index.html · #biz-reset-scope"
     },
     {
-      "id": "IA-0048",
+      "id": "IA-0050",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -2109,7 +2151,7 @@
       "source": "templates/index.html · #biz-reset-scope"
     },
     {
-      "id": "IA-0049",
+      "id": "IA-0051",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2125,7 +2167,7 @@
       "source": "templates/index.html · [data-cat=\"all\"]"
     },
     {
-      "id": "IA-0050",
+      "id": "IA-0052",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2141,7 +2183,7 @@
       "source": "templates/index.html · [data-cat=\"개인정보\"]"
     },
     {
-      "id": "IA-0051",
+      "id": "IA-0053",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2157,7 +2199,7 @@
       "source": "templates/index.html · [data-cat=\"해킹·침해\"]"
     },
     {
-      "id": "IA-0052",
+      "id": "IA-0054",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2173,7 +2215,7 @@
       "source": "templates/index.html · [data-cat=\"취약점\"]"
     },
     {
-      "id": "IA-0053",
+      "id": "IA-0055",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2189,7 +2231,7 @@
       "source": "templates/index.html · [data-cat=\"정책·규제\"]"
     },
     {
-      "id": "IA-0054",
+      "id": "IA-0056",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2205,7 +2247,7 @@
       "source": "templates/index.html · [data-cat=\"개보위·처분\"]"
     },
     {
-      "id": "IA-0055",
+      "id": "IA-0057",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2221,7 +2263,7 @@
       "source": "templates/index.html · [data-cat=\"보안트렌드\"]"
     },
     {
-      "id": "IA-0056",
+      "id": "IA-0058",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2237,7 +2279,7 @@
       "source": "templates/index.html · [data-sort=\"date\"]"
     },
     {
-      "id": "IA-0057",
+      "id": "IA-0059",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2253,7 +2295,7 @@
       "source": "templates/index.html · [data-sort=\"importance\"]"
     },
     {
-      "id": "IA-0058",
+      "id": "IA-0060",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2269,7 +2311,7 @@
       "source": "templates/index.html · #status-security-btn · GET /api/crawl/status 및 그룹별 진단"
     },
     {
-      "id": "IA-0059",
+      "id": "IA-0061",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -2285,7 +2327,7 @@
       "source": "templates/index.html · #collect-security · POST /api/crawl/<group>/start · GET /api/crawl/<group>/status"
     },
     {
-      "id": "IA-0060",
+      "id": "IA-0062",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2301,7 +2343,7 @@
       "source": "templates/index.html · [data-emode=\"schedule\"]"
     },
     {
-      "id": "IA-0061",
+      "id": "IA-0063",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2317,7 +2359,7 @@
       "source": "templates/index.html · [data-emode=\"curation\"]"
     },
     {
-      "id": "IA-0062",
+      "id": "IA-0064",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2333,7 +2375,7 @@
       "source": "templates/index.html · #ed-settings"
     },
     {
-      "id": "IA-0063",
+      "id": "IA-0065",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2349,7 +2391,7 @@
       "source": "templates/index.html · [data-eview=\"list\"]"
     },
     {
-      "id": "IA-0064",
+      "id": "IA-0066",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2365,7 +2407,7 @@
       "source": "templates/index.html · [data-eview=\"album\"]"
     },
     {
-      "id": "IA-0065",
+      "id": "IA-0067",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2381,7 +2423,7 @@
       "source": "templates/index.html · [data-eview=\"calendar\"]"
     },
     {
-      "id": "IA-0066",
+      "id": "IA-0068",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2397,7 +2439,7 @@
       "source": "templates/index.html · [data-cat=\"all\"]"
     },
     {
-      "id": "IA-0067",
+      "id": "IA-0069",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2413,7 +2455,7 @@
       "source": "templates/index.html · [data-cat=\"IT·기술\"]"
     },
     {
-      "id": "IA-0068",
+      "id": "IA-0070",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2429,7 +2471,7 @@
       "source": "templates/index.html · [data-cat=\"AI·데이터\"]"
     },
     {
-      "id": "IA-0069",
+      "id": "IA-0071",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2445,7 +2487,7 @@
       "source": "templates/index.html · [data-cat=\"AI 윤리\"]"
     },
     {
-      "id": "IA-0070",
+      "id": "IA-0072",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2461,7 +2503,7 @@
       "source": "templates/index.html · [data-cat=\"산업·비즈니스\"]"
     },
     {
-      "id": "IA-0071",
+      "id": "IA-0073",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2477,7 +2519,7 @@
       "source": "templates/index.html · [data-cat=\"문화·전시\"]"
     },
     {
-      "id": "IA-0072",
+      "id": "IA-0074",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2493,7 +2535,7 @@
       "source": "templates/index.html · [data-cat=\"교육·공익\"]"
     },
     {
-      "id": "IA-0073",
+      "id": "IA-0075",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2509,7 +2551,7 @@
       "source": "templates/index.html · [data-cat=\"반려동물\"]"
     },
     {
-      "id": "IA-0074",
+      "id": "IA-0076",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2525,7 +2567,7 @@
       "source": "templates/index.html · [data-cat=\"기타\"]"
     },
     {
-      "id": "IA-0075",
+      "id": "IA-0077",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2541,7 +2583,7 @@
       "source": "templates/index.html · #status-event-btn · GET /api/crawl/status 및 그룹별 진단"
     },
     {
-      "id": "IA-0076",
+      "id": "IA-0078",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -2557,7 +2599,7 @@
       "source": "templates/index.html · #collect-event · POST /api/crawl/<group>/start · GET /api/crawl/<group>/status"
     },
     {
-      "id": "IA-0077",
+      "id": "IA-0079",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2573,7 +2615,7 @@
       "source": "templates/index.html · #lunch-loc-btn · GET /api/lunch/locations"
     },
     {
-      "id": "IA-0078",
+      "id": "IA-0080",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2589,7 +2631,7 @@
       "source": "templates/index.html · #lunch-search"
     },
     {
-      "id": "IA-0079",
+      "id": "IA-0081",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2605,7 +2647,7 @@
       "source": "templates/index.html · #lunch-search-btn"
     },
     {
-      "id": "IA-0080",
+      "id": "IA-0082",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2621,7 +2663,7 @@
       "source": "templates/index.html · #lunch-address-open"
     },
     {
-      "id": "IA-0081",
+      "id": "IA-0083",
       "d1": "휴스코프",
       "d2": "주소 검색",
       "d3": "팝업",
@@ -2637,7 +2679,7 @@
       "source": "templates/index.html · #lunch-address-close"
     },
     {
-      "id": "IA-0082",
+      "id": "IA-0084",
       "d1": "휴스코프",
       "d2": "주소 검색",
       "d3": "팝업",
@@ -2653,7 +2695,7 @@
       "source": "templates/index.html · #lunch-address-query"
     },
     {
-      "id": "IA-0083",
+      "id": "IA-0085",
       "d1": "휴스코프",
       "d2": "주소 검색",
       "d3": "팝업",
@@ -2669,7 +2711,7 @@
       "source": "templates/index.html · #lunch-address-submit · POST /api/lunch/address/search"
     },
     {
-      "id": "IA-0084",
+      "id": "IA-0086",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2685,7 +2727,7 @@
       "source": "templates/index.html · #lunch-gps-radius · POST /api/lunch/nearby"
     },
     {
-      "id": "IA-0085",
+      "id": "IA-0087",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2701,7 +2743,7 @@
       "source": "templates/index.html · #lunch-gps-radius · POST /api/lunch/nearby"
     },
     {
-      "id": "IA-0086",
+      "id": "IA-0088",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2717,7 +2759,7 @@
       "source": "templates/index.html · #lunch-gps-radius · POST /api/lunch/nearby"
     },
     {
-      "id": "IA-0087",
+      "id": "IA-0089",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2733,7 +2775,7 @@
       "source": "templates/index.html · #lunch-gps-radius · POST /api/lunch/nearby"
     },
     {
-      "id": "IA-0088",
+      "id": "IA-0090",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2749,7 +2791,7 @@
       "source": "templates/index.html · #lunch-gps-refresh · POST /api/lunch/nearby · /api/lunch/address/reverse"
     },
     {
-      "id": "IA-0089",
+      "id": "IA-0091",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2765,7 +2807,7 @@
       "source": "templates/index.html · #lunch-gps-download"
     },
     {
-      "id": "IA-0090",
+      "id": "IA-0092",
       "d1": "휴스코프",
       "d2": "맛집 다운로드 확인",
       "d3": "팝업",
@@ -2781,7 +2823,7 @@
       "source": "templates/index.html · #lunch-download-cancel"
     },
     {
-      "id": "IA-0091",
+      "id": "IA-0093",
       "d1": "휴스코프",
       "d2": "맛집 다운로드 확인",
       "d3": "팝업",
@@ -2797,7 +2839,7 @@
       "source": "templates/index.html · #lunch-download-confirm · POST /api/lunch/nearby/download · GET /api/lunch/nearby/download/status"
     },
     {
-      "id": "IA-0092",
+      "id": "IA-0094",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2813,7 +2855,7 @@
       "source": "templates/index.html · #lunch-ai-btn"
     },
     {
-      "id": "IA-0093",
+      "id": "IA-0095",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2829,7 +2871,7 @@
       "source": "templates/index.html · #lunch-collect · POST /api/lunch/collect"
     },
     {
-      "id": "IA-0094",
+      "id": "IA-0096",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2845,7 +2887,7 @@
       "source": "templates/index.html · #lunch-add · POST /api/lunch/restaurant"
     },
     {
-      "id": "IA-0095",
+      "id": "IA-0097",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -2861,7 +2903,7 @@
       "source": "templates/index.html · #lunch-diag · GET /api/lunch/diag"
     },
     {
-      "id": "IA-0096",
+      "id": "IA-0098",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -2877,7 +2919,7 @@
       "source": "templates/index.html · #lunch-rev-back"
     },
     {
-      "id": "IA-0097",
+      "id": "IA-0099",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -2893,7 +2935,7 @@
       "source": "templates/index.html · #lunch-ai-back"
     },
     {
-      "id": "IA-0098",
+      "id": "IA-0100",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -2909,7 +2951,7 @@
       "source": "templates/index.html · [data-kind=\"foundation\"]"
     },
     {
-      "id": "IA-0099",
+      "id": "IA-0101",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -2925,7 +2967,7 @@
       "source": "templates/index.html · [data-kind=\"security\"]"
     },
     {
-      "id": "IA-0100",
+      "id": "IA-0102",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -2941,7 +2983,7 @@
       "source": "templates/index.html · #report-snap · GET /api/report/list · /api/report/get"
     },
     {
-      "id": "IA-0101",
+      "id": "IA-0103",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -2957,7 +2999,7 @@
       "source": "templates/index.html · #report-pdf"
     },
     {
-      "id": "IA-0102",
+      "id": "IA-0104",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -2973,7 +3015,7 @@
       "source": "templates/index.html · #run-report · POST /api/report/run"
     },
     {
-      "id": "IA-0103",
+      "id": "IA-0105",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -2989,7 +3031,7 @@
       "source": "templates/index.html · #report-del · POST /api/report/purge"
     },
     {
-      "id": "IA-0104",
+      "id": "IA-0106",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -3005,7 +3047,7 @@
       "source": "templates/index.html · #report-purge · POST /api/report/purge"
     },
     {
-      "id": "IA-0105",
+      "id": "IA-0107",
       "d1": "휴스코프",
       "d2": "수집 상태",
       "d3": "팝업",
@@ -3021,7 +3063,7 @@
       "source": "templates/index.html · #status-close"
     },
     {
-      "id": "IA-0106",
+      "id": "IA-0108",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -3037,7 +3079,7 @@
       "source": "templates/index.html · #login-close"
     },
     {
-      "id": "IA-0107",
+      "id": "IA-0109",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -3053,7 +3095,7 @@
       "source": "templates/index.html · [data-role=\"user\"]"
     },
     {
-      "id": "IA-0108",
+      "id": "IA-0110",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -3069,7 +3111,7 @@
       "source": "templates/index.html · [data-role=\"admin\"]"
     },
     {
-      "id": "IA-0109",
+      "id": "IA-0111",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -3085,7 +3127,7 @@
       "source": "templates/index.html · #login-submit · POST /api/login · GET /api/mydata"
     },
     {
-      "id": "IA-0110",
+      "id": "IA-0112",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -3101,7 +3143,7 @@
       "source": "templates/index.html · #login-other"
     },
     {
-      "id": "IA-0111",
+      "id": "IA-0113",
       "d1": "휴스코프",
       "d2": "관리자 로그",
       "d3": "팝업",
@@ -3117,7 +3159,7 @@
       "source": "templates/index.html · #runlog-close"
     },
     {
-      "id": "IA-0112",
+      "id": "IA-0114",
       "d1": "휴스코프",
       "d2": "관리자 로그",
       "d3": "팝업",
@@ -3133,7 +3175,7 @@
       "source": "templates/index.html · [data-log=\"run\"]"
     },
     {
-      "id": "IA-0113",
+      "id": "IA-0115",
       "d1": "휴스코프",
       "d2": "관리자 로그",
       "d3": "팝업",
@@ -3149,7 +3191,7 @@
       "source": "templates/index.html · [data-log=\"visit\"]"
     },
     {
-      "id": "IA-0114",
+      "id": "IA-0116",
       "d1": "휴스코프",
       "d2": "관리자 패치내역",
       "d3": "팝업",
@@ -3165,7 +3207,7 @@
       "source": "templates/index.html · #notes-close"
     },
     {
-      "id": "IA-0115",
+      "id": "IA-0117",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3181,7 +3223,7 @@
       "source": "templates/index.html · #accounts-close · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0116",
+      "id": "IA-0118",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3197,7 +3239,7 @@
       "source": "templates/index.html · #account-add · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0117",
+      "id": "IA-0119",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3213,7 +3255,7 @@
       "source": "templates/index.html · #accounts-refresh · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0118",
+      "id": "IA-0120",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3229,7 +3271,7 @@
       "source": "templates/index.html · #account-username · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0119",
+      "id": "IA-0121",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3245,7 +3287,7 @@
       "source": "templates/index.html · #account-name · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0120",
+      "id": "IA-0122",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3261,7 +3303,7 @@
       "source": "templates/index.html · #account-password · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0121",
+      "id": "IA-0123",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3274,10 +3316,10 @@
       "exception": "실패·빈 결과 상태를 해당 영역에 표시",
       "permission": "관리자",
       "storage": "DB 계정 정보",
-      "source": "templates/index.html · button(114) · GET/POST/PATCH/DELETE /api/admin/accounts"
+      "source": "templates/index.html · button(116) · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0122",
+      "id": "IA-0124",
       "d1": "휴스코프",
       "d2": "관리자 계정 관리",
       "d3": "팝업",
@@ -3293,7 +3335,7 @@
       "source": "templates/index.html · #account-cancel · GET/POST/PATCH/DELETE /api/admin/accounts"
     },
     {
-      "id": "IA-0123",
+      "id": "IA-0125",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3309,7 +3351,7 @@
       "source": "templates/index.html · #features-close"
     },
     {
-      "id": "IA-0124",
+      "id": "IA-0126",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3322,10 +3364,10 @@
       "exception": "변경 불가",
       "permission": "관리자",
       "storage": "고정 설정",
-      "source": "templates/index.html · input(117) · GET /api/features"
+      "source": "templates/index.html · input(119) · GET /api/features"
     },
     {
-      "id": "IA-0125",
+      "id": "IA-0127",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3341,7 +3383,7 @@
       "source": "templates/index.html · [data-feat=\"food\"] · POST /api/features"
     },
     {
-      "id": "IA-0126",
+      "id": "IA-0128",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3357,7 +3399,7 @@
       "source": "templates/index.html · [data-feat=\"videos\"] · POST /api/features"
     },
     {
-      "id": "IA-0127",
+      "id": "IA-0129",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3373,7 +3415,7 @@
       "source": "templates/index.html · [data-feat=\"finance\"] · POST /api/features"
     },
     {
-      "id": "IA-0128",
+      "id": "IA-0130",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3389,7 +3431,7 @@
       "source": "templates/index.html · [data-feat=\"report\"] · POST /api/features"
     },
     {
-      "id": "IA-0129",
+      "id": "IA-0131",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3405,7 +3447,7 @@
       "source": "templates/index.html · [data-feat=\"scrap\"] · POST /api/features"
     },
     {
-      "id": "IA-0130",
+      "id": "IA-0132",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3421,7 +3463,7 @@
       "source": "templates/index.html · [data-feat=\"cat\"] · GET /api/features"
     },
     {
-      "id": "IA-0131",
+      "id": "IA-0133",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3437,7 +3479,7 @@
       "source": "templates/index.html · [data-feat=\"game\"] · POST /api/features"
     },
     {
-      "id": "IA-0132",
+      "id": "IA-0134",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3453,7 +3495,7 @@
       "source": "templates/index.html · [data-feat=\"news\"] · POST /api/features"
     },
     {
-      "id": "IA-0133",
+      "id": "IA-0135",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3469,7 +3511,7 @@
       "source": "templates/index.html · [data-feat=\"biz\"] · POST /api/features"
     },
     {
-      "id": "IA-0134",
+      "id": "IA-0136",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3485,7 +3527,7 @@
       "source": "templates/index.html · [data-feat=\"security\"] · POST /api/features"
     },
     {
-      "id": "IA-0135",
+      "id": "IA-0137",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3501,7 +3543,7 @@
       "source": "templates/index.html · [data-feat=\"event\"] · POST /api/features"
     },
     {
-      "id": "IA-0136",
+      "id": "IA-0138",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3517,7 +3559,7 @@
       "source": "templates/index.html · [data-feat=\"boards\"] · POST /api/features"
     },
     {
-      "id": "IA-0137",
+      "id": "IA-0139",
       "d1": "휴스코프",
       "d2": "관리자 표시 설정",
       "d3": "팝업",
@@ -3533,7 +3575,7 @@
       "source": "templates/index.html · [data-feat=\"social\"] · POST /api/features"
     },
     {
-      "id": "IA-0138",
+      "id": "IA-0140",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3549,7 +3591,7 @@
       "source": "templates/index.html · [data-nav=\"collector\"]"
     },
     {
-      "id": "IA-0139",
+      "id": "IA-0141",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3565,7 +3607,7 @@
       "source": "templates/index.html · [data-nav=\"food\"]"
     },
     {
-      "id": "IA-0140",
+      "id": "IA-0142",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3581,7 +3623,7 @@
       "source": "templates/index.html · [data-nav=\"videos\"]"
     },
     {
-      "id": "IA-0141",
+      "id": "IA-0143",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3597,7 +3639,7 @@
       "source": "templates/index.html · [data-nav=\"finance\"]"
     },
     {
-      "id": "IA-0142",
+      "id": "IA-0144",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3613,7 +3655,7 @@
       "source": "templates/index.html · #report-open-btn · GET /api/report/list"
     },
     {
-      "id": "IA-0143",
+      "id": "IA-0145",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3629,7 +3671,7 @@
       "source": "templates/index.html · #scrap-open-btn · GET /api/mydata"
     },
     {
-      "id": "IA-0144",
+      "id": "IA-0146",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -3642,10 +3684,10 @@
       "exception": "외부 사이트/기기 뷰어 지원에 따름; 실패 시 현재 자료 유지",
       "permission": "방문자·로그인 사용자·관리자",
       "storage": "이동/다운로드 외 서버 입력 저장 없음",
-      "source": "templates/index.html · a(137)"
+      "source": "templates/index.html · a(139)"
     },
     {
-      "id": "IA-0145",
+      "id": "IA-0147",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "공통",
@@ -3661,7 +3703,7 @@
       "source": "templates/index.html · #to-top"
     },
     {
-      "id": "IA-0146",
+      "id": "IA-0148",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "탑",
@@ -3677,7 +3719,7 @@
       "source": "templates/index.html · #healthcheck-close"
     },
     {
-      "id": "IA-0147",
+      "id": "IA-0149",
       "d1": "휴스코프",
       "d2": "관리자 기능 점검",
       "d3": "팝업",
@@ -3693,7 +3735,7 @@
       "source": "templates/index.html · #healthcheck-run · POST /api/admin/healthchecks/run"
     },
     {
-      "id": "IA-0148",
+      "id": "IA-0150",
       "d1": "휴스코프",
       "d2": "관리자 기능 점검",
       "d3": "팝업",
@@ -3709,7 +3751,7 @@
       "source": "templates/index.html · #healthcheck-refresh · GET /api/admin/healthchecks"
     },
     {
-      "id": "IA-0149",
+      "id": "IA-0151",
       "d1": "휴스코프",
       "d2": "관리자 기능 점검",
       "d3": "팝업",
@@ -3725,7 +3767,7 @@
       "source": "templates/index.html · #healthcheck-problems"
     },
     {
-      "id": "IA-0150",
+      "id": "IA-0152",
       "d1": "휴스코프",
       "d2": "관리자 기능 점검",
       "d3": "팝업",
@@ -3741,7 +3783,7 @@
       "source": "templates/index.html · #healthcheck-history · GET /api/admin/healthchecks?id=실행ID"
     },
     {
-      "id": "IA-0151",
+      "id": "IA-0153",
       "d1": "휴스코프",
       "d2": "관리자 기능 점검",
       "d3": "팝업",
@@ -3757,7 +3799,7 @@
       "source": "templates/index.html · #healthcheck-history · GET /api/admin/healthchecks?id=실행ID"
     },
     {
-      "id": "IA-0152",
+      "id": "IA-0154",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -3773,7 +3815,7 @@
       "source": "templates/index.html · [data-share-close=\"\"]"
     },
     {
-      "id": "IA-0153",
+      "id": "IA-0155",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -3789,7 +3831,7 @@
       "source": "templates/index.html · [data-share-action=\"copy\"]"
     },
     {
-      "id": "IA-0154",
+      "id": "IA-0156",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -3805,7 +3847,7 @@
       "source": "templates/index.html · [data-share-action=\"kakao\"]"
     },
     {
-      "id": "IA-0155",
+      "id": "IA-0157",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -3821,7 +3863,7 @@
       "source": "templates/index.html · #share-sms"
     },
     {
-      "id": "IA-0156",
+      "id": "IA-0158",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -3837,7 +3879,7 @@
       "source": "templates/index.html · [data-share-action=\"other\"]"
     },
     {
-      "id": "IA-0157",
+      "id": "IA-0159",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -3853,7 +3895,7 @@
       "source": "templates/index.html · #share-url"
     },
     {
-      "id": "IA-0158",
+      "id": "IA-0160",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -3869,7 +3911,7 @@
       "source": "templates/index.html · [data-reader-size=\"-2\"]"
     },
     {
-      "id": "IA-0159",
+      "id": "IA-0161",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -3885,23 +3927,23 @@
       "source": "templates/index.html · [data-reader-size=\"2\"]"
     },
     {
-      "id": "IA-0160",
+      "id": "IA-0162",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
       "d4": "대화상자 조작",
-      "d5": "다크 테마 전환",
+      "d5": "블랙테마로 전환",
       "type": "버튼",
-      "description": "기사 읽기 화면의 밝은/어두운 테마를 전환한다.",
+      "description": "공통 헤더와 같은 전체 화면 테마를 전환하며 리더와 팝업에도 함께 적용한다.",
       "input": "해당 화면에서 선택 또는 실행",
       "result": "해당 조건의 화면 상태를 갱신",
       "exception": "실패·빈 결과 상태를 해당 영역에 표시",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽기 화면 설정",
-      "source": "templates/index.html · #reader-theme"
+      "permission": "모든 방문자",
+      "storage": "localStorage hscopeTheme",
+      "source": "templates/index.html · #reader-theme · 없음"
     },
     {
-      "id": "IA-0161",
+      "id": "IA-0163",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -3917,7 +3959,7 @@
       "source": "templates/index.html · #reader-close"
     },
     {
-      "id": "IA-0162",
+      "id": "IA-0164",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -3933,7 +3975,7 @@
       "source": "templates/index.html · #reader-retry · 기사 읽기 API"
     },
     {
-      "id": "IA-0163",
+      "id": "IA-0165",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -3949,7 +3991,7 @@
       "source": "templates/index.html · #reader-source"
     },
     {
-      "id": "IA-0164",
+      "id": "IA-0166",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -3965,7 +4007,7 @@
       "source": "templates/launcher.html · a(1)"
     },
     {
-      "id": "IA-0165",
+      "id": "IA-0167",
       "d1": "런처",
       "d2": "런처",
       "d3": "탑",
@@ -3981,7 +4023,7 @@
       "source": "templates/launcher.html · a(2)"
     },
     {
-      "id": "IA-0166",
+      "id": "IA-0168",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -3997,7 +4039,7 @@
       "source": "templates/launcher.html · #app-install · 브라우저 beforeinstallprompt / navigator.install"
     },
     {
-      "id": "IA-0167",
+      "id": "IA-0169",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -4013,7 +4055,7 @@
       "source": "templates/launcher.html · a(4)"
     },
     {
-      "id": "IA-0168",
+      "id": "IA-0170",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -4029,7 +4071,7 @@
       "source": "templates/launcher.html · a(5)"
     },
     {
-      "id": "IA-0169",
+      "id": "IA-0171",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -4045,7 +4087,7 @@
       "source": "templates/launcher.html · a(6)"
     },
     {
-      "id": "IA-0170",
+      "id": "IA-0172",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -4061,7 +4103,7 @@
       "source": "templates/launcher.html · a(7)"
     },
     {
-      "id": "IA-0171",
+      "id": "IA-0173",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4077,7 +4119,7 @@
       "source": "templates/videos.html · #videos-search · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0172",
+      "id": "IA-0174",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4093,7 +4135,7 @@
       "source": "templates/videos.html · #videos-all · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0173",
+      "id": "IA-0175",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4109,7 +4151,7 @@
       "source": "templates/videos.html · #videos-saved · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0174",
+      "id": "IA-0176",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4125,7 +4167,7 @@
       "source": "templates/videos.html · #videos-back · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0175",
+      "id": "IA-0177",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4141,7 +4183,7 @@
       "source": "templates/videos.html · #videos-detail-save · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0176",
+      "id": "IA-0178",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4157,7 +4199,7 @@
       "source": "templates/videos.html · #videos-inspection-toggle · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0177",
+      "id": "IA-0179",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4173,7 +4215,7 @@
       "source": "templates/videos.html · #videos-inspection-all · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0178",
+      "id": "IA-0180",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4189,7 +4231,7 @@
       "source": "templates/videos.html · #videos-original · GET /api/videos/original"
     },
     {
-      "id": "IA-0179",
+      "id": "IA-0181",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4205,7 +4247,7 @@
       "source": "templates/videos.html · #videos-seek · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0180",
+      "id": "IA-0182",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4221,7 +4263,7 @@
       "source": "templates/videos.html · #videos-rewind · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0181",
+      "id": "IA-0183",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4237,7 +4279,7 @@
       "source": "templates/videos.html · #videos-toggle-play · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0182",
+      "id": "IA-0184",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4253,7 +4295,7 @@
       "source": "templates/videos.html · #videos-forward · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0183",
+      "id": "IA-0185",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4269,7 +4311,7 @@
       "source": "templates/videos.html · #videos-airplay · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0184",
+      "id": "IA-0186",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4285,7 +4327,7 @@
       "source": "templates/videos.html · #videos-airplay-return · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0185",
+      "id": "IA-0187",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4301,7 +4343,7 @@
       "source": "templates/videos.html · #videos-subtitle-earlier · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0186",
+      "id": "IA-0188",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4317,7 +4359,7 @@
       "source": "templates/videos.html · #videos-subtitle-later · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0187",
+      "id": "IA-0189",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4333,7 +4375,7 @@
       "source": "templates/videos.html · #videos-prev · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0188",
+      "id": "IA-0190",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4349,7 +4391,7 @@
       "source": "templates/videos.html · #videos-picker-open · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0189",
+      "id": "IA-0191",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4365,7 +4407,7 @@
       "source": "templates/videos.html · #videos-next · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0190",
+      "id": "IA-0192",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -4381,7 +4423,7 @@
       "source": "templates/videos.html · #videos-play · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0191",
+      "id": "IA-0193",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4397,7 +4439,7 @@
       "source": "templates/videos.html · #videos-picker-close · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0192",
+      "id": "IA-0194",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4413,7 +4455,7 @@
       "source": "templates/videos.html · #videos-series · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0193",
+      "id": "IA-0195",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4429,7 +4471,7 @@
       "source": "templates/videos.html · #videos-current-page · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0194",
+      "id": "IA-0196",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4445,7 +4487,7 @@
       "source": "templates/videos.html · #videos-latest-page · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0195",
+      "id": "IA-0197",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4461,7 +4503,7 @@
       "source": "templates/videos.html · #videos-range-prev · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0196",
+      "id": "IA-0198",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4477,7 +4519,7 @@
       "source": "templates/videos.html · #videos-range · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0197",
+      "id": "IA-0199",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4493,7 +4535,7 @@
       "source": "templates/videos.html · #videos-range-next · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0198",
+      "id": "IA-0200",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4509,7 +4551,7 @@
       "source": "templates/videos.html · #videos-jump · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0199",
+      "id": "IA-0201",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "팝업",
@@ -4525,7 +4567,7 @@
       "source": "templates/videos.html · button(29) · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0200",
+      "id": "IA-0202",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4541,7 +4583,7 @@
       "source": "templates/finance.html · [data-fintab=\"indicators\"]"
     },
     {
-      "id": "IA-0201",
+      "id": "IA-0203",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4557,7 +4599,7 @@
       "source": "templates/finance.html · [data-fintab=\"calc\"]"
     },
     {
-      "id": "IA-0202",
+      "id": "IA-0204",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4573,7 +4615,7 @@
       "source": "templates/finance.html · [data-fintab=\"tax\"]"
     },
     {
-      "id": "IA-0203",
+      "id": "IA-0205",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4589,7 +4631,7 @@
       "source": "templates/finance.html · [data-fintab=\"news\"]"
     },
     {
-      "id": "IA-0204",
+      "id": "IA-0206",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4605,7 +4647,7 @@
       "source": "templates/finance.html · a(5)"
     },
     {
-      "id": "IA-0205",
+      "id": "IA-0207",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4621,7 +4663,7 @@
       "source": "templates/finance.html · #calc-salary-annual"
     },
     {
-      "id": "IA-0206",
+      "id": "IA-0208",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4637,7 +4679,7 @@
       "source": "templates/finance.html · #calc-salary-family"
     },
     {
-      "id": "IA-0207",
+      "id": "IA-0209",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4653,7 +4695,7 @@
       "source": "templates/finance.html · #calc-salary-nontax"
     },
     {
-      "id": "IA-0208",
+      "id": "IA-0210",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4669,7 +4711,7 @@
       "source": "templates/finance.html · a(9)"
     },
     {
-      "id": "IA-0209",
+      "id": "IA-0211",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4685,7 +4727,7 @@
       "source": "templates/finance.html · #calc-save-type"
     },
     {
-      "id": "IA-0210",
+      "id": "IA-0212",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4701,7 +4743,7 @@
       "source": "templates/finance.html · #calc-save-type"
     },
     {
-      "id": "IA-0211",
+      "id": "IA-0213",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4717,7 +4759,7 @@
       "source": "templates/finance.html · #calc-save-type"
     },
     {
-      "id": "IA-0212",
+      "id": "IA-0214",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4733,7 +4775,7 @@
       "source": "templates/finance.html · #calc-save-comp"
     },
     {
-      "id": "IA-0213",
+      "id": "IA-0215",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4749,7 +4791,7 @@
       "source": "templates/finance.html · #calc-save-comp"
     },
     {
-      "id": "IA-0214",
+      "id": "IA-0216",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4765,7 +4807,7 @@
       "source": "templates/finance.html · #calc-save-comp"
     },
     {
-      "id": "IA-0215",
+      "id": "IA-0217",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4781,7 +4823,7 @@
       "source": "templates/finance.html · #calc-save-amount"
     },
     {
-      "id": "IA-0216",
+      "id": "IA-0218",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4797,7 +4839,7 @@
       "source": "templates/finance.html · #calc-save-rate"
     },
     {
-      "id": "IA-0217",
+      "id": "IA-0219",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4813,7 +4855,7 @@
       "source": "templates/finance.html · #calc-save-months"
     },
     {
-      "id": "IA-0218",
+      "id": "IA-0220",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4829,7 +4871,7 @@
       "source": "templates/finance.html · #calc-loan-amount"
     },
     {
-      "id": "IA-0219",
+      "id": "IA-0221",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4845,7 +4887,7 @@
       "source": "templates/finance.html · #calc-loan-rate"
     },
     {
-      "id": "IA-0220",
+      "id": "IA-0222",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4861,7 +4903,7 @@
       "source": "templates/finance.html · #calc-loan-months"
     },
     {
-      "id": "IA-0221",
+      "id": "IA-0223",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4877,7 +4919,7 @@
       "source": "templates/finance.html · #calc-loan-type"
     },
     {
-      "id": "IA-0222",
+      "id": "IA-0224",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4893,7 +4935,7 @@
       "source": "templates/finance.html · #calc-loan-type"
     },
     {
-      "id": "IA-0223",
+      "id": "IA-0225",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4909,7 +4951,7 @@
       "source": "templates/finance.html · #calc-loan-type"
     },
     {
-      "id": "IA-0224",
+      "id": "IA-0226",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4925,7 +4967,7 @@
       "source": "templates/finance.html · #finance-business-number"
     },
     {
-      "id": "IA-0225",
+      "id": "IA-0227",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4941,7 +4983,7 @@
       "source": "templates/finance.html · button(20) · POST /api/finance/business-status"
     },
     {
-      "id": "IA-0226",
+      "id": "IA-0228",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4957,7 +4999,7 @@
       "source": "templates/finance.html · a(21)"
     },
     {
-      "id": "IA-0227",
+      "id": "IA-0229",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4973,7 +5015,7 @@
       "source": "templates/finance.html · a(22)"
     },
     {
-      "id": "IA-0228",
+      "id": "IA-0230",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -4989,7 +5031,7 @@
       "source": "templates/finance.html · #finance-dart-nc · GET /api/finance/disclosures"
     },
     {
-      "id": "IA-0229",
+      "id": "IA-0231",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5005,7 +5047,7 @@
       "source": "templates/finance.html · #finance-corp-code"
     },
     {
-      "id": "IA-0230",
+      "id": "IA-0232",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5021,7 +5063,7 @@
       "source": "templates/finance.html · button(25) · GET /api/finance/disclosures"
     },
     {
-      "id": "IA-0231",
+      "id": "IA-0233",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5037,7 +5079,7 @@
       "source": "templates/finance.html · a(26)"
     },
     {
-      "id": "IA-0232",
+      "id": "IA-0234",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5053,7 +5095,7 @@
       "source": "templates/finance.html · [data-category=\"all\"]"
     },
     {
-      "id": "IA-0233",
+      "id": "IA-0235",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5069,7 +5111,7 @@
       "source": "templates/finance.html · [data-category=\"policy\"]"
     },
     {
-      "id": "IA-0234",
+      "id": "IA-0236",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5085,7 +5127,7 @@
       "source": "templates/finance.html · [data-category=\"guide\"]"
     },
     {
-      "id": "IA-0235",
+      "id": "IA-0237",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5101,7 +5143,7 @@
       "source": "templates/finance.html · [data-category=\"legislation\"]"
     },
     {
-      "id": "IA-0236",
+      "id": "IA-0238",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5117,7 +5159,7 @@
       "source": "templates/finance.html · #finance-search"
     },
     {
-      "id": "IA-0237",
+      "id": "IA-0239",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -5133,7 +5175,7 @@
       "source": "templates/finance.html · summary(32)"
     },
     {
-      "id": "IA-0238",
+      "id": "IA-0240",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "탑",
@@ -5149,7 +5191,7 @@
       "source": "templates/intro.html · a(1)"
     },
     {
-      "id": "IA-0239",
+      "id": "IA-0241",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "탑",
@@ -5165,7 +5207,7 @@
       "source": "templates/intro.html · a(2)"
     },
     {
-      "id": "IA-0240",
+      "id": "IA-0242",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "탑",
@@ -5181,7 +5223,7 @@
       "source": "templates/intro.html · a(3)"
     },
     {
-      "id": "IA-0241",
+      "id": "IA-0243",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5197,7 +5239,7 @@
       "source": "templates/intro.html · a(4)"
     },
     {
-      "id": "IA-0242",
+      "id": "IA-0244",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5213,7 +5255,7 @@
       "source": "templates/intro.html · a(5)"
     },
     {
-      "id": "IA-0243",
+      "id": "IA-0245",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5229,7 +5271,7 @@
       "source": "templates/intro.html · a(6)"
     },
     {
-      "id": "IA-0244",
+      "id": "IA-0246",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5245,7 +5287,7 @@
       "source": "templates/intro.html · a(7)"
     },
     {
-      "id": "IA-0245",
+      "id": "IA-0247",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5261,7 +5303,7 @@
       "source": "templates/intro.html · a(8)"
     },
     {
-      "id": "IA-0246",
+      "id": "IA-0248",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5277,7 +5319,7 @@
       "source": "templates/intro.html · a(9)"
     },
     {
-      "id": "IA-0247",
+      "id": "IA-0249",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5293,7 +5335,7 @@
       "source": "templates/intro.html · a(10)"
     },
     {
-      "id": "IA-0248",
+      "id": "IA-0250",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5309,7 +5351,7 @@
       "source": "templates/intro.html · a(11)"
     },
     {
-      "id": "IA-0249",
+      "id": "IA-0251",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5325,7 +5367,7 @@
       "source": "templates/intro.html · a(12)"
     },
     {
-      "id": "IA-0250",
+      "id": "IA-0252",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5341,7 +5383,7 @@
       "source": "templates/intro.html · a(13)"
     },
     {
-      "id": "IA-0251",
+      "id": "IA-0253",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5357,7 +5399,7 @@
       "source": "templates/intro.html · a(14)"
     },
     {
-      "id": "IA-0252",
+      "id": "IA-0254",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5373,7 +5415,7 @@
       "source": "templates/intro.html · a(15)"
     },
     {
-      "id": "IA-0253",
+      "id": "IA-0255",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5389,7 +5431,7 @@
       "source": "templates/intro.html · a(16)"
     },
     {
-      "id": "IA-0254",
+      "id": "IA-0256",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5405,7 +5447,7 @@
       "source": "templates/intro.html · a(17)"
     },
     {
-      "id": "IA-0255",
+      "id": "IA-0257",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5421,7 +5463,7 @@
       "source": "templates/intro.html · a(18)"
     },
     {
-      "id": "IA-0256",
+      "id": "IA-0258",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5437,7 +5479,7 @@
       "source": "templates/intro.html · a(19)"
     },
     {
-      "id": "IA-0257",
+      "id": "IA-0259",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5453,7 +5495,7 @@
       "source": "templates/intro.html · a(20)"
     },
     {
-      "id": "IA-0258",
+      "id": "IA-0260",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5469,7 +5511,7 @@
       "source": "templates/intro.html · a(21)"
     },
     {
-      "id": "IA-0259",
+      "id": "IA-0261",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5485,7 +5527,7 @@
       "source": "templates/intro.html · a(22)"
     },
     {
-      "id": "IA-0260",
+      "id": "IA-0262",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5501,7 +5543,7 @@
       "source": "templates/intro.html · a(23)"
     },
     {
-      "id": "IA-0261",
+      "id": "IA-0263",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5517,7 +5559,7 @@
       "source": "templates/intro.html · a(24)"
     },
     {
-      "id": "IA-0262",
+      "id": "IA-0264",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5533,7 +5575,7 @@
       "source": "templates/intro.html · a(25)"
     },
     {
-      "id": "IA-0263",
+      "id": "IA-0265",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5549,7 +5591,7 @@
       "source": "templates/intro.html · a(26)"
     },
     {
-      "id": "IA-0264",
+      "id": "IA-0266",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5565,7 +5607,7 @@
       "source": "templates/intro.html · a(27)"
     },
     {
-      "id": "IA-0265",
+      "id": "IA-0267",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5581,7 +5623,7 @@
       "source": "templates/intro.html · a(28)"
     },
     {
-      "id": "IA-0266",
+      "id": "IA-0268",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5597,7 +5639,7 @@
       "source": "templates/intro.html · a(29)"
     },
     {
-      "id": "IA-0267",
+      "id": "IA-0269",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5613,7 +5655,7 @@
       "source": "templates/intro.html · a(30)"
     },
     {
-      "id": "IA-0268",
+      "id": "IA-0270",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5629,7 +5671,7 @@
       "source": "templates/intro.html · summary(31)"
     },
     {
-      "id": "IA-0269",
+      "id": "IA-0271",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5645,7 +5687,7 @@
       "source": "templates/intro.html · summary(32)"
     },
     {
-      "id": "IA-0270",
+      "id": "IA-0272",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5661,7 +5703,7 @@
       "source": "templates/intro.html · summary(33)"
     },
     {
-      "id": "IA-0271",
+      "id": "IA-0273",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -5677,7 +5719,7 @@
       "source": "templates/intro.html · a(34)"
     },
     {
-      "id": "IA-0272",
+      "id": "IA-0274",
       "d1": "휴스코프",
       "d2": "설치 도움말",
       "d3": "탑",
@@ -5693,7 +5735,7 @@
       "source": "templates/mobile_install.html · a(1)"
     },
     {
-      "id": "IA-0273",
+      "id": "IA-0275",
       "d1": "휴스코프",
       "d2": "설치 도움말",
       "d3": "바디",
@@ -5709,7 +5751,7 @@
       "source": "templates/mobile_install.html · a(2)"
     },
     {
-      "id": "IA-0274",
+      "id": "IA-0276",
       "d1": "휴스코프",
       "d2": "설치 도움말",
       "d3": "바디",
@@ -5725,7 +5767,7 @@
       "source": "templates/mobile_install.html · #mobile-install-url"
     },
     {
-      "id": "IA-0275",
+      "id": "IA-0277",
       "d1": "휴스코프",
       "d2": "설치 도움말",
       "d3": "바디",
@@ -5741,7 +5783,7 @@
       "source": "templates/mobile_install.html · #mobile-install-copy"
     },
     {
-      "id": "IA-0276",
+      "id": "IA-0278",
       "d1": "휴스코프",
       "d2": "설치 도움말",
       "d3": "바디",
@@ -5757,7 +5799,7 @@
       "source": "templates/mobile_install.html · a(5)"
     },
     {
-      "id": "IA-0277",
+      "id": "IA-0279",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "탑",
@@ -5773,7 +5815,7 @@
       "source": "templates/maeum_record_plan.html · a(1)"
     },
     {
-      "id": "IA-0278",
+      "id": "IA-0280",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "탑",
@@ -5789,7 +5831,7 @@
       "source": "templates/maeum_record_plan.html · a(2)"
     },
     {
-      "id": "IA-0279",
+      "id": "IA-0281",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -5805,7 +5847,7 @@
       "source": "templates/maeum_record_plan.html · a(3)"
     },
     {
-      "id": "IA-0280",
+      "id": "IA-0282",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -5821,7 +5863,7 @@
       "source": "templates/maeum_record_plan.html · a(4)"
     },
     {
-      "id": "IA-0281",
+      "id": "IA-0283",
       "d1": "휴스코프",
       "d2": "이용 전 안내",
       "d3": "팝업",
@@ -5837,14 +5879,14 @@
       "source": "templates/service_notice.html · button(1)"
     },
     {
-      "id": "IA-0282",
+      "id": "IA-0284",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "탑",
       "d4": "상태·표시",
       "d5": "사용자명·권한",
       "type": "동적 기능·정보",
-      "description": "로그인 상태의 표시 이름을 상단에 표시하고 관리자 전용 버튼 노출을 동기화한다. 일반 로그인과 관리자 로그인은 별개 권한이다.",
+      "description": "로그인 상태 및 관리자 전용 버튼 노출을 동기화한다. 상단 이름 표시는 제거하고 후원하기·테마 버튼을 로그인 여부와 무관하게 표시한다. 일반 로그인과 관리자 로그인은 별개 권한이다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -5853,7 +5895,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0283",
+      "id": "IA-0285",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "바디",
@@ -5869,7 +5911,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0284",
+      "id": "IA-0286",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "바디",
@@ -5885,7 +5927,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0285",
+      "id": "IA-0287",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -5901,7 +5943,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0286",
+      "id": "IA-0288",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "푸터",
@@ -5917,7 +5959,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0287",
+      "id": "IA-0289",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "바디",
@@ -5933,7 +5975,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0288",
+      "id": "IA-0290",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "바디",
@@ -5949,7 +5991,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0289",
+      "id": "IA-0291",
       "d1": "휴스코프",
       "d2": "공통",
       "d3": "바디",
@@ -5965,7 +6007,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0290",
+      "id": "IA-0292",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -5973,38 +6015,6 @@
       "d5": "목록 결과 건수",
       "type": "동적 기능·정보",
       "description": "검색·분류 조건 적용 후 현재 결과 건수를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0291",
-      "d1": "휴스코프",
-      "d2": "냥정보",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "리스트 보기",
-      "type": "동적 기능·정보",
-      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0292",
-      "d1": "휴스코프",
-      "d2": "냥정보",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "카드 보기",
-      "type": "동적 기능·정보",
-      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6018,9 +6028,9 @@
       "d2": "냥정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "기사 제목·원문 이동",
+      "d5": "리스트 보기",
       "type": "동적 기능·정보",
-      "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
+      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6034,9 +6044,9 @@
       "d2": "냥정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "썸네일·대체 이미지",
+      "d5": "카드 보기",
       "type": "동적 기능·정보",
-      "description": "제공된 이미지 또는 안전한 이미지 프록시를 사용한다. 주소가 없거나 로딩 실패면 공통 대체 표시를 사용한다.",
+      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6050,9 +6060,9 @@
       "d2": "냥정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "출처·날짜·분류",
+      "d5": "기사 제목·원문 이동",
       "type": "동적 기능·정보",
-      "description": "저장된 출처·게시 시각·분류를 표시하며 자료 종류에 따라 표시 항목이 달라진다.",
+      "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6066,15 +6076,15 @@
       "d2": "냥정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "스크랩 토글",
+      "d5": "썸네일·대체 이미지",
       "type": "동적 기능·정보",
-      "description": "자료를 내 스크랩에 추가/삭제한다. 비로그인이면 로그인 창으로 유도하고 성공 후 대기 동작을 이어간다. 서버 저장 실패 시 낙관적으로 바뀐 UI를 복구한다.",
+      "description": "제공된 이미지 또는 안전한 이미지 프록시를 사용한다. 주소가 없거나 로딩 실패면 공통 대체 표시를 사용한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
-      "permission": "로그인 사용자·관리자",
-      "storage": "사용자 DB",
-      "source": "static/js/app.js · POST /api/scrap"
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
     },
     {
       "id": "IA-0297",
@@ -6082,9 +6092,9 @@
       "d2": "냥정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "공유하기",
+      "d5": "출처·날짜·분류",
       "type": "동적 기능·정보",
-      "description": "공유창에 제목과 URL을 전달한다. 복사·카카오톡·문자·다른 앱은 공통 공유 기능을 재사용한다.",
+      "description": "저장된 출처·게시 시각·분류를 표시하며 자료 종류에 따라 표시 항목이 달라진다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6098,6 +6108,38 @@
       "d2": "냥정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
+      "d5": "스크랩 토글",
+      "type": "동적 기능·정보",
+      "description": "자료를 내 스크랩에 추가/삭제한다. 비로그인이면 로그인 창으로 유도하고 성공 후 대기 동작을 이어간다. 서버 저장 실패 시 낙관적으로 바뀐 UI를 복구한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "로그인 사용자·관리자",
+      "storage": "사용자 DB",
+      "source": "static/js/app.js · POST /api/scrap"
+    },
+    {
+      "id": "IA-0299",
+      "d1": "휴스코프",
+      "d2": "냥정보",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
+      "d5": "공유하기",
+      "type": "동적 기능·정보",
+      "description": "공유창에 제목과 URL을 전달한다. 복사·카카오톡·문자·다른 앱은 공통 공유 기능을 재사용한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
+    },
+    {
+      "id": "IA-0300",
+      "d1": "휴스코프",
+      "d2": "냥정보",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
       "d5": "본문 읽기(앱)",
       "type": "동적 기능·정보",
       "description": "선택 자료의 URL·제목을 리더에 전달하고 본문 추출과 핵심 요약 상태를 표시한다. 원문 직접 열기는 별도 동작이다.",
@@ -6109,7 +6151,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0299",
+      "id": "IA-0301",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -6125,7 +6167,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0300",
+      "id": "IA-0302",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -6133,38 +6175,6 @@
       "d5": "목록 결과 건수",
       "type": "동적 기능·정보",
       "description": "검색·분류 조건 적용 후 현재 결과 건수를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0301",
-      "d1": "휴스코프",
-      "d2": "게임정보",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "리스트 보기",
-      "type": "동적 기능·정보",
-      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0302",
-      "d1": "휴스코프",
-      "d2": "게임정보",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "카드 보기",
-      "type": "동적 기능·정보",
-      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6178,9 +6188,9 @@
       "d2": "게임정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "기사 제목·원문 이동",
+      "d5": "리스트 보기",
       "type": "동적 기능·정보",
-      "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
+      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6194,9 +6204,9 @@
       "d2": "게임정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "썸네일·대체 이미지",
+      "d5": "카드 보기",
       "type": "동적 기능·정보",
-      "description": "제공된 이미지 또는 안전한 이미지 프록시를 사용한다. 주소가 없거나 로딩 실패면 공통 대체 표시를 사용한다.",
+      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6210,9 +6220,9 @@
       "d2": "게임정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "출처·날짜·분류",
+      "d5": "기사 제목·원문 이동",
       "type": "동적 기능·정보",
-      "description": "저장된 출처·게시 시각·분류를 표시하며 자료 종류에 따라 표시 항목이 달라진다.",
+      "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6226,15 +6236,15 @@
       "d2": "게임정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "스크랩 토글",
+      "d5": "썸네일·대체 이미지",
       "type": "동적 기능·정보",
-      "description": "자료를 내 스크랩에 추가/삭제한다. 비로그인이면 로그인 창으로 유도하고 성공 후 대기 동작을 이어간다. 서버 저장 실패 시 낙관적으로 바뀐 UI를 복구한다.",
+      "description": "제공된 이미지 또는 안전한 이미지 프록시를 사용한다. 주소가 없거나 로딩 실패면 공통 대체 표시를 사용한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
-      "permission": "로그인 사용자·관리자",
-      "storage": "사용자 DB",
-      "source": "static/js/app.js · POST /api/scrap"
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
     },
     {
       "id": "IA-0307",
@@ -6242,9 +6252,9 @@
       "d2": "게임정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "공유하기",
+      "d5": "출처·날짜·분류",
       "type": "동적 기능·정보",
-      "description": "공유창에 제목과 URL을 전달한다. 복사·카카오톡·문자·다른 앱은 공통 공유 기능을 재사용한다.",
+      "description": "저장된 출처·게시 시각·분류를 표시하며 자료 종류에 따라 표시 항목이 달라진다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6258,6 +6268,38 @@
       "d2": "게임정보",
       "d3": "바디",
       "d4": "콘텐츠 목록",
+      "d5": "스크랩 토글",
+      "type": "동적 기능·정보",
+      "description": "자료를 내 스크랩에 추가/삭제한다. 비로그인이면 로그인 창으로 유도하고 성공 후 대기 동작을 이어간다. 서버 저장 실패 시 낙관적으로 바뀐 UI를 복구한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "로그인 사용자·관리자",
+      "storage": "사용자 DB",
+      "source": "static/js/app.js · POST /api/scrap"
+    },
+    {
+      "id": "IA-0309",
+      "d1": "휴스코프",
+      "d2": "게임정보",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
+      "d5": "공유하기",
+      "type": "동적 기능·정보",
+      "description": "공유창에 제목과 URL을 전달한다. 복사·카카오톡·문자·다른 앱은 공통 공유 기능을 재사용한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
+    },
+    {
+      "id": "IA-0310",
+      "d1": "휴스코프",
+      "d2": "게임정보",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
       "d5": "본문 읽기(앱)",
       "type": "동적 기능·정보",
       "description": "선택 자료의 URL·제목을 리더에 전달하고 본문 추출과 핵심 요약 상태를 표시한다. 원문 직접 열기는 별도 동작이다.",
@@ -6269,7 +6311,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0309",
+      "id": "IA-0311",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -6285,7 +6327,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0310",
+      "id": "IA-0312",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -6293,38 +6335,6 @@
       "d5": "목록 결과 건수",
       "type": "동적 기능·정보",
       "description": "검색·분류 조건 적용 후 현재 결과 건수를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0311",
-      "d1": "휴스코프",
-      "d2": "NC뉴스",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "리스트 보기",
-      "type": "동적 기능·정보",
-      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0312",
-      "d1": "휴스코프",
-      "d2": "NC뉴스",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "카드 보기",
-      "type": "동적 기능·정보",
-      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6338,9 +6348,9 @@
       "d2": "NC뉴스",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "기사 제목·원문 이동",
+      "d5": "리스트 보기",
       "type": "동적 기능·정보",
-      "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
+      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6354,9 +6364,9 @@
       "d2": "NC뉴스",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "썸네일·대체 이미지",
+      "d5": "카드 보기",
       "type": "동적 기능·정보",
-      "description": "제공된 이미지 또는 안전한 이미지 프록시를 사용한다. 주소가 없거나 로딩 실패면 공통 대체 표시를 사용한다.",
+      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6370,9 +6380,9 @@
       "d2": "NC뉴스",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "출처·날짜·분류",
+      "d5": "기사 제목·원문 이동",
       "type": "동적 기능·정보",
-      "description": "저장된 출처·게시 시각·분류를 표시하며 자료 종류에 따라 표시 항목이 달라진다.",
+      "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6386,15 +6396,15 @@
       "d2": "NC뉴스",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "스크랩 토글",
+      "d5": "썸네일·대체 이미지",
       "type": "동적 기능·정보",
-      "description": "자료를 내 스크랩에 추가/삭제한다. 비로그인이면 로그인 창으로 유도하고 성공 후 대기 동작을 이어간다. 서버 저장 실패 시 낙관적으로 바뀐 UI를 복구한다.",
+      "description": "제공된 이미지 또는 안전한 이미지 프록시를 사용한다. 주소가 없거나 로딩 실패면 공통 대체 표시를 사용한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
-      "permission": "로그인 사용자·관리자",
-      "storage": "사용자 DB",
-      "source": "static/js/app.js · POST /api/scrap"
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
     },
     {
       "id": "IA-0317",
@@ -6402,9 +6412,9 @@
       "d2": "NC뉴스",
       "d3": "바디",
       "d4": "콘텐츠 목록",
-      "d5": "공유하기",
+      "d5": "출처·날짜·분류",
       "type": "동적 기능·정보",
-      "description": "공유창에 제목과 URL을 전달한다. 복사·카카오톡·문자·다른 앱은 공통 공유 기능을 재사용한다.",
+      "description": "저장된 출처·게시 시각·분류를 표시하며 자료 종류에 따라 표시 항목이 달라진다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6418,6 +6428,38 @@
       "d2": "NC뉴스",
       "d3": "바디",
       "d4": "콘텐츠 목록",
+      "d5": "스크랩 토글",
+      "type": "동적 기능·정보",
+      "description": "자료를 내 스크랩에 추가/삭제한다. 비로그인이면 로그인 창으로 유도하고 성공 후 대기 동작을 이어간다. 서버 저장 실패 시 낙관적으로 바뀐 UI를 복구한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "로그인 사용자·관리자",
+      "storage": "사용자 DB",
+      "source": "static/js/app.js · POST /api/scrap"
+    },
+    {
+      "id": "IA-0319",
+      "d1": "휴스코프",
+      "d2": "NC뉴스",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
+      "d5": "공유하기",
+      "type": "동적 기능·정보",
+      "description": "공유창에 제목과 URL을 전달한다. 복사·카카오톡·문자·다른 앱은 공통 공유 기능을 재사용한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
+    },
+    {
+      "id": "IA-0320",
+      "d1": "휴스코프",
+      "d2": "NC뉴스",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
       "d5": "본문 읽기(앱)",
       "type": "동적 기능·정보",
       "description": "선택 자료의 URL·제목을 리더에 전달하고 본문 추출과 핵심 요약 상태를 표시한다. 원문 직접 열기는 별도 동작이다.",
@@ -6429,7 +6471,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0319",
+      "id": "IA-0321",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -6445,7 +6487,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0320",
+      "id": "IA-0322",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6453,38 +6495,6 @@
       "d5": "목록 결과 건수",
       "type": "동적 기능·정보",
       "description": "검색·분류 조건 적용 후 현재 결과 건수를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0321",
-      "d1": "휴스코프",
-      "d2": "비영리재단 동향",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "리스트 보기",
-      "type": "동적 기능·정보",
-      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
-      "input": "해당 기능 진입",
-      "result": "화면 표시 또는 상태 갱신",
-      "exception": "빈 결과·실패 시 안내",
-      "permission": "방문자·로그인 사용자·관리자",
-      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
-      "source": "static/js/app.js"
-    },
-    {
-      "id": "IA-0322",
-      "d1": "휴스코프",
-      "d2": "비영리재단 동향",
-      "d3": "바디",
-      "d4": "콘텐츠 목록",
-      "d5": "카드 보기",
-      "type": "동적 기능·정보",
-      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
       "input": "해당 기능 진입",
       "result": "화면 표시 또는 상태 갱신",
       "exception": "빈 결과·실패 시 안내",
@@ -6498,6 +6508,38 @@
       "d2": "비영리재단 동향",
       "d3": "바디",
       "d4": "콘텐츠 목록",
+      "d5": "리스트 보기",
+      "type": "동적 기능·정보",
+      "description": "제목과 메타 중심의 리스트 형태로 같은 자료를 표시한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
+    },
+    {
+      "id": "IA-0324",
+      "d1": "휴스코프",
+      "d2": "비영리재단 동향",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
+      "d5": "카드 보기",
+      "type": "동적 기능·정보",
+      "description": "썸네일·제목·요약·메타·행동 버튼이 있는 카드 형태로 표시한다.",
+      "input": "해당 기능 진입",
+      "result": "화면 표시 또는 상태 갱신",
+      "exception": "빈 결과·실패 시 안내",
+      "permission": "방문자·로그인 사용자·관리자",
+      "storage": "읽음은 사용자 상태; 보기는 브라우저 설정; 목록은 조회",
+      "source": "static/js/app.js"
+    },
+    {
+      "id": "IA-0325",
+      "d1": "휴스코프",
+      "d2": "비영리재단 동향",
+      "d3": "바디",
+      "d4": "콘텐츠 목록",
       "d5": "기사 제목·원문 이동",
       "type": "동적 기능·정보",
       "description": "일반 뉴스 제목은 앱 리더로 열고 실제 원문 링크도 제공한다. 동향 게시판·영상 자료는 원문으로 직접 연다. 제목을 AI가 새로 생성하지 않는다.",
@@ -6509,7 +6551,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0324",
+      "id": "IA-0326",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6525,7 +6567,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0325",
+      "id": "IA-0327",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6541,7 +6583,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0326",
+      "id": "IA-0328",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6557,7 +6599,7 @@
       "source": "static/js/app.js · POST /api/scrap"
     },
     {
-      "id": "IA-0327",
+      "id": "IA-0329",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6573,7 +6615,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0328",
+      "id": "IA-0330",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6589,7 +6631,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0329",
+      "id": "IA-0331",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6605,7 +6647,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0330",
+      "id": "IA-0332",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6621,7 +6663,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0331",
+      "id": "IA-0333",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6637,7 +6679,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0332",
+      "id": "IA-0334",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6653,7 +6695,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0333",
+      "id": "IA-0335",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6669,7 +6711,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0334",
+      "id": "IA-0336",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6685,7 +6727,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0335",
+      "id": "IA-0337",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6701,7 +6743,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0336",
+      "id": "IA-0338",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6717,7 +6759,7 @@
       "source": "static/js/app.js · POST /api/scrap"
     },
     {
-      "id": "IA-0337",
+      "id": "IA-0339",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6733,7 +6775,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0338",
+      "id": "IA-0340",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6749,7 +6791,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0339",
+      "id": "IA-0341",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6765,7 +6807,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0340",
+      "id": "IA-0342",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6781,7 +6823,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0341",
+      "id": "IA-0343",
       "d1": "휴스코프",
       "d2": "비영리재단 동향",
       "d3": "바디",
@@ -6797,7 +6839,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0342",
+      "id": "IA-0344",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -6813,7 +6855,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0343",
+      "id": "IA-0345",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "팝업",
@@ -6829,7 +6871,7 @@
       "source": "static/js/events-ui.js · .ed-topics input"
     },
     {
-      "id": "IA-0344",
+      "id": "IA-0346",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "팝업",
@@ -6845,7 +6887,7 @@
       "source": "static/js/events-ui.js · #ed-keyword-input · #ed-keyword-form"
     },
     {
-      "id": "IA-0345",
+      "id": "IA-0347",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "팝업",
@@ -6861,7 +6903,7 @@
       "source": "static/js/events-ui.js · [data-remove]"
     },
     {
-      "id": "IA-0346",
+      "id": "IA-0348",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "팝업",
@@ -6877,7 +6919,7 @@
       "source": "static/js/events-ui.js · #ed-recommend · POST /api/events/recommend"
     },
     {
-      "id": "IA-0347",
+      "id": "IA-0349",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "팝업",
@@ -6893,7 +6935,7 @@
       "source": "static/js/events-ui.js · #ed-close"
     },
     {
-      "id": "IA-0348",
+      "id": "IA-0350",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -6909,7 +6951,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0349",
+      "id": "IA-0351",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -6925,7 +6967,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0350",
+      "id": "IA-0352",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -6941,7 +6983,7 @@
       "source": "static/js/events-ui.js · POST /api/events/recommend"
     },
     {
-      "id": "IA-0351",
+      "id": "IA-0353",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -6957,7 +6999,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0352",
+      "id": "IA-0354",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -6973,7 +7015,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0353",
+      "id": "IA-0355",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -6989,7 +7031,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0354",
+      "id": "IA-0356",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -7005,7 +7047,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0355",
+      "id": "IA-0357",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -7021,7 +7063,7 @@
       "source": "static/js/events-ui.js · [data-cal=prev] · [data-cal=next]"
     },
     {
-      "id": "IA-0356",
+      "id": "IA-0358",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -7037,7 +7079,7 @@
       "source": "static/js/events-ui.js · [data-cal=today]"
     },
     {
-      "id": "IA-0357",
+      "id": "IA-0359",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -7053,7 +7095,7 @@
       "source": "static/js/events-ui.js · [data-date]"
     },
     {
-      "id": "IA-0358",
+      "id": "IA-0360",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -7069,7 +7111,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0359",
+      "id": "IA-0361",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -7085,7 +7127,7 @@
       "source": "static/js/events-ui.js"
     },
     {
-      "id": "IA-0360",
+      "id": "IA-0362",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7101,7 +7143,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0361",
+      "id": "IA-0363",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7117,7 +7159,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0362",
+      "id": "IA-0364",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7133,7 +7175,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0363",
+      "id": "IA-0365",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7149,7 +7191,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0364",
+      "id": "IA-0366",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7165,7 +7207,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0365",
+      "id": "IA-0367",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7181,7 +7223,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0366",
+      "id": "IA-0368",
       "d1": "휴스코프",
       "d2": "기사 본문 리더",
       "d3": "팝업",
@@ -7197,7 +7239,7 @@
       "source": "static/js/reader.js"
     },
     {
-      "id": "IA-0367",
+      "id": "IA-0369",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7213,7 +7255,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0368",
+      "id": "IA-0370",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7229,7 +7271,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0369",
+      "id": "IA-0371",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7245,7 +7287,7 @@
       "source": "static/js/app.js · [data-address-index]"
     },
     {
-      "id": "IA-0370",
+      "id": "IA-0372",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7261,7 +7303,7 @@
       "source": "static/js/app.js · [data-recent-key]"
     },
     {
-      "id": "IA-0371",
+      "id": "IA-0373",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7277,7 +7319,7 @@
       "source": "static/js/app.js · [data-delete-recent]"
     },
     {
-      "id": "IA-0372",
+      "id": "IA-0374",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7293,7 +7335,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0373",
+      "id": "IA-0375",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7309,7 +7351,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0374",
+      "id": "IA-0376",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7325,7 +7367,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0375",
+      "id": "IA-0377",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7341,7 +7383,7 @@
       "source": "static/js/app.js · .lunch-card"
     },
     {
-      "id": "IA-0376",
+      "id": "IA-0378",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7357,7 +7399,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0377",
+      "id": "IA-0379",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7373,7 +7415,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0378",
+      "id": "IA-0380",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7389,7 +7431,7 @@
       "source": "static/js/app.js · [data-ex] · POST /api/lunch/exclude"
     },
     {
-      "id": "IA-0379",
+      "id": "IA-0381",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7405,7 +7447,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0380",
+      "id": "IA-0382",
       "d1": "휴스코프",
       "d2": "맛집 목록",
       "d3": "바디",
@@ -7421,7 +7463,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0381",
+      "id": "IA-0383",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -7437,7 +7479,7 @@
       "source": "static/js/app.js · GET /api/lunch/reviews · POST /api/lunch/review"
     },
     {
-      "id": "IA-0382",
+      "id": "IA-0384",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -7453,7 +7495,7 @@
       "source": "static/js/app.js · .lw-star · GET /api/lunch/reviews · POST /api/lunch/review"
     },
     {
-      "id": "IA-0383",
+      "id": "IA-0385",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -7469,7 +7511,7 @@
       "source": "static/js/app.js · #lw-comment · GET /api/lunch/reviews · POST /api/lunch/review"
     },
     {
-      "id": "IA-0384",
+      "id": "IA-0386",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -7485,7 +7527,7 @@
       "source": "static/js/app.js · #lw-visit · GET /api/lunch/reviews · POST /api/lunch/review"
     },
     {
-      "id": "IA-0385",
+      "id": "IA-0387",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -7501,7 +7543,7 @@
       "source": "static/js/app.js · .lw-submit · GET /api/lunch/reviews · POST /api/lunch/review"
     },
     {
-      "id": "IA-0386",
+      "id": "IA-0388",
       "d1": "휴스코프",
       "d2": "식당 평점·후기",
       "d3": "바디",
@@ -7517,7 +7559,7 @@
       "source": "static/js/app.js · GET /api/lunch/reviews · POST /api/lunch/review"
     },
     {
-      "id": "IA-0387",
+      "id": "IA-0389",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7533,7 +7575,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0388",
+      "id": "IA-0390",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7549,7 +7591,7 @@
       "source": "static/js/app.js · [data-mood=avoid:카테고리]"
     },
     {
-      "id": "IA-0389",
+      "id": "IA-0391",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7565,7 +7607,7 @@
       "source": "static/js/app.js · [data-mood]"
     },
     {
-      "id": "IA-0390",
+      "id": "IA-0392",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7581,7 +7623,7 @@
       "source": "static/js/app.js · [data-mood=trusted]"
     },
     {
-      "id": "IA-0391",
+      "id": "IA-0393",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7597,7 +7639,7 @@
       "source": "static/js/app.js · #lunch-recipe-toggle · .recipe-modal-x"
     },
     {
-      "id": "IA-0392",
+      "id": "IA-0394",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7613,7 +7655,7 @@
       "source": "static/js/app.js · #lunch-ai-go · POST /api/lunch/recommend"
     },
     {
-      "id": "IA-0393",
+      "id": "IA-0395",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7629,7 +7671,7 @@
       "source": "static/js/app.js · #lunch-ai-dice"
     },
     {
-      "id": "IA-0394",
+      "id": "IA-0396",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7645,7 +7687,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0395",
+      "id": "IA-0397",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7661,7 +7703,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0396",
+      "id": "IA-0398",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7677,7 +7719,7 @@
       "source": "static/js/app.js · #lunch-ai-retry · POST /api/lunch/recommend"
     },
     {
-      "id": "IA-0397",
+      "id": "IA-0399",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7693,7 +7735,7 @@
       "source": "static/js/app.js · #lunch-ai-edit"
     },
     {
-      "id": "IA-0398",
+      "id": "IA-0400",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7709,7 +7751,7 @@
       "source": "static/js/app.js · [data-rev]"
     },
     {
-      "id": "IA-0399",
+      "id": "IA-0401",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7725,7 +7767,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0400",
+      "id": "IA-0402",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -7741,7 +7783,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0401",
+      "id": "IA-0403",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7757,7 +7799,7 @@
       "source": "static/js/app.js · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0402",
+      "id": "IA-0404",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7773,7 +7815,7 @@
       "source": "static/js/app.js · #scrap-search · #scrap-search-btn · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0403",
+      "id": "IA-0405",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7789,7 +7831,7 @@
       "source": "static/js/app.js · .scrap-chip-add · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0404",
+      "id": "IA-0406",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7805,7 +7847,7 @@
       "source": "static/js/app.js · .grp-rename · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0405",
+      "id": "IA-0407",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7821,7 +7863,7 @@
       "source": "static/js/app.js · .grp-del · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0406",
+      "id": "IA-0408",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7837,7 +7879,7 @@
       "source": "static/js/app.js · .grp-assign · .grp-check · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0407",
+      "id": "IA-0409",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7853,7 +7895,7 @@
       "source": "static/js/app.js · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0408",
+      "id": "IA-0410",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7869,7 +7911,7 @@
       "source": "static/js/app.js · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0409",
+      "id": "IA-0411",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -7885,7 +7927,7 @@
       "source": "static/js/app.js · GET /api/mydata · POST /api/groups · /api/scrap · /api/scrap/groups"
     },
     {
-      "id": "IA-0410",
+      "id": "IA-0412",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -7901,7 +7943,7 @@
       "source": "static/js/app.js · GET /api/report/get · /api/report/status"
     },
     {
-      "id": "IA-0411",
+      "id": "IA-0413",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -7917,7 +7959,7 @@
       "source": "static/js/app.js · GET /api/report/get · /api/report/status"
     },
     {
-      "id": "IA-0412",
+      "id": "IA-0414",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -7933,7 +7975,7 @@
       "source": "static/js/app.js · GET /api/report/get · /api/report/status"
     },
     {
-      "id": "IA-0413",
+      "id": "IA-0415",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -7949,7 +7991,7 @@
       "source": "static/js/app.js · GET /api/report/get · /api/report/status"
     },
     {
-      "id": "IA-0414",
+      "id": "IA-0416",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -7965,7 +8007,7 @@
       "source": "static/js/app.js · GET /api/report/get · /api/report/status"
     },
     {
-      "id": "IA-0415",
+      "id": "IA-0417",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -7981,7 +8023,7 @@
       "source": "static/js/app.js · POST /api/login"
     },
     {
-      "id": "IA-0416",
+      "id": "IA-0418",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -7997,7 +8039,7 @@
       "source": "static/js/app.js · POST /api/login"
     },
     {
-      "id": "IA-0417",
+      "id": "IA-0419",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -8013,7 +8055,7 @@
       "source": "static/js/app.js · POST /api/login"
     },
     {
-      "id": "IA-0418",
+      "id": "IA-0420",
       "d1": "휴스코프",
       "d2": "로그인",
       "d3": "팝업",
@@ -8029,7 +8071,7 @@
       "source": "static/js/app.js · POST /api/login"
     },
     {
-      "id": "IA-0419",
+      "id": "IA-0421",
       "d1": "휴스코프",
       "d2": "관리자 도구",
       "d3": "팝업",
@@ -8045,7 +8087,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0420",
+      "id": "IA-0422",
       "d1": "휴스코프",
       "d2": "관리자 도구",
       "d3": "팝업",
@@ -8061,7 +8103,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0421",
+      "id": "IA-0423",
       "d1": "휴스코프",
       "d2": "관리자 도구",
       "d3": "팝업",
@@ -8077,7 +8119,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0422",
+      "id": "IA-0424",
       "d1": "휴스코프",
       "d2": "관리자 도구",
       "d3": "팝업",
@@ -8093,7 +8135,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0423",
+      "id": "IA-0425",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8109,7 +8151,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0424",
+      "id": "IA-0426",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8125,7 +8167,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0425",
+      "id": "IA-0427",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8141,7 +8183,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0426",
+      "id": "IA-0428",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8157,7 +8199,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0427",
+      "id": "IA-0429",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8173,7 +8215,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0428",
+      "id": "IA-0430",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8189,7 +8231,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0429",
+      "id": "IA-0431",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8205,7 +8247,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0430",
+      "id": "IA-0432",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8221,7 +8263,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0431",
+      "id": "IA-0433",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8237,7 +8279,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0432",
+      "id": "IA-0434",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8253,7 +8295,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0433",
+      "id": "IA-0435",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8269,7 +8311,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0434",
+      "id": "IA-0436",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8285,7 +8327,7 @@
       "source": "static/js/finance.js · /api/finance/dashboard · /stock · /disclosures"
     },
     {
-      "id": "IA-0435",
+      "id": "IA-0437",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8301,7 +8343,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0436",
+      "id": "IA-0438",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8317,7 +8359,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0437",
+      "id": "IA-0439",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8333,7 +8375,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0438",
+      "id": "IA-0440",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8349,7 +8391,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0439",
+      "id": "IA-0441",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8365,7 +8407,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0440",
+      "id": "IA-0442",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8381,7 +8423,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0441",
+      "id": "IA-0443",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8397,7 +8439,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0442",
+      "id": "IA-0444",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8413,7 +8455,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0443",
+      "id": "IA-0445",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8429,7 +8471,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0444",
+      "id": "IA-0446",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8445,7 +8487,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0445",
+      "id": "IA-0447",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8461,7 +8503,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0446",
+      "id": "IA-0448",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8477,7 +8519,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0447",
+      "id": "IA-0449",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8493,7 +8535,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0448",
+      "id": "IA-0450",
       "d1": "휴스코프",
       "d2": "영상",
       "d3": "바디",
@@ -8509,7 +8551,7 @@
       "source": "static/js/videos.js · /api/videos/library · /catalog · /playback"
     },
     {
-      "id": "IA-0449",
+      "id": "IA-0451",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -8525,7 +8567,7 @@
       "source": "static/js/share.js"
     },
     {
-      "id": "IA-0450",
+      "id": "IA-0452",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -8541,7 +8583,7 @@
       "source": "static/js/share.js"
     },
     {
-      "id": "IA-0451",
+      "id": "IA-0453",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -8557,7 +8599,7 @@
       "source": "static/js/share.js"
     },
     {
-      "id": "IA-0452",
+      "id": "IA-0454",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -8573,7 +8615,7 @@
       "source": "static/js/share.js"
     },
     {
-      "id": "IA-0453",
+      "id": "IA-0455",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -8589,7 +8631,7 @@
       "source": "static/js/share.js"
     },
     {
-      "id": "IA-0454",
+      "id": "IA-0456",
       "d1": "휴스코프",
       "d2": "공유하기",
       "d3": "팝업",
@@ -8605,7 +8647,7 @@
       "source": "static/js/share.js"
     },
     {
-      "id": "IA-0455",
+      "id": "IA-0457",
       "d1": "휴스코프",
       "d2": "설치·앱 실행",
       "d3": "바디",
@@ -8621,7 +8663,7 @@
       "source": "static/js/pwa-install.js"
     },
     {
-      "id": "IA-0456",
+      "id": "IA-0458",
       "d1": "휴스코프",
       "d2": "설치·앱 실행",
       "d3": "바디",
@@ -8637,7 +8679,7 @@
       "source": "static/js/pwa-install.js"
     },
     {
-      "id": "IA-0457",
+      "id": "IA-0459",
       "d1": "휴스코프",
       "d2": "설치·앱 실행",
       "d3": "바디",
@@ -8653,7 +8695,7 @@
       "source": "static/js/pwa-install.js"
     },
     {
-      "id": "IA-0458",
+      "id": "IA-0460",
       "d1": "휴스코프",
       "d2": "설치·앱 실행",
       "d3": "바디",
@@ -8669,7 +8711,7 @@
       "source": "static/js/pwa-install.js"
     },
     {
-      "id": "IA-0459",
+      "id": "IA-0461",
       "d1": "휴스코프",
       "d2": "설치·앱 실행",
       "d3": "바디",
@@ -8685,7 +8727,7 @@
       "source": "static/js/pwa-install.js"
     },
     {
-      "id": "IA-0460",
+      "id": "IA-0462",
       "d1": "휴스코프",
       "d2": "설치·앱 실행",
       "d3": "바디",
@@ -8701,7 +8743,7 @@
       "source": "static/js/pwa-install.js"
     },
     {
-      "id": "IA-0461",
+      "id": "IA-0463",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -8717,7 +8759,7 @@
       "source": "templates/launcher.html"
     },
     {
-      "id": "IA-0462",
+      "id": "IA-0464",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -8733,7 +8775,7 @@
       "source": "templates/launcher.html"
     },
     {
-      "id": "IA-0463",
+      "id": "IA-0465",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -8749,7 +8791,7 @@
       "source": "templates/launcher.html"
     },
     {
-      "id": "IA-0464",
+      "id": "IA-0466",
       "d1": "런처",
       "d2": "런처",
       "d3": "바디",
@@ -8765,7 +8807,7 @@
       "source": "templates/launcher.html"
     },
     {
-      "id": "IA-0465",
+      "id": "IA-0467",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -8781,7 +8823,7 @@
       "source": "templates/maeum_record_plan.html"
     },
     {
-      "id": "IA-0466",
+      "id": "IA-0468",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -8797,7 +8839,7 @@
       "source": "templates/maeum_record_plan.html"
     },
     {
-      "id": "IA-0467",
+      "id": "IA-0469",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -8813,7 +8855,7 @@
       "source": "templates/maeum_record_plan.html"
     },
     {
-      "id": "IA-0468",
+      "id": "IA-0470",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -8829,7 +8871,7 @@
       "source": "templates/maeum_record_plan.html"
     },
     {
-      "id": "IA-0469",
+      "id": "IA-0471",
       "d1": "마음기록",
       "d2": "마음기록 기획서",
       "d3": "바디",
@@ -8845,7 +8887,7 @@
       "source": "templates/maeum_record_plan.html"
     },
     {
-      "id": "IA-0470",
+      "id": "IA-0472",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -8861,7 +8903,7 @@
       "source": "templates/intro.html"
     },
     {
-      "id": "IA-0471",
+      "id": "IA-0473",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -8877,7 +8919,7 @@
       "source": "templates/intro.html"
     },
     {
-      "id": "IA-0472",
+      "id": "IA-0474",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -8893,7 +8935,7 @@
       "source": "templates/intro.html"
     },
     {
-      "id": "IA-0473",
+      "id": "IA-0475",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -8909,7 +8951,7 @@
       "source": "templates/intro.html"
     },
     {
-      "id": "IA-0474",
+      "id": "IA-0476",
       "d1": "휴스코프",
       "d2": "서비스 소개",
       "d3": "바디",
@@ -8925,7 +8967,7 @@
       "source": "templates/intro.html"
     },
     {
-      "id": "IA-0475",
+      "id": "IA-0477",
       "d1": "휴스코프",
       "d2": "이용 전 안내",
       "d3": "팝업",
@@ -8941,7 +8983,7 @@
       "source": "static/js/service-notice.js"
     },
     {
-      "id": "IA-0476",
+      "id": "IA-0478",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "팝업",
@@ -8957,7 +8999,7 @@
       "source": "static/js/events-ui.js · [data-keyword]"
     },
     {
-      "id": "IA-0477",
+      "id": "IA-0479",
       "d1": "휴스코프",
       "d2": "행사일정",
       "d3": "바디",
@@ -8973,7 +9015,7 @@
       "source": "static/js/events-ui.js · [data-cal=expand]"
     },
     {
-      "id": "IA-0478",
+      "id": "IA-0480",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -8989,7 +9031,7 @@
       "source": "static/js/finance.js · .finance-stock-refresh"
     },
     {
-      "id": "IA-0479",
+      "id": "IA-0481",
       "d1": "휴스코프",
       "d2": "재무세무",
       "d3": "바디",
@@ -9005,7 +9047,7 @@
       "source": "static/js/finance.js · .finance-help"
     },
     {
-      "id": "IA-0480",
+      "id": "IA-0482",
       "d1": "휴스코프",
       "d2": "냥정보",
       "d3": "바디",
@@ -9021,7 +9063,7 @@
       "source": "static/js/app.js · .accordion-toggle"
     },
     {
-      "id": "IA-0481",
+      "id": "IA-0483",
       "d1": "휴스코프",
       "d2": "게임정보",
       "d3": "바디",
@@ -9037,7 +9079,7 @@
       "source": "static/js/app.js · .accordion-toggle"
     },
     {
-      "id": "IA-0482",
+      "id": "IA-0484",
       "d1": "휴스코프",
       "d2": "NC뉴스",
       "d3": "바디",
@@ -9053,7 +9095,7 @@
       "source": "static/js/app.js · .accordion-toggle"
     },
     {
-      "id": "IA-0483",
+      "id": "IA-0485",
       "d1": "휴스코프",
       "d2": "보안뉴스",
       "d3": "바디",
@@ -9069,7 +9111,7 @@
       "source": "static/js/app.js · .accordion-toggle"
     },
     {
-      "id": "IA-0484",
+      "id": "IA-0486",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -9085,7 +9127,7 @@
       "source": "static/js/app.js · [data-reload]"
     },
     {
-      "id": "IA-0485",
+      "id": "IA-0487",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -9101,7 +9143,7 @@
       "source": "static/js/app.js · [data-clear-search]"
     },
     {
-      "id": "IA-0486",
+      "id": "IA-0488",
       "d1": "휴스코프",
       "d2": "뉴스 공통",
       "d3": "바디",
@@ -9117,7 +9159,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0487",
+      "id": "IA-0489",
       "d1": "휴스코프",
       "d2": "AI 리포트",
       "d3": "바디",
@@ -9133,7 +9175,7 @@
       "source": "static/js/app.js · .rp-ev summary"
     },
     {
-      "id": "IA-0488",
+      "id": "IA-0490",
       "d1": "휴스코프",
       "d2": "스크랩",
       "d3": "바디",
@@ -9149,7 +9191,7 @@
       "source": "static/js/app.js · .grp-new · POST /api/groups · /api/scrap/groups"
     },
     {
-      "id": "IA-0489",
+      "id": "IA-0491",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9165,7 +9207,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0490",
+      "id": "IA-0492",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9181,7 +9223,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0491",
+      "id": "IA-0493",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9197,7 +9239,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0492",
+      "id": "IA-0494",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9213,7 +9255,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0493",
+      "id": "IA-0495",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9229,7 +9271,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0494",
+      "id": "IA-0496",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9245,7 +9287,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0495",
+      "id": "IA-0497",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",
@@ -9261,7 +9303,7 @@
       "source": "static/js/app.js"
     },
     {
-      "id": "IA-0496",
+      "id": "IA-0498",
       "d1": "휴스코프",
       "d2": "점심 추천",
       "d3": "바디",

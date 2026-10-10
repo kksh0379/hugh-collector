@@ -3,7 +3,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import html, json, re
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='3.144'
+VERSION='3.145'
 SOURCE='c53de2b69f87dac105424e17b8e0a79971009a2f'
 REPO='https://github.com/kksh0379/ncfoundation-collector/blob/'
 rows=[]
@@ -11,6 +11,8 @@ rows=[]
 D={}
 def define(key,desc,inputs='해당 화면에서 선택 또는 실행',result='해당 조건의 화면 상태를 갱신',error='실패·빈 결과 상태를 해당 영역에 표시',access='방문자·로그인 사용자·관리자',store='화면 상태',api=''):
  D[key]=[desc,inputs,result,error,access,store,api]
+define('header-donation','로그인 여부와 무관하게 고정 헤더의 후원하기에서 개인 AQR 은행 앱 선택 화면을 팝업 또는 새 탭으로 연다.',access='모든 방문자',store='조회만',api='https://aq.gy/f/C4DRg')
+define('theme-toggle','전체 화면의 밝은 테마와 블랙테마를 전환하며 리더와 팝업에도 함께 적용한다. 선택을 첫 페인트 전 복원한다.',access='모든 방문자',store='localStorage hscopeTheme',api='없음')
 define('accounts-btn','관리자 계정 관리 팝업에서 일반 계정의 추가·이름 변경·암호 재설정·삭제를 관리한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
 define('account-add','일반 계정 추가 입력 폼을 연다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
 define('accounts-refresh','계정 목록을 다시 조회한다.',access='관리자',store='DB 계정 정보',api='GET/POST/PATCH/DELETE /api/admin/accounts')
@@ -76,7 +78,7 @@ define('report-pdf','현재 리포트를 인쇄용 문서로 열고 브라우저
 define('to-top','스크롤 위치가 내려가면 나타나며 화면 맨 위로 이동한다.',store='스크롤 위치')
 define('share-url','선택한 자료의 공유 URL을 읽기 전용으로 표시한다. 복사 실패 시 직접 선택·복사가 가능하다.',store='저장하지 않음')
 define('share-sms','문자 공유를 준비한다. iOS는 기본 공유창에서 메시지를 선택하고 다른 환경은 sms URI로 작성창을 연다. 수신인 선택과 전송은 사용자가 한다.',result='기기의 메시지/공유 화면',error='지원하지 않는 기기·브라우저는 URL 복사 안내',store='앱 서버에 저장하지 않음')
-define('reader-theme','기사 읽기 화면의 밝은/어두운 테마를 전환한다.',store='읽기 화면 설정')
+define('reader-theme','공통 헤더와 같은 전체 화면 테마를 전환하며 리더와 팝업에도 함께 적용한다.',access='모든 방문자',store='localStorage hscopeTheme',api='없음')
 define('reader-retry','본문 추출을 다시 요청한다. 이전 실패 안내를 로딩 상태로 바꾼다.',result='본문 또는 추출 실패 안내',api='기사 읽기 API',store='추출/요약 캐시')
 define('reader-source','선택한 기사의 원문 사이트를 새 창으로 연다.',result='외부 기사 원문',error='원문 삭제·로그인 요구는 해당 사이트에 따름',store='열람 상태')
 # Video controls are reviewed independently; they do not call an AI.
@@ -143,7 +145,7 @@ EXTRA=[]
 def feature(screen,zone,group,name,desc,inputs='해당 기능 진입',result='화면 표시 또는 상태 갱신',error='빈 결과·실패 시 안내',access='방문자·로그인 사용자·관리자',store='화면 상태',ref='static/js/app.js',api=''):
  EXTRA.append((screen,zone,group,name,[desc,inputs,result,error,access,store,api],ref))
 for screen,name,desc in [
- ('공통','사용자명·권한','로그인 상태의 표시 이름을 상단에 표시하고 관리자 전용 버튼 노출을 동기화한다. 일반 로그인과 관리자 로그인은 별개 권한이다.'),
+ ('공통','사용자명·권한','로그인 상태 및 관리자 전용 버튼 노출을 동기화한다. 상단 이름 표시는 제거하고 후원하기·테마 버튼을 로그인 여부와 무관하게 표시한다. 일반 로그인과 관리자 로그인은 별개 권한이다.'),
  ('공통','읽음 표시','기사·게시물의 읽음 상태를 시각적으로 구분한다. 로그인 사용자 읽음 기록은 사용자 데이터 API로 동기화하며 저장 실패해도 현재 화면 읽음 표시는 유지할 수 있다.'),
  ('공통','고양이 로딩','첫 정지 장면을 즉시 표시하고 애니메이션 로드 후 전환한다. 캣휠 회전과 진행 문구를 함께 표시하며 동작 줄이기 설정에서는 정지 장면을 사용한다.'),
  ('공통','DB 상태 배지','푸터에 DB 확인 중·정상·오류 등 저장소 상태를 표시한다. AI 잔액 상태와 구분한다.'),

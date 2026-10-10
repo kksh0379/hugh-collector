@@ -43,8 +43,6 @@ function applyAuthUI(user, admin, displayName) {
   CURRENT_USER = user || null;
   document.body.classList.toggle("is-admin", !!admin);
   document.body.classList.toggle("is-loggedin", !!user);
-  const fu = document.getElementById("foot-user");
-  if (fu) fu.textContent = user ? (displayName || (user === "admin" ? "관리자" : user)) + " 님" : "";
   applyFeatures();  // 로그인/로그아웃 시 표시 설정 재적용(관리자는 전체 노출)
 }
 

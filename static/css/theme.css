@@ -1,0 +1,81 @@
+/* Common header controls remain available to guests and signed-in users. */
+.app-header .header-donation,.app-header .header-theme { display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;gap:5px;min-height:40px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font:inherit;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;cursor:pointer; }
+.header-donation svg,.header-theme svg { width:18px;height:18px;flex:0 0 auto; }
+.app-header .header-theme { width:40px;padding:8px; }
+.header-donation:focus-visible,.header-theme:focus-visible { outline:2px solid var(--primary);outline-offset:2px; }
+.header-actions { flex-shrink:0;overflow:visible; }
+/* Keep the header and its reserved space when the other navigation hides. */
+body.chrome-hidden .app-header { transform:none; }
+body.chrome-hidden .tabs-wrap { top:calc(var(--app-header-height) + var(--sat)); }
+@media(max-width:480px) {
+  .app-header { gap:5px;padding-right:calc(8px + var(--sar));padding-left:calc(8px + var(--sal)); }
+  .launcher-return { flex-basis:28px; }
+  .brand { gap:5px; }
+  .brand-mark { width:28px;height:28px;padding:4px;border-radius:9px; }
+  .brand-name { font-size:15px;letter-spacing:-.6px; }
+  .header-actions { gap:4px; }
+  .app-header .header-donation { padding:8px;font-size:11px; }
+  .app-header .auth-btn { padding:8px 7px;font-size:11px; }
+}
+@media(max-width:359px) { .brand-name { display:none; } }
+
+/* Apply only on screen: the existing white report print layout is retained. */
+@media screen {
+  html[data-theme="black"] { color-scheme:dark;--bg:#000;--card:#111;--text:#ededf0;--muted:#a4a8b2;--border:#303238;--primary:#548be8;--primary-dark:#a6c7ff;--accent:#73d49b;--theme-surface:#1b1c20;--theme-blue:#18243a;--theme-green:#14291d;--theme-amber:#302415;--theme-red:#321a20;--theme-purple:#251d38; }
+  html[data-theme="black"],html[data-theme="black"] body { background:#000;color:var(--text); }
+  html[data-theme="black"] :is(input,select,textarea) { background-color:var(--card);color:var(--text);border-color:var(--border); }
+  html[data-theme="black"] input.ai-credit-account { background:transparent;border:0;color:inherit; }
+  html[data-theme="black"] :is(dialog,.modal-box,.dropdown-btn,.dropdown-menu,.btn-status,.search-box,.viewseg,.seg,.notes-tab,.cl-item,.foot-auth,.fullmodal-head,.scrap-controls,.scrap-search,.scrap-chip,.scrap-chip-add,.grp-manage button,.grp-assign,.grp-new,.cal-nav,.cal-cell,.agenda-item,.copy-btn,.report-snap,.rp-tile,.rp-item,.rp-pos,.cal-preview,.cal-preview::before,.service-notice-actions,.login-role button,.scrap-btn) { background:var(--card);color:var(--text);border-color:var(--border); }
+  html[data-theme="black"] :is(.app-header,.app-footer,.bottombar,.app-credit,.tabs-wrap) { background:#000;border-color:var(--border); }
+  html[data-theme="black"] .brand { color:var(--text); }
+  html[data-theme="black"] :is(.brand-mark,.app-header #login-btn,.tabs>.tab.active,.card-actions .read-action,.badge,.ai-tag,.grp-chip,.event-date,.feat-note,.feat-tag,.report-note,.rp-task,.rp-summary,.lcat,.lbtn.rev,.lbtn.ex.on,.finance-notice,.finance-help,.finance-chip,.login-test-info,.ed-tag,.ed-chip.selected,.videos-resume-icon,.videos-quick-pages #videos-current-page,.fnav.active .fnav-ic) { background:var(--theme-blue);color:var(--primary-dark);border-color:#35476b; }
+  html[data-theme="black"] :is(.app-header .auth-btn,.tabs>.tab,.search-clear,.fullmodal-close,.cal-preview-close,.grp-assign-panel,.accordion-toggle,.accordion-body,.notes-md blockquote,#notes-content .mermaid,#notes-content .codeblock,.ai-insight,.ai-fact,.card-thumb,.ed-banner-visual,.share-heading button,.share-option,.share-url,.service-notice-head,.finance-mode,.hs-sk-block) { background:var(--theme-surface);color:var(--text);border-color:var(--border); }
+  html[data-theme="black"] :is(.header-donation,.header-theme) { background:var(--card);color:var(--text); }
+  html[data-theme="black"] :is(.card-summary,.ai-insight .ai-row,.runlog-detail,.cl-body,.notes-md strong,.ai-insight .ai-row b,.cal-preview-summary,.collection-details,.share-status,.share-option small,.share-url-label) { color:var(--muted); }
+  html[data-theme="black"] :is(.card-title,.ai-insight .ai-row b,.notes-md strong) { color:var(--text); }
+  html[data-theme="black"] :is(.fnav,.launcher-return) { color:var(--muted); }
+  html[data-theme="black"] :is(.fnav.active,.service-notice-label) { color:var(--primary-dark); }
+  html[data-theme="black"] .fnav.active .nav-fill { fill:#354f7b; }
+  html[data-theme="black"] :is(.notes-md code,.notes-table-wrap th) { background:var(--theme-blue); }
+  html[data-theme="black"] :is(.event-note,.rp-note,.rp-signal,.chip-wip,.st-badge.warn,.hc-badge.warning,.hc-badge.test_failure,.hc-badge.test_error,.hc-badge.test_environment,.hc-badge.probe_error,.hc-badge.needs_review,.aipick-dice) { background:var(--theme-amber);color:#f0c985;border-color:#705532; }
+  html[data-theme="black"] :is(.event-note b,.aipick-sub2,.collection-details summary) { color:#f0c985; }
+  html[data-theme="black"] :is(.reader-credit-note,#ed-status[data-ai-error="credit_balance"],[data-ai-credit].result-msg) { background:var(--theme-amber);color:#ffd394!important;border-color:#89602e; }
+  html[data-theme="black"] :is(.chip-done,.st-badge.good,.ev-src-api,.rp-NEW,.recipe-active,.recipe-active span,.finance-mode.live,.hc-badge.passed,.card.is-read .card-title::before,.share-option.sms) { background:var(--theme-green);color:#9ee0b5;border-color:#365c42; }
+  html[data-theme="black"] :is(.st-badge.bad,.rp-DOWN,.service-notice-warning,.hc-badge.failed,.hc-badge.interrupted,.hc-badge.service_failure,.admin-controls #purge-db-btn) { background:var(--theme-red);color:#ffafb8;border-color:#70424a; }
+  html[data-theme="black"] :is(.login-err,.account-delete,#accounts-status.account-error,.hc-error,.cal-dowc.sun) { color:#ff929a; }
+  html[data-theme="black"] :is(.chip-plan,.rp-CONTINUED,.rp-DISAPPEARED,.rp-NA,.hc-badge) { background:var(--theme-surface);color:var(--muted);border-color:var(--border); }
+  html[data-theme="black"] .rp-UP { background:var(--theme-blue);color:var(--primary-dark); }
+  html[data-theme="black"] :is(.ed-range,.airec-badge,.airec-tag,.airec-why) { background:var(--theme-purple);color:#c6b4ff;border-color:#51406f; }
+  html[data-theme="black"] :is(.lcat-chip.lcat-star,.trusted-toggle) { background:var(--theme-amber);color:#f2d27c;border-color:#826829; }
+  html[data-theme="black"] :is(.lcat-chip.lcat-star b,.lcat-chip.lcat-star.on b) { color:inherit; }
+  html[data-theme="black"] :is(.lcat-chip.lcat-star.on,.trusted-toggle.on) { background:#64501b;color:#fff1ba; }
+  html[data-theme="black"] :is(.cal-cell.has,.cal-date[aria-expanded="true"],.ed-topics label:has(input:checked)) { background:var(--theme-blue);border-color:#35476b; }
+  html[data-theme="black"] .ed-heat-1 { background:#111c2d; }
+  html[data-theme="black"] .ed-heat-2 { background:#192b45; }
+  html[data-theme="black"] .ed-heat-3 { background:#223b60; }
+  html[data-theme="black"] .ed-heat-4 { background:#2d5084; }
+  html[data-theme="black"] .ed-day.selected { background:var(--primary);color:#fff; }
+  html[data-theme="black"] .reader-view.dark,html[data-theme="black"] .reader-view.dark .reader-toolbar { background:#000;color:var(--text);border-color:var(--border); }
+  html[data-theme="black"] .reader-view.dark :is(.reader-toolbar button,.reader-retry,.reader-status) { background:var(--theme-surface);color:var(--text);border-color:var(--border); }
+  html[data-theme="black"] .reader-view.dark .reader-source { background:var(--theme-blue); }
+  html[data-theme="black"] .share-option.kakao { background:#fee500;color:#3c1e1e;border-color:#fee500; }
+  html[data-theme="black"] .share-option.kakao small { color:#594838; }
+  html[data-theme="black"] #view-videos { background:#000; }
+  html[data-theme="black"] .videos-hero-actions button:first-child,html[data-theme="black"] .videos-filters button[aria-pressed=true] { background:var(--theme-blue);color:var(--primary-dark);border-color:#35476b; }
+  html[data-theme="black"] .videos-work[aria-pressed=true] { background:var(--theme-blue);color:var(--primary-dark); }
+  html[data-theme="black"] .videos-player { background:#080808; }
+  html[data-theme="black"] .videos-sheet-handle { background:#53545c; }
+  html[data-theme="black"] [data-thumbnail].is-no-image { background:var(--theme-surface); }
+  html[data-theme="black"] .slot-machine { background:linear-gradient(145deg,#18243a,#111);border-color:#35476b;box-shadow:0 8px 20px #0008; }
+  html[data-theme="black"] .slot-reel { background:var(--card);box-shadow:inset 0 0 8px #000; }
+  html[data-theme="black"] .slot-reel::after { background:linear-gradient(#18243acc,transparent 25%,transparent 75%,#18243acc);border-color:#35476b; }
+  html[data-theme="black"] .scrap-removing-label { background:#1b1c20ee;color:var(--muted); }
+  html[data-theme="black"] .loading { background:#000b; }
+  html[data-theme="black"] .hs-sk-block::after { opacity:.15; }
+  html[data-theme="black"] body.is-admin .admin-controls.admin-only { background:var(--card); }
+  html[data-theme="black"] body.is-admin .admin-controls .auth-btn.admin-only { background:var(--theme-blue);color:var(--primary-dark); }
+  html[data-theme="black"] :is(.dropdown-menu li:active,.btn-status:active,.search-btn:active,.card-actions .read-action:hover,.card-actions .read-action:active,.copy-btn:active,.cal-nav:active,.agenda-item:active,.fnav:active,.fnav:hover,.launcher-return:hover,.lunch-loc-item.on,.lunch-loc-item:active,.finance-chip:hover,.finance-stock-refresh:hover) { background:var(--theme-surface);color:var(--text); }
+  html[data-theme="black"] :is(.app-header .auth-btn:hover,.app-header .auth-btn:active,.tabs>.tab:not(.active):hover) { background:var(--theme-surface);color:var(--text); }
+  html[data-theme="black"] :is(.login-role button.active,.notes-tab.active,.scrap-chip.active,.dropdown-menu li.selected,.scrap-btn.on) { background:var(--primary);color:#fff; }
+  html[data-theme="black"] ::selection { background:#354f7b;color:#fff; }
+}

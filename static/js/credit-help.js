@@ -2,6 +2,14 @@
 // Render only when a feature reports an actual credit shortage. No network calls.
 (() => {
   const account = '9003-3068-2476-1';
+  function openDonation(event, url) {
+    // Direct user gesture; popup blocking keeps the ordinary safe link usable.
+    try {
+      const popup = window.open(url, 'hscope-donation',
+        'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
+      if (popup) { popup.opener = null; event.preventDefault(); }
+    } catch (_) { /* Keep the link fallback. */ }
+  }
   function isCreditNotice(text) {
     return String(text || '').includes('AI 크레딧이 부족');
   }
@@ -34,17 +42,7 @@
     donation.target = '_blank';
     donation.rel = 'noopener noreferrer';
     donation.textContent = '후원하기';
-    donation.addEventListener('click', (event) => {
-      // Open directly from the tap; blocked popups fall back to the normal link.
-      try {
-        const popup = window.open(donation.href, 'hscope-donation',
-          'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
-        if (popup) {
-          popup.opener = null;
-          event.preventDefault();
-        }
-      } catch (_) { /* Keep the accessible link fallback. */ }
-    });
+    donation.addEventListener('click', event => openDonation(event, donation.href));
     actions.append(donation);
     const link = document.createElement('a');
     link.className = 'ai-credit-billing';
@@ -56,4 +54,6 @@
     target.append(actions);
   }
   window.HScopeCreditHelp = {render, isCreditNotice};
+  const header = document.getElementById('header-donation');
+  if (header) header.addEventListener('click', event => openDonation(event, header.href));
 })();
