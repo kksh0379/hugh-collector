@@ -88,7 +88,7 @@
       status.append(list);
     }
     const note = document.createElement('p');
-    note.className = 'reader-summary-note' + (credit ? ' reader-credit-note' : '');
+    note.className = 'reader-summary-note' + (credit ? ' reader-credit-note' : points ? ' reader-summary-disclaimer' : '');
     note.textContent = String(notice || '').replace(/([가-힣][.!?]) +(?=[가-힣])/g, '$1\n');
     if (credit && window.HScopeCreditHelp) window.HScopeCreditHelp.render(note, note.textContent);
     status.append(note);
