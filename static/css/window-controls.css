@@ -62,3 +62,17 @@ button[data-theme-toggle]:focus-visible { outline: 3px solid var(--primary, #256
 button[data-theme-toggle]:active { background: #e2e8f0 !important; }
 html[data-theme="black"] button[data-theme-toggle] { background: #171717 !important; color: #ededed !important; border-color: #383838 !important; }
 html[data-theme="black"] button[data-theme-toggle]:active { background: #292929 !important; }
+
+/* Match every top action's visible height, including authentication states. */
+.app-header { padding-top: calc(5px + var(--sat)); padding-bottom: 5px; }
+.app-header .header-actions { align-items: center; gap: 6px; }
+.app-header .header-actions > :is(.header-donation, .header-theme, .auth-btn),
+.app-header .launcher-return {
+  box-sizing: border-box !important; height: 44px !important; min-height: 44px !important;
+  border-radius: 12px !important; align-self: center;
+}
+.app-header .header-actions > :is(.header-donation, .auth-btn) { padding: 0 10px !important; }
+.app-header .header-actions > .auth-btn { line-height: 42px; text-align: center; }
+@media (max-width: 480px) {
+  .app-header .header-actions > :is(.header-donation, .auth-btn) { padding: 0 8px !important; }
+}
