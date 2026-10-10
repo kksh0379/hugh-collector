@@ -28,6 +28,24 @@
     });
     const actions = document.createElement('span');
     actions.className = 'ai-credit-actions';
+    const donation = document.createElement('a');
+    donation.className = 'ai-credit-donation';
+    donation.href = 'https://aq.gy/f/C4DRg';
+    donation.target = '_blank';
+    donation.rel = 'noopener noreferrer';
+    donation.textContent = '후원하기';
+    donation.addEventListener('click', (event) => {
+      // Open directly from the tap; blocked popups fall back to the normal link.
+      try {
+        const popup = window.open(donation.href, 'hscope-donation',
+          'popup=yes,width=480,height=760,resizable=yes,scrollbars=yes');
+        if (popup) {
+          popup.opener = null;
+          event.preventDefault();
+        }
+      } catch (_) { /* Keep the accessible link fallback. */ }
+    });
+    actions.append(donation);
     const link = document.createElement('a');
     link.className = 'ai-credit-billing';
     link.href = 'https://platform.claude.com/settings/billing';
