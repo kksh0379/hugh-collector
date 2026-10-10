@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('static/js/reader.js','utf8');
-const helpers = source.slice(source.indexOf('  function showSummary'),source.indexOf('  document.addEventListener'));
+const helpers = source.slice(source.indexOf('  function showSummary'),source.indexOf('  summaryButton.addEventListener'));
 function node() {return {children:[],textContent:'',append(c){this.children.push(c);},replaceChildren(){this.children=[];},setAttribute(){},set innerHTML(v){throw Error('summary must not insert HTML');}};}
 test('a late summary cannot replace the next article and summary strings remain text',async()=>{
   const pending=[], status=node();
@@ -56,8 +56,31 @@ test('saved-information summaries show one point and their limited source explic
   assert.equal(status.children[1].children.length,1);
   assert.match(status.children[2].textContent,/원문 전체를 확보하지 못해/);
 });
-test('reader requests summaries for extracted and saved article information',()=>{
+test('loading an article never starts AI; only the manual control invokes it',()=>{
   const load=source.slice(source.indexOf('  async function load('),source.indexOf('  function showSummary'));
-  assert.match(load,/loadSummary\(url, current\);/);
-  assert.doesNotMatch(load,/if \(data.mode === 'article'\) loadSummary/);
+  assert.doesNotMatch(load,/loadSummary\(/);
+  const click=source.slice(source.indexOf('  summaryButton.addEventListener'),source.indexOf('  document.addEventListener'));
+  assert.match(click,/summaryButton.disabled \|\| !dialog.open/);
+  assert.match(click,/await loadSummary\(activeUrl, current\)/);
+});
+
+test('opening fetches only body; manual clicks deduplicate and reopening resets the control',async()=>{
+  const nodes=new Map(),events={},requests=[],pending=[];
+  function element(){return {hidden:false,disabled:false,style:{},children:[],attrs:{},textContent:'',isConnected:true,setAttribute(k,v){this.attrs[k]=v;},addEventListener(k,f){this[k]=f;},append(c){this.children.push(c);},replaceChildren(){this.children=[];},focus(){},showModal(){this.open=true;},close(){this.open=false;}};}
+  const document={getElementById(id){if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);},createElement:()=>element(),createTextNode:t=>({textContent:t}),addEventListener:(k,f)=>events[k]=f,querySelectorAll:()=>[],body:{style:{}}};
+  const context={document,window:{},URL,AbortController,HScopeSkeleton:{render(){}},setTimeout:()=>1,clearTimeout(){},fetch:async(url)=>{
+    requests.push(url);
+    if(url.startsWith('/api/reader-summary'))return new Promise(resolve=>pending.push(resolve));
+    return {ok:true,json:async()=>({title:'기사',paragraphs:['본문'],mode:'article'})};
+  }};
+  vm.runInNewContext(source,context);
+  const dialog=nodes.get('reader-view'),button=nodes.get('reader-summary-button');
+  function open(url){const link={href:url,isConnected:true,closest:()=>null,focus(){}};events.click({target:{closest:()=>link},button:0,preventDefault(){}});}
+  open('https://example.com/1');await new Promise(setImmediate);
+  assert.equal(requests.length,1);assert.equal(button.disabled,false);assert.equal(nodes.get('reader-status').hidden,true);
+  const first=button.click();button.click();assert.equal(requests.length,2);assert.equal(button.disabled,true);
+  pending.shift()({ok:true,json:async()=>({status:'ready',points:['수동 요약']})});await first;assert.equal(button.hidden,true);
+  open('https://example.com/2');await new Promise(setImmediate);assert.equal(button.hidden,false);assert.equal(button.disabled,false);assert.equal(requests.length,3);
+  const second=button.click();dialog.open=false;dialog.close();pending.shift()({ok:true,json:async()=>({status:'ready',points:['늦은 요약']})});await second;
+  assert.equal(nodes.get('reader-status').children.length,2); // only the pending heading and note remain
 });

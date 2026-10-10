@@ -546,7 +546,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.151 · build 261011</span>
+    <span class="ver">v3.152 · build 261011</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -596,6 +596,7 @@
     <article class="reader-content">
       <h2 id="reader-title">본문 읽기</h2>
       <div id="reader-meta" class="reader-meta"></div>
+      <button type="button" id="reader-summary-button" class="reader-summary-button" disabled>AI 요약 보기</button>
       <div id="reader-status" class="reader-status" role="status" aria-live="polite"></div>
       <button type="button" id="reader-retry" class="reader-retry" hidden>다시 시도</button>
       <div id="reader-body" class="reader-body" aria-busy="false"></div>

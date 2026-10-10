@@ -9,6 +9,7 @@
   const status = document.getElementById("reader-status");
   const source = document.getElementById("reader-source");
   const retry = document.getElementById("reader-retry");
+  const summaryButton = document.getElementById("reader-summary-button");
   let controller, summaryController, trigger, activeUrl, sequence = 0, fontSize = 18, oldOverflow;
 
   function safeUrl(value) {
@@ -24,6 +25,11 @@
     controller = new AbortController();
     const currentController = controller;
     const current = ++sequence;
+    summaryButton.hidden = false;
+    summaryButton.disabled = true;
+    summaryButton.textContent = "AI 요약 보기";
+    status.hidden = false;
+    status.setAttribute("aria-busy", "false");
     HScopeSkeleton.render(body, "reader", {count:2,label:"기사 본문을 불러오는 중이에요."});
     body.setAttribute("aria-busy", "true");
     // 본문 로딩: 텍스트 우측에 조그만 달리는 고양이(app.js의 catRunInline, 없으면 텍스트만)
@@ -39,7 +45,9 @@
       title.textContent = data.title;
       meta.textContent = [data.author, data.published_at].filter(Boolean).join(" · ");
       source.href = safeUrl(data.url) || url;
-      status.textContent = data.mode === "excerpt" ? data.notice : "AI 요약을 준비하고 있어요…";
+      status.textContent = data.mode === "excerpt" ? data.notice : "";
+      status.hidden = !status.textContent;
+      summaryButton.disabled = false;
       retry.hidden = data.mode !== "excerpt";
       body.replaceChildren();
       for (const text of data.paragraphs) {
@@ -47,7 +55,7 @@
         p.textContent = text; // Never execute publisher HTML.
         body.append(p);
       }
-      loadSummary(url, current);
+
     } catch (error) {
       if (current !== sequence || !dialog.open) return;
       status.textContent = error.name === "AbortError"
@@ -132,7 +140,7 @@
         if (data.status === 'ready') {
           if (!Array.isArray(data.points) || data.points.length < 1 || data.points.length > 3 || data.points.some(p => typeof p !== 'string' || !p.trim())) throw new Error('Invalid summary');
           showSummary(data.points, data.source_kind === 'excerpt' ? '원문 전체를 확보하지 못해 수집된 기사 정보만 AI로 정리했어요. 전체 내용은 원문 보기에서 확인해 주세요.' : data.partial ? '긴 본문의 일부를 바탕으로 AI가 정리했어요. 전체 내용은 아래 본문에서 확인하세요.' : 'AI가 정리한 요약이에요. 자세한 내용은 아래 본문에서 확인하세요.', data.highlights, data.source_kind === 'excerpt');
-          return;
+          return true;
         }
         if (data.status !== 'pending') {
           showSummary(null, typeof data.notice === 'string' ? data.notice : '지금은 요약을 만들지 못했어요.\n본문은 아래에서 읽을 수 있어요.', null, false, data.ai_error === 'credit_balance', data.body_notice || '');
@@ -149,6 +157,19 @@
       if (current === sequence) status.setAttribute('aria-busy', 'false');
     }
   }
+
+  summaryButton.addEventListener("click", async () => {
+    if (summaryButton.disabled || !dialog.open || !activeUrl) return;
+    const current = sequence;
+    summaryButton.disabled = true;
+    summaryButton.textContent = "요약 중…";
+    status.hidden = false;
+    const ready = await loadSummary(activeUrl, current);
+    if (current !== sequence || !dialog.open) return;
+    summaryButton.disabled = false;
+    summaryButton.hidden = ready === true;
+    summaryButton.textContent = "AI 요약 다시 시도";
+  });
 
   document.addEventListener("click", (event) => {
     const link = event.target.closest("a[data-reader]");
