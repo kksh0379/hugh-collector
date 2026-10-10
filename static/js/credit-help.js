@@ -11,9 +11,17 @@
     const parts = String(text || '').split(account);
     parts.forEach((part, index) => {
       if (index) {
-        const number = document.createElement('span');
+        // WebKit's native data detectors can underline text through a shadow
+        // link that CSS cannot reach. Input values are not detected as links.
+        const number = document.createElement('input');
         number.className = 'ai-credit-account';
-        number.textContent = account;
+        number.type = 'text';
+        number.value = account;
+        number.readOnly = true;
+        number.size = account.length;
+        number.autocomplete = 'off';
+        number.spellcheck = false;
+        number.setAttribute('aria-label', '새마을금고 후원 계좌번호');
         target.append(number);
       }
       target.append(document.createTextNode(part));

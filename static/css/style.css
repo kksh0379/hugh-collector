@@ -1678,6 +1678,8 @@ body.chrome-hidden .view-head { position: static; }
 [data-ai-credit] a[href^="x-apple-data-detectors:"],
 [data-ai-credit] a[href^="tel:"] { color:inherit!important;text-decoration:none!important;border-bottom:0!important;box-shadow:none!important; }
 .ai-credit-actions { display:block;margin-top:10px;white-space:normal; }
+input.ai-credit-account { appearance:none;-webkit-appearance:none;display:inline-block;width:16ch;max-width:100%;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;line-height:inherit;vertical-align:baseline;box-shadow:none; }
+input.ai-credit-account:focus-visible { outline:2px solid currentColor;outline-offset:2px; }
 .ai-credit-billing { display:inline-flex;align-items:center;min-height:36px;padding:4px 10px;border:1px solid currentColor;border-radius:8px;color:inherit;font-size:13px;font-weight:700;line-height:1.4;text-decoration:none; }
 .ai-credit-billing:focus-visible { outline:2px solid currentColor;outline-offset:3px; }
 
