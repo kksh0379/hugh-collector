@@ -1705,7 +1705,7 @@ function renderEventCalendar(list) {
     <div class="cal-grid">${cells}</div>
     <p class="cal-tap-hint">날짜를 누르면 그날의 행사 요약을 볼 수 있어요.</p>
     <div id="cal-day-preview" class="cal-preview" popover="auto" role="dialog" aria-labelledby="cal-preview-title">
-      <div class="cal-preview-head"><h3 id="cal-preview-title"></h3><button type="button" class="cal-preview-close" aria-label="행사 요약 닫기">×</button></div>
+      <div class="cal-preview-head"><h3 id="cal-preview-title"></h3><button type="button" class="cal-preview-close window-close" aria-label="행사 요약 닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
       <p class="cal-preview-note">수집된 정보 기준이에요.<br>참여 전 원문·공식 채널을 확인해 주세요.</p>
       <ul class="cal-preview-list"></ul>
     </div>
@@ -3619,7 +3619,7 @@ function lunchLocationLabel(location) {
     const ov = document.createElement("div");
     ov.className = "recipe-modal"; ov.id = "recipe-modal";
     ov.innerHTML = `<div class="recipe-modal-card" role="dialog" aria-modal="true" aria-label="추천 방식">
-      <div class="recipe-modal-head"><b>${uiIcon("food")} 이렇게 골라줘요</b><button type="button" class="recipe-modal-x" aria-label="닫기">${uiIcon("close")}</button></div>
+      <div class="recipe-modal-head"><b>${uiIcon("food")} 이렇게 골라줘요</b><button type="button" class="recipe-modal-x window-close" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
       <div class="recipe-modal-body">${recipeHtml()}${note}</div></div>`;
     document.body.appendChild(ov);
     ov.addEventListener("click", (e) => { if (e.target === ov || e.target.closest(".recipe-modal-x")) closeRecipeModal(); });

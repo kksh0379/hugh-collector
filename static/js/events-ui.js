@@ -121,7 +121,7 @@
     if(initialized){renderResult();return;}
     initialized=true;
     const root=document.getElementById('event-curation');
-    root.innerHTML=`<p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기">×</button></div><p>미선택 시 전체 행사에서 추천해요.</p>
+    root.innerHTML=`<p id="ed-status" role="status" aria-live="polite" hidden></p><ul id="ed-results" class="ed-feed"></ul><dialog id="ed-dialog" aria-labelledby="ed-dialog-title"><section class="ed-preferences"><div class="ed-dialog-head"><h3 id="ed-dialog-title">관심사 설정</h3><button type="button" id="ed-close" aria-label="설정 닫기" class="window-close" title="닫기"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><p>미선택 시 전체 행사에서 추천해요.</p>
       <fieldset><legend>관심 분야 · 여러 개 선택</legend><div class="ed-topics">${topics.map(t=>`<label><input type="checkbox" value="${esc(t)}" ${prefs.topics.includes(t)?'checked':''}>${esc(t)}</label>`).join('')}</div></fieldset>
       <label for="ed-keyword-input" class="ed-label">관심 키워드</label><div id="ed-keywords" class="ed-chips"></div>
       <form id="ed-keyword-form"><input id="ed-keyword-input" maxlength="40" placeholder="키워드 직접 입력" aria-label="관심 키워드"><button type="submit">추가</button></form>
