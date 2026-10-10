@@ -2767,7 +2767,9 @@ async function loadReport(id) {
         clearInterval(timer); timer = null;
         if (runBtn) runBtn.disabled = false;
         const rs = st.result || {};
-        if (rs.error) { msg.style.color = "#dc2626"; msg.textContent = "분석 실패: " + rs.error; }
+        if (rs.error) { msg.style.color = "#dc2626"; msg.textContent = "분석 실패: " + rs.error;
+          if (window.HScopeCreditHelp?.isCreditNotice(rs.error)) window.HScopeCreditHelp.render(msg,msg.textContent);
+        }
         else if (rs.ok) { msg.style.color = "#16a34a"; msg.textContent = "분석 완료"; const el = document.getElementById("report-body"); if (el) delete el.dataset.loaded; loadReport(); }
       }
     }).catch(() => {});

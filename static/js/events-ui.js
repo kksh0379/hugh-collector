@@ -88,6 +88,7 @@
     if(busy){notice.textContent='AI 추천 중…';notice.hidden=false;}
     if(!result){if(busy) HScopeSkeleton.render(target,'event',{count:3,label:'행사를 추천하는 중이에요.'});else{notice.textContent='';notice.hidden=true;target.innerHTML='';}return;}
     if(!busy) notice.textContent=(result.ai_error || !result.items?.length ? result.notice||'' : '').replace(/([가-힣][.!?]) +(?=[가-힣])/g,'$1\n');notice.hidden=!notice.textContent;notice.dataset.aiError=result.ai_error||'';
+    if(!busy && result.ai_error==='credit_balance' && window.HScopeCreditHelp) window.HScopeCreditHelp.render(notice,notice.textContent);
 
     const keys=new Set(available.map(s=>s.url));
     const items=(result.items||[]).filter(s=>keys.has(s.url));
