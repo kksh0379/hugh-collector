@@ -47,3 +47,18 @@ html[data-theme="black"] button.window-close:active { background: #292929 !impor
   .reader-brand::before { content: "Reader"; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { #admin-controls-toggle svg { transition: none; } }
+
+/* Header and Reader use the same theme control dimensions and surface. */
+button[data-theme-toggle] {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  box-sizing: border-box !important; flex: 0 0 44px !important;
+  width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important;
+  padding: 0 !important; border: 1px solid var(--border, #dce2ea) !important;
+  border-radius: 12px !important; background: #f2f5f9 !important; color: var(--text, #263244) !important;
+  cursor: pointer; touch-action: manipulation;
+}
+button[data-theme-toggle] svg { width: 20px !important; height: 20px !important; flex: 0 0 20px; pointer-events: none; }
+button[data-theme-toggle]:focus-visible { outline: 3px solid var(--primary, #2563eb); outline-offset: 3px; }
+button[data-theme-toggle]:active { background: #e2e8f0 !important; }
+html[data-theme="black"] button[data-theme-toggle] { background: #171717 !important; color: #ededed !important; border-color: #383838 !important; }
+html[data-theme="black"] button[data-theme-toggle]:active { background: #292929 !important; }
