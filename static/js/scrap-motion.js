@@ -56,31 +56,73 @@
       minHeight:'0',maxWidth:'none',margin:'0',transform:'none',boxSizing:'border-box'});
     return copy;
   }
+  function paperBallMarkup() {
+    // Original vector artwork: uneven silhouette, broad paper shadows, narrow doubled creases.
+    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M30 8 Q38 1 47 8 L57 5 Q67 4 71 14 L80 16 Q87 20 86 29 L93 39 Q99 49 92 56 L94 65 Q91 74 81 76 L77 87 Q70 94 60 90 L50 95 Q41 97 34 89 L24 87 Q15 85 16 74 L7 66 Q1 57 8 48 L5 37 Q7 28 18 26 L19 17 Z" fill="#f4f1e9" stroke="#d0ccc3" stroke-width="1.2"/>
+      <path d="M30 8 35 30 19 17 18 26 27 43 8 48 25 52 16 74 34 63 34 89 45 72 60 90 58 68 81 76 70 59 92 56 75 44 86 29 65 33 71 14 51 29 47 8 44 31 Z" fill="#c1bdb4" opacity=".55"/>
+      <path d="m35 30 9 1 7-2 14 4-10 10 20 1-17 10 12 5-12 9-13 4-11-9-9-11 2-9Z" fill="#fffcf5"/>
+      <path d="m30 8 5 22 9 1-6-15Z m37 35 18 0-9 12-12 8Z m58 54 17-10-5 15Z m34 63 11 9-11 17Z m26 78-10-4 9-22 5 11Z" fill="#aaa79f" opacity=".4"/>
+      <g fill="none" stroke="#a6a39c" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity=".85">
+        <path d="m27 16 8 14-5 9 7 4-5 11 2 9-8 15"/>
+        <path d="m53 13-2 16 8 6-4 8 8 7-5 4 2 11-2 3 5 14"/>
+        <path d="m14 36 13 7 10 0 9 6 9-6 10-10 14-7"/>
+        <path d="m14 61 11-9 7 2 12 5 2-10 12 5 12 5 12 7"/>
+        <path d="m44 31-7 12 m7 16 1 13 6 12 m-11-17-6-4 m36-4 5-15 10 1"/>
+      </g>
+      <g fill="none" stroke="#fffef9" stroke-width="1.8" stroke-linecap="round" opacity=".95">
+        <path d="m29 17 8 13-5 9 7 4-5 11 2 9"/>
+        <path d="m55 14-2 15 8 6-4 8 8 7-5 4"/>
+        <path d="m16 35 13 7 10 0 8 5 8-6 10-10"/>
+        <path d="m16 62 10-8 7 2 9 5 m5 2 0 9 6 11"/>
+      </g>
+      <path d="m24 31 4 3-1 5 m45-16-6 4 2 5 m-4 43-5-4-4 3 m26-17-5-3" fill="none" stroke="#b9b5ab" stroke-width=".8"/>
+    </svg>`;
+  }
   async function crumple(card, play) {
     const rect = card.getBoundingClientRect();
     const copy = styledCopy(card,rect);
     const surface = document.createElement('div');
     surface.className = 'scrap-crumple-surface';
     surface.setAttribute('aria-hidden','true'); surface.inert = true;
-    const edge = [[0,0],[50,0],[100,0],[100,50],[100,100],[50,100],[0,100],[0,50]];
+    const edge = [[0,0],[30,0],[66,0],[100,0],[100,31],[100,68],[100,100],[69,100],[34,100],[0,100],[0,69],[0,32]];
     const facets = edge.map((p,i) => {
-      const q = edge[(i+1)%8];
+      const q = edge[(i+1)%edge.length];
       const facet = document.createElement('div');
       facet.className = 'scrap-paper-facet';
-      facet.style.clipPath = `polygon(50% 50%,${p[0]}% ${p[1]}%,${q[0]}% ${q[1]}%)`;
+      facet.style.clipPath = `polygon(48% 52%,${p[0]}% ${p[1]}%,${q[0]}% ${q[1]}%)`;
       facet.appendChild(copy.cloneNode(true));surface.appendChild(facet);return facet;
     });
+    const ball = document.createElement('div');
+    ball.className = 'scrap-paper-ball'; ball.innerHTML = paperBallMarkup();
+    const size = Math.min(88,rect.width*.3,rect.height*.65);
+    Object.assign(ball.style,{width:size+'px',height:size+'px',left:(rect.width-size)/2+'px',top:(rect.height-size)/2+'px'});
+    surface.appendChild(ball);
     card.appendChild(surface);card.classList.add('scrap-crumpling');
-    await Promise.all(facets.map((facet,i) => {
-      const angle = i*Math.PI/4, dx=Math.cos(angle),dy=Math.sin(angle);
-      const shade=i%2?'.68':'1.28';
+    const duration = 520;
+    const folds = facets.map((facet,i) => {
+      const angle = i*Math.PI/6, dx=Math.cos(angle),dy=Math.sin(angle);
+      const shade=i%3===0?'.64':i%3===1?'1.3':'.9';
       return play([
         {opacity:1,transform:'none',filter:'brightness(1)'},
-        {opacity:1,transform:`perspective(500px) rotateX(${dy*68}deg) rotateY(${-dx*68}deg) rotate(${i%2?18:-18}deg) scale(.62,.65)`,filter:`brightness(${shade})`,offset:.36},
-        {opacity:1,transform:`translate(${dx*4}px,${dy*4}px) rotate(${i*29-80}deg) scale(.14,.25)`,filter:`brightness(${shade}) drop-shadow(1px 1px 1px #0006)`,offset:.70},
-        {opacity:0,transform:`translate(${dx*4+12}px,${80+dy*4}px) rotate(${i*29-45}deg) scale(.12,.22)`,filter:`brightness(${shade})`}
-      ],{duration:380,easing:'cubic-bezier(.35,0,.7,1)'},facet);
-    }));
+        {opacity:1,transform:`translate(${dx*-9}px,${dy*-7}px) perspective(460px) rotateX(${dy*42}deg) rotateY(${-dx*48}deg) skew(${i%2?12:-15}deg) scale(.78,.83)`,filter:`brightness(${shade})`,offset:.22},
+        {opacity:1,transform:`translate(${dx*7}px,${dy*9}px) rotate(${i%2?30:-24}deg) skew(${i%2?-18:14}deg) scale(.38,.49)`,filter:`brightness(${shade}) drop-shadow(2px 1px 2px #0006)`,offset:.43},
+        {opacity:.35,transform:`translate(${dx*5}px,${dy*4}px) rotate(${i*23-90}deg) scale(.15,.23)`,filter:`brightness(${shade})`,offset:.60},
+        {opacity:0,transform:`translate(${dx*3}px,${dy*2}px) rotate(${i*23-74}deg) scale(.10,.16)`,offset:.72},
+        {opacity:0,transform:'scale(.1)'}
+      ],{duration,easing:'linear'},facet);
+    });
+    folds.push(play([
+      {opacity:0,transform:'scale(1.65,1.35) rotate(-14deg)'},
+      {opacity:0,transform:'scale(1.5,1.28) rotate(-14deg)',offset:.34},
+      {opacity:.7,transform:'scale(1.22,.95) rotate(9deg)',offset:.48},
+      {opacity:1,transform:'scale(.86,1.06) rotate(-11deg)',offset:.60},
+      {opacity:1,transform:'scale(1,.88) rotate(7deg)',offset:.69},
+      {opacity:1,transform:'translateY(4px) scale(.92,.96) rotate(-4deg)',offset:.75},
+      {opacity:.9,transform:'translate(10px,42px) scale(.90) rotate(24deg)',offset:.88},
+      {opacity:0,transform:'translate(22px,110px) scale(.82) rotate(48deg)'}
+    ],{duration,easing:'linear'},ball));
+    await Promise.all(folds);
   }
   function save(button) {
     if (!button || reduced()) return;

@@ -46,16 +46,22 @@ test('click integration keeps scrap-menu exits separate and rolls back failed sa
  assert.match(app,/syncScrapUI\(key, true\)/);
  const html=fs.readFileSync('templates/index.html','utf8');assert(html.indexOf("filename='js/scrap-motion.js'")<html.indexOf("filename='js/app.js'"));
 });
-test('paper crumple bends eight separate faces rather than scaling the whole card',async()=>{
+test('paper crumple deforms twelve faces into a creased irregular ball before dropping',async()=>{
  function element(){return {style:{setProperty(){}},children:[],classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],cloneNode:()=>element(),appendChild(c){this.children.push(c)}};}
  const card=element();card.getBoundingClientRect=()=>({width:300,height:160});
  const animations=[];const window={addEventListener(){}};
  vm.runInNewContext(source,{window,document:{addEventListener(){},createElement:()=>element()},getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'})});
  await window.HScopeScrapMotion.crumple(card,async(frames,options,node)=>animations.push({frames,options,node}));
- assert.equal(animations.length,8);assert.equal(card.children[0].children.length,8);
- assert(animations.every(a=>a.node!==card&&a.options.duration===380));
- assert.equal(new Set(animations.map(a=>a.frames[1].transform)).size,8);
- assert(animations.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
+ assert.equal(animations.length,13);assert.equal(card.children[0].children.length,13);
+ assert(animations.every(a=>a.node!==card&&a.options.duration===520));
+ const facets=animations.slice(0,12),ball=animations[12];
+ assert.equal(new Set(facets.map(a=>a.frames[1].transform)).size,12);
+ assert.match(ball.node.innerHTML,/viewBox="0 0 100 100"/);
+ assert.match(ball.node.innerHTML,/stroke-linejoin="round"/);
+ assert.equal(ball.frames[0].opacity,0);assert.equal(ball.frames[3].opacity,1);
+ assert.match(ball.frames.at(-1).transform,/110px/);assert.equal(ball.frames.at(-1).opacity,0);
+ assert.equal(ball.node.style.width,'88px');
+ assert(facets.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
 });
 for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
  function element(){return {style:{setProperty(){}},children:[],isConnected:true,classList:{add(){},remove(){},contains:()=>false},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],getBoundingClientRect:()=>({left:316,top:540,width:44,height:44,bottom:584}),cloneNode:()=>element(),appendChild(c){this.children.push(c)},remove(){this.isConnected=false}};}
