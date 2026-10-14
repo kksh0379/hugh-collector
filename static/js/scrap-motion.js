@@ -111,8 +111,13 @@
     </svg>`;
     Object.assign(bin.style,{left:binLeft+'px',top:(rect.height/2+24)+'px'});
     surface.appendChild(bin);
+    const impact = document.createElement('div');
+    impact.className = 'scrap-bounce-impact';
+    impact.innerHTML = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="24" cy="24" r="13" fill="none" stroke="#b9d7ff" stroke-width="1.8"/><path d="M24 3V10 M24 38V45 M3 24H10 M38 24H45 M9 9 14 14 M34 34 39 39 M9 39 14 34 M34 14 39 9" fill="none" stroke="#d9eaff" stroke-width="2.8" stroke-linecap="round"/><path d="m24 16 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#ffe1a0"/></svg>`;
+    Object.assign(impact.style,{left:(binLeft-19)+'px',top:(rect.height/2+10)+'px'});
+    surface.appendChild(impact);
     card.appendChild(surface);card.classList.add('scrap-crumpling');
-    const duration = 600;
+    const duration = 1000;
     const folds = facets.map((facet,i) => {
       const angle = i*Math.PI/6, dx=Math.cos(angle),dy=Math.sin(angle);
       const shade=i%3===0?'.64':i%3===1?'1.3':'.9';
@@ -131,23 +136,32 @@
       {opacity:.7,transform:'scale(1.22,.95) rotate(9deg)',offset:.36},
       {opacity:1,transform:'scale(.86,1.06) rotate(-11deg)',offset:.43},
       {opacity:1,transform:'translateY(8px) scale(1.10,.76) rotate(7deg)',offset:.50},
-      {opacity:1,transform:`translate(${hitX*.24}px,-34px) scale(.92,1.03) rotate(70deg)`,offset:.60},
-      {opacity:1,transform:`translate(${hitX*.65}px,-54px) scale(.92) rotate(150deg)`,offset:.69},
-      {opacity:1,transform:`translate(${hitX}px,34px) scale(.72,1.05) rotate(240deg)`,offset:.80},
-      {opacity:1,transform:`translate(${hitX-30}px,-12px) scale(.95,.88) rotate(190deg)`,offset:.89},
-      {opacity:.8,transform:`translate(${hitX-54}px,5px) scale(.90) rotate(150deg)`,offset:.96},
-      {opacity:0,transform:`translate(${hitX-66}px,36px) scale(.85) rotate(125deg)`}
+      {opacity:1,transform:`translate(${hitX*.24}px,-34px) scale(.92,1.03) rotate(70deg)`,offset:.56},
+      {opacity:1,transform:`translate(${hitX*.65}px,-54px) scale(.92) rotate(150deg)`,offset:.62},
+      {opacity:1,transform:`translate(${hitX}px,34px) scale(.55,1.14) rotate(240deg)`,offset:.70},
+      {opacity:1,transform:`translate(${hitX}px,34px) scale(.72,1.05) rotate(240deg)`,offset:.75},
+      {opacity:1,transform:`translate(${hitX-42}px,-24px) scale(1.04,.90) rotate(180deg)`,offset:.87},
+      {opacity:.9,transform:`translate(${hitX-68}px,-5px) scale(.95) rotate(140deg)`,offset:.95},
+      {opacity:0,transform:`translate(${hitX-80}px,36px) scale(.90) rotate(115deg)`}
     ],{duration,easing:'linear'},ball));
     folds.push(play([
       {opacity:0,transform:'translateY(6px) scale(.85)'},
       {opacity:0,transform:'translateY(6px) scale(.85)',offset:.22},
       {opacity:1,transform:'none',offset:.38},
-      {opacity:1,transform:'none',offset:.78},
-      {opacity:1,transform:'translateX(4px) rotate(7deg)',offset:.83},
-      {opacity:1,transform:'rotate(-3deg)',offset:.89},
+      {opacity:1,transform:'none',offset:.69},
+      {opacity:1,transform:'translateX(5px) rotate(9deg)',offset:.73},
+      {opacity:1,transform:'rotate(-4deg)',offset:.81},
       {opacity:1,transform:'none',offset:.96},
       {opacity:0,transform:'none'}
     ],{duration,easing:'linear'},bin));
+    folds.push(play([
+      {opacity:0,transform:'scale(.4)'},
+      {opacity:0,transform:'scale(.4)',offset:.695},
+      {opacity:1,transform:'scale(.65)',offset:.71},
+      {opacity:.9,transform:'scale(1.15)',offset:.79},
+      {opacity:0,transform:'scale(1.55)',offset:.91},
+      {opacity:0,transform:'scale(1.55)'}
+    ],{duration,easing:'linear'},impact));
     await Promise.all(folds);
   }
   function save(button) {

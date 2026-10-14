@@ -52,9 +52,9 @@ test('paper crumple deforms twelve faces into a smaller creased ball that flies 
  const animations=[];const window={addEventListener(){}};
  vm.runInNewContext(source,{window,document:{addEventListener(){},createElement:()=>element()},getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'})});
  await window.HScopeScrapMotion.crumple(card,async(frames,options,node)=>animations.push({frames,options,node}));
- assert.equal(animations.length,14);assert.equal(card.children[0].children.length,14);
- assert(animations.every(a=>a.node!==card&&a.options.duration===600));
- const facets=animations.slice(0,12),ball=animations[12],bin=animations[13];
+ assert.equal(animations.length,15);assert.equal(card.children[0].children.length,15);
+ assert(animations.every(a=>a.node!==card&&a.options.duration===1000));
+ const facets=animations.slice(0,12),ball=animations[12],bin=animations[13],impact=animations[14];
  assert.equal(new Set(facets.map(a=>a.frames[1].transform)).size,12);
  assert.match(ball.node.innerHTML,/viewBox="0 0 100 100"/);
  assert.match(ball.node.innerHTML,/stroke-linejoin="round"/);
@@ -64,10 +64,12 @@ test('paper crumple deforms twelve faces into a smaller creased ball that flies 
  assert.equal(bin.node.className,'scrap-trash-bin');assert.equal(bin.node.style.left,'230px');assert.equal(bin.node.style.top,'104px');
  assert.match(bin.node.innerHTML,/scrap-trash-lid/);assert.equal(bin.frames[2].opacity,1);
  assert.equal(ball.node.style.left,'24px');
- const flight=ball.frames.slice(5).map(f=>Number(f.transform.match(/translate\(([-.0-9]+)px/)[1]));
- assert(flight[0]<flight[1]&&flight[1]<flight[2]);assert(flight[3]<flight[2]&&flight[4]<flight[3]);
- const centerAtHit=24+20+flight[2];assert(centerAtHit+40*.72/2<230+8);
- assert.match(bin.frames[4].transform,/rotate\(7deg\)/);
+ const xAt=offset=>Number(ball.frames.find(f=>f.offset===offset).transform.match(/translate\(([-.0-9]+)px/)[1]);
+ assert(xAt(.56)<xAt(.62)&&xAt(.62)<xAt(.70));assert.equal(xAt(.70),xAt(.75));assert(xAt(.87)<xAt(.75)&&xAt(.95)<xAt(.87));
+ const centerAtHit=24+20+xAt(.70);assert(centerAtHit+40*.55/2<230+8);
+ assert.match(bin.frames[4].transform,/rotate\(9deg\)/);
+ assert.equal(impact.node.className,'scrap-bounce-impact');assert.equal(impact.frames[1].opacity,0);assert.equal(impact.frames[2].opacity,1);assert.equal(impact.frames[2].offset,.71);
+ assert.match(impact.node.innerHTML,/<circle/);assert.equal(impact.frames.at(-1).opacity,0);
  assert(facets.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
 });
 for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
