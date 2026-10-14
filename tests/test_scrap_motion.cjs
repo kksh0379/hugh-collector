@@ -16,11 +16,11 @@ test('genie starts at card geometry, narrows bottom first, and ends at the targe
 test('floating receiver follows the actual responsive tab center at mobile, tablet and desktop widths',()=>{
  const ctx=vm.createContext({});vm.runInContext(geometry,ctx);
  for(const [width,anchor] of [[390,{left:312,width:60}],[768,{left:650,width:98}],[1440,{left:990,width:110}]]){
-   assert.equal(ctx.receiverLeft(anchor,width)+22,anchor.left+anchor.width/2);
+   assert.equal(ctx.receiverLeft(anchor,width)+28,anchor.left+anchor.width/2);
  }
- assert.equal(ctx.receiverLeft({left:2000,width:100},390),330);
+ assert.equal(ctx.receiverLeft({left:2000,width:100},390),318);
  assert.equal(ctx.receiverLeft({left:-20,width:20},390),16);
- assert.equal(ctx.receiverLeft({left:0,width:0},390),330);
+ assert.equal(ctx.receiverLeft({left:0,width:0},390),318);
 });
 test('ordinary unsave touches only the icon; reduced motion skips it',()=>{
  for(const reduced of [false,true]){
@@ -50,6 +50,8 @@ for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of 
  function element(){return {style:{setProperty(){}},children:[],isConnected:true,classList:{add(){},remove(){},contains:()=>false},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],getBoundingClientRect:()=>({left:316,top:540,width:44,height:44,bottom:584}),cloneNode:()=>element(),appendChild(c){this.children.push(c)},remove(){this.isConnected=false}};}
  const sourceCard=element();sourceCard.getBoundingClientRect=()=>({left:10,top:40,width:300,height:200,bottom:240});
  let footerWrites=0;const footer=element();footer.classList={add(){footerWrites++},remove(){footerWrites++}};
+ const footerIcon=element();footerIcon.cloneNode=()=>Object.assign(element(),{fromFooterIcon:true});
+ footer.querySelector=selector=>selector==='.fnav-ic svg'?footerIcon:{textContent:'스크랩'};
  footer.getBoundingClientRect=()=>({left:310,top:hidden?700:540,width:60,height:60,bottom:hidden?760:600});
  sourceCard.className=kind;
  const button={dataset:{key:'one'},parentElement:{closest(selector){assert.equal(selector,'[data-key]');return sourceCard;}},closest:()=>null};
@@ -59,7 +61,7 @@ for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of 
  vm.runInNewContext(source,{window,document,getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'}),requestAnimationFrame:fn=>{frames.set(++id,fn);return id},cancelAnimationFrame:()=>{},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length},clearTimeout(){}});
  const run=t=>{const fn=frames.get(id);fn(t)};
  window.HScopeScrapMotion.save(button);assert.equal(body.children.length,hidden?2:1);const layer=body.children.at(-1);assert.equal(layer.children.length,32);
- if(hidden){assert.equal(body.children[0].style.left,'318px');assert.equal(body.children[0].style.right,'auto');}
+ if(hidden){assert.equal(body.children[0].style.left,'312px');assert.equal(body.children[0].style.right,'auto');assert.equal(body.children[0].children[0].fromFooterIcon,true);assert.equal(body.children[0].children[1].textContent,'스크랩');}
  assert.equal(layer.children[0].style.width,'300px'); // full card, never the 36px bookmark button
  run(0);run(260);run(520);assert.equal(layer.isConnected,false);assert.equal(sourceCard.isConnected,true);assert.equal(sourceCard.style.transform,undefined);
  if(hidden){assert.equal(body.children[0].isConnected,true);assert.equal(timers.at(-1).ms,320);timers.at(-1).fn();assert.equal(body.children[0].isConnected,false);}

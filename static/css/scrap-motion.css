@@ -1,8 +1,10 @@
 .scrap-genie { position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;contain:strict; }
 .scrap-genie-slice { position:absolute;left:0;top:0;overflow:hidden;transform-origin:0 0;pointer-events:none;will-change:transform; }
 .scrap-genie-slice * { pointer-events:none !important;animation:none !important;transition:none !important; }
-.scrap-floating-receiver { position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:10000;display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:44px;height:44px;border:1px solid #95b7ed;border-radius:14px;background:#edf4ff;color:#3268bf;box-shadow:0 6px 20px #132e5530;pointer-events:none; }
-.scrap-floating-receiver svg { width:22px;height:22px; }
+.scrap-floating-receiver { position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;box-sizing:border-box;width:56px;height:64px;padding:8px 4px;border:1px solid #95b7ed;border-radius:14px;background:#edf4ff;color:#3268bf;box-shadow:0 6px 20px #132e5530;pointer-events:none; }
+.scrap-floating-receiver svg { display:block;flex:0 0 24px;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round; }
+.scrap-floating-receiver .nav-fill { fill:transparent; }
+.scrap-floating-label { font-family:inherit;font-size:11px;font-weight:600;line-height:1.25;letter-spacing:-.02em;white-space:nowrap; }
 .scrap-floating-receiver.received { animation:scrapReceiverDone 320ms ease-out forwards; }
 @keyframes scrapReceiverDone { 0% { transform:scale(1);opacity:1; } 40% { transform:scale(1.15);opacity:1; } 100% { transform:scale(.9);opacity:0; } }
 html[data-theme="black"] .scrap-floating-receiver { background:#17263d;color:#9fc7ff;border-color:#42648e; }

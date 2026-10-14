@@ -17,8 +17,8 @@
       sx: width / rect.width, sy: Math.max(.001, (bottom - top) / rect.height)};
   }
   function receiverLeft(anchor, viewportWidth) {
-    const center = anchor.width > 0 ? anchor.left + anchor.width / 2 : viewportWidth - 38;
-    return Math.max(16, Math.min(viewportWidth - 60, center - 22));
+    const center = anchor.width > 0 ? anchor.left + anchor.width / 2 : viewportWidth - 44;
+    return Math.max(16, Math.min(viewportWidth - 72, center - 28));
   }
   function cancel(key) {
     const effect = active.get(key);
@@ -94,12 +94,17 @@
       floating.style.right = 'auto';
       floating.setAttribute('aria-hidden','true');
       floating.inert = true;
-      floating.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+      const footerIcon = target.querySelector('.fnav-ic svg');
+      if (footerIcon) floating.appendChild(footerIcon.cloneNode(true));
+      const label = document.createElement('span');
+      label.className = 'scrap-floating-label';
+      label.textContent = target.querySelector('.fnav-t')?.textContent.trim() || '스크랩';
+      floating.appendChild(label);
       document.body.appendChild(floating);
       anchor = floating.getBoundingClientRect();
     }
     const receiver = floating || target;
-    const destination = {x:anchor.left + anchor.width / 2,y:anchor.top + (floating ? anchor.height / 2 : Math.min(26,anchor.height / 2))};
+    const destination = {x:anchor.left + anchor.width / 2,y:anchor.top + (floating ? 21 : Math.min(26,anchor.height / 2))};
     document.body.appendChild(layer);
     const effect = {layer,floating,raf:0,timer:0};
     active.set(key,effect);
