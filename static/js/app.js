@@ -467,7 +467,7 @@ function cancelScrapRemoval(key) {
 }
 
 // 스크랩 토글(로그인 필요, 서버 저장, +토스트)
-function toggleScrap(key) {
+function toggleScrap(key, fromEl = null) {
   if (!key || SCRAP_REMOVALS.has(key)) return;
   if (!isLoggedIn()) {            // 미로그인 → 로그인 유도(로그인 후 이어서 스크랩)
     pendingScrapKey = key;
@@ -475,18 +475,20 @@ function toggleScrap(key) {
     openLogin();
     return;
   }
-  if (deferUserAction(() => toggleScrap(key))) return;
+  if (deferUserAction(() => toggleScrap(key, fromEl))) return;
   const wasOn = isScrapped(key);
   if (wasOn) {
     const backup = SCRAP[key];
     delete SCRAP[key];
     syncScrapUI(key, true); toast("스크랩을 취소했어요");
+    if (fromEl && !fromEl.closest('#scrap-list')) window.HScopeScrapMotion?.unsave(fromEl);
     api("/api/scrap", { op: "del", key }).catch(() => { SCRAP[key] = backup; syncScrapUI(key); toast("저장하지 못했어요.\n다시 시도해 주세요."); });
   } else {
     const snap = ITEM_INDEX[key];
     if (!snap) return;
     SCRAP[key] = Object.assign({}, snap, { ts: Date.now() });
     syncScrapUI(key); toast("스크랩했어요");
+    if (fromEl) flyToScrap(fromEl);
     api("/api/scrap", { op: "add", key, item: snap }).catch(() => { delete SCRAP[key]; syncScrapUI(key); toast("저장하지 못했어요.\n다시 시도해 주세요."); });
   }
 }
@@ -507,13 +509,7 @@ document.addEventListener("click", (e) => {
   if (sb) {
     e.preventDefault(); e.stopPropagation();
     const key = sb.dataset.key;
-    const wasOn = isScrapped(key);
-    const willAdd = isLoggedIn() && !wasOn;
-    toggleScrap(key);
-    if (willAdd && isScrapped(key)) flyToScrap(sb);  // 담기 애니메이션(추가될 때만)
-    else if (wasOn && !isScrapped(key) && !sb.closest('#scrap-list')) {
-      window.HScopeScrapMotion?.unsave(sb);
-    }
+    toggleScrap(key, sb);
     return;
   }
   const a = e.target.closest('a[target="_blank"]');

@@ -23,16 +23,19 @@
     clearTimeout(effect.timer);
     effect.layer.remove();
     active.delete(key);
+    if (!Array.from(active.values()).some(other => other.footer === effect.footer)) {
+      effect.footer?.classList.remove('scrap-motion-anchor');
+    }
   }
   function unsave(button) {
     if (!button) return;
     cancel(button.dataset.key);
     if (reduced()) return;
-    const icon = button.querySelector('svg');
-    if (!icon?.animate) return;
-    // Only the bookmark reacts; the article card does not leave the feed.
-    icon.animate([{transform:'scale(1)',opacity:1}, {transform:'scale(.72)',opacity:.5,offset:.42},
-      {transform:'scale(1)',opacity:1}], {duration:220,easing:'ease-out'});
+    // CSS SVG motion is more reliable on iOS than SVG Web Animations.
+    button.classList.remove('scrap-unsaving');
+    void button.offsetWidth;
+    button.classList.add('scrap-unsaving');
+    setTimeout(() => button.classList.remove('scrap-unsaving'),280);
   }
   function save(button) {
     if (!button || reduced()) return;
@@ -41,10 +44,8 @@
     const target = document.getElementById('scrap-open-btn');
     const source = button.closest('.card') || button;
     if (!target || !source.isConnected) return;
-    const rect = source.getBoundingClientRect(), anchor = target.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0 || anchor.width <= 0 || anchor.height <= 0 ||
-        anchor.bottom <= 0 || anchor.top >= window.innerHeight) return;
-    const destination = {x:anchor.left + anchor.width / 2,y:anchor.top + Math.min(26,anchor.height / 2)};
+    const rect = source.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
     const layer = document.createElement('div');
     layer.className = 'scrap-genie';
     layer.setAttribute('aria-hidden','true');
@@ -75,15 +76,25 @@
       layer.appendChild(slice);
       slices.push(slice);
     }
+    // Scrolling hides the footer. Reveal it before measuring the destination,
+    // otherwise saves below the first article are skipped as offscreen.
+    const footer = target.closest('.bottombar');
+    footer?.classList.add('scrap-motion-anchor');
+    const anchor = target.getBoundingClientRect();
+    if (anchor.width <= 0 || anchor.height <= 0 || anchor.bottom <= 0 || anchor.top >= window.innerHeight) {
+      if (!Array.from(active.values()).some(other => other.footer === footer)) footer?.classList.remove('scrap-motion-anchor');
+      return;
+    }
+    const destination = {x:anchor.left + anchor.width / 2,y:anchor.top + Math.min(26,anchor.height / 2)};
     document.body.appendChild(layer);
-    const effect = {layer,raf:0,timer:0};
+    const effect = {layer,footer,raf:0,timer:0};
     active.set(key,effect);
     let start;
     const render = now => {
       if (active.get(key) !== effect) return;
       if (reduced() || !source.isConnected || !target.isConnected) { cancel(key); return; }
       if (start === undefined) start = now;
-      const t = Math.min(1,(now-start)/900);
+      const t = Math.min(1,(now-start)/520);
       slices.forEach((slice,i) => {
         const g = stripGeometry(rect,destination,t,i*step,step);
         slice.style.transform = `translate3d(${g.x}px,${g.y}px,0) scale(${g.sx},${g.sy})`;
@@ -98,7 +109,7 @@
       }
     };
     // Clean up even if the browser pauses animation frames in the background.
-    effect.timer = setTimeout(() => cancel(key),1800);
+    effect.timer = setTimeout(() => cancel(key),1200);
     effect.raf = requestAnimationFrame(render);
   }
   function cancelAll() { Array.from(active.keys()).forEach(cancel); }
