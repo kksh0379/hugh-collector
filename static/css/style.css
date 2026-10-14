@@ -1456,6 +1456,7 @@ body.chrome-hidden .view-head { position: static; }
 .view-title { font-size: 17px; font-weight: 800; color: var(--text); }
 .view-title #scrap-count-h { font-weight: 600; color: var(--muted); font-size: 14px; }
 .view-inner { padding: 0 16px 16px; }
+#view-scrap .view-inner { padding-top: 16px; }
 #view-report .view-inner, #view-scrap .view-inner { min-height: 40vh; }
 
 /* ============ 리포트 PDF 저장(인쇄) ============ */
