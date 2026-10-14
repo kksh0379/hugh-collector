@@ -10,7 +10,7 @@ function setup(){
 const record=key=>({key,user:'alice',generation:1,snapshot:{key,ts:100,groups:['group-one'],title:'Saved'}});
 test('undo within five seconds restores a deep copy with original groups and timestamp',()=>{
  const s=setup(),calls=[],saved=record('a');s.api.show(saved,r=>calls.push(r));saved.snapshot.groups.push('changed');
- const panel=s.panels[0];assert.equal(panel.children[1].textContent,'실행 취소');assert.equal([...s.timers.values()][0].ms,5000);
+ const panel=s.panels[0];assert.equal(panel.children[1].textContent,'실행 취소 (1)');assert.equal([...s.timers.values()][0].ms,5000);
  s.clock.now=4999;panel.children[1].click();assert.equal(calls.length,1);assert.equal(calls[0].snapshot.ts,100);assert.deepEqual([...calls[0].snapshot.groups],['group-one']);assert(panel.removed);assert.equal(s.timers.size,0);
 });
 test('expired undo cannot restore and removes the notice',()=>{
@@ -23,6 +23,26 @@ test('only the latest cancellation is actionable and a stale click cannot clear 
 test('timeout and keyed cleanup remove only the matching cancellation',()=>{
  const s=setup();s.api.show(record('a'),()=>{});s.api.clear('b');assert(!s.panels[0].removed);[...s.timers.values()][0].fn();assert(s.panels[0].removed);
  s.api.show(record('b'),()=>{});s.api.clear();assert(s.panels[1].removed);
+});
+test('only three recent cancellations are kept and repeated undo restores newest first',()=>{
+ const s=setup(),calls=[];
+ for(const key of ['a','b','c','d']) s.api.show(record(key),r=>calls.push(r.key));
+ assert.equal(s.panels.at(-1).children[1].textContent,'실행 취소 (3)');
+ s.clock.now=4900;s.panels.at(-1).children[1].click();
+ assert.equal(s.panels.at(-1).children[1].textContent,'실행 취소 (2)');
+ s.clock.now=9000;s.panels.at(-1).children[1].click();
+ s.panels.at(-1).children[1].click();assert.deepEqual(calls,['d','c','b']);assert(s.panels.at(-1).removed);assert.equal(s.timers.size,0);
+});
+test('clearing one failed or resaved item preserves the other undo records',()=>{
+ const s=setup(),calls=[];
+ for(const key of ['a','b','c']) s.api.show(record(key),r=>calls.push(r.key));
+ s.api.clear('b');assert.equal(s.panels.at(-1).children[1].textContent,'실행 취소 (2)');
+ s.panels.at(-1).children[1].click();s.panels.at(-1).children[1].click();assert.deepEqual(calls,['c','a']);
+});
+test('duplicate keys and changed accounts cannot retain stale restoration records',()=>{
+ const s=setup(),calls=[];
+ s.api.show(record('a'),r=>calls.push(r.key));s.api.show(record('a'),r=>calls.push(r.key));assert.equal(s.panels.at(-1).children[1].textContent,'실행 취소 (1)');
+ s.api.show({...record('b'),user:'bob'},r=>calls.push(r.key));s.panels.at(-1).children[1].click();assert.deepEqual(calls,['b']);
 });
 function card(key,top=200){
  const classes=new Set(),scrolls=[];
@@ -39,4 +59,8 @@ test('a delayed render still highlights restoration and a server rerender resume
  const a=card('a');s.api.animateRestored(list([a]));assert(a.classes.has('scrap-restored'));assert.equal(a.scrolls.length,0);
  s.clock.now=650;const replacement=card('a',1200);s.api.animateRestored(list([replacement]));assert.equal(replacement.style.animationDelay,'-250ms');assert.equal(replacement.scrolls.length,0);
  s.clock.now=1400;const late=card('a');s.api.animateRestored(list([late]));assert(!late.classes.size);
+});
+test('rapid undo highlights each restored card even when their renders are delayed together',()=>{
+ const s=setup(),a=card('a'),b=card('b');s.api.markRestored('a');s.api.markRestored('b');
+ s.api.animateRestored(list([a,b]));assert(a.classes.has('scrap-restored'));assert(b.classes.has('scrap-restored'));
 });
