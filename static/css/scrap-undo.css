@@ -4,3 +4,17 @@
 .scrap-undo button:focus-visible { outline:3px solid #9dc5ff;outline-offset:2px; }
 .scrap-undo button:active { background:#41608f; }
 body.chrome-hidden .scrap-undo { bottom:calc(24px + env(safe-area-inset-bottom,0px)); }
+.card.scrap-restored { animation:scrap-restore 1000ms cubic-bezier(.22,.8,.3,1) both;transform-origin:center; }
+@keyframes scrap-restore {
+  0% { opacity:.2;transform:translateY(14px) scale(.96);box-shadow:0 0 0 3px #71a9ff99,0 6px 24px #4f8ee530; }
+  38% { opacity:1;transform:translateY(0) scale(1);box-shadow:0 0 0 3px #71a9ff99,0 6px 24px #4f8ee530; }
+  70% { box-shadow:0 0 0 3px #71a9ff66,0 6px 24px #4f8ee520; }
+  100% { opacity:1;transform:none;box-shadow:0 0 0 0 #71a9ff00,0 0 0 #4f8ee500; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .card.scrap-restored { animation-name:scrap-restore-highlight; }
+  @keyframes scrap-restore-highlight {
+    0%,60% { box-shadow:0 0 0 3px #71a9ff99; }
+    100% { box-shadow:0 0 0 0 #71a9ff00; }
+  }
+}

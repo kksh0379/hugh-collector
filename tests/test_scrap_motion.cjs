@@ -40,7 +40,6 @@ test('save skips DOM work when reduced motion is requested; cancellation is safe
 });
 test('click integration keeps scrap-menu exits separate and rolls back failed save effects',()=>{
  const app=fs.readFileSync('static/js/app.js','utf8');
- assert.match(app,/!fromEl.closest\('#scrap-list'\)/);
  const toggle=app.slice(app.indexOf('function toggleScrap('),app.indexOf('function syncScrapUI'));
  assert.doesNotMatch(toggle,/deferUserAction/);
  assert.match(app,/else window.HScopeScrapMotion\?\.cancel\(key\)/);

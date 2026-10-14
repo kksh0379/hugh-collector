@@ -548,6 +548,7 @@ function restoreScrap(record) {
   if (CURRENT_USER !== record.user || AUTH_GENERATION !== record.generation || !record.snapshot || isScrapped(record.key)) return;
   const snapshot = {...record.snapshot,groups:[...(record.snapshot.groups || [])]};
   SCRAP[record.key] = snapshot; ITEM_INDEX[record.key] = snapshot;
+  window.HScopeScrapUndo?.markRestored?.(record.key);
   syncScrapUI(record.key); toast('스크랩을 복원했어요');
   persistScrapChange(record.key,snapshot,null,true);
 }
@@ -2468,6 +2469,7 @@ function renderScrapList() {
   const frag = document.createDocumentFragment();
   items.forEach((s) => frag.appendChild(scrapCardNode(s)));
   el.appendChild(frag);
+  window.HScopeScrapUndo?.animateRestored?.(el);
 }
 function renderScraps() {
   if (MY_DATA_STATE !== "ready" && !MY_DATA_HAS_SNAPSHOT && isLoggedIn()) {

@@ -3,7 +3,7 @@ const source=fs.readFileSync('static/js/scrap-undo.js','utf8');
 function setup(){
  const panels=[],timers=new Map(),clock={now:0};let id=0;
  function node(){return {children:[],attrs:{},removed:false,setAttribute(k,v){this.attrs[k]=v},appendChild(c){this.children.push(c)},addEventListener(k,f){this[k]=f},remove(){this.removed=true}};}
- const window={};const document={createElement:()=>node(),body:{appendChild:n=>panels.push(n)}};
+ const window={innerHeight:800};const document={createElement:()=>node(),body:{appendChild:n=>panels.push(n)}};
  vm.runInNewContext(source,{window,document,Date:{now:()=>clock.now},setTimeout:(fn,ms)=>{timers.set(++id,{fn,ms});return id},clearTimeout:i=>timers.delete(i)});
  return {api:window.HScopeScrapUndo,panels,timers,clock};
 }
@@ -23,4 +23,20 @@ test('only the latest cancellation is actionable and a stale click cannot clear 
 test('timeout and keyed cleanup remove only the matching cancellation',()=>{
  const s=setup();s.api.show(record('a'),()=>{});s.api.clear('b');assert(!s.panels[0].removed);[...s.timers.values()][0].fn();assert(s.panels[0].removed);
  s.api.show(record('b'),()=>{});s.api.clear();assert(s.panels[1].removed);
+});
+function card(key,top=200){
+ const classes=new Set(),scrolls=[];
+ return {dataset:{key},style:{},classes,scrolls,classList:{add:k=>classes.add(k),remove:k=>classes.delete(k)},getBoundingClientRect:()=>({top,bottom:top+150}),scrollIntoView:opts=>scrolls.push(opts)};
+}
+const list=cards=>({closest:()=>null,querySelectorAll:()=>cards});
+test('restoration highlights only the restored card, brings an offscreen card into view and cleans up',()=>{
+ const s=setup(),a=card('a'),b=card('b',1200);s.api.markRestored('b');s.api.animateRestored(list([a,b]));
+ assert(!a.classes.size);assert(b.classes.has('scrap-restored'));assert.equal(b.scrolls.length,1);assert.equal(b.scrolls[0].block,'center');
+ [...s.timers.values()][0].fn();assert(!b.classes.size);assert.equal(b.style.animationDelay,'');
+});
+test('a delayed render still highlights restoration and a server rerender resumes without scrolling twice',()=>{
+ const s=setup();s.api.markRestored('a');s.api.animateRestored(list([]));s.clock.now=400;
+ const a=card('a');s.api.animateRestored(list([a]));assert(a.classes.has('scrap-restored'));assert.equal(a.scrolls.length,0);
+ s.clock.now=650;const replacement=card('a',1200);s.api.animateRestored(list([replacement]));assert.equal(replacement.style.animationDelay,'-250ms');assert.equal(replacement.scrolls.length,0);
+ s.clock.now=1400;const late=card('a');s.api.animateRestored(list([late]));assert(!late.classes.size);
 });

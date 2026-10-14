@@ -2,10 +2,12 @@
 (() => {
   'use strict';
   let current = null, timer = null, panel = null;
+  let restored = null;
   function clear(key) {
     if (key && current?.key !== key) return;
     clearTimeout(timer); timer = null; current = null;
     panel?.remove(); panel = null;
+    restored = null;
   }
   function show(record, restore) {
     clear();
@@ -25,5 +27,26 @@
     document.body.appendChild(panel);
     timer = setTimeout(clear,5000);
   }
-  window.HScopeScrapUndo = {show,clear};
+  function markRestored(key) {
+    restored = {key,start:null,expires:Date.now()+10000};
+  }
+  function animateRestored(list) {
+    if (!restored) return;
+    const now = Date.now();
+    if (now >= restored.expires) { restored = null; return; }
+    if (list.closest('[hidden]')) return;
+    const card = Array.from(list.querySelectorAll('.card[data-key]')).find(node => node.dataset.key === restored.key);
+    if (!card) return;
+    if (restored.start === null) {
+      restored.start = now; restored.expires = now+1000;
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom < 80 || rect.top > window.innerHeight-110) card.scrollIntoView({behavior:'instant',block:'center'});
+    }
+    card.style.animationDelay = -(now-restored.start)+'ms';
+    card.classList.add('scrap-restored');
+    setTimeout(() => {
+      card.classList.remove('scrap-restored'); card.style.animationDelay = '';
+    },restored.expires-now);
+  }
+  window.HScopeScrapUndo = {show,clear,markRestored,animateRestored};
 })();
