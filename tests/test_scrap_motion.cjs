@@ -13,6 +13,15 @@ test('genie starts at card geometry, narrows bottom first, and ends at the targe
  for(const v of [0,.5,1]){const end=ctx.stripGeometry(rect,target,1,v,1/32);assert.equal(end.y,757);assert.equal(end.x,437.5);assert(end.sy>0);}
  for(let t=0;t<=1;t+=.05)for(let v=0;v<=1;v+=.1){const g=ctx.stripGeometry(rect,target,t,v,1/32);assert(Object.values(g).every(Number.isFinite));assert(g.sx>0&&g.sy>0);}
 });
+test('floating receiver follows the actual responsive tab center at mobile, tablet and desktop widths',()=>{
+ const ctx=vm.createContext({});vm.runInContext(geometry,ctx);
+ for(const [width,anchor] of [[390,{left:312,width:60}],[768,{left:650,width:98}],[1440,{left:990,width:110}]]){
+   assert.equal(ctx.receiverLeft(anchor,width)+22,anchor.left+anchor.width/2);
+ }
+ assert.equal(ctx.receiverLeft({left:2000,width:100},390),330);
+ assert.equal(ctx.receiverLeft({left:-20,width:20},390),16);
+ assert.equal(ctx.receiverLeft({left:0,width:0},390),330);
+});
 test('ordinary unsave touches only the icon; reduced motion skips it',()=>{
  for(const reduced of [false,true]){
   const classes=new Set(),events={},timers=[];const window={matchMedia:()=>({matches:reduced}),addEventListener(){}};
@@ -45,11 +54,12 @@ for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of 
  sourceCard.className=kind;
  const button={dataset:{key:'one'},parentElement:{closest(selector){assert.equal(selector,'[data-key]');return sourceCard;}},closest:()=>null};
  const body=element(),events={},frames=new Map(),timers=[];let id=0;body.classList.contains=()=>hidden;
- const window={innerHeight:650,matchMedia:()=>({matches:false}),addEventListener:(k,f)=>events[k]=f};
+ const window={innerWidth:390,innerHeight:650,matchMedia:()=>({matches:false}),addEventListener:(k,f)=>events[k]=f};
  const document={body,addEventListener:(k,f)=>events[k]=f,getElementById:()=>footer,createElement:()=>element()};
  vm.runInNewContext(source,{window,document,getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'}),requestAnimationFrame:fn=>{frames.set(++id,fn);return id},cancelAnimationFrame:()=>{},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length},clearTimeout(){}});
  const run=t=>{const fn=frames.get(id);fn(t)};
  window.HScopeScrapMotion.save(button);assert.equal(body.children.length,hidden?2:1);const layer=body.children.at(-1);assert.equal(layer.children.length,32);
+ if(hidden){assert.equal(body.children[0].style.left,'318px');assert.equal(body.children[0].style.right,'auto');}
  assert.equal(layer.children[0].style.width,'300px'); // full card, never the 36px bookmark button
  run(0);run(260);run(520);assert.equal(layer.isConnected,false);assert.equal(sourceCard.isConnected,true);assert.equal(sourceCard.style.transform,undefined);
  if(hidden){assert.equal(body.children[0].isConnected,true);assert.equal(timers.at(-1).ms,320);timers.at(-1).fn();assert.equal(body.children[0].isConnected,false);}

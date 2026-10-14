@@ -16,6 +16,10 @@
     return {x: center - width / 2, y: top + (bottom - top) * v,
       sx: width / rect.width, sy: Math.max(.001, (bottom - top) / rect.height)};
   }
+  function receiverLeft(anchor, viewportWidth) {
+    const center = anchor.width > 0 ? anchor.left + anchor.width / 2 : viewportWidth - 38;
+    return Math.max(16, Math.min(viewportWidth - 60, center - 22));
+  }
   function cancel(key) {
     const effect = active.get(key);
     if (!effect) return;
@@ -85,6 +89,9 @@
     if (footerHidden) {
       floating = document.createElement('div');
       floating.className = 'scrap-floating-receiver';
+      const viewportWidth = document.documentElement?.clientWidth || window.innerWidth;
+      floating.style.left = receiverLeft(anchor, viewportWidth) + 'px';
+      floating.style.right = 'auto';
       floating.setAttribute('aria-hidden','true');
       floating.inert = true;
       floating.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
