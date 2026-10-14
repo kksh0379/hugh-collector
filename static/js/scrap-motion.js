@@ -95,9 +95,19 @@
     });
     const ball = document.createElement('div');
     ball.className = 'scrap-paper-ball'; ball.innerHTML = paperBallMarkup();
-    const size = Math.min(88,rect.width*.3,rect.height*.65);
+    const size = Math.min(40,rect.width*.16,rect.height*.3);
     Object.assign(ball.style,{width:size+'px',height:size+'px',left:(rect.width-size)/2+'px',top:(rect.height-size)/2+'px'});
     surface.appendChild(ball);
+    const bin = document.createElement('div');
+    bin.className = 'scrap-trash-bin';
+    bin.innerHTML = `<svg viewBox="0 0 54 66" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <ellipse cx="27" cy="14" rx="19" ry="6" fill="#253144" stroke="#8fa6c7" stroke-width="1.6"/>
+      <path d="M8 15 Q27 23 46 15 L42 57 Q27 65 12 57 Z" fill="#758ba9" stroke="#bdd0ec" stroke-width="1.7"/>
+      <path d="M17 29 19 53 M27 30V56 M37 29 35 53" fill="none" stroke="#d3dff0" stroke-width="2" stroke-linecap="round"/>
+      <g class="scrap-trash-lid"><path d="M20 9V5 Q27 1 34 5V9 M5 12 Q27 5 49 12" fill="none" stroke="#c4d6ef" stroke-width="3" stroke-linecap="round"/></g>
+    </svg>`;
+    Object.assign(bin.style,{left:(rect.width-54)/2+'px',top:(rect.height/2+40)+'px'});
+    surface.appendChild(bin);
     card.appendChild(surface);card.classList.add('scrap-crumpling');
     const duration = 520;
     const folds = facets.map((facet,i) => {
@@ -119,9 +129,18 @@
       {opacity:1,transform:'scale(.86,1.06) rotate(-11deg)',offset:.60},
       {opacity:1,transform:'scale(1,.88) rotate(7deg)',offset:.69},
       {opacity:1,transform:'translateY(4px) scale(.92,.96) rotate(-4deg)',offset:.75},
-      {opacity:.9,transform:'translate(10px,42px) scale(.90) rotate(24deg)',offset:.88},
-      {opacity:0,transform:'translate(22px,110px) scale(.82) rotate(48deg)'}
+      {opacity:1,transform:'translateY(36px) scale(.78) rotate(24deg)',offset:.85},
+      {opacity:1,transform:'translateY(72px) scale(.58) rotate(40deg)',offset:.94},
+      {opacity:0,transform:'translateY(90px) scale(.45) rotate(48deg)'}
     ],{duration,easing:'linear'},ball));
+    folds.push(play([
+      {opacity:0,transform:'translateY(6px) scale(.85)'},
+      {opacity:0,transform:'translateY(6px) scale(.85)',offset:.28},
+      {opacity:1,transform:'none',offset:.45},
+      {opacity:1,transform:'none',offset:.90},
+      {opacity:1,transform:'scale(1.07,.93)',offset:.96},
+      {opacity:0,transform:'scale(1)'}
+    ],{duration,easing:'linear'},bin));
     await Promise.all(folds);
   }
   function save(button) {
