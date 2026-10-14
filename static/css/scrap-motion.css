@@ -1,6 +1,9 @@
 .scrap-genie { position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;contain:strict; }
 .scrap-genie-slice { position:absolute;left:0;top:0;overflow:hidden;transform-origin:0 0;pointer-events:none;will-change:transform; }
 .scrap-genie-slice * { pointer-events:none !important;animation:none !important;transition:none !important; }
+#scrap-list .scrap-removing { transform-origin:center;will-change:transform,opacity,clip-path; }
+.scrap-crumple-creases { position:absolute;inset:0;z-index:5;border-radius:inherit;pointer-events:none;background:linear-gradient(28deg,transparent 44%,#ffffff70 49%,#00000036 50%,transparent 55%),linear-gradient(146deg,transparent 40%,#ffffff80 47%,#00000040 49%,transparent 54%),linear-gradient(83deg,transparent 37%,#ffffff65 43%,#00000030 45%,transparent 50%);animation:scrapCreases 200ms ease-out forwards; }
+@keyframes scrapCreases { from { opacity:0; } to { opacity:1; } }
 .scrap-floating-receiver { position:fixed;right:16px;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;box-sizing:border-box;width:56px;height:64px;padding:8px 4px;border:1px solid #95b7ed;border-radius:14px;background:#edf4ff;color:#3268bf;box-shadow:0 6px 20px #132e5530;pointer-events:none; }
 .scrap-floating-receiver svg { display:block;flex:0 0 24px;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round; }
 .scrap-floating-receiver .nav-fill { fill:transparent; }
@@ -14,4 +17,4 @@ html[data-theme="black"] .scrap-floating-receiver { background:#17263d;color:#9f
   42% { transform:scale(.55);opacity:.25; }
   100% { transform:scale(1);opacity:1; }
 }
-@media (prefers-reduced-motion: reduce) { .scrap-genie,.scrap-floating-receiver { display:none; } .fnav.scrap-pop .fnav-ic,.scrap-btn.scrap-unsaving svg { animation:none; } }
+@media (prefers-reduced-motion: reduce) { .scrap-genie,.scrap-floating-receiver { display:none; } .fnav.scrap-pop .fnav-ic,.scrap-btn.scrap-unsaving svg,.scrap-crumple-creases { animation:none; } }

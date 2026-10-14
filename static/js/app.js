@@ -420,11 +420,11 @@ function animateScrapRemoval(key) {
   card.classList.add("scrap-removing");
   card.inert = true;
   card.setAttribute("aria-busy", "true");
-  const status = document.createElement("span");
-  status.className = "scrap-removing-label";
-  status.textContent = "스크랩 취소";
-  card.appendChild(status);
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const status = document.createElement("span");
+  status.className = reduced ? "scrap-removing-label" : "scrap-crumple-creases";
+  status.textContent = reduced ? "스크랩 취소" : "";
+  card.appendChild(status);
   const play = async (frames, options) => {
     if (token.cancelled || !card.isConnected) return;
     if (typeof card.animate !== "function") {
@@ -437,14 +437,21 @@ function animateScrapRemoval(key) {
   };
   (async () => {
     try {
-      // Briefly keep the cancellation label readable, then leave and close the gap.
-      await play([{opacity: 1}, {opacity: 1}], {duration: 140});
       if (reduced) {
+        await play([{opacity: 1}, {opacity: 1}], {duration: 140});
         await play([{opacity: 1}, {opacity: 0}], {duration: 100});
       } else {
-        await play([{opacity: 1, transform: "translateX(0)"}, {opacity: 0, transform: "translateX(24px)"}], {duration: 210, easing: "ease-out"});
         const height = card.getBoundingClientRect().height;
-        await play([{height: height + "px", marginBottom: getComputedStyle(card).marginBottom, paddingTop: getComputedStyle(card).paddingTop, paddingBottom: getComputedStyle(card).paddingBottom}, {height: "0px", marginBottom: "0px", paddingTop: "0px", paddingBottom: "0px", borderWidth: "0px"}], {duration: 200, easing: "cubic-bezier(.4,0,.2,1)"});
+        const sheet = 'polygon(0% 0%,33% 0%,66% 0%,100% 0%,100% 33%,100% 66%,100% 100%,66% 100%,33% 100%,0% 100%,0% 66%,0% 33%)';
+        const crumpled = 'polygon(17% 8%,42% 0%,64% 12%,91% 7%,100% 37%,83% 57%,92% 88%,64% 96%,43% 84%,12% 95%,0% 57%,11% 36%)';
+        await play([
+          {opacity:1,transform:'translateY(0) rotate(0deg) scale(1,1)',clipPath:sheet,borderRadius:'12px'},
+          {opacity:1,transform:'perspective(600px) rotateX(14deg) rotateY(-12deg) skewX(-5deg) scale(.8,.88)',clipPath:crumpled,offset:.22},
+          {opacity:1,transform:'translateY(0) rotate(-12deg) scale(.22,.43)',clipPath:crumpled,borderRadius:'34%',offset:.55},
+          {opacity:1,transform:'translateY(6px) rotate(9deg) scale(.12,.24)',clipPath:crumpled,borderRadius:'40%',offset:.72},
+          {opacity:0,transform:'translateY(90px) rotate(32deg) scale(.09,.18)',clipPath:crumpled,borderRadius:'40%'}
+        ], {duration:380,easing:'cubic-bezier(.4,0,.65,1)'});
+        await play([{height: height + "px", marginBottom: getComputedStyle(card).marginBottom, paddingTop: getComputedStyle(card).paddingTop, paddingBottom: getComputedStyle(card).paddingBottom}, {height: "0px", marginBottom: "0px", paddingTop: "0px", paddingBottom: "0px", borderWidth: "0px"}], {duration: 120, easing: "cubic-bezier(.4,0,.2,1)"});
       }
     } catch (error) { /* Cancellation on rollback is expected. */ }
     finally {
