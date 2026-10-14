@@ -560,14 +560,15 @@ function toggleScrap(key, fromEl = null) {
     return;
   }
   const wasOn = isScrapped(key);
+  const fromScrapList = !!fromEl?.closest('#scrap-list');
   if (wasOn) {
     const backup = SCRAP[key];
     delete SCRAP[key];
     syncScrapUI(key, true);
-    if (fromEl?.closest('#scrap-list') && window.HScopeScrapUndo) {
+    if (fromScrapList && window.HScopeScrapUndo) {
       window.HScopeScrapUndo.show({key,snapshot:backup,user:CURRENT_USER,generation:AUTH_GENERATION},restoreScrap);
     } else toast("스크랩을 취소했어요");
-    if (fromEl && !fromEl.closest('#scrap-list')) window.HScopeScrapMotion?.unsave(fromEl);
+    if (fromEl && !fromScrapList) window.HScopeScrapMotion?.unsave(fromEl);
     persistScrapChange(key,null,backup);
   } else {
     window.HScopeScrapUndo?.clear(key);

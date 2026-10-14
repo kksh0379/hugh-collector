@@ -56,3 +56,10 @@ test('undo during an in-flight delete restores original order and groups, then p
 test('undo from an old account or generation cannot restore or send a request',async()=>{
  const s=setup();s.ctx.restoreScrap({key:'a',user:'bob',generation:1,snapshot:{key:'a',ts:100}});s.ctx.restoreScrap({key:'a',user:'alice',generation:0,snapshot:{key:'a',ts:100}});await tick();assert.equal(s.calls.length,0);assert.equal(s.ctx.SCRAP.a,undefined);
 });
+test('undo remains available when rendering immediately detaches the removed card',()=>{
+ const s=setup();let undo,attached=true;
+ s.ctx.window.HScopeScrapUndo={show:r=>undo=r,clear(){}};
+ s.ctx.syncScrapUI=()=>{attached=false;};s.ctx.SCRAP.a={key:'a',ts:123};
+ s.ctx.toggleScrap('a',{closest:()=>attached});
+ assert.equal(undo.key,'a');assert.deepEqual(s.motions,[]);
+});
