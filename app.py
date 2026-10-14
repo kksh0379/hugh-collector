@@ -374,8 +374,12 @@ def scrap():
         db.user_state_delete(u, key, "scrap")
     else:
         item = data.get("item") or {}
-        db.user_state_upsert(u, key, "scrap", json.dumps(item, ensure_ascii=False),
-                             int(time.time() * 1000))
+        saved = db.user_scrap_add(u, key, json.dumps(item, ensure_ascii=False),
+                                  int(time.time() * 1000))
+        if saved:
+            snapshot = json.loads(saved["snapshot"] or "{}")
+            snapshot["ts"] = saved["ts"]
+            return jsonify({"ok": True, "item": snapshot})
     return jsonify({"ok": True})
 
 

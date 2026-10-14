@@ -41,10 +41,22 @@ test('save skips DOM work when reduced motion is requested; cancellation is safe
 test('click integration keeps scrap-menu exits separate and rolls back failed save effects',()=>{
  const app=fs.readFileSync('static/js/app.js','utf8');
  assert.match(app,/!fromEl.closest\('#scrap-list'\)/);
- assert.match(app,/deferUserAction\(\(\) => toggleScrap\(key, fromEl\)\)/);
+ const toggle=app.slice(app.indexOf('function toggleScrap('),app.indexOf('function syncScrapUI'));
+ assert.doesNotMatch(toggle,/deferUserAction/);
  assert.match(app,/else window.HScopeScrapMotion\?\.cancel\(key\)/);
  assert.match(app,/syncScrapUI\(key, true\)/);
  const html=fs.readFileSync('templates/index.html','utf8');assert(html.indexOf("filename='js/scrap-motion.js'")<html.indexOf("filename='js/app.js'"));
+});
+test('paper crumple bends eight separate faces rather than scaling the whole card',async()=>{
+ function element(){return {style:{setProperty(){}},children:[],classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],cloneNode:()=>element(),appendChild(c){this.children.push(c)}};}
+ const card=element();card.getBoundingClientRect=()=>({width:300,height:160});
+ const animations=[];const window={addEventListener(){}};
+ vm.runInNewContext(source,{window,document:{addEventListener(){},createElement:()=>element()},getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'})});
+ await window.HScopeScrapMotion.crumple(card,async(frames,options,node)=>animations.push({frames,options,node}));
+ assert.equal(animations.length,8);assert.equal(card.children[0].children.length,8);
+ assert(animations.every(a=>a.node!==card&&a.options.duration===380));
+ assert.equal(new Set(animations.map(a=>a.frames[1].transform)).size,8);
+ assert(animations.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
 });
 for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
  function element(){return {style:{setProperty(){}},children:[],isConnected:true,classList:{add(){},remove(){},contains:()=>false},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],getBoundingClientRect:()=>({left:316,top:540,width:44,height:44,bottom:584}),cloneNode:()=>element(),appendChild(c){this.children.push(c)},remove(){this.isConnected=false}};}

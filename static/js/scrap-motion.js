@@ -39,6 +39,49 @@
     button.classList.add('scrap-unsaving');
     setTimeout(() => button.classList.remove('scrap-unsaving'),280);
   }
+  function styledCopy(source, rect) {
+    const copy = source.cloneNode(true);
+    const originals = [source, ...source.querySelectorAll('*')];
+    const copies = [copy, ...copy.querySelectorAll('*')];
+    originals.forEach((node,index) => {
+      const style = getComputedStyle(node);
+      for (const property of style) copies[index].style.setProperty(property,style.getPropertyValue(property));
+      copies[index].removeAttribute('id');
+      copies[index].removeAttribute('autofocus');
+      copies[index].removeAttribute('name');
+    });
+    copy.querySelectorAll('iframe,video,audio,script,.scrap-crumple-creases').forEach(node => node.remove());
+    copy.classList.remove('scrap-removing','scrap-crumpling');
+    Object.assign(copy.style,{position:'absolute',left:'0',top:'0',width:rect.width+'px',height:rect.height+'px',
+      minHeight:'0',maxWidth:'none',margin:'0',transform:'none',boxSizing:'border-box'});
+    return copy;
+  }
+  async function crumple(card, play) {
+    const rect = card.getBoundingClientRect();
+    const copy = styledCopy(card,rect);
+    const surface = document.createElement('div');
+    surface.className = 'scrap-crumple-surface';
+    surface.setAttribute('aria-hidden','true'); surface.inert = true;
+    const edge = [[0,0],[50,0],[100,0],[100,50],[100,100],[50,100],[0,100],[0,50]];
+    const facets = edge.map((p,i) => {
+      const q = edge[(i+1)%8];
+      const facet = document.createElement('div');
+      facet.className = 'scrap-paper-facet';
+      facet.style.clipPath = `polygon(50% 50%,${p[0]}% ${p[1]}%,${q[0]}% ${q[1]}%)`;
+      facet.appendChild(copy.cloneNode(true));surface.appendChild(facet);return facet;
+    });
+    card.appendChild(surface);card.classList.add('scrap-crumpling');
+    await Promise.all(facets.map((facet,i) => {
+      const angle = i*Math.PI/4, dx=Math.cos(angle),dy=Math.sin(angle);
+      const shade=i%2?'.68':'1.28';
+      return play([
+        {opacity:1,transform:'none',filter:'brightness(1)'},
+        {opacity:1,transform:`perspective(500px) rotateX(${dy*68}deg) rotateY(${-dx*68}deg) rotate(${i%2?18:-18}deg) scale(.62,.65)`,filter:`brightness(${shade})`,offset:.36},
+        {opacity:1,transform:`translate(${dx*4}px,${dy*4}px) rotate(${i*29-80}deg) scale(.14,.25)`,filter:`brightness(${shade}) drop-shadow(1px 1px 1px #0006)`,offset:.70},
+        {opacity:0,transform:`translate(${dx*4+12}px,${80+dy*4}px) rotate(${i*29-45}deg) scale(.12,.22)`,filter:`brightness(${shade})`}
+      ],{duration:380,easing:'cubic-bezier(.35,0,.7,1)'},facet);
+    }));
+  }
   function save(button) {
     if (!button || reduced()) return;
     const key = button.dataset.key;
@@ -55,20 +98,7 @@
     layer.className = 'scrap-genie';
     layer.setAttribute('aria-hidden','true');
     layer.inert = true;
-    const copy = source.cloneNode(true);
-    const originals = [source, ...source.querySelectorAll('*')];
-    const copies = [copy, ...copy.querySelectorAll('*')];
-    // Snapshot computed styles once, then reuse the styled copy in all bands.
-    originals.forEach((node, index) => {
-      const style = getComputedStyle(node);
-      for (const property of style) copies[index].style.setProperty(property, style.getPropertyValue(property));
-      copies[index].removeAttribute('id');
-      copies[index].removeAttribute('autofocus');
-      copies[index].removeAttribute('name');
-    });
-    copy.querySelectorAll('iframe,video,audio,script').forEach(node => node.remove());
-    Object.assign(copy.style,{position:'absolute',left:'0',width:rect.width+'px',height:rect.height+'px',
-      minHeight:'0',maxWidth:'none',margin:'0',transform:'none',boxSizing:'border-box'});
+    const copy = styledCopy(source,rect);
     const bands = 32, step = 1 / bands, bandHeight = rect.height / bands, slices = [];
     for (let i = 0; i < bands; i++) {
       const slice = document.createElement('div');
@@ -142,5 +172,5 @@
   document.addEventListener('visibilitychange',() => { if (document.hidden) cancelAll(); });
   window.addEventListener('pagehide',cancelAll);
   window.addEventListener('resize',cancelAll);
-  window.HScopeScrapMotion = {save,unsave,cancel};
+  window.HScopeScrapMotion = {save,unsave,cancel,crumple};
 })();

@@ -107,7 +107,7 @@ async function initAuth() {
   try { me = await (await fetch("/api/me")).json(); } catch (e) { /* 무시 */ }
   if (generation !== AUTH_GENERATION) return;
   applyAuthUI(me.user, me.admin, me.display_name);
-  if (me.user) { await loadMyData(); }
+  if (me.user) { loadMyData(); }
 }
 
 function escapeHtml(s) {
@@ -140,12 +140,34 @@ async function api(path, body, options = {}) {
 // 로그인 시 개인 데이터 로드 → 화면 반영
 let MY_DATA_REQUEST = null;
 let MY_DATA_STATE = "idle";
+let MY_DATA_HAS_SNAPSHOT = false;
+let SCRAP_REVISION = 0;
+const SCRAP_MUTATIONS = new Map();
+const SCRAP_WRITES = new Map();
+function cachePersonalData() {
+  if (!CURRENT_USER) return;
+  try {
+    sessionStorage.setItem('hscopePersonal:' + CURRENT_USER, JSON.stringify({user:CURRENT_USER,ts:Date.now(),
+      scraps:Object.values(SCRAP),reads:Array.from(READ),groups:GROUPS}));
+  } catch (_) {}
+}
+function restorePersonalData(user) {
+  try {
+    const d = JSON.parse(sessionStorage.getItem('hscopePersonal:' + user) || 'null');
+    if (!d || d.user !== user || typeof d.ts !== 'number' || Date.now()-d.ts > 86400000 || !Array.isArray(d.scraps) || !Array.isArray(d.reads) || !Array.isArray(d.groups)) return;
+    READ = new Set(d.reads); SCRAP = {};
+    d.scraps.forEach(s => { if (s && typeof s.key === 'string') SCRAP[s.key] = s; });
+    GROUPS = d.groups; MY_DATA_HAS_SNAPSHOT = true;
+    applyUserStateToDom(); updateScrapBadge();
+  } catch (_) {}
+}
 function loadMyData() {
   const user = CURRENT_USER, generation = AUTH_GENERATION;
   if (!user) return Promise.resolve(false);
   if (MY_DATA_REQUEST && MY_DATA_REQUEST.generation === generation) return MY_DATA_REQUEST.promise;
+  if (MY_DATA_STATE === 'idle') restorePersonalData(user);
   MY_DATA_STATE = "loading";
-  const request = {generation, promise:null};
+  const request = {generation, revision:SCRAP_REVISION, promise:null};
   request.promise = (async () => {
     try {
       const d = await (await fetchData("/api/mydata?auth=" + generation)).json();
@@ -153,8 +175,17 @@ function loadMyData() {
       READ = new Set(d.reads || []);
       SCRAP = {};
       (d.scraps || []).forEach((s) => { if (s.key) { s.groups = s.groups || []; SCRAP[s.key] = s; } });
+      for (const [key, change] of SCRAP_MUTATIONS) {
+        if (change.generation !== generation || change.user !== user) continue;
+        if (change.pending || change.revision > request.revision) {
+          if (change.snapshot) SCRAP[key] = change.snapshot;
+          else delete SCRAP[key];
+        } else SCRAP_MUTATIONS.delete(key);
+      }
       GROUPS = d.groups || [];
       MY_DATA_STATE = "ready";
+      MY_DATA_HAS_SNAPSHOT = true;
+      cachePersonalData();
       return true;
     } catch (e) {
       if (CURRENT_USER === user && AUTH_GENERATION === generation) {
@@ -173,6 +204,37 @@ function loadMyData() {
   })();
   MY_DATA_REQUEST = request;
   return request.promise;
+}
+function persistScrapChange(key, snapshot, backup) {
+  const user = CURRENT_USER, generation = AUTH_GENERATION;
+  const change = {user,generation,snapshot,pending:true,revision:++SCRAP_REVISION};
+  SCRAP_MUTATIONS.set(key,change);
+  const queueKey = generation + ':' + user + ':' + key;
+  let queue = SCRAP_WRITES.get(queueKey);
+  if (!queue) {
+    queue = {confirmed:backup,tail:Promise.resolve()};
+    SCRAP_WRITES.set(queueKey,queue);
+  }
+  const job = queue.tail.catch(() => {}).then(async () => {
+    if (CURRENT_USER !== user || AUTH_GENERATION !== generation) return;
+    const response = await api('/api/scrap', snapshot ? {op:'add',key,item:snapshot} : {op:'del',key});
+    queue.confirmed = snapshot && response?.item ? response.item : snapshot;
+    if (CURRENT_USER === user && AUTH_GENERATION === generation && SCRAP_MUTATIONS.get(key) === change) {
+      change.pending = false; change.snapshot = queue.confirmed;
+      if (snapshot && queue.confirmed) { SCRAP[key] = queue.confirmed; syncScrapUI(key); }
+      cachePersonalData();
+    }
+  }).catch(() => {
+    if (CURRENT_USER !== user || AUTH_GENERATION !== generation || SCRAP_MUTATIONS.get(key) !== change) return;
+    change.pending = false; change.snapshot = queue.confirmed;
+    if (queue.confirmed) SCRAP[key] = queue.confirmed;
+    else delete SCRAP[key];
+    syncScrapUI(key); cachePersonalData();
+    toast('스크랩을 저장하지 못했어요.\n다시 시도해 주세요.');
+  });
+  queue.tail = job;
+  job.finally(() => { if (queue.tail === job) SCRAP_WRITES.delete(queueKey); });
+  cachePersonalData();
 }
 function deferUserAction(action) {
   if (MY_DATA_STATE === "ready") return false;
@@ -425,13 +487,13 @@ function animateScrapRemoval(key) {
   status.className = reduced ? "scrap-removing-label" : "scrap-crumple-creases";
   status.textContent = reduced ? "스크랩 취소" : "";
   card.appendChild(status);
-  const play = async (frames, options) => {
+  const play = async (frames, options, element = card) => {
     if (token.cancelled || !card.isConnected) return;
-    if (typeof card.animate !== "function") {
+    if (typeof element.animate !== "function") {
       await new Promise(resolve => setTimeout(resolve, options.duration));
       return;
     }
-    const animation = card.animate(frames, {...options, fill: "forwards"});
+    const animation = element.animate(frames, {...options, fill: "forwards"});
     token.animations.push(animation);
     await animation.finished;
   };
@@ -442,6 +504,9 @@ function animateScrapRemoval(key) {
         await play([{opacity: 1}, {opacity: 0}], {duration: 100});
       } else {
         const height = card.getBoundingClientRect().height;
+        if (window.HScopeScrapMotion?.crumple) {
+          await window.HScopeScrapMotion.crumple(card,play);
+        } else {
         const sheet = 'polygon(0% 0%,33% 0%,66% 0%,100% 0%,100% 33%,100% 66%,100% 100%,66% 100%,33% 100%,0% 100%,0% 66%,0% 33%)';
         const crumpled = 'polygon(17% 8%,42% 0%,64% 12%,91% 7%,100% 37%,83% 57%,92% 88%,64% 96%,43% 84%,12% 95%,0% 57%,11% 36%)';
         await play([
@@ -451,6 +516,7 @@ function animateScrapRemoval(key) {
           {opacity:1,transform:'translateY(6px) rotate(9deg) scale(.12,.24)',clipPath:crumpled,borderRadius:'40%',offset:.72},
           {opacity:0,transform:'translateY(90px) rotate(32deg) scale(.09,.18)',clipPath:crumpled,borderRadius:'40%'}
         ], {duration:380,easing:'cubic-bezier(.4,0,.65,1)'});
+        }
         await play([{height: height + "px", marginBottom: getComputedStyle(card).marginBottom, paddingTop: getComputedStyle(card).paddingTop, paddingBottom: getComputedStyle(card).paddingBottom}, {height: "0px", marginBottom: "0px", paddingTop: "0px", paddingBottom: "0px", borderWidth: "0px"}], {duration: 120, easing: "cubic-bezier(.4,0,.2,1)"});
       }
     } catch (error) { /* Cancellation on rollback is expected. */ }
@@ -482,21 +548,20 @@ function toggleScrap(key, fromEl = null) {
     openLogin();
     return;
   }
-  if (deferUserAction(() => toggleScrap(key, fromEl))) return;
   const wasOn = isScrapped(key);
   if (wasOn) {
     const backup = SCRAP[key];
     delete SCRAP[key];
     syncScrapUI(key, true); toast("스크랩을 취소했어요");
     if (fromEl && !fromEl.closest('#scrap-list')) window.HScopeScrapMotion?.unsave(fromEl);
-    api("/api/scrap", { op: "del", key }).catch(() => { SCRAP[key] = backup; syncScrapUI(key); toast("저장하지 못했어요.\n다시 시도해 주세요."); });
+    persistScrapChange(key,null,backup);
   } else {
     const snap = ITEM_INDEX[key];
     if (!snap) return;
     SCRAP[key] = Object.assign({}, snap, { ts: Date.now() });
     syncScrapUI(key); toast("스크랩했어요");
     if (fromEl) flyToScrap(fromEl);
-    api("/api/scrap", { op: "add", key, item: snap }).catch(() => { delete SCRAP[key]; syncScrapUI(key); toast("저장하지 못했어요.\n다시 시도해 주세요."); });
+    persistScrapChange(key,SCRAP[key],null);
   }
 }
 function syncScrapUI(key, animateRemoval = false) {
@@ -2170,21 +2235,23 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   finally { loginSubmitting = false; submit.disabled = false; submit.textContent = label; }
   if (res && res.ok) {
     applyAuthUI(res.user, res.admin, res.display_name);
-    READ = new Set(); SCRAP = {}; GROUPS = []; MY_DATA_STATE = "idle";
+    READ = new Set(); SCRAP = {}; GROUPS = []; MY_DATA_STATE = "idle"; MY_DATA_HAS_SNAPSHOT = false;
     applyUserStateToDom(); updateScrapBadge();
     loginModal.hidden = true;
     document.getElementById("login-fields").replaceChildren();
     toast((res.display_name || (res.user === "admin" ? "관리자" : res.user)) + "님,\n로그인했어요.");
     const user = CURRENT_USER, generation = AUTH_GENERATION, key = pendingScrapKey; pendingScrapKey = null;
-    loadMyData().then(ok => { if (ok && key && CURRENT_USER === user && AUTH_GENERATION === generation) toggleScrap(key); });
+    loadMyData();
+    if (key && CURRENT_USER === user && AUTH_GENERATION === generation) toggleScrap(key);
   } else {
     loginErr.textContent = uiNoticeText((res && res.error) || "로그인하지 못했어요. 다시 시도해 주세요.");
   }
 });
 document.getElementById("logout-btn").addEventListener("click", async () => {
+  try { sessionStorage.removeItem('hscopePersonal:' + CURRENT_USER); } catch (_) {}
   try { await fetch("/api/logout", { method: "POST" }); } catch (e) { /* 무시 */ }
   applyAuthUI(null, false);
-  READ = new Set(); SCRAP = {}; GROUPS = []; MY_DATA_STATE = "idle";
+  READ = new Set(); SCRAP = {}; GROUPS = []; MY_DATA_STATE = "idle"; MY_DATA_HAS_SNAPSHOT = false;
   applyUserStateToDom(); updateScrapBadge();
   const m = document.getElementById("view-scrap");
   if (m && !m.hidden && typeof window.gotoView === "function") window.gotoView("collector");  // 스크랩 뷰였으면 뉴스로
@@ -2387,7 +2454,7 @@ function renderScrapList() {
   el.appendChild(frag);
 }
 function renderScraps() {
-  if (MY_DATA_STATE !== "ready" && isLoggedIn()) {
+  if (MY_DATA_STATE !== "ready" && !MY_DATA_HAS_SNAPSHOT && isLoggedIn()) {
     const controls = document.getElementById("scrap-controls"), list = document.getElementById("scrap-list");
     if (controls) controls.replaceChildren();
     if (list) {

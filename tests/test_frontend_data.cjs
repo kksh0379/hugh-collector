@@ -31,7 +31,7 @@ test('a slow previous location cannot overwrite the latest selection',async () =
   const pending = [];
   const state = {curLoc:{id:1},rows:[]};
   const ctx = vm.createContext({LUNCH:state, isAdmin:()=>false, $:()=>({innerHTML:''}),
-    catSpin:()=>'',renderCats:()=>{},renderList:()=>{},renderLocBar:()=>{},msg:()=>{},
+    HScopeSkeleton:{render(){}},catSpin:()=>'',renderCats:()=>{},renderList:()=>{},renderLocBar:()=>{},msg:()=>{},
     getJSON:()=>new Promise(resolve=>pending.push(resolve))});
   vm.runInContext('let restaurantSequence=0; const restaurantCache=new Map();'+source.slice(start,end),ctx);
   const first=vm.runInContext('loadRestaurants()',ctx);

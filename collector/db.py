@@ -738,9 +738,21 @@ def user_state_delete(username, ukey, kind):
                      (username, ukey, kind))
 
 
+def user_scrap_add(username, ukey, snapshot, ts):
+    """Idempotent add: an early click must not overwrite existing groups or history."""
+    with get_conn() as conn:
+        conn.execute(_q(
+            "INSERT INTO user_state (username, ukey, kind, snapshot, ts) VALUES (?,?,?,?,?) "
+            "ON CONFLICT (username, ukey, kind) DO NOTHING"),
+            (username, ukey, "scrap", snapshot, ts))
+        row = conn.execute(_q("SELECT snapshot, ts FROM user_state WHERE username=? AND ukey=? AND kind='scrap'"),
+                           (username, ukey)).fetchone()
+        return dict(row) if row else None
+
+
 def user_state_bundle(username):
     with get_conn() as conn:
-        rows = conn.execute(_q("SELECT * FROM user_state WHERE username=? ORDER BY ts DESC"), (username,)).fetchall()
+        rows = conn.execute(_q("SELECT ukey, kind, snapshot, ts FROM user_state WHERE username=? AND kind IN ('scrap','read','grouplist')"), (username,)).fetchall()
         result = {"scrap": [], "read": [], "grouplist": []}
         for row in rows:
             item = dict(row)
