@@ -300,23 +300,7 @@ function kakaoLinkHtml(url) {
 // 스크랩 담기 애니메이션(지니/알라딘 효과): 소스 요소 → 하단 '스크랩' 탭으로 빨려들어감
 function flyToScrap(fromEl) {
   try {
-    const target = document.getElementById("scrap-open-btn");
-    if (!target || !fromEl) return;
-    const a = fromEl.getBoundingClientRect(), b = target.getBoundingClientRect();
-    const g = document.createElement("div");
-    g.className = "scrap-fly"; g.innerHTML = uiIcon("bookmark");
-    g.style.left = (a.left + a.width / 2) + "px";
-    g.style.top = (a.top + a.height / 2) + "px";
-    document.body.appendChild(g);
-    const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
-    const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
-    requestAnimationFrame(() => {
-      g.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.25) rotate(20deg)`;
-      g.style.opacity = "0.15";
-    });
-    target.classList.add("scrap-pop");
-    setTimeout(() => target.classList.remove("scrap-pop"), 500);
-    setTimeout(() => g.remove(), 780);
+    window.HScopeScrapMotion?.save(fromEl);
   } catch (e) { /* 무시 */ }
 }
 async function copyToClipboard(text) {
@@ -508,6 +492,7 @@ function toggleScrap(key) {
 }
 function syncScrapUI(key, animateRemoval = false) {
   if (isScrapped(key)) cancelScrapRemoval(key);
+  else window.HScopeScrapMotion?.cancel(key);
   document.querySelectorAll('.scrap-btn[data-key]').forEach((b) => {
     if (b.dataset.key === key) updateScrapButton(b);
   });
@@ -522,9 +507,13 @@ document.addEventListener("click", (e) => {
   if (sb) {
     e.preventDefault(); e.stopPropagation();
     const key = sb.dataset.key;
-    const willAdd = isLoggedIn() && !isScrapped(key);
+    const wasOn = isScrapped(key);
+    const willAdd = isLoggedIn() && !wasOn;
     toggleScrap(key);
     if (willAdd && isScrapped(key)) flyToScrap(sb);  // 담기 애니메이션(추가될 때만)
+    else if (wasOn && !isScrapped(key) && !sb.closest('#scrap-list')) {
+      window.HScopeScrapMotion?.unsave(sb);
+    }
     return;
   }
   const a = e.target.closest('a[target="_blank"]');
