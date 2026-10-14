@@ -22,10 +22,8 @@
     cancelAnimationFrame(effect.raf);
     clearTimeout(effect.timer);
     effect.layer.remove();
+    effect.floating?.remove();
     active.delete(key);
-    if (!Array.from(active.values()).some(other => other.footer === effect.footer)) {
-      effect.footer?.classList.remove('scrap-motion-anchor');
-    }
   }
   function unsave(button) {
     if (!button) return;
@@ -76,23 +74,29 @@
       layer.appendChild(slice);
       slices.push(slice);
     }
-    // Scrolling hides the footer. Reveal it before measuring the destination,
-    // otherwise saves below the first article are skipped as offscreen.
-    const footer = target.closest('.bottombar');
-    footer?.classList.add('scrap-motion-anchor');
-    const anchor = target.getBoundingClientRect();
-    if (anchor.width <= 0 || anchor.height <= 0 || anchor.bottom <= 0 || anchor.top >= window.innerHeight) {
-      if (!Array.from(active.values()).some(other => other.footer === footer)) footer?.classList.remove('scrap-motion-anchor');
-      return;
+    // Preserve footer visibility. A temporary bookmark receives the card when
+    // the footer is hidden or its button is outside the visible viewport.
+    let anchor = target.getBoundingClientRect(), floating = null;
+    const footerHidden = document.body.classList.contains('chrome-hidden') ||
+      anchor.width <= 0 || anchor.height <= 0 || anchor.bottom <= 0 || anchor.top >= window.innerHeight;
+    if (footerHidden) {
+      floating = document.createElement('div');
+      floating.className = 'scrap-floating-receiver';
+      floating.setAttribute('aria-hidden','true');
+      floating.inert = true;
+      floating.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+      document.body.appendChild(floating);
+      anchor = floating.getBoundingClientRect();
     }
-    const destination = {x:anchor.left + anchor.width / 2,y:anchor.top + Math.min(26,anchor.height / 2)};
+    const receiver = floating || target;
+    const destination = {x:anchor.left + anchor.width / 2,y:anchor.top + (floating ? anchor.height / 2 : Math.min(26,anchor.height / 2))};
     document.body.appendChild(layer);
-    const effect = {layer,footer,raf:0,timer:0};
+    const effect = {layer,floating,raf:0,timer:0};
     active.set(key,effect);
     let start;
     const render = now => {
       if (active.get(key) !== effect) return;
-      if (reduced() || !source.isConnected || !target.isConnected) { cancel(key); return; }
+      if (reduced() || !source.isConnected || !receiver.isConnected) { cancel(key); return; }
       if (start === undefined) start = now;
       const t = Math.min(1,(now-start)/520);
       slices.forEach((slice,i) => {
@@ -101,11 +105,18 @@
       });
       if (t < 1) effect.raf = requestAnimationFrame(render);
       else {
-        cancel(key);
-        target.classList.remove('scrap-pop');
-        void target.offsetWidth;
-        target.classList.add('scrap-pop');
-        setTimeout(() => target.classList.remove('scrap-pop'),500);
+        if (floating) {
+          layer.remove();
+          floating.classList.add('received');
+          clearTimeout(effect.timer);
+          effect.timer = setTimeout(() => cancel(key),320);
+        } else {
+          cancel(key);
+          target.classList.remove('scrap-pop');
+          void target.offsetWidth;
+          target.classList.add('scrap-pop');
+          setTimeout(() => target.classList.remove('scrap-pop'),500);
+        }
       }
     };
     // Clean up even if the browser pauses animation frames in the background.
