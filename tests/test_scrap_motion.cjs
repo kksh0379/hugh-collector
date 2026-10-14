@@ -62,7 +62,7 @@ test('paper crumple deforms twelve faces into a smaller creased ball that flies 
  assert.match(ball.frames.at(-1).transform,/36px/);assert.equal(ball.frames.at(-1).opacity,0);
  assert.equal(ball.node.style.width,'40px');
  assert.equal(bin.node.className,'scrap-trash-bin');assert.equal(bin.node.style.left,'230px');assert.equal(bin.node.style.top,'104px');
- assert.match(bin.node.innerHTML,/scrap-trash-lid/);assert.equal(bin.frames[2].opacity,1);
+ assert.match(bin.node.innerHTML,/scrap-trash-filled-paper/);assert.doesNotMatch(bin.node.innerHTML,/scrap-trash-lid/);assert.equal(bin.frames[2].opacity,1);
  assert.equal(ball.node.style.left,'24px');
  const xAt=offset=>Number(ball.frames.find(f=>f.offset===offset).transform.match(/translate\(([-.0-9]+)px/)[1]);
  assert(xAt(.56)<xAt(.62)&&xAt(.62)<xAt(.70));assert.equal(xAt(.70),xAt(.75));assert(xAt(.87)<xAt(.75)&&xAt(.95)<xAt(.87));

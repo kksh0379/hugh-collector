@@ -105,9 +105,12 @@
     bin.className = 'scrap-trash-bin';
     bin.innerHTML = `<svg viewBox="0 0 54 66" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <ellipse cx="27" cy="14" rx="19" ry="6" fill="#253144" stroke="#8fa6c7" stroke-width="1.6"/>
+      <g class="scrap-trash-filled-paper">
+        ${paperBallMarkup().replace('<svg ', '<svg x="27" y="-1" width="21" height="23" ')}
+        ${paperBallMarkup().replace('<svg ', '<svg x="10" y="-10" width="30" height="32" ')}
+      </g>
       <path d="M8 15 Q27 23 46 15 L42 57 Q27 65 12 57 Z" fill="#758ba9" stroke="#bdd0ec" stroke-width="1.7"/>
       <path d="M17 29 19 53 M27 30V56 M37 29 35 53" fill="none" stroke="#d3dff0" stroke-width="2" stroke-linecap="round"/>
-      <g class="scrap-trash-lid"><path d="M20 9V5 Q27 1 34 5V9 M5 12 Q27 5 49 12" fill="none" stroke="#c4d6ef" stroke-width="3" stroke-linecap="round"/></g>
     </svg>`;
     Object.assign(bin.style,{left:binLeft+'px',top:(rect.height/2+24)+'px'});
     surface.appendChild(bin);

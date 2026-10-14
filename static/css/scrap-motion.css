@@ -10,8 +10,7 @@
 .scrap-paper-ball { position:absolute;z-index:22;pointer-events:none;opacity:0;transform-origin:center;filter:drop-shadow(2px 5px 4px #0005);will-change:transform,opacity; }
 .scrap-paper-ball svg { display:block;width:100%;height:100%;overflow:visible; }
 .scrap-trash-bin { position:absolute;width:54px;height:66px;z-index:21;pointer-events:none;opacity:0;filter:drop-shadow(0 3px 4px #0004);will-change:transform,opacity; }
-.scrap-trash-bin svg { display:block;width:100%;height:100%;overflow:visible; }
-.scrap-trash-lid { transform-box:fill-box;transform-origin:right center; }
+.scrap-trash-bin > svg { display:block;width:100%;height:100%;overflow:visible; }
 .scrap-bounce-impact { position:absolute;width:48px;height:48px;z-index:23;opacity:0;pointer-events:none;transform-origin:center;filter:drop-shadow(0 0 3px #75aaff88);will-change:transform,opacity; }
 .scrap-bounce-impact svg { display:block;width:100%;height:100%; }
 
