@@ -96,7 +96,10 @@
     const ball = document.createElement('div');
     ball.className = 'scrap-paper-ball'; ball.innerHTML = paperBallMarkup();
     const size = Math.min(40,rect.width*.16,rect.height*.3);
-    Object.assign(ball.style,{width:size+'px',height:size+'px',left:(rect.width-size)/2+'px',top:(rect.height-size)/2+'px'});
+    const ballLeft = Math.min(24,rect.width*.08), binLeft = Math.max(ballLeft+size+24,rect.width-70);
+    const foldLeft = ballLeft+size/2-rect.width/2;
+    const hitX = binLeft-10-ballLeft-size/2;
+    Object.assign(ball.style,{width:size+'px',height:size+'px',left:ballLeft+'px',top:(rect.height-size)/2+'px'});
     surface.appendChild(ball);
     const bin = document.createElement('div');
     bin.className = 'scrap-trash-bin';
@@ -106,40 +109,44 @@
       <path d="M17 29 19 53 M27 30V56 M37 29 35 53" fill="none" stroke="#d3dff0" stroke-width="2" stroke-linecap="round"/>
       <g class="scrap-trash-lid"><path d="M20 9V5 Q27 1 34 5V9 M5 12 Q27 5 49 12" fill="none" stroke="#c4d6ef" stroke-width="3" stroke-linecap="round"/></g>
     </svg>`;
-    Object.assign(bin.style,{left:(rect.width-54)/2+'px',top:(rect.height/2+40)+'px'});
+    Object.assign(bin.style,{left:binLeft+'px',top:(rect.height/2+24)+'px'});
     surface.appendChild(bin);
     card.appendChild(surface);card.classList.add('scrap-crumpling');
-    const duration = 520;
+    const duration = 600;
     const folds = facets.map((facet,i) => {
       const angle = i*Math.PI/6, dx=Math.cos(angle),dy=Math.sin(angle);
       const shade=i%3===0?'.64':i%3===1?'1.3':'.9';
       return play([
         {opacity:1,transform:'none',filter:'brightness(1)'},
         {opacity:1,transform:`translate(${dx*-9}px,${dy*-7}px) perspective(460px) rotateX(${dy*42}deg) rotateY(${-dx*48}deg) skew(${i%2?12:-15}deg) scale(.78,.83)`,filter:`brightness(${shade})`,offset:.22},
-        {opacity:1,transform:`translate(${dx*7}px,${dy*9}px) rotate(${i%2?30:-24}deg) skew(${i%2?-18:14}deg) scale(.38,.49)`,filter:`brightness(${shade}) drop-shadow(2px 1px 2px #0006)`,offset:.43},
-        {opacity:.35,transform:`translate(${dx*5}px,${dy*4}px) rotate(${i*23-90}deg) scale(.15,.23)`,filter:`brightness(${shade})`,offset:.60},
-        {opacity:0,transform:`translate(${dx*3}px,${dy*2}px) rotate(${i*23-74}deg) scale(.10,.16)`,offset:.72},
+        {opacity:1,transform:`translate(${foldLeft*.55+dx*7}px,${dy*9}px) rotate(${i%2?30:-24}deg) skew(${i%2?-18:14}deg) scale(.38,.49)`,filter:`brightness(${shade}) drop-shadow(2px 1px 2px #0006)`,offset:.36},
+        {opacity:.35,transform:`translate(${foldLeft+dx*5}px,${dy*4}px) rotate(${i*23-90}deg) scale(.15,.23)`,filter:`brightness(${shade})`,offset:.43},
+        {opacity:0,transform:`translate(${foldLeft+dx*3}px,${dy*2}px) rotate(${i*23-74}deg) scale(.10,.16)`,offset:.50},
         {opacity:0,transform:'scale(.1)'}
       ],{duration,easing:'linear'},facet);
     });
     folds.push(play([
       {opacity:0,transform:'scale(1.65,1.35) rotate(-14deg)'},
-      {opacity:0,transform:'scale(1.5,1.28) rotate(-14deg)',offset:.34},
-      {opacity:.7,transform:'scale(1.22,.95) rotate(9deg)',offset:.48},
-      {opacity:1,transform:'scale(.86,1.06) rotate(-11deg)',offset:.60},
-      {opacity:1,transform:'scale(1,.88) rotate(7deg)',offset:.69},
-      {opacity:1,transform:'translateY(4px) scale(.92,.96) rotate(-4deg)',offset:.75},
-      {opacity:1,transform:'translateY(36px) scale(.78) rotate(24deg)',offset:.85},
-      {opacity:1,transform:'translateY(72px) scale(.58) rotate(40deg)',offset:.94},
-      {opacity:0,transform:'translateY(90px) scale(.45) rotate(48deg)'}
+      {opacity:0,transform:'scale(1.5,1.28) rotate(-14deg)',offset:.28},
+      {opacity:.7,transform:'scale(1.22,.95) rotate(9deg)',offset:.36},
+      {opacity:1,transform:'scale(.86,1.06) rotate(-11deg)',offset:.43},
+      {opacity:1,transform:'translateY(8px) scale(1.10,.76) rotate(7deg)',offset:.50},
+      {opacity:1,transform:`translate(${hitX*.24}px,-34px) scale(.92,1.03) rotate(70deg)`,offset:.60},
+      {opacity:1,transform:`translate(${hitX*.65}px,-54px) scale(.92) rotate(150deg)`,offset:.69},
+      {opacity:1,transform:`translate(${hitX}px,34px) scale(.72,1.05) rotate(240deg)`,offset:.80},
+      {opacity:1,transform:`translate(${hitX-30}px,-12px) scale(.95,.88) rotate(190deg)`,offset:.89},
+      {opacity:.8,transform:`translate(${hitX-54}px,5px) scale(.90) rotate(150deg)`,offset:.96},
+      {opacity:0,transform:`translate(${hitX-66}px,36px) scale(.85) rotate(125deg)`}
     ],{duration,easing:'linear'},ball));
     folds.push(play([
       {opacity:0,transform:'translateY(6px) scale(.85)'},
-      {opacity:0,transform:'translateY(6px) scale(.85)',offset:.28},
-      {opacity:1,transform:'none',offset:.45},
-      {opacity:1,transform:'none',offset:.90},
-      {opacity:1,transform:'scale(1.07,.93)',offset:.96},
-      {opacity:0,transform:'scale(1)'}
+      {opacity:0,transform:'translateY(6px) scale(.85)',offset:.22},
+      {opacity:1,transform:'none',offset:.38},
+      {opacity:1,transform:'none',offset:.78},
+      {opacity:1,transform:'translateX(4px) rotate(7deg)',offset:.83},
+      {opacity:1,transform:'rotate(-3deg)',offset:.89},
+      {opacity:1,transform:'none',offset:.96},
+      {opacity:0,transform:'none'}
     ],{duration,easing:'linear'},bin));
     await Promise.all(folds);
   }

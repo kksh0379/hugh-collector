@@ -46,24 +46,28 @@ test('click integration keeps scrap-menu exits separate and rolls back failed sa
  assert.match(app,/syncScrapUI\(key, true\)/);
  const html=fs.readFileSync('templates/index.html','utf8');assert(html.indexOf("filename='js/scrap-motion.js'")<html.indexOf("filename='js/app.js'"));
 });
-test('paper crumple deforms twelve faces into a smaller creased ball that drops behind the trash bin',async()=>{
+test('paper crumple deforms twelve faces into a smaller creased ball that flies from the left and rebounds outside the right trash bin',async()=>{
  function element(){return {style:{setProperty(){}},children:[],classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],cloneNode:()=>element(),appendChild(c){this.children.push(c)}};}
  const card=element();card.getBoundingClientRect=()=>({width:300,height:160});
  const animations=[];const window={addEventListener(){}};
  vm.runInNewContext(source,{window,document:{addEventListener(){},createElement:()=>element()},getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'})});
  await window.HScopeScrapMotion.crumple(card,async(frames,options,node)=>animations.push({frames,options,node}));
  assert.equal(animations.length,14);assert.equal(card.children[0].children.length,14);
- assert(animations.every(a=>a.node!==card&&a.options.duration===520));
+ assert(animations.every(a=>a.node!==card&&a.options.duration===600));
  const facets=animations.slice(0,12),ball=animations[12],bin=animations[13];
  assert.equal(new Set(facets.map(a=>a.frames[1].transform)).size,12);
  assert.match(ball.node.innerHTML,/viewBox="0 0 100 100"/);
  assert.match(ball.node.innerHTML,/stroke-linejoin="round"/);
  assert.equal(ball.frames[0].opacity,0);assert.equal(ball.frames[3].opacity,1);
- assert.match(ball.frames.at(-1).transform,/90px/);assert.equal(ball.frames.at(-1).opacity,0);
+ assert.match(ball.frames.at(-1).transform,/36px/);assert.equal(ball.frames.at(-1).opacity,0);
  assert.equal(ball.node.style.width,'40px');
- assert.equal(bin.node.className,'scrap-trash-bin');assert.equal(bin.node.style.left,'123px');assert.equal(bin.node.style.top,'120px');
+ assert.equal(bin.node.className,'scrap-trash-bin');assert.equal(bin.node.style.left,'230px');assert.equal(bin.node.style.top,'104px');
  assert.match(bin.node.innerHTML,/scrap-trash-lid/);assert.equal(bin.frames[2].opacity,1);
- assert.equal(ball.frames.at(-2).opacity,1);assert.match(ball.frames.at(-2).transform,/translateY\(72px\)/);
+ assert.equal(ball.node.style.left,'24px');
+ const flight=ball.frames.slice(5).map(f=>Number(f.transform.match(/translate\(([-.0-9]+)px/)[1]));
+ assert(flight[0]<flight[1]&&flight[1]<flight[2]);assert(flight[3]<flight[2]&&flight[4]<flight[3]);
+ const centerAtHit=24+20+flight[2];assert(centerAtHit+40*.72/2<230+8);
+ assert.match(bin.frames[4].transform,/rotate\(7deg\)/);
  assert(facets.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
 });
 for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
