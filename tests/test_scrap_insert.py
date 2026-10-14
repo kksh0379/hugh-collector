@@ -27,6 +27,27 @@ class ScrapInsertTests(unittest.TestCase):
         self.assertEqual(response["item"]["groups"], ["kept"])
         self.assertEqual(response["item"]["ts"], 100)
 
+    def test_restore_route_uses_original_timestamp_and_rejects_invalid_values(self):
+        tree = ast.parse(Path("app.py").read_text())
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "scrap")
+        function.decorator_list = []
+        calls = []
+        def save(user, key, snapshot, ts):
+            calls.append(ts)
+            return {"snapshot": snapshot, "ts": ts}
+        payload = {"op": "restore", "key": "a", "item": {"key": "a", "ts": 123, "groups": ["g"]}}
+        scope = {"db": SimpleNamespace(user_scrap_add=save), "json": json, "time": SimpleNamespace(time=lambda: 1),
+                 "_current_user": lambda: "alice", "_ensure_db": lambda: True, "jsonify": lambda value: value,
+                 "request": SimpleNamespace(get_json=lambda **kwargs: payload)}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "app.py", "exec"), scope)
+        response = scope["scrap"]()
+        self.assertEqual(response["item"]["ts"], 123)
+        self.assertEqual(response["item"]["groups"], ["g"])
+        for invalid in [None, True, -1, 1001, "123"]:
+            payload["item"]["ts"] = invalid
+            self.assertEqual(scope["scrap"]()[1], 400)
+        self.assertEqual(calls, [123])
+
     def test_early_add_is_idempotent_and_preserves_groups_and_time(self):
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, "test.db")

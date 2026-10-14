@@ -39,7 +39,10 @@ let AUTH_GENERATION = 0;
 let CURRENT_USER = null;      // null=미로그인, "admin" 또는 "tester1"…
 function isLoggedIn() { return !!CURRENT_USER; }
 function applyAuthUI(user, admin, displayName) {
-  if (CURRENT_USER !== (user || null)) AUTH_GENERATION++;
+  if (CURRENT_USER !== (user || null)) {
+    AUTH_GENERATION++;
+    if (typeof window !== 'undefined') window.HScopeScrapUndo?.clear();
+  }
   CURRENT_USER = user || null;
   document.body.classList.toggle("is-admin", !!admin);
   document.body.classList.toggle("is-loggedin", !!user);
@@ -205,7 +208,7 @@ function loadMyData() {
   MY_DATA_REQUEST = request;
   return request.promise;
 }
-function persistScrapChange(key, snapshot, backup) {
+function persistScrapChange(key, snapshot, backup, restore = false) {
   const user = CURRENT_USER, generation = AUTH_GENERATION;
   const change = {user,generation,snapshot,pending:true,revision:++SCRAP_REVISION};
   SCRAP_MUTATIONS.set(key,change);
@@ -217,7 +220,7 @@ function persistScrapChange(key, snapshot, backup) {
   }
   const job = queue.tail.catch(() => {}).then(async () => {
     if (CURRENT_USER !== user || AUTH_GENERATION !== generation) return;
-    const response = await api('/api/scrap', snapshot ? {op:'add',key,item:snapshot} : {op:'del',key});
+    const response = await api('/api/scrap', snapshot ? {op:restore?'restore':'add',key,item:snapshot} : {op:'del',key});
     queue.confirmed = snapshot && response?.item ? response.item : snapshot;
     if (CURRENT_USER === user && AUTH_GENERATION === generation && SCRAP_MUTATIONS.get(key) === change) {
       change.pending = false; change.snapshot = queue.confirmed;
@@ -230,6 +233,7 @@ function persistScrapChange(key, snapshot, backup) {
     if (queue.confirmed) SCRAP[key] = queue.confirmed;
     else delete SCRAP[key];
     syncScrapUI(key); cachePersonalData();
+    window.HScopeScrapUndo?.clear(key);
     toast('스크랩을 저장하지 못했어요.\n다시 시도해 주세요.');
   });
   queue.tail = job;
@@ -540,6 +544,13 @@ function cancelScrapRemoval(key) {
 }
 
 // 스크랩 토글(로그인 필요, 서버 저장, +토스트)
+function restoreScrap(record) {
+  if (CURRENT_USER !== record.user || AUTH_GENERATION !== record.generation || !record.snapshot || isScrapped(record.key)) return;
+  const snapshot = {...record.snapshot,groups:[...(record.snapshot.groups || [])]};
+  SCRAP[record.key] = snapshot; ITEM_INDEX[record.key] = snapshot;
+  syncScrapUI(record.key); toast('스크랩을 복원했어요');
+  persistScrapChange(record.key,snapshot,null,true);
+}
 function toggleScrap(key, fromEl = null) {
   if (!key || SCRAP_REMOVALS.has(key)) return;
   if (!isLoggedIn()) {            // 미로그인 → 로그인 유도(로그인 후 이어서 스크랩)
@@ -552,10 +563,14 @@ function toggleScrap(key, fromEl = null) {
   if (wasOn) {
     const backup = SCRAP[key];
     delete SCRAP[key];
-    syncScrapUI(key, true); toast("스크랩을 취소했어요");
+    syncScrapUI(key, true);
+    if (fromEl?.closest('#scrap-list') && window.HScopeScrapUndo) {
+      window.HScopeScrapUndo.show({key,snapshot:backup,user:CURRENT_USER,generation:AUTH_GENERATION},restoreScrap);
+    } else toast("스크랩을 취소했어요");
     if (fromEl && !fromEl.closest('#scrap-list')) window.HScopeScrapMotion?.unsave(fromEl);
     persistScrapChange(key,null,backup);
   } else {
+    window.HScopeScrapUndo?.clear(key);
     const snap = ITEM_INDEX[key];
     if (!snap) return;
     SCRAP[key] = Object.assign({}, snap, { ts: Date.now() });

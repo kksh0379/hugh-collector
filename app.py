@@ -360,7 +360,7 @@ def scrap_groups():
 
 @app.post("/api/scrap")
 def scrap():
-    """스크랩 추가/삭제. body: {op:'add'|'del', key, item?}. 미로그인=401."""
+    """스크랩 추가/삭제/실행 취소. body: {op:'add'|'del'|'restore', key, item?}."""
     u = _current_user()
     if not u:
         return jsonify({"error": "unauthorized"}), 401
@@ -374,8 +374,14 @@ def scrap():
         db.user_state_delete(u, key, "scrap")
     else:
         item = data.get("item") or {}
+        saved_at = int(time.time() * 1000)
+        if data.get("op") == "restore":
+            original_ts = item.get("ts")
+            if not isinstance(original_ts, int) or isinstance(original_ts, bool) or not 0 < original_ts <= saved_at:
+                return jsonify({"ok": False, "error": "복원할 저장 시각이 올바르지 않아요"}), 400
+            saved_at = original_ts
         saved = db.user_scrap_add(u, key, json.dumps(item, ensure_ascii=False),
-                                  int(time.time() * 1000))
+                                  saved_at)
         if saved:
             snapshot = json.loads(saved["snapshot"] or "{}")
             snapshot["ts"] = saved["ts"]
