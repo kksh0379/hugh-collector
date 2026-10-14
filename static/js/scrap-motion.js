@@ -40,7 +40,10 @@
     const key = button.dataset.key;
     cancel(key);
     const target = document.getElementById('scrap-open-btn');
-    const source = button.closest('.card') || button;
+    // All scrappable containers carry data-key, including restaurant cards.
+    // Start at the parent because the bookmark button also has data-key.
+    const source = button.parentElement?.closest('[data-key]') ||
+      button.closest('.card,.lunch-card,.finance-news-item') || button;
     if (!target || !source.isConnected) return;
     const rect = source.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;

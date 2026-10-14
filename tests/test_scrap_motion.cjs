@@ -37,18 +37,20 @@ test('click integration keeps scrap-menu exits separate and rolls back failed sa
  assert.match(app,/syncScrapUI\(key, true\)/);
  const html=fs.readFileSync('templates/index.html','utf8');assert(html.indexOf("filename='js/scrap-motion.js'")<html.indexOf("filename='js/app.js'"));
 });
-for(const hidden of [false,true])test(`genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its copy`,()=>{
+for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
  function element(){return {style:{setProperty(){}},children:[],isConnected:true,classList:{add(){},remove(){},contains:()=>false},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],getBoundingClientRect:()=>({left:316,top:540,width:44,height:44,bottom:584}),cloneNode:()=>element(),appendChild(c){this.children.push(c)},remove(){this.isConnected=false}};}
  const sourceCard=element();sourceCard.getBoundingClientRect=()=>({left:10,top:40,width:300,height:200,bottom:240});
  let footerWrites=0;const footer=element();footer.classList={add(){footerWrites++},remove(){footerWrites++}};
  footer.getBoundingClientRect=()=>({left:310,top:hidden?700:540,width:60,height:60,bottom:hidden?760:600});
- const button={dataset:{key:'one'},closest:()=>sourceCard};
+ sourceCard.className=kind;
+ const button={dataset:{key:'one'},parentElement:{closest(selector){assert.equal(selector,'[data-key]');return sourceCard;}},closest:()=>null};
  const body=element(),events={},frames=new Map(),timers=[];let id=0;body.classList.contains=()=>hidden;
  const window={innerHeight:650,matchMedia:()=>({matches:false}),addEventListener:(k,f)=>events[k]=f};
  const document={body,addEventListener:(k,f)=>events[k]=f,getElementById:()=>footer,createElement:()=>element()};
  vm.runInNewContext(source,{window,document,getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'}),requestAnimationFrame:fn=>{frames.set(++id,fn);return id},cancelAnimationFrame:()=>{},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length},clearTimeout(){}});
  const run=t=>{const fn=frames.get(id);fn(t)};
  window.HScopeScrapMotion.save(button);assert.equal(body.children.length,hidden?2:1);const layer=body.children.at(-1);assert.equal(layer.children.length,32);
+ assert.equal(layer.children[0].style.width,'300px'); // full card, never the 36px bookmark button
  run(0);run(260);run(520);assert.equal(layer.isConnected,false);assert.equal(sourceCard.isConnected,true);assert.equal(sourceCard.style.transform,undefined);
  if(hidden){assert.equal(body.children[0].isConnected,true);assert.equal(timers.at(-1).ms,320);timers.at(-1).fn();assert.equal(body.children[0].isConnected,false);}
  window.HScopeScrapMotion.save(button);const last=body.children.at(-1);window.HScopeScrapMotion.cancel('one');assert.equal(last.isConnected,false);assert.equal(sourceCard.isConnected,true);
