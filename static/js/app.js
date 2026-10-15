@@ -2420,7 +2420,7 @@ function scrapCardNode(s) {
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
   li.innerHTML = `
     ${scrapBtnHtml(s.key)}
-    <div class="card-main">${newsThumb(s, true)}<div class="card-body">
+    <div class="card-main"><div class="card-body">
       <h3 class="card-title">${newBadgeHtml(s.date)}${titleHtml}</h3>
       <div class="card-meta">${meta.join(" · ")}</div>
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}

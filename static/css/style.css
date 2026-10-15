@@ -941,8 +941,7 @@ body.modal-open { overflow: hidden; }
 #view-scrap.scrap-album .card-actions { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;order:2;margin-top:auto;padding-top:12px; }
 #view-scrap.scrap-album .card-actions > :is(a,button) { display:inline-flex;align-items:center;justify-content:center;gap:4px;width:100%;min-width:0;height:36px;min-height:36px;margin:0;padding:0 4px;font-size:12px;white-space:nowrap; }
 #view-scrap.scrap-album .grp-assign-panel { order:1; }
-#view-scrap.scrap-album .card-title { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:normal;padding-right:0; }
-#view-scrap.scrap-album .card-thumb { height:auto;aspect-ratio:16 / 9; }
+#view-scrap.scrap-album .card-title { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:normal;padding-right:42px; }
 #view-scrap.scrap-album .card-summary { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden; }
 #scrap-list > :is(.empty,.empty-msg) { grid-column:1 / -1; }
 body.view-list #scrap-list :is(.grp-chips,.grp-assign-panel) { display:none; }
