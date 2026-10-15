@@ -585,15 +585,17 @@ body:not(.is-admin) #result-count { display: none; }
 .runlog-detail { font-size: 12px; color: #4b5563; margin-top: 2px; word-break: break-word; }
 
 /* 리스트 뷰: 제목 한 줄(…)만 보이게 간소화 */
-body.view-list .card { display: grid; align-items: center; min-height: 54px; padding: 11px 13px; margin-bottom: 6px; border-radius: var(--r-sm); }
+body.view-list .card { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; min-width: 0; min-height: 54px; padding: 11px 13px; margin-bottom: 6px; border-radius: var(--r-sm); }
 body.view-list .card-thumb,
 body.view-list .card-meta,
 body.view-list .card-summary,
 body.view-list .card-actions,
 body.view-list .accordion-toggle,
 body.view-list .accordion-body { display: none !important; }
-body.view-list .card-main { display: block; gap: 0; }
+body.view-list .card-main { display: block; min-width: 0; max-width: 100%; gap: 0; }
 body.view-list .card-title {
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
   font-size: 14px;
   font-weight: 600;
