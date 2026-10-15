@@ -934,8 +934,13 @@ body.modal-open { overflow: hidden; }
 .scrap-list { list-style: none; margin: 0; padding: 0; }
 .scrap-head { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
 #scrap-view-toggle { height:36px;flex:0 0 auto; }
-#view-scrap.scrap-album #scrap-list { display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px;align-items:start; }
-#view-scrap.scrap-album .card { min-width:0;margin-bottom:0; }
+#view-scrap.scrap-album #scrap-list { display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px;align-items:stretch; }
+#view-scrap.scrap-album .card { display:flex;flex-direction:column;min-width:0;margin-bottom:0; }
+#view-scrap.scrap-album .card-main { flex:1;min-width:0; }
+#view-scrap.scrap-album .card-body { display:flex;flex-direction:column;flex:1;min-width:0; }
+#view-scrap.scrap-album .card-actions { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;order:2;margin-top:auto;padding-top:12px; }
+#view-scrap.scrap-album .card-actions > :is(a,button) { display:inline-flex;align-items:center;justify-content:center;gap:4px;width:100%;min-width:0;height:36px;min-height:36px;margin:0;padding:0 4px;font-size:12px;white-space:nowrap; }
+#view-scrap.scrap-album .grp-assign-panel { order:1; }
 #view-scrap.scrap-album .card-title { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:normal;padding-right:0; }
 #view-scrap.scrap-album .card-thumb { height:auto;aspect-ratio:16 / 9; }
 #view-scrap.scrap-album .card-summary { display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden; }
