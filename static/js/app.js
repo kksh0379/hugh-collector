@@ -132,6 +132,8 @@ let GROUPS = [];          // 커스텀 그룹 [{id,name}]
 let pendingScrapKey = null;  // 미로그인 상태에서 스크랩 시도 → 로그인 후 이어서 처리
 let scrapQuery = "";      // 나의 스크랩 검색어
 let scrapFilterGroup = "all";  // 활성 그룹 필터(all 또는 group id)
+let scrapViewMode = "album";
+try { if (localStorage.getItem("scrapView") === "list") scrapViewMode = "list"; } catch (_) {}
 // 게시글 고유키: 원문/URL 기준
 function keyOf(it) { return String(it.url || it.source_url || it.title || "").trim(); }
 function isRead(k) { return READ.has(k); }
@@ -433,6 +435,10 @@ function toast(msg) {
       else x.removeAttribute("aria-current");
     });
     Object.keys(views).forEach((k) => { if (views[k]) views[k].hidden = (k !== n); });
+    if (n !== "scrap") {
+      if (activeTab() === "event") syncEventViewControls();
+      else applyViewClasses(newsViewMode);
+    }
     // 맛집 하위 뷰(후기/AI 추천)는 항상 닫고 대메뉴로 복귀
     ["view-lunch-reviews", "view-lunch-ai"].forEach((id) => { const e = document.getElementById(id); if (e) e.hidden = true; });
     if (n === "videos" && window.onShowVideos) window.onShowVideos();
@@ -627,6 +633,7 @@ document.querySelectorAll(".tab").forEach((tab) => {
 // ----------------------------- 보기 방식(리스트/카드) -----------------------------
 let newsViewMode = "card";
 function applyViewClasses(mode) {
+  if (document.getElementById("view-scrap")?.hidden === false) mode = scrapViewMode;
   document.body.classList.toggle("view-list", mode === "list");
   document.body.classList.toggle("view-card", mode !== "list");
 }
@@ -2413,7 +2420,7 @@ function scrapCardNode(s) {
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
   li.innerHTML = `
     ${scrapBtnHtml(s.key)}
-    <div class="card-main"><div class="card-body">
+    <div class="card-main">${newsThumb(s, true)}<div class="card-body">
       <h3 class="card-title">${newBadgeHtml(s.date)}${titleHtml}</h3>
       <div class="card-meta">${meta.join(" · ")}</div>
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
@@ -2539,6 +2546,8 @@ async function deleteGroupFlow(gid) {
 }
 // 나의 스크랩 팝업 내 상호작용(위임)
 document.addEventListener("click", (e) => {
+  const viewButton = e.target.closest("#scrap-view-toggle button");
+  if (viewButton) { setScrapView(viewButton.dataset.scrapView); return; }
   const chip = e.target.closest(".scrap-chip");
   if (chip) { scrapFilterGroup = chip.dataset.gid; renderScraps(); return; }
   if (e.target.closest(".scrap-chip-add")) { createGroupFlow(null); return; }
@@ -2557,8 +2566,21 @@ document.addEventListener("input", (e) => {
   if (e.target && e.target.id === "scrap-search") { scrapQuery = e.target.value.trim(); renderScrapList(); }
 });
 // 스크랩 본문 뷰가 열릴 때 데이터 렌더(footnav에서 호출). 로그인 필요.
+function setScrapView(mode) {
+  scrapViewMode = mode === "list" ? "list" : "album";
+  const view = document.getElementById("view-scrap");
+  view?.classList.toggle("scrap-album", scrapViewMode === "album");
+  document.querySelectorAll("#scrap-view-toggle button").forEach(button => {
+    const selected = button.dataset.scrapView === scrapViewMode;
+    button.classList.toggle("active",selected);
+    button.setAttribute("aria-pressed",String(selected));
+  });
+  if (view?.hidden === false) applyViewClasses(scrapViewMode);
+  try { localStorage.setItem("scrapView",scrapViewMode); } catch (_) {}
+}
 function onShowScrap() {
   scrapFilterGroup = "all"; scrapQuery = "";
+  setScrapView(scrapViewMode);
   renderScraps();
 }
 updateScrapBadge();
