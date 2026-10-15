@@ -46,14 +46,15 @@ test('click integration keeps scrap-menu exits separate and rolls back failed sa
  assert.match(app,/syncScrapUI\(key, true\)/);
  const html=fs.readFileSync('templates/index.html','utf8');assert(html.indexOf("filename='js/scrap-motion.js'")<html.indexOf("filename='js/app.js'"));
 });
-test('paper crumple deforms twelve faces into a smaller creased ball that flies from the left and rebounds outside the right trash bin',async()=>{
+test('paper crumple deforms twelve faces into a smaller creased ball that bounces along a bounded floor and rebounds outside the right trash bin',async()=>{
  function element(){return {style:{setProperty(){}},children:[],classList:{add(){},remove(){}},setAttribute(){},removeAttribute(){},querySelectorAll:()=>[],cloneNode:()=>element(),appendChild(c){this.children.push(c)}};}
  const card=element();card.getBoundingClientRect=()=>({width:300,height:160});
  const animations=[];const window={addEventListener(){}};
  vm.runInNewContext(source,{window,document:{addEventListener(){},createElement:()=>element()},getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'})});
  await window.HScopeScrapMotion.crumple(card,async(frames,options,node)=>animations.push({frames,options,node}));
- assert.equal(animations.length,15);assert.equal(card.children[0].children.length,15);
- assert(animations.every(a=>a.node!==card&&a.options.duration===1000));
+ assert.equal(animations.length,18);assert.equal(card.children[0].children.length,18);
+ assert(animations.every(a=>a.node!==card));
+ assert.equal(animations[12].options.duration,1570);assert(animations.slice(0,12).every(a=>a.options.duration===760));
  const facets=animations.slice(0,12),ball=animations[12],bin=animations[13],impact=animations[14];
  assert.equal(new Set(facets.map(a=>a.frames[1].transform)).size,12);
  assert.match(ball.node.innerHTML,/viewBox="0 0 100 100"/);
@@ -61,15 +62,19 @@ test('paper crumple deforms twelve faces into a smaller creased ball that flies 
  assert.equal(ball.frames[0].opacity,0);assert.equal(ball.frames[3].opacity,1);
  assert.match(ball.frames.at(-1).transform,/36px/);assert.equal(ball.frames.at(-1).opacity,0);
  assert.equal(ball.node.style.width,'40px');
- assert.equal(bin.node.className,'scrap-trash-bin');assert.equal(bin.node.style.left,'230px');assert.equal(bin.node.style.top,'104px');
+ assert.equal(bin.node.className,'scrap-trash-bin');assert.equal(bin.node.style.left,'230px');assert.equal(bin.node.style.top,'68px');
  assert.match(bin.node.innerHTML,/scrap-trash-filled-paper/);assert.doesNotMatch(bin.node.innerHTML,/scrap-trash-lid/);assert.equal(bin.frames[2].opacity,1);
  assert.equal(ball.node.style.left,'24px');
- const xAt=offset=>Number(ball.frames.find(f=>f.offset===offset).transform.match(/translate\(([-.0-9]+)px/)[1]);
- assert(xAt(.56)<xAt(.62)&&xAt(.62)<xAt(.70));assert.equal(xAt(.70),xAt(.75));assert(xAt(.87)<xAt(.75)&&xAt(.95)<xAt(.87));
- const centerAtHit=24+20+xAt(.70);assert(centerAtHit+40*.55/2<230+8);
+ const impactIndex=ball.frames.findIndex(f=>f.transform.includes('scale(0.55,1.14)'));
+ const x=frame=>Number(frame.transform.match(/translate\(([-.0-9]+)px/)[1]);
+ assert(impactIndex>20);assert.equal(x(ball.frames[impactIndex]),x(ball.frames[impactIndex+1]));
+ assert(x(ball.frames[impactIndex+2])<x(ball.frames[impactIndex]));
+ assert(24+20+x(ball.frames[impactIndex])+40*.55/2<230+8);
  assert.match(bin.frames[4].transform,/rotate\(9deg\)/);
- assert.equal(impact.node.className,'scrap-bounce-impact');assert.equal(impact.frames[1].opacity,0);assert.equal(impact.frames[2].opacity,1);assert.equal(impact.frames[2].offset,.71);
+ assert.equal(impact.node.className,'scrap-bounce-impact');assert.equal(impact.frames[1].opacity,0);assert.equal(impact.frames[2].opacity,1);
+ assert(impact.frames[1].offset<ball.frames[impactIndex].offset&&impact.frames[2].offset>ball.frames[impactIndex].offset);
  assert.match(impact.node.innerHTML,/<circle/);assert.equal(impact.frames.at(-1).opacity,0);
+ assert.equal(animations[15].node.className,'scrap-bounce-ground');assert.equal(animations.filter(a=>a.node.className==='scrap-floor-pulse').length,2);
  assert(facets.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
 });
 for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
@@ -94,4 +99,32 @@ for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of 
  window.HScopeScrapMotion.save(button);const last=body.children.at(-1);window.HScopeScrapMotion.cancel('one');assert.equal(last.isConnected,false);assert.equal(sourceCard.isConnected,true);
  window.HScopeScrapMotion.save(button);document.hidden=true;events.visibilitychange();assert(body.children.every(c=>!c.isConnected));
  assert.equal(footerWrites,hidden?0:2); // visible receiver pop only; hidden footer is never mutated
+});
+
+test('desktop and mobile crumple layouts stay centered, visible, and within a 420px stage',()=>{
+ const ctx=vm.createContext({});vm.runInContext(geometry,ctx);
+ for(const width of [184,320,768,1440,2560]){
+   const rect={left:20,top:160,width:width-40,height:80},g=ctx.crumpleGeometry(rect,{width,height:900});
+   assert(g.hitX<=296);assert(g.ballLeft>=0);assert(g.binLeft+54<=rect.width);assert(g.size>=23&&g.size<=40);
+   if(width>=768) assert.equal(g.hitX,296);
+   assert.equal(20+g.binLeft+70-(Math.min(420,rect.width))/2,width/2);
+ }
+ for(const rect of [{left:20,top:-300,width:1000,height:800},{left:20,top:600,width:1000,height:400}]){
+   const g=ctx.crumpleGeometry(rect,{width:1200,height:800});
+   assert(rect.top+g.centerY>=80&&rect.top+g.centerY<=680);
+ }
+});
+test('floor hops keep the same travel speed as distance grows and touch the ground repeatedly',()=>{
+ const ctx=vm.createContext({});vm.runInContext(geometry,ctx);let previous=0;
+ for(const width of [200,300,420,1440]){
+   const g=ctx.crumpleGeometry({left:0,top:100,width,height:160},{width,height:800}),p=ctx.floorBouncePlan(g);
+   assert(p.travel>=previous);previous=p.travel;assert(g.hitX/p.travel*1000<=220.0001);
+   assert(p.hops>=2);assert.equal(p.floorHits.length,p.hops);
+   const travel=p.samples.filter(s=>s.time>=420&&s.time<=p.hitTime);
+   assert.equal(travel.filter(s=>Math.abs(s.y+s.sy*g.size/2-54)<.001).length,p.hops+1);
+   for(const hit of p.floorHits){assert(p.samples.some(s=>s.time===hit.time&&Math.abs(s.y+s.sy*g.size/2-54)<.001&&s.sy<1));}
+   for(let i=1;i<travel.length;i++){
+     const speed=(travel[i].x-travel[i-1].x)/(travel[i].time-travel[i-1].time)*1000;assert(speed<=220.0001);
+   }
+ }
 });

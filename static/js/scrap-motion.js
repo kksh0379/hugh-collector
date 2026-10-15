@@ -20,6 +20,47 @@
     const center = anchor.width > 0 ? anchor.left + anchor.width / 2 : viewportWidth - 44;
     return Math.max(16, Math.min(viewportWidth - 72, center - 28));
   }
+  function crumpleGeometry(rect, viewport) {
+    const left = rect.left || 0, top = rect.top || 0;
+    const visibleLeft = Math.max(0,left), visibleRight = Math.min(viewport.width,left+rect.width);
+    const available = Math.max(0,visibleRight-visibleLeft), width = Math.min(420,available);
+    const stageLeft = visibleLeft-left+(available-width)/2;
+    const size = Math.min(40,width*.16);
+    const ballLeft = stageLeft+Math.min(24,width*.08), binLeft = stageLeft+width-70;
+    const visibleTop = Math.max(0,top), visibleBottom = Math.min(viewport.height,top+rect.height);
+    const centerY = Math.max(80,Math.min(viewport.height-120,(visibleTop+visibleBottom)/2))-top;
+    const hitX = Math.max(0,binLeft-10-ballLeft-size/2);
+    return {size,ballLeft,binLeft,centerY,hitX,arc:Math.min(54,hitX*.3),rebound:Math.min(80,hitX*.65)};
+  }
+  function floorBouncePlan({hitX,arc,rebound,size}) {
+    const start = 420, travel = Math.max(640,hitX/220*1000);
+    const hops = Math.max(2,Math.min(4,Math.round(hitX/85)));
+    const hitTime = start+travel, duration = hitTime+350, samples = [];
+    const add = (time,x,y,sx,sy,rotation,opacity=1) => samples.push({time,x,y,sx,sy,rotation,opacity});
+    add(0,0,0,1.65,1.35,-14,0); add(220,0,0,1.5,1.28,-14,0);
+    add(300,0,0,1.22,.95,9,.7); add(380,0,0,.86,1.06,-11);
+    const floor = 54, restingY = floor-size/2;
+    add(start,0,floor-size*.76/2,1.12,.76,7);
+    const floorHits = [{time:start,x:0}];
+    for (let hop=0;hop<hops;hop++) {
+      const height = arc*(1-hop*.18);
+      for (let step=1;step<=10;step++) {
+        const u = step/10, landed = step===10, last = hop===hops-1 && landed;
+        const sx = last ? .55 : landed ? 1.12 : .94, sy = last ? 1.14 : landed ? .76 : 1.04;
+        const x = hitX*(hop+u)/hops, y = landed ? floor-size*sy/2 : restingY-4*height*u*(1-u);
+        add(start+travel*(hop+u)/hops,x,y,sx,sy,120*(hop+u));
+      }
+      if (hop<hops-1) floorHits.push({time:start+travel*(hop+1)/hops,x:hitX*(hop+1)/hops});
+    }
+    add(hitTime+50,hitX,34,.72,1.05,120*hops);
+    add(hitTime+200,hitX-rebound*.525,-arc*.445,1.04,.9,120*hops-60);
+    add(hitTime+290,hitX-rebound*.85,-arc*.093,.95,.95,120*hops-100,.9);
+    add(duration,hitX-rebound,36,.9,.9,120*hops-125,0);
+    return {duration,hitTime,travel,hops,floorHits,samples,frames:samples.map(p=>({
+      opacity:p.opacity,offset:p.time/duration,
+      transform:`translate(${p.x}px,${p.y}px) scale(${p.sx},${p.sy}) rotate(${p.rotation}deg)`
+    }))};
+  }
   function cancel(key) {
     const effect = active.get(key);
     if (!effect) return;
@@ -95,11 +136,13 @@
     });
     const ball = document.createElement('div');
     ball.className = 'scrap-paper-ball'; ball.innerHTML = paperBallMarkup();
-    const size = Math.min(40,rect.width*.16,rect.height*.3);
-    const ballLeft = Math.min(24,rect.width*.08), binLeft = Math.max(ballLeft+size+24,rect.width-70);
+    const {size,ballLeft,binLeft,centerY,hitX,arc,rebound} = crumpleGeometry(rect,{
+      width:document.documentElement?.clientWidth || window.innerWidth || rect.width,
+      height:window.innerHeight || 800
+    });
     const foldLeft = ballLeft+size/2-rect.width/2;
-    const hitX = binLeft-10-ballLeft-size/2;
-    Object.assign(ball.style,{width:size+'px',height:size+'px',left:ballLeft+'px',top:(rect.height-size)/2+'px'});
+    const foldTop = centerY-rect.height/2;
+    Object.assign(ball.style,{width:size+'px',height:size+'px',left:ballLeft+'px',top:(centerY-size/2)+'px'});
     surface.appendChild(ball);
     const bin = document.createElement('div');
     bin.className = 'scrap-trash-bin';
@@ -112,59 +155,66 @@
       <path d="M8 15 Q27 23 46 15 L42 57 Q27 65 12 57 Z" fill="#758ba9" stroke="#bdd0ec" stroke-width="1.7"/>
       <path d="M17 29 19 53 M27 30V56 M37 29 35 53" fill="none" stroke="#d3dff0" stroke-width="2" stroke-linecap="round"/>
     </svg>`;
-    Object.assign(bin.style,{left:binLeft+'px',top:(rect.height/2+24)+'px'});
+    Object.assign(bin.style,{left:binLeft+'px',top:(centerY-12)+'px'});
     surface.appendChild(bin);
     const impact = document.createElement('div');
     impact.className = 'scrap-bounce-impact';
     impact.innerHTML = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="24" cy="24" r="13" fill="none" stroke="#b9d7ff" stroke-width="1.8"/><path d="M24 3V10 M24 38V45 M3 24H10 M38 24H45 M9 9 14 14 M34 34 39 39 M9 39 14 34 M34 14 39 9" fill="none" stroke="#d9eaff" stroke-width="2.8" stroke-linecap="round"/><path d="m24 16 2 6 6 2-6 2-2 6-2-6-6-2 6-2Z" fill="#ffe1a0"/></svg>`;
-    Object.assign(impact.style,{left:(binLeft-19)+'px',top:(rect.height/2+10)+'px'});
+    Object.assign(impact.style,{left:(binLeft-19)+'px',top:(centerY+10)+'px'});
     surface.appendChild(impact);
     card.appendChild(surface);card.classList.add('scrap-crumpling');
-    const duration = 1000;
+    const plan = floorBouncePlan({hitX,arc,rebound,size});
+    const {duration,hitTime} = plan;
+    const at = ms => ms/duration;
     const folds = facets.map((facet,i) => {
       const angle = i*Math.PI/6, dx=Math.cos(angle),dy=Math.sin(angle);
       const shade=i%3===0?'.64':i%3===1?'1.3':'.9';
       return play([
         {opacity:1,transform:'none',filter:'brightness(1)'},
         {opacity:1,transform:`translate(${dx*-9}px,${dy*-7}px) perspective(460px) rotateX(${dy*42}deg) rotateY(${-dx*48}deg) skew(${i%2?12:-15}deg) scale(.78,.83)`,filter:`brightness(${shade})`,offset:.22},
-        {opacity:1,transform:`translate(${foldLeft*.55+dx*7}px,${dy*9}px) rotate(${i%2?30:-24}deg) skew(${i%2?-18:14}deg) scale(.38,.49)`,filter:`brightness(${shade}) drop-shadow(2px 1px 2px #0006)`,offset:.36},
-        {opacity:.35,transform:`translate(${foldLeft+dx*5}px,${dy*4}px) rotate(${i*23-90}deg) scale(.15,.23)`,filter:`brightness(${shade})`,offset:.43},
-        {opacity:0,transform:`translate(${foldLeft+dx*3}px,${dy*2}px) rotate(${i*23-74}deg) scale(.10,.16)`,offset:.50},
+        {opacity:1,transform:`translate(${foldLeft*.55+dx*7}px,${foldTop*.55+dy*9}px) rotate(${i%2?30:-24}deg) skew(${i%2?-18:14}deg) scale(.38,.49)`,filter:`brightness(${shade}) drop-shadow(2px 1px 2px #0006)`,offset:.36},
+        {opacity:.35,transform:`translate(${foldLeft+dx*5}px,${foldTop+dy*4}px) rotate(${i*23-90}deg) scale(.15,.23)`,filter:`brightness(${shade})`,offset:.43},
+        {opacity:0,transform:`translate(${foldLeft+dx*3}px,${foldTop+dy*2}px) rotate(${i*23-74}deg) scale(.10,.16)`,offset:.50},
         {opacity:0,transform:'scale(.1)'}
-      ],{duration,easing:'linear'},facet);
+      ],{duration:760,easing:'linear'},facet);
     });
+    folds.push(play(plan.frames,{duration,easing:'linear'},ball));
     folds.push(play([
-      {opacity:0,transform:'scale(1.65,1.35) rotate(-14deg)'},
-      {opacity:0,transform:'scale(1.5,1.28) rotate(-14deg)',offset:.28},
-      {opacity:.7,transform:'scale(1.22,.95) rotate(9deg)',offset:.36},
-      {opacity:1,transform:'scale(.86,1.06) rotate(-11deg)',offset:.43},
-      {opacity:1,transform:'translateY(8px) scale(1.10,.76) rotate(7deg)',offset:.50},
-      {opacity:1,transform:`translate(${hitX*.24}px,-34px) scale(.92,1.03) rotate(70deg)`,offset:.56},
-      {opacity:1,transform:`translate(${hitX*.65}px,-54px) scale(.92) rotate(150deg)`,offset:.62},
-      {opacity:1,transform:`translate(${hitX}px,34px) scale(.55,1.14) rotate(240deg)`,offset:.70},
-      {opacity:1,transform:`translate(${hitX}px,34px) scale(.72,1.05) rotate(240deg)`,offset:.75},
-      {opacity:1,transform:`translate(${hitX-42}px,-24px) scale(1.04,.90) rotate(180deg)`,offset:.87},
-      {opacity:.9,transform:`translate(${hitX-68}px,-5px) scale(.95) rotate(140deg)`,offset:.95},
-      {opacity:0,transform:`translate(${hitX-80}px,36px) scale(.90) rotate(115deg)`}
-    ],{duration,easing:'linear'},ball));
-    folds.push(play([
-      {opacity:0,transform:'translateY(6px) scale(.85)'},
-      {opacity:0,transform:'translateY(6px) scale(.85)',offset:.22},
-      {opacity:1,transform:'none',offset:.38},
-      {opacity:1,transform:'none',offset:.69},
-      {opacity:1,transform:'translateX(5px) rotate(9deg)',offset:.73},
-      {opacity:1,transform:'rotate(-4deg)',offset:.81},
-      {opacity:1,transform:'none',offset:.96},
-      {opacity:0,transform:'none'}
+      {opacity:0,transform:'translateY(6px) scale(.85)',offset:0},
+      {opacity:0,transform:'translateY(6px) scale(.85)',offset:at(160)},
+      {opacity:1,transform:'none',offset:at(320)},
+      {opacity:1,transform:'none',offset:at(hitTime)},
+      {opacity:1,transform:'translateX(5px) rotate(9deg)',offset:at(hitTime+40)},
+      {opacity:1,transform:'rotate(-4deg)',offset:at(hitTime+120)},
+      {opacity:1,transform:'none',offset:at(duration-40)},
+      {opacity:0,transform:'none',offset:1}
     ],{duration,easing:'linear'},bin));
     folds.push(play([
-      {opacity:0,transform:'scale(.4)'},
-      {opacity:0,transform:'scale(.4)',offset:.695},
-      {opacity:1,transform:'scale(.65)',offset:.71},
-      {opacity:.9,transform:'scale(1.15)',offset:.79},
-      {opacity:0,transform:'scale(1.55)',offset:.91},
-      {opacity:0,transform:'scale(1.55)'}
+      {opacity:0,transform:'scale(.4)',offset:0},
+      {opacity:0,transform:'scale(.4)',offset:at(hitTime-5)},
+      {opacity:1,transform:'scale(.65)',offset:at(hitTime+10)},
+      {opacity:.9,transform:'scale(1.15)',offset:at(hitTime+90)},
+      {opacity:0,transform:'scale(1.55)',offset:at(hitTime+210)},
+      {opacity:0,transform:'scale(1.55)',offset:1}
     ],{duration,easing:'linear'},impact));
+    const ground = document.createElement('div');
+    ground.className = 'scrap-bounce-ground';
+    Object.assign(ground.style,{left:(ballLeft-8)+'px',top:(centerY+54)+'px',width:(binLeft+62-ballLeft)+'px'});
+    surface.appendChild(ground);
+    folds.push(play([{opacity:0,offset:0},{opacity:.65,offset:at(380)},
+      {opacity:.65,offset:at(duration-80)},{opacity:0,offset:1}],{duration,easing:'linear'},ground));
+    plan.floorHits.forEach(hit => {
+      const pulse = document.createElement('div'); pulse.className = 'scrap-floor-pulse';
+      Object.assign(pulse.style,{left:(ballLeft+size/2+hit.x-14)+'px',top:(centerY+49)+'px'});
+      surface.appendChild(pulse);
+      folds.push(play([
+        {opacity:0,transform:'scale(.4)',offset:0},
+        {opacity:0,transform:'scale(.4)',offset:at(hit.time-2)},
+        {opacity:1,transform:'scale(.75)',offset:at(hit.time+12)},
+        {opacity:0,transform:'scale(1.65)',offset:at(hit.time+160)},
+        {opacity:0,transform:'scale(1.65)',offset:1}
+      ],{duration,easing:'linear'},pulse));
+    });
     await Promise.all(folds);
   }
   function save(button) {
