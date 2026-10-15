@@ -197,24 +197,6 @@
       {opacity:0,transform:'scale(1.55)',offset:at(hitTime+210)},
       {opacity:0,transform:'scale(1.55)',offset:1}
     ],{duration,easing:'linear'},impact));
-    const ground = document.createElement('div');
-    ground.className = 'scrap-bounce-ground';
-    Object.assign(ground.style,{left:(ballLeft-8)+'px',top:(centerY+54)+'px',width:(binLeft+62-ballLeft)+'px'});
-    surface.appendChild(ground);
-    folds.push(play([{opacity:0,offset:0},{opacity:.65,offset:at(380)},
-      {opacity:.65,offset:at(duration-80)},{opacity:0,offset:1}],{duration,easing:'linear'},ground));
-    plan.floorHits.forEach(hit => {
-      const pulse = document.createElement('div'); pulse.className = 'scrap-floor-pulse';
-      Object.assign(pulse.style,{left:(ballLeft+size/2+hit.x-14)+'px',top:(centerY+49)+'px'});
-      surface.appendChild(pulse);
-      folds.push(play([
-        {opacity:0,transform:'scale(.4)',offset:0},
-        {opacity:0,transform:'scale(.4)',offset:at(hit.time-2)},
-        {opacity:1,transform:'scale(.75)',offset:at(hit.time+12)},
-        {opacity:0,transform:'scale(1.65)',offset:at(hit.time+160)},
-        {opacity:0,transform:'scale(1.65)',offset:1}
-      ],{duration,easing:'linear'},pulse));
-    });
     await Promise.all(folds);
   }
   function save(button) {

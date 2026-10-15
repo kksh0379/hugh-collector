@@ -52,7 +52,7 @@ test('paper crumple deforms twelve faces into a smaller creased ball that bounce
  const animations=[];const window={addEventListener(){}};
  vm.runInNewContext(source,{window,document:{addEventListener(){},createElement:()=>element()},getComputedStyle:()=>Object.assign(['color'],{getPropertyValue:()=> '#fff'})});
  await window.HScopeScrapMotion.crumple(card,async(frames,options,node)=>animations.push({frames,options,node}));
- assert.equal(animations.length,18);assert.equal(card.children[0].children.length,18);
+ assert.equal(animations.length,15);assert.equal(card.children[0].children.length,15);
  assert(animations.every(a=>a.node!==card));
  assert.equal(animations[12].options.duration,1570);assert(animations.slice(0,12).every(a=>a.options.duration===760));
  const facets=animations.slice(0,12),ball=animations[12],bin=animations[13],impact=animations[14];
@@ -74,7 +74,7 @@ test('paper crumple deforms twelve faces into a smaller creased ball that bounce
  assert.equal(impact.node.className,'scrap-bounce-impact');assert.equal(impact.frames[1].opacity,0);assert.equal(impact.frames[2].opacity,1);
  assert(impact.frames[1].offset<ball.frames[impactIndex].offset&&impact.frames[2].offset>ball.frames[impactIndex].offset);
  assert.match(impact.node.innerHTML,/<circle/);assert.equal(impact.frames.at(-1).opacity,0);
- assert.equal(animations[15].node.className,'scrap-bounce-ground');assert.equal(animations.filter(a=>a.node.className==='scrap-floor-pulse').length,2);
+ assert(!card.children[0].children.some(node=>['scrap-bounce-ground','scrap-floor-pulse'].includes(node.className)));
  assert(facets.every(a=>a.node.style.clipPath.startsWith('polygon(')&&a.frames.at(-1).opacity===0));
 });
 for(const kind of ['card','lunch-card','finance-news-item'])for(const hidden of [false,true])test(`${kind}: genie uses ${hidden?'floating icon without revealing footer':'visible footer'} and cleans up its full card copy`,()=>{
