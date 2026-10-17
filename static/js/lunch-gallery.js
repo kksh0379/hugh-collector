@@ -9,7 +9,7 @@
     try { const u = new URL(value); return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.href : ""; } catch (_) { return ""; }
   }
   function photoUrls(data) {
-    if (data?.status !== "verified" || data.verification !== "business_name_address" || !safeUrl(data.source_url)) return [];
+    if (!["verified", "search_result"].includes(data?.status) || !safeUrl(data.source_url)) return [];
     return [...new Set((data.images || [data.image_url]).map(safeUrl).filter(Boolean))].slice(0, 3);
   }
   function draw(element, data) {
@@ -18,7 +18,7 @@
       element.innerHTML = `<div class="lunch-photo-empty">${data?.status === "pending" ? "매장 사진 검색 중…" : data?.status === "search_blocked" ? "확인 가능한 매장 사진이 아직 없어요" : "확인된 매장 사진이 없어요"}</div>`;
       return;
     }
-    element.innerHTML = `<div class="lunch-photo-rail" tabindex="0" role="region" aria-label="매장 사진 · 좌우로 넘기기">${urls.map((url, i) => `<img src="${escape(url)}" alt="${escape(element.getAttribute("aria-label"))} ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`).join("")}</div><div class="lunch-photo-caption"><a href="${escape(safeUrl(data.source_url))}" target="_blank" rel="noopener noreferrer">사진 출처 · ${escape(data.source_name)}</a>${urls.length > 1 ? `<span class="lunch-photo-controls"><button type="button" data-photo-step="-1" aria-label="이전 사진">‹</button><span>${urls.length}장 · 좌우로 넘기기</span><button type="button" data-photo-step="1" aria-label="다음 사진">›</button></span>` : ""}</div>`;
+    element.innerHTML = `<div class="lunch-photo-rail" tabindex="0" role="region" aria-label="매장 사진 · 좌우로 넘기기">${urls.map((url, i) => `<img src="${escape(url)}" alt="${escape(element.getAttribute("aria-label"))} ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`).join("")}</div><div class="lunch-photo-caption"><a href="${escape(safeUrl(data.source_url))}" target="_blank" rel="noopener noreferrer">${data.status === "search_result" ? "이미지 검색 결과 · 매장 사진 여부 미확인" : "사진 출처"} · ${escape(data.source_name)}</a>${urls.length > 1 ? `<span class="lunch-photo-controls"><button type="button" data-photo-step="-1" aria-label="이전 사진">‹</button><span>${urls.length}장 · 좌우로 넘기기</span><button type="button" data-photo-step="1" aria-label="다음 사진">›</button></span>` : ""}</div>`;
     element.querySelectorAll("img").forEach(img => img.addEventListener("error", () => {
       img.hidden = true;
       if (![...element.querySelectorAll("img")].some(item => !item.hidden)) element.innerHTML = '<div class="lunch-photo-empty">사진을 불러올 수 없어요</div>';
