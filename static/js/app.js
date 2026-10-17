@@ -3552,7 +3552,6 @@ function lunchLocationLabel(location) {
     const info2 = [phone, checked].filter(Boolean).join(" · ");
     return `<li class="lunch-card${r.excluded ? " is-ex" : ""}" data-id="${r.id}" data-key="${escapeHtml(key)}">
       ${scrapBtnHtml(key)}
-      <div class="lunch-gallery" data-gallery-id="${r.id}" aria-label="${escapeHtml(r.name)} 매장 사진"><div class="lunch-photo-empty">확인된 매장 사진이 없어요</div></div>
       <div class="lc-top">
         <div class="lname">${escapeHtml(r.name || "이름 미상")}</div>
         <span class="lcat">${escapeHtml(sub)}</span>
@@ -3581,7 +3580,6 @@ function lunchLocationLabel(location) {
       ? `<li class="lunch-loading">이 주변에는 아직 평점·후기가 등록된 맛집이 없어요.<br>전체 목록에서 맛집을 확인하고 방문 후 후기를 남겨 주세요.</li>`
       : `<li class="lunch-loading">조건에 맞는 식당이 없어요</li>`; return; }
     list.innerHTML = fs.map(lunchCard).join("");
-    window.HScopeLunchGallery?.mount(list);
   }
 
   function rowById(id) { return LUNCH.rows.find((r) => String(r.id) === String(id)); }
