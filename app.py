@@ -27,7 +27,6 @@ from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
 from collector.video_library import bp as video_library_bp
 from collector.read_cache import ReadCache
-from collector import lunch_images
 
 _PUBLIC_READS = ReadCache()
 _LOCATION_READS = ReadCache(max_entries=1, workers=1)
@@ -972,21 +971,6 @@ def lunch_restaurants():
 _GPS_JOBS = {}
 _GPS_LOCK = threading.Lock()
 
-
-@app.post("/api/lunch/images")
-def lunch_image_batch():
-    data = request.get_json(silent=True) or {}
-    ids = data.get("ids") if isinstance(data, dict) else None
-    if not isinstance(ids, list) or not 1 <= len(ids) <= 12 or any(type(i) is not int or i <= 0 for i in ids):
-        return jsonify({"error": "맛집 번호를 최대 12개까지 지정해 주세요."}), 400
-    if not _ensure_db(force=True):
-        return jsonify({"error": "데이터 연결이 지연되고 있어요."}), 503
-    try:
-        response = jsonify({"images": lunch_images.lookup(list(dict.fromkeys(ids)))})
-        response.headers["Cache-Control"] = "private, no-store"
-        return response
-    except Exception:
-        return jsonify({"error": "사진을 확인하지 못했어요. 맛집 목록은 계속 이용할 수 있어요."}), 503
 
 
 def _lunch_gps_input(data):
