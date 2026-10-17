@@ -27,6 +27,7 @@ from collector.reader import bp as reader_bp
 from collector.finance import bp as finance_bp
 from collector.video_library import bp as video_library_bp
 from collector.read_cache import ReadCache
+from collector import lunch_images
 
 _PUBLIC_READS = ReadCache()
 _LOCATION_READS = ReadCache(max_entries=1, workers=1)
@@ -866,7 +867,6 @@ def _lunch_decorate(loc, rows):
         d["walk_min"] = lunch.walk_minutes(dist)
         d["avg_rating"] = round(r["avg_rating"], 1) if r.get("avg_rating") is not None else None
         out.append(d)
-    out.sort(key=lambda x: (x["dist_m"] is None, x["dist_m"] or 0))  # 가까운 순 기본
     return out
 
 
@@ -939,6 +939,9 @@ def lunch_locations():
 @app.get("/api/lunch/restaurants")
 def lunch_restaurants():
     loc_id = request.args.get("loc", type=int)
+    walk = request.args.get("walk", default=10, type=int)
+    if walk not in (5, 10, 15, 20):
+        return jsonify({"error": "도보 시간은 5·10·15·20분 중 선택해 주세요."}), 400
     if not loc_id:
         return jsonify({"restaurants": [], "error": "위치 없음"}), 400
     admin = _admin_ok()  # capture before the cache worker leaves request context
@@ -950,9 +953,15 @@ def lunch_restaurants():
         if not loc:
             return {"restaurants": [], "error": "위치 없음"}
         _lunch_geocode_bg([loc])
-        return {"location": loc, "restaurants": _lunch_decorate(loc, rows)}
+        covered = False
+        if loc.get("lat") is not None and loc.get("lng") is not None:
+            rows, covered = db.lunch_nearby_restaurants(loc["lat"], loc["lng"], walk * 67, admin)
+        else:
+            rows = []  # No coordinates means walking range cannot be verified.
+        return {"location": loc, "restaurants": _lunch_decorate(loc, rows),
+                "download_needed": not covered, "kakao": lunch.has_key()}
 
-    data = _PUBLIC_READS.get(f"lunch:restaurants:{loc_id}:{int(admin)}", load, ttl=30, wait=.15)
+    data = _PUBLIC_READS.get(f"lunch:restaurants:{loc_id}:{int(admin)}:{walk}", load, ttl=30, wait=.15)
     response = jsonify(data if data is not None else {"restaurants": [], "db_waking": True})
     response.headers["Cache-Control"] = "private, no-store"
     if data is None:
@@ -964,13 +973,29 @@ _GPS_JOBS = {}
 _GPS_LOCK = threading.Lock()
 
 
+@app.post("/api/lunch/images")
+def lunch_image_batch():
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids") if isinstance(data, dict) else None
+    if not isinstance(ids, list) or not 1 <= len(ids) <= 12 or any(type(i) is not int or i <= 0 for i in ids):
+        return jsonify({"error": "맛집 번호를 최대 12개까지 지정해 주세요."}), 400
+    if not _ensure_db(force=True):
+        return jsonify({"error": "데이터 연결이 지연되고 있어요."}), 503
+    try:
+        response = jsonify({"images": lunch_images.lookup(list(dict.fromkeys(ids)))})
+        response.headers["Cache-Control"] = "private, no-store"
+        return response
+    except Exception:
+        return jsonify({"error": "사진을 확인하지 못했어요. 맛집 목록은 계속 이용할 수 있어요."}), 503
+
+
 def _lunch_gps_input(data):
     try:
         lat, lng = float(data.get("lat")), float(data.get("lng"))
         radius = float(data.get("radius", 500))
         if not all(math.isfinite(v) for v in (lat, lng, radius)) or not (33 <= lat <= 39 and 124 <= lng <= 132):
             raise ValueError()
-        if radius not in (500, 1000, 2000):
+        if radius not in (335, 670, 1005, 1340, 500, 1000, 2000):
             raise ValueError()
         return {"id": "gps", "name": "내 위치", "lat": lat, "lng": lng, "radius": int(radius)}
     except (TypeError, ValueError, OverflowError):
@@ -1395,9 +1420,17 @@ def lunch_recommend():
         loc = _lunch_geocode_if_needed(db.lunch_get_location(loc_id)) if loc_id else None
         if not loc:
             return jsonify({"ok": False, "error": "위치 없음"}), 400
-        cands = _lunch_decorate(loc, db.lunch_list_restaurants(loc_id))
+        if "radius" in d and loc.get("lat") is not None and loc.get("lng") is not None:
+            try:
+                search = _lunch_gps_input({**d, "lat": loc["lat"], "lng": loc["lng"]})
+            except ValueError as error:
+                return jsonify({"ok": False, "error": str(error)}), 400
+            rows, _ = db.lunch_nearby_restaurants(loc["lat"], loc["lng"], search["radius"])
+        else:
+            rows = db.lunch_list_restaurants(loc_id)
+        cands = _lunch_decorate(loc, rows)
     ids = d.get("candidate_ids")
-    if ids:
+    if isinstance(ids, list):
         idset = set(ids)
         cands = [c for c in cands if c["id"] in idset]
     user = _cur_user()

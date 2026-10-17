@@ -25,7 +25,7 @@ test('malformed or ineligible server picks are rejected, including alternate ite
   assert.equal(r.pick.name,'한식집');assert.equal(r.tags.length,0);assert.equal(r.alternatives[0].name,'국수집');assert.equal(r.alternatives.length,1);
 });
 test('recommendation network failure still renders a real fallback result',async()=>{
-  const rendered=[]; const c=ctx({recommendationRequest:0,previousRecommendationId:null,LUNCH:{curLoc:{id:9},rows,aiPersona:''},showView:()=>{},$:()=>({innerHTML:''}),foodSlotHtml:()=>'',gatherConditions:()=>({avoid_cats:['한식'],moods:[]}),settleFoodSlot:async()=>{},renderRecommend:r=>rendered.push(r)});
+  const rendered=[]; const c=ctx({recommendationRequest:0,previousRecommendationId:null,LUNCH:{curLoc:{id:9},rows,aiPersona:''},filtered:()=>rows,gpsPayload:()=>({radius:670}),showView:()=>{},$:()=>({innerHTML:''}),foodSlotHtml:()=>'',gatherConditions:()=>({avoid_cats:['한식'],moods:[]}),settleFoodSlot:async()=>{},renderRecommend:r=>rendered.push(r)});
   c.requestLunchRecommendation=async()=>{throw Error('offline')};
   vm.runInContext(source.slice(source.indexOf('  async function runRecommend()'),source.indexOf('  function renderRecommend(res)')),c);
   await c.runRecommend();assert.equal(rendered[0].ok,true);assert.equal(rendered[0].pick.id,2);

@@ -63,6 +63,30 @@ class NearbyTests(unittest.TestCase):
     def test_invalid_coordinates_do_not_reach_database(self):
         for lat,lng,radius in [('NaN',127,500),(999,127,500),(37.58,127,-1),(37.58,127,'NaN')]:
             self.assertEqual(self.client.post('/api/lunch/nearby',json={'lat':lat,'lng':lng,'radius':radius}).status_code,400)
+    def test_walking_ranges_work_for_gps_and_fixed_locations(self):
+        db.lunch_set_location_coords(1,37.58,127)
+        db.lunch_save_nearby(37.58,127,1500,[dict(self.old,place_id='further',name='먼 식당',lat=37.588)])
+        for minutes, expected in [(5,1),(10,1),(15,2),(20,2)]:
+            web._invalidate_lunch_cache()
+            data=self.client.get(f'/api/lunch/restaurants?loc=1&walk={minutes}').get_json()
+            self.assertEqual(len(data['restaurants']),expected)
+            gps=self.client.post('/api/lunch/nearby',json={'lat':37.58,'lng':127,'radius':minutes*67}).get_json()
+            self.assertEqual(len(gps['restaurants']),expected)
+        self.assertEqual(self.client.get('/api/lunch/restaurants?loc=1&walk=7').status_code,400)
+    def test_fixed_recommendation_includes_downloaded_rows_and_empty_candidates_stay_empty(self):
+        db.lunch_set_location_coords(1,37.58,127)
+        db.lunch_save_nearby(37.58,127,1500,[dict(self.old,place_id='new-rec',name='신규 식당',lat=37.588)])
+        rid=next(row['id'] for row in db.lunch_nearby_restaurants(37.58,127,1340)[0] if row['place_id']=='new-rec')
+        data=self.client.post('/api/lunch/recommend',json={'loc_id':1,'radius':1340,'candidate_ids':[rid]}).get_json()
+        self.assertTrue(data['ok']);self.assertEqual(data['pick']['id'],rid)
+        data=self.client.post('/api/lunch/recommend',json={'loc_id':1,'radius':1340,'candidate_ids':[]}).get_json()
+        self.assertFalse(data['ok'])
+    def test_image_endpoint_is_bounded_and_uses_existing_restaurant_ids(self):
+        with patch.object(web.lunch_images,'lookup',return_value={str(self.rid):{'status':'unverified'}}) as lookup:
+            for body in [[],{'ids':[]},{'ids':[True]},{'ids':['1']},{'ids':list(range(1,14))}]:
+                self.assertEqual(self.client.post('/api/lunch/images',json=body).status_code,400)
+            self.assertEqual(self.client.post('/api/lunch/images',json={'ids':[self.rid,self.rid]}).status_code,200)
+            lookup.assert_called_once_with([self.rid])
     def test_worker_failure_does_not_save_coverage_or_change_existing(self):
         before=db.lunch_get_restaurant(self.rid)
         web._GPS_JOBS['test']={'running':True}

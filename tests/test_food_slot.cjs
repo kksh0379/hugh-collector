@@ -39,7 +39,7 @@ test('reduced motion shows the completed host without introducing a delay', asyn
 });
 test('late recommendation responses cannot replace a newer recommendation', async () => {
   const pending = [], rendered = [];
-  const ctx = vm.createContext({recommendationRequest:0,previousRecommendationId:null,usableLunchRecommendation:r=>r,LUNCH:{curLoc:{id:1},rows:[{id:1}],aiPersona:''},showView:()=>{},$:()=>({innerHTML:''}),foodSlotHtml:()=>'',gatherConditions:()=>({avoid_cats:[],moods:[]}),requestLunchRecommendation:()=>new Promise(resolve=>pending.push(resolve)),settleFoodSlot:async()=>{},renderRecommend:r=>rendered.push(r.pick.name)});
+  const ctx = vm.createContext({recommendationRequest:0,previousRecommendationId:null,usableLunchRecommendation:r=>r,LUNCH:{curLoc:{id:1},rows:[{id:1}],aiPersona:''},filtered:()=>[{id:1}],gpsPayload:()=>({radius:670}),showView:()=>{},$:()=>({innerHTML:''}),foodSlotHtml:()=>'',gatherConditions:()=>({avoid_cats:[],moods:[]}),requestLunchRecommendation:()=>new Promise(resolve=>pending.push(resolve)),settleFoodSlot:async()=>{},renderRecommend:r=>rendered.push(r.pick.name)});
   vm.runInContext(source.slice(source.indexOf('  async function runRecommend()'), source.indexOf('  function renderRecommend(res)')), ctx);
   const first = ctx.runRecommend(), second = ctx.runRecommend();
   pending[1]({ok:true,pick:{name:'new',cat_norm:'한식'}}); await second;

@@ -3075,7 +3075,13 @@ function lunchLocationLabel(location) {
 (function initLunch() {
   let recommendationRequest = 0;
   let previousRecommendationId = null;
-  const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", reviewedOnly: false, poll: null };
+  const LUNCH = { inited: false, locs: [], curLoc: null, rows: [], cat: "전체", q: "", reviewedOnly: false, poll: null, walkMin: 10, sort: "random" };
+  const randomRanks = new Map();
+  function rankRestaurants(rows) {
+    rows.forEach(r => { if (!randomRanks.has(String(r.id))) randomRanks.set(String(r.id), Math.random()); });
+    return rows;
+  }
+  function walkLabel(radius = LUNCH.walkMin * 67) { return `예상 도보 ${Math.min(20, Math.max(5, Math.round(radius / 335) * 5))}분 이내`; }
   const $ = (id) => document.getElementById(id);
 
   function isAdmin() { return document.body.classList.contains("is-admin"); }
@@ -3105,7 +3111,7 @@ function lunchLocationLabel(location) {
     if (Array.isArray(saved)) recentLocations = saved.filter((location) =>
       location && Number.isFinite(location.lat) && Number.isFinite(location.lng)
       && location.lat >= 33 && location.lat <= 39 && location.lng >= 124 && location.lng <= 132
-      && [500, 1000, 2000].includes(location.radius) && Number.isFinite(location.usedAt)
+      && [335, 670, 1005, 1340, 500, 1000, 2000].includes(location.radius) && Number.isFinite(location.usedAt)
       && typeof location.name === "string" && ["gps", "address"].includes(location.source))
       .sort((a, b) => b.usedAt - a.usedAt).slice(0, 20);
   } catch (_) {}
@@ -3132,7 +3138,7 @@ function lunchLocationLabel(location) {
       saveRecentLocations(); renderLocBar();
       const confirmation = $("lunch-download-dialog");
       if (confirmation?.open && LUNCH.curLoc?.id === "gps" && recentLocationKey(LUNCH.curLoc) === key) {
-        $("lunch-download-desc").textContent = `${lunchLocationLabel(LUNCH.curLoc)} 반경 ${LUNCH.curLoc.radius}m의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 그대로 유지하고, 없는 맛집만 추가해요.`;
+        $("lunch-download-desc").textContent = `${lunchLocationLabel(LUNCH.curLoc)} ${walkLabel()}의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 유지하고, 없는 맛집만 추가해요.`;
       }
     })();
     addressLookups.set(key, lookup);
@@ -3158,7 +3164,7 @@ function lunchLocationLabel(location) {
     recentLocations = recentLocations.filter((item) => recentLocationKey(item) !== key);
     recentLocations.unshift({id: "gps", source: location.source === "address" ? "address" : "gps",
       name: location.name || "내 위치", address: location.address || "", addressStatus: location.addressStatus || "",
-      lat: location.lat, lng: location.lng, radius: location.radius || 500, usedAt: Date.now()});
+      lat: location.lat, lng: location.lng, radius: LUNCH.walkMin * 67, usedAt: Date.now()});
     recentLocations = recentLocations.slice(0, 20);
     saveRecentLocations();
   }
@@ -3170,13 +3176,14 @@ function lunchLocationLabel(location) {
       const label = lunchLocationLabel(location);
       const time = new Intl.DateTimeFormat("ko-KR", {month:"numeric", day:"numeric",
         hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Asia/Seoul"}).format(new Date(location.usedAt));
-      return `<div class="lunch-recent-row"><button type="button" class="lunch-loc-item${on ? " on" : ""}" data-recent-key="${escapeHtml(key)}">${uiIcon("pin")} ${escapeHtml(label)}<span class="lli-sub">${location.source === "address" ? "주소 지정" : "GPS"} · ${escapeHtml(time)} · 반경 ${location.radius}m${on ? " · 선택됨" : ""}</span></button><button type="button" class="lunch-recent-delete" data-delete-recent="${escapeHtml(key)}" aria-label="${escapeHtml(label)} 최근 위치 삭제" title="최근 위치 삭제">×</button></div>`;
+      return `<div class="lunch-recent-row"><button type="button" class="lunch-loc-item${on ? " on" : ""}" data-recent-key="${escapeHtml(key)}">${uiIcon("pin")} ${escapeHtml(label)}<span class="lli-sub">${location.source === "address" ? "주소 지정" : "GPS"} · ${escapeHtml(time)} · ${walkLabel(location.radius)}${on ? " · 선택됨" : ""}</span></button><button type="button" class="lunch-recent-delete" data-delete-recent="${escapeHtml(key)}" aria-label="${escapeHtml(label)} 최근 위치 삭제" title="최근 위치 삭제">×</button></div>`;
     }).join("");
   }
   async function selectRecentLocation(location) {
     ++gpsSequence; gpsLocating = false;
     const confirmation = $("lunch-download-dialog"); if (confirmation?.open) confirmation.close();
     LUNCH.curLoc = {...location};
+    LUNCH.walkMin = Math.min(20, Math.max(5, Math.round((location.radius || 670) / 335) * 5));
     LUNCH.cat = "전체"; LUNCH.q = ""; LUNCH.reviewedOnly = false; LUNCH.downloadNeeded = false;
     const search = $("lunch-search"); if (search) search.value = "";
     rememberRecentLocation(); closeLocMenu(); renderLocBar(); resolveGpsAddress(LUNCH.curLoc); await loadNearby(true);
@@ -3248,18 +3255,18 @@ function lunchLocationLabel(location) {
   function renderLocBar() {
     const nameEl = $("lunch-loc-name"), radEl = $("lunch-loc-radius"), menu = $("lunch-loc-menu");
     if (nameEl) nameEl.textContent = LUNCH.curLoc ? lunchLocationLabel(LUNCH.curLoc) : (LUNCH.locLoading ? "불러오는 중…" : (LUNCH.locFailed ? "연결 실패" : "위치"));
-    if (radEl) radEl.textContent = LUNCH.curLoc ? ((LUNCH.curLoc.radius || 500) + "m") : "";
+    if (radEl) radEl.textContent = LUNCH.curLoc ? walkLabel() : "";
     const gps = LUNCH.curLoc?.id === "gps";
-    const tools = $("lunch-gps-tools"); if (tools) tools.hidden = !gps;
+    const tools = $("lunch-gps-tools"); if (tools) tools.hidden = false;
     const radius = $("lunch-gps-radius");
-    if (radius) { if (gps) radius.value = String(LUNCH.curLoc.radius); radius.disabled = gpsDownloading || gpsLocating; }
+    if (radius) { radius.value = String(LUNCH.walkMin * 67); radius.disabled = gpsDownloading || gpsLocating; }
     renderGpsButton($("lunch-gps-refresh"), "위치 다시 확인", gpsLocating, "위치 확인 중");
-    if ($("lunch-gps-refresh")) $("lunch-gps-refresh").hidden = LUNCH.curLoc?.source === "address";
+    if ($("lunch-gps-refresh")) $("lunch-gps-refresh").hidden = !gps || LUNCH.curLoc?.source === "address";
     if (gpsDownloading && $("lunch-gps-refresh")) $("lunch-gps-refresh").disabled = true;
     const download = $("lunch-gps-download");
     if (download) {
       download.textContent = "주변 맛집 다운로드";
-      download.hidden = !LUNCH.downloadNeeded || gpsDownloading;
+      download.hidden = !LUNCH.downloadNeeded || gpsDownloading || !LUNCH.curLoc?.lat;
       download.disabled = gpsLocating;
     }
     const downloadStatus = $("lunch-gps-download-status");
@@ -3279,7 +3286,7 @@ function lunchLocationLabel(location) {
     menu.innerHTML = gpsItem + renderRecentLocations() + `<div class="lunch-loc-heading">기본 위치</div>` + LUNCH.locs.map((l) => {
       const on = LUNCH.curLoc && l.id === LUNCH.curLoc.id;
       return `<button type="button" class="lunch-loc-item${on ? " on" : ""}" data-id="${l.id}">`
-        + `${uiIcon("pin")} ${escapeHtml(lunchLocationLabel(l))}<span class="lli-sub">반경 ${l.radius || 500}m${on ? " · 선택됨" : ""}</span></button>`;
+        + `${uiIcon("pin")} ${escapeHtml(lunchLocationLabel(l))}<span class="lli-sub">${walkLabel()}${on ? " · 선택됨" : ""}</span></button>`;
     }).join("");
   }
   function closeLocMenu() { const m = $("lunch-loc-menu"); if (m) m.hidden = true; }
@@ -3290,8 +3297,9 @@ function lunchLocationLabel(location) {
     if (LUNCH.curLoc.id === "gps") return loadNearby();
     const locId = LUNCH.curLoc.id;
     const sequence = ++restaurantSequence;
-    const key = locId + ":" + isAdmin();
+    const key = locId + ":" + isAdmin() + ":" + LUNCH.walkMin;
     const cached = restaurantCache.get(key);
+    if (cached) rankRestaurants(cached.rows);
     const list = $("lunch-list");
     LUNCH.rows = useCache && cached ? cached.rows : [];
     if (useCache && cached) {
@@ -3301,10 +3309,11 @@ function lunchLocationLabel(location) {
       HScopeSkeleton.render(list,"food",{label:"맛집 목록을 불러오는 중이에요."});
     }
     try {
-      const d = await getJSON("/api/lunch/restaurants?loc=" + locId);
+      const d = await getJSON("/api/lunch/restaurants?loc=" + locId + "&walk=" + LUNCH.walkMin);
       if (sequence !== restaurantSequence || LUNCH.curLoc?.id !== locId) return;
       if (d.error) throw new Error(d.error);
-      LUNCH.rows = d.restaurants || [];
+      LUNCH.rows = rankRestaurants(d.restaurants || []);
+      LUNCH.downloadNeeded = !!d.download_needed; LUNCH.kakao = !!d.kakao;
       restaurantCache.set(key, {rows: LUNCH.rows, at: Date.now()});
       if (d.location) { LUNCH.curLoc = {...LUNCH.curLoc, ...d.location}; renderLocBar(); }
       renderCats(); renderList();
@@ -3328,10 +3337,10 @@ function lunchLocationLabel(location) {
     }
   }
   function gpsPayload(loc = LUNCH.curLoc) {
-    return {lat: loc.lat, lng: loc.lng, radius: loc.radius || 500};
+    return {lat: loc.lat, lng: loc.lng, radius: LUNCH.walkMin * 67};
   }
   function gpsKey(loc = LUNCH.curLoc) {
-    return loc?.id === "gps" ? `${loc.lat}:${loc.lng}:${loc.radius}` : "";
+    return loc ? `${loc.id}:${loc.lat}:${loc.lng}:${LUNCH.walkMin}` : "";
   }
   function openAddressSearch() {
     closeLocMenu();
@@ -3404,7 +3413,7 @@ function lunchLocationLabel(location) {
       const data = await gpsApi("/api/lunch/nearby", gpsPayload(loc));
       if (sequence !== restaurantSequence || key !== gpsKey()) return;
       if (data.error) throw new Error(data.error);
-      LUNCH.rows = data.restaurants || [];
+      LUNCH.rows = rankRestaurants(data.restaurants || []);
       LUNCH.downloadNeeded = !!data.download_needed;
       LUNCH.kakao = !!data.kakao;
       renderLocBar(); renderCats(); renderList();
@@ -3419,24 +3428,24 @@ function lunchLocationLabel(location) {
     }
   }
   function confirmGpsDownload() {
-    if (LUNCH.curLoc?.id !== "gps" || gpsDownloading) return;
+    if (!LUNCH.curLoc?.lat || gpsDownloading) return;
     if (!LUNCH.kakao) { toast("현재 맛집 다운로드를 이용할 수 없어요."); return; }
     const dialog = $("lunch-download-dialog");
     if (!dialog || typeof dialog.showModal !== "function") {
       if (confirm("선택한 위치 주변의 맛집 정보를 다운로드할까요?\n\n기존 맛집과 리뷰·방문기록은 그대로 유지돼요.")) downloadGps();
       return;
     }
-    $("lunch-download-desc").textContent = `${lunchLocationLabel(LUNCH.curLoc)} 반경 ${LUNCH.curLoc.radius}m의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 그대로 유지하고, 없는 맛집만 추가해요.`;
+    $("lunch-download-desc").textContent = `${lunchLocationLabel(LUNCH.curLoc)} ${walkLabel()}의 맛집 정보를 다운로드할까요? 기존 맛집과 리뷰·방문기록은 유지하고, 없는 맛집만 추가해요.`;
     if (!dialog.open) dialog.showModal();
   }
   async function downloadGps() {
-    if (gpsDownloading || LUNCH.curLoc?.id !== "gps") return;
+    if (gpsDownloading || !LUNCH.curLoc?.lat) return;
     const key = gpsKey(), loc = {...LUNCH.curLoc};
     gpsDownloading = true; renderLocBar(); msg("주변 맛집 다운로드 준비 중…");
     try {
       const data = await gpsApi("/api/lunch/nearby/download", {...gpsPayload(loc), confirmed: true});
       if (data.error) throw new Error(data.error);
-      if (data.covered) { gpsDownloading = false; renderLocBar(); if (key === gpsKey()) await loadNearby(); return; }
+      if (data.covered) { gpsDownloading = false; renderLocBar(); if (key === gpsKey()) await loadRestaurants(); return; }
       gpsJob = data.job_id;
       pollGpsDownload(gpsJob, key);
     } catch (error) {
@@ -3454,7 +3463,7 @@ function lunchLocationLabel(location) {
         if (data.running) { pollGpsDownload(job, key); return; }
         gpsDownloading = false; gpsJob = null; renderLocBar();
         if (data.result?.ok) {
-          if (LUNCH.curLoc?.id === "gps") await loadNearby();
+          if (key === gpsKey()) await loadRestaurants();
           const summary = `맛집 다운로드를 완료했어요.\n신규 ${data.result.new}곳 · 기존 ${data.result.existing}곳`;
           if (key === gpsKey()) msg(summary);
           toast(summary);
@@ -3462,7 +3471,7 @@ function lunchLocationLabel(location) {
       } catch (error) {
         if (failures < 3) { pollGpsDownload(job, key, failures + 1); return; }
         gpsDownloading = false; gpsJob = null; renderLocBar();
-        if (key === gpsKey()) { await loadNearby(); msg("다운로드 상태를 확인하지 못했어요. 목록을 다시 확인해 주세요.", true); }
+        if (key === gpsKey()) { await loadRestaurants(); msg("다운로드 상태를 확인하지 못했어요. 목록을 다시 확인해 주세요.", true); }
       }
     }, 1500);
   }
@@ -3492,7 +3501,8 @@ function lunchLocationLabel(location) {
 
   function filtered() {
     const q = (LUNCH.q || "").trim().toLowerCase();
-    return LUNCH.rows.filter((r) => {
+    const rows = LUNCH.rows.filter((r) => {
+      if (r.dist_m != null && r.dist_m > (LUNCH.walkMin || 10) * 67) return false;
       if (LUNCH.reviewedOnly && Number(r.review_count || 0) <= 0) return false;
       if (LUNCH.cat !== "전체" && (r.cat_norm || "기타") !== LUNCH.cat) return false;
       if (q) {
@@ -3501,6 +3511,10 @@ function lunchLocationLabel(location) {
       }
       return true;
     });
+    if (LUNCH.sort === "distance") rows.sort((a,b) => (a.dist_m ?? Infinity) - (b.dist_m ?? Infinity));
+    else if (LUNCH.sort === "rating") rows.sort((a,b) => (b.avg_rating || 0) - (a.avg_rating || 0) || (b.review_count || 0) - (a.review_count || 0));
+    else if (LUNCH.sort === "random") rows.sort((a,b) => (randomRanks.get(String(a.id)) ?? 0) - (randomRanks.get(String(b.id)) ?? 0));
+    return rows;
   }
 
   function stars(avg) {
@@ -3517,7 +3531,7 @@ function lunchLocationLabel(location) {
     }, "food", link);
 
     const dist = r.dist_m != null ? `${r.dist_m}m` : "";
-    const walk = r.walk_min != null ? `도보 ${r.walk_min}분` : "";
+    const walk = r.walk_min != null ? `예상 도보 ${r.walk_min}분` : "";
     const meta = [walk, dist].filter(Boolean).join(" · ");
     const rate = r.avg_rating
       ? `${stars(r.avg_rating)} <b>${r.avg_rating}</b> <span class="lrc">(${r.review_count})</span>`
@@ -3538,6 +3552,7 @@ function lunchLocationLabel(location) {
     const info2 = [phone, checked].filter(Boolean).join(" · ");
     return `<li class="lunch-card${r.excluded ? " is-ex" : ""}" data-id="${r.id}" data-key="${escapeHtml(key)}">
       ${scrapBtnHtml(key)}
+      <div class="lunch-gallery" data-gallery-id="${r.id}" aria-label="${escapeHtml(r.name)} 매장 사진"><div class="lunch-photo-empty">확인된 매장 사진이 없어요</div></div>
       <div class="lc-top">
         <div class="lname">${escapeHtml(r.name || "이름 미상")}</div>
         <span class="lcat">${escapeHtml(sub)}</span>
@@ -3566,6 +3581,7 @@ function lunchLocationLabel(location) {
       ? `<li class="lunch-loading">이 주변에는 아직 평점·후기가 등록된 맛집이 없어요.<br>전체 목록에서 맛집을 확인하고 방문 후 후기를 남겨 주세요.</li>`
       : `<li class="lunch-loading">조건에 맞는 식당이 없어요</li>`; return; }
     list.innerHTML = fs.map(lunchCard).join("");
+    window.HScopeLunchGallery?.mount(list);
   }
 
   function rowById(id) { return LUNCH.rows.find((r) => String(r.id) === String(id)); }
@@ -3781,13 +3797,13 @@ function lunchLocationLabel(location) {
     const requestId = ++recommendationRequest;
     if (body) body.innerHTML = foodSlotHtml();
     const cond = gatherConditions();
-    const rows = LUNCH.rows.map(r => ({...r}));
+    const rows = filtered().map(r => ({...r}));
     const persona = LUNCH.aiPersona || "";
     const ids = rows.map(r => r.id);
     let res;
     try {
       res = await requestLunchRecommendation({
-        loc_id: LUNCH.curLoc.id, ...(LUNCH.curLoc.id === "gps" ? gpsPayload() : {}), candidate_ids: ids,
+        loc_id: LUNCH.curLoc.id, ...gpsPayload(), candidate_ids: ids,
         avoid_cats: cond.avoid_cats, moods: cond.moods, persona,
       });
     } catch (e) { res = null; }
@@ -3915,11 +3931,13 @@ function lunchLocationLabel(location) {
 
     $("lunch-gps-refresh")?.addEventListener("click", requestGps);
     $("lunch-gps-radius")?.addEventListener("change", (event) => {
-      if (LUNCH.curLoc?.id !== "gps") return;
-      LUNCH.curLoc.radius = Number(event.target.value);
+      LUNCH.walkMin = Number(event.target.value) / 67;
+      if (LUNCH.curLoc?.id === "gps") LUNCH.curLoc.radius = Number(event.target.value);
       rememberRecentLocation(); renderLocBar();
-      LUNCH.downloadNeeded = false; loadNearby(true);
+      LUNCH.downloadNeeded = false; loadRestaurants();
     });
+    $("lunch-sort")?.addEventListener("change", event => { LUNCH.sort = event.target.value; renderList(); });
+    $("lunch-shuffle")?.addEventListener("click", () => { randomRanks.clear(); rankRestaurants(LUNCH.rows); LUNCH.sort = "random"; $("lunch-sort").value = "random"; renderList(); });
     $("lunch-gps-download")?.addEventListener("click", confirmGpsDownload);
     $("lunch-download-confirm")?.addEventListener("click", () => { $("lunch-download-dialog").close(); downloadGps(); });
     $("lunch-download-cancel")?.addEventListener("click", () => { $("lunch-download-dialog").close(); });

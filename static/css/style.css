@@ -1590,7 +1590,22 @@ body.chrome-hidden .view-head { position: static; }
 .cal-preview-empty { color:var(--muted); font-size:13px; padding:10px 0; }
 
 /* Lunch results and review toggle share the same 16px content gutters. */
-.lunch-filterbar{margin:0 16px 6px;line-height:1.4}
+.lunch-filterbar{margin:0 16px 6px;line-height:1.4;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.lunch-filterbar .result-count{margin-right:auto}
+.lunch-sort-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.lunch-sort-label select{max-width:140px;min-height:36px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font:inherit;padding:0 8px}
+.lunch-walk-note{margin:0 16px 14px;font-size:11px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere}
+.lunch-card{min-width:0;overflow:hidden}
+.lunch-gallery{min-width:0;max-width:100%;margin-bottom:12px;border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
+.lunch-photo-rail{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:100%;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.lunch-photo-rail img{flex:0 0 86%;width:86%;min-width:0;height:180px;object-fit:cover;border-radius:var(--r-sm);scroll-snap-align:start}
+.lunch-photo-rail img:only-child{flex-basis:100%;width:100%}
+.lunch-photo-rail img[hidden]{display:none}
+.lunch-photo-empty{display:flex;align-items:center;justify-content:center;min-height:110px;padding:12px;font-size:12px;color:var(--muted)}
+.lunch-photo-caption{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:6px 8px;font-size:10px;line-height:1.5;color:var(--muted)}
+.lunch-photo-caption a{color:inherit;max-width:100%;overflow-wrap:anywhere}
+.lunch-photo-controls{display:inline-flex;align-items:center;gap:6px}
+.lunch-photo-controls button{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font-size:22px;cursor:pointer}
 .lunch-filterbar .result-count{margin:0;white-space:nowrap}
 .lunch-reviewed-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 11px;border:1px solid var(--border);border-radius: var(--r-md);background:var(--card);color:var(--muted);font-size:12px;font-weight:700;line-height:1.4;cursor:pointer;white-space:nowrap}
 .lunch-reviewed-toggle input{width:15px;height:15px;margin:0;accent-color:var(--primary);flex:none}
