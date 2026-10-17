@@ -1744,3 +1744,20 @@ html.pre-hide-videos .fnav[data-nav="videos"],
 html.pre-hide-finance .fnav[data-nav="finance"],
 html.pre-hide-boards #biz-cats label:has([data-cat="게시판"]),
 html.pre-hide-social #biz-cats label:has([data-cat="영상"]) { display: none !important; }
+
+/* v3.185: single-row address and walking-time controls, consistent selectors. */
+#view-food .lunch-address-entry { display:inline-flex; align-items:center; margin:8px 0 8px 16px; vertical-align:middle; }
+#view-food .lunch-gps-tools:not([hidden]) { display:inline-flex; flex-wrap:nowrap; align-items:center; gap:8px; margin:8px 16px 8px 8px; vertical-align:middle; max-width:calc(100% - 32px); }
+#view-food .lunch-gps-range { display:inline-flex; align-items:center; gap:8px; min-width:0; white-space:nowrap; }
+#view-food .lunch-gps-range label { white-space:nowrap; }
+#view-food #lunch-address-open, #view-food #lunch-gps-radius, #view-food #lunch-gps-refresh, #view-food #lunch-gps-download { box-sizing:border-box; min-height:36px; height:36px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--card); color:var(--text); font:inherit; font-size:13px; font-weight:600; line-height:1.2; }
+#view-food #lunch-address-open { padding:0 12px; white-space:nowrap; }
+#view-food #lunch-gps-radius { width:auto; min-width:116px; padding:0 26px 0 10px; }
+#view-food #lunch-gps-refresh, #view-food #lunch-gps-download { padding:0 10px; }
+@media(max-width:440px) {
+  #view-food .lunch-address-entry { margin-left:12px; }
+  #view-food .lunch-gps-tools:not([hidden]) { margin-left:6px; margin-right:8px; gap:5px; }
+  #view-food #lunch-address-open { font-size:12px; padding:0 8px; }
+  #view-food .lunch-gps-range { gap:5px; }
+  #view-food #lunch-gps-radius { min-width:100px; font-size:12px; padding-left:6px; }
+}
