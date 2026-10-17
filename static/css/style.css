@@ -1761,3 +1761,24 @@ html.pre-hide-social #biz-cats label:has([data-cat="영상"]) { display: none !i
   #view-food .lunch-gps-range { gap:5px; }
   #view-food #lunch-gps-radius { min-width:100px; font-size:12px; padding-left:6px; }
 }
+
+/* v3.186: walk duration through recommendation sort on one row. */
+#view-food .lunch-filter-controls { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 16px 12px; min-width:0; }
+#view-food .lunch-filter-controls .lunch-gps-tools:not([hidden]) { display:flex; flex:0 1 auto; min-width:0; margin:0; gap:6px; }
+#view-food .lunch-filter-controls .lunch-filterbar { display:flex; flex:1 1 auto; min-width:0; align-items:center; justify-content:flex-end; gap:6px; margin:0; padding:0; }
+#view-food .lunch-filter-controls .lunch-gps-range { flex:none; gap:5px; }
+#view-food .lunch-filter-controls .lunch-sort-label { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+#view-food .lunch-filter-controls #lunch-gps-radius,
+#view-food .lunch-filter-controls #lunch-sort { height:36px; min-height:36px; border:1px solid var(--border); border-radius:var(--r-sm); background:var(--card); color:var(--text); font:inherit; font-size:12px; padding:0 6px; }
+#view-food .lunch-filter-controls #lunch-gps-radius { min-width:0; width:94px; }
+#view-food .lunch-filter-controls #lunch-sort { min-width:0; width:112px; max-width:112px; }
+#view-food .lunch-filter-controls .result-count { font-size:12px; white-space:nowrap; }
+@media(max-width:440px) {
+ #view-food .lunch-filter-controls { gap:4px; margin-left:12px; margin-right:12px; }
+ #view-food .lunch-filter-controls .lunch-gps-range { gap:3px; }
+ #view-food .lunch-filter-controls .lunch-gps-range label,
+ #view-food .lunch-filter-controls .lunch-sort-label { font-size:11px; }
+ #view-food .lunch-filter-controls #lunch-gps-radius { width:84px; font-size:11px; }
+ #view-food .lunch-filter-controls #lunch-sort { width:99px; font-size:11px; }
+ #view-food .lunch-filter-controls .result-count { font-size:10px; }
+}
