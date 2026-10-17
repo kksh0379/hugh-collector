@@ -338,7 +338,6 @@
       <button type="button" class="btn-collect" id="lunch-gps-download" hidden>주변 맛집 다운로드</button>
       <span class="gps-download-status" id="lunch-gps-download-status" role="status" aria-live="polite" hidden><span class="gps-btn-spinner" aria-hidden="true"></span>다운로드 중…</span>
     </div>
-    <p class="lunch-walk-note">직선거리·분당 67m 기준 예상 도보 시간이에요. 실제 보행 경로와 다를 수 있어요.<br>사진은 매장명·주소가 확인된 출처만 표시하며, 확인되지 않으면 표시하지 않아요.</p>
     <dialog id="lunch-download-dialog" class="lunch-download-dialog" aria-labelledby="lunch-download-title" aria-describedby="lunch-download-desc">
       <h2 id="lunch-download-title">주변 맛집 다운로드</h2>
       <p id="lunch-download-desc"></p>
@@ -347,7 +346,6 @@
     <div class="lunch-filterbar">
       <span class="result-count" id="lunch-count" aria-live="polite"></span>
       <label class="lunch-sort-label" for="lunch-sort">정렬 <select id="lunch-sort"><option value="random">랜덤 추천순</option><option value="distance">가까운순</option><option value="rating">평점 높은순</option></select></label>
-      <button type="button" class="btn-status" id="lunch-shuffle">다시 추천</button>
     </div>
     <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
     <div class="checkbar lunch-cats" id="lunch-cats" role="group" aria-label="카테고리"></div>
@@ -620,8 +618,8 @@
   <script src="{{ url_for('static', filename='js/admin-controls.js', v='3.148') }}"></script>
   <script src="{{ url_for('static', filename='js/scrap-motion.js', v='3.179') }}"></script>
   <script src="{{ url_for('static', filename='js/scrap-undo.js', v='3.168') }}"></script>
-  <script src="{{ url_for('static', filename='js/lunch-gallery.js', v='3.180') }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-lunch-v3.180") }}"></script>
+  <script src="{{ url_for('static', filename='js/lunch-gallery.js', v='3.181') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-lunch-v3.181") }}"></script>
   <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.135') }}"></script>
   <script src="{{ url_for('static', filename='js/share.js', v='3.135') }}"></script>
   <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.135") }}"></script>
