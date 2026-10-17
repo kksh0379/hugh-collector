@@ -26,7 +26,7 @@ _SUCCESS_TTL = 30 * 86400
 
 def identity(row):
     value = [str(row.get("name") or ""), str(row.get("road_address") or row.get("address") or "")]
-    return "lunch_image_kakao_v2:" + hashlib.sha256(json.dumps(value, ensure_ascii=False).encode()).hexdigest()
+    return "lunch_image_kakao_v3:" + hashlib.sha256(json.dumps(value, ensure_ascii=False).encode()).hexdigest()
 
 
 def normalize(value):
@@ -56,29 +56,34 @@ def discover(row):
     address = str(row.get("road_address") or row.get("address") or "").strip()
     if not name or not address:
         return {"status": "unverified"}
-    response = requests.get(_API, headers={**_HEADERS, "Authorization": "KakaoAK " + key},
-                            params={"query": name + " " + address, "size": 30, "sort": "accuracy"},
-                            timeout=(3, 7))
-    if response.status_code in (401, 403, 429):
-        return {"status": "unavailable"}
-    response.raise_for_status()
-    road, district = _address_tokens(address)
+    _, district = _address_tokens(address)
+    queries = [name + " " + address, name + " " + (district.group(1) if district else "") + " 음식점 사진"]
+    documents = []
+    for query in queries:
+        response = requests.get(_API, headers={**_HEADERS, "Authorization": "KakaoAK " + key},
+                                params={"query": query.strip(), "size": 30, "sort": "accuracy"}, timeout=(3, 7))
+        if response.status_code in (401, 403, 429):
+            return {"status": "unavailable"}
+        response.raise_for_status()
+        documents.extend(response.json().get("documents", []))
     images = []
     source = None
-    for doc in response.json().get("documents", []):
+    matched = []
+    fallback = []
+    for doc in documents:
         page = str(doc.get("doc_url") or "")
         image = str(doc.get("thumbnail_url") or doc.get("image_url") or "")
         if not _safe_url(page) or not _safe_url(image):
             continue
-        # Image search is not a business photo API. Require a strong match in
-        # the source URL; never attribute an ambiguous picture to a business.
         decoded = normalize(unquote(page))
-        if len(normalize(name)) < 3 or normalize(name) not in decoded:
-            continue
-        if district and normalize(district.group(1)) not in decoded:
-            continue
-        if road and normalize(road.group(1)) not in decoded:
-            continue
+        if len(normalize(name)) >= 3 and normalize(name) in decoded:
+            matched.append((image, page))
+        else:
+            fallback.append((image, page))
+    # Search relevance is not proof of business identity. Only URL-name matches
+    # can be called source-matched; otherwise label as unverified search imagery.
+    candidates = matched if matched else fallback
+    for image, page in candidates:
         if image not in images:
             images.append(image)
             if source is None:
@@ -87,7 +92,9 @@ def discover(row):
             break
     if not images:
         return {"status": "unverified"}
-    return {"status": "verified", "verification": "business_name_address",
+    verified = bool(matched)
+    return {"status": "verified" if verified else "search_result",
+            "verification": "source_name_match" if verified else "search_only",
             "image_url": images[0], "images": images, "source_url": source,
             "source_name": urlsplit(source).hostname or "Daum 이미지 검색"}
 
@@ -131,7 +138,7 @@ def lookup(ids):
             value = json.loads(cached.get(identity(row), "{}"))
         except (ValueError, TypeError):
             value = {}
-        ttl = _SUCCESS_TTL if value.get("status") == "verified" else _RETRY_TTL
+        ttl = _SUCCESS_TTL if value.get("status") in ("verified", "search_result") else _RETRY_TTL
         if now - value.get("checked_at", 0) < ttl:
             results[str(row["id"])] = value
         else:
