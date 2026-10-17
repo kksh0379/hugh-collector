@@ -331,7 +331,7 @@
       <p id="lunch-address-status" role="status" aria-live="polite">검색 결과에서 원하는 위치를 선택해 주세요.</p>
       <ul id="lunch-address-results" class="lunch-address-results"></ul>
     </dialog>
-    <div class="lunch-gps-tools" id="lunch-gps-tools" hidden>
+    <div class="lunch-filter-controls"><div class="lunch-gps-tools" id="lunch-gps-tools" hidden>
       <div class="lunch-gps-range"><label for="lunch-gps-radius">걸어서</label>
       <select id="lunch-gps-radius"><option value="335">5분 이내</option><option value="670" selected>10분 이내</option><option value="1005">15분 이내</option><option value="1340">20분 이내</option></select></div>
       <button type="button" class="btn-status" id="lunch-gps-refresh">위치 다시 확인</button>
@@ -346,7 +346,7 @@
     <div class="lunch-filterbar">
       <span class="result-count" id="lunch-count" aria-live="polite"></span>
       <label class="lunch-sort-label" for="lunch-sort">정렬 <select id="lunch-sort"><option value="random">랜덤 추천순</option><option value="distance">가까운순</option><option value="rating">평점 높은순</option></select></label>
-    </div>
+    </div></div>
     <button class="lunch-ai-cta" id="lunch-ai-btn"><span class="t">AI에게 맡기기 · 오늘 뭐 먹지?</span><span class="go">추천 ›</span></button>
     <div class="checkbar lunch-cats" id="lunch-cats" role="group" aria-label="카테고리"></div>
     <div class="toolbar admin-only" style="margin:8px 16px 0">
@@ -554,7 +554,7 @@
   <!-- 저작권/버전(탭메뉴 아래) -->
   <div class="app-credit">
     <span class="foot-copy">© 2026 김상화</span>
-    <span class="ver">v3.185 · build 261017</span>
+    <span class="ver">v3.186 · build 261017</span>
     <a class="credit-intro" href="{{ url_for('intro') }}">서비스 소개</a>
     <span class="ver storage-status" id="storage-badge" data-state="checking" role="status" aria-live="polite">DB 확인 중</span>
   </div>
@@ -618,7 +618,7 @@
   <script src="{{ url_for('static', filename='js/admin-controls.js', v='3.148') }}"></script>
   <script src="{{ url_for('static', filename='js/scrap-motion.js', v='3.179') }}"></script>
   <script src="{{ url_for('static', filename='js/scrap-undo.js', v='3.168') }}"></script>
-  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-lunch-v3.185") }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-lunch-v3.186") }}"></script>
   <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.135') }}"></script>
   <script src="{{ url_for('static', filename='js/share.js', v='3.135') }}"></script>
   <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver ~ "-cats-v3.135") }}"></script>
