@@ -3936,8 +3936,7 @@ function lunchLocationLabel(location) {
       rememberRecentLocation(); renderLocBar();
       LUNCH.downloadNeeded = false; loadRestaurants();
     });
-    $("lunch-sort")?.addEventListener("change", event => { LUNCH.sort = event.target.value; renderList(); });
-    $("lunch-shuffle")?.addEventListener("click", () => { randomRanks.clear(); rankRestaurants(LUNCH.rows); LUNCH.sort = "random"; $("lunch-sort").value = "random"; renderList(); });
+    $("lunch-sort")?.addEventListener("change", event => { LUNCH.sort = event.target.value; if (LUNCH.sort === "random") { randomRanks.clear(); rankRestaurants(LUNCH.rows); } renderList(); });
     $("lunch-gps-download")?.addEventListener("click", confirmGpsDownload);
     $("lunch-download-confirm")?.addEventListener("click", () => { $("lunch-download-dialog").close(); downloadGps(); });
     $("lunch-download-cancel")?.addEventListener("click", () => { $("lunch-download-dialog").close(); });
