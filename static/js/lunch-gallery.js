@@ -15,7 +15,7 @@
   function draw(element, data) {
     const urls = photoUrls(data);
     if (!urls.length) {
-      element.innerHTML = `<div class="lunch-photo-empty">${data?.status === "pending" ? "매장 사진 다운로드 중…" : data?.status === "search_blocked" ? "확인 가능한 매장 사진이 아직 없어요" : "확인된 매장 사진이 없어요"}</div>`;
+      element.innerHTML = `<div class="lunch-photo-empty">${data?.status === "pending" ? "매장 사진 검색 중…" : data?.status === "search_blocked" ? "확인 가능한 매장 사진이 아직 없어요" : "확인된 매장 사진이 없어요"}</div>`;
       return;
     }
     element.innerHTML = `<div class="lunch-photo-rail" tabindex="0" role="region" aria-label="매장 사진 · 좌우로 넘기기">${urls.map((url, i) => `<img src="${escape(url)}" alt="${escape(element.getAttribute("aria-label"))} ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`).join("")}</div><div class="lunch-photo-caption"><a href="${escape(safeUrl(data.source_url))}" target="_blank" rel="noopener noreferrer">사진 출처 · ${escape(data.source_name)}</a>${urls.length > 1 ? `<span class="lunch-photo-controls"><button type="button" data-photo-step="-1" aria-label="이전 사진">‹</button><span>${urls.length}장 · 좌우로 넘기기</span><button type="button" data-photo-step="1" aria-label="다음 사진">›</button></span>` : ""}</div>`;
