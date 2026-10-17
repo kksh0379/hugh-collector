@@ -1596,7 +1596,7 @@ body.chrome-hidden .view-head { position: static; }
 .lunch-sort-label select{max-width:140px;min-height:36px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font:inherit;padding:0 8px}
 .lunch-walk-note{margin:0 16px 14px;font-size:11px;line-height:1.6;color:var(--muted);overflow-wrap:anywhere}
 .lunch-card{min-width:0;overflow:hidden}
-.lunch-gallery{min-width:0;max-width:100%;margin-bottom:12px;border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
+.lunch-gallery-disabled{min-width:0;max-width:100%;margin-bottom:12px;border-radius:var(--r-md);overflow:hidden;background:var(--bg)}
 .lunch-photo-rail{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:100%;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .lunch-photo-rail img{flex:0 0 86%;width:86%;min-width:0;height:180px;object-fit:cover;border-radius:var(--r-sm);scroll-snap-align:start}
 .lunch-photo-rail img:only-child{flex-basis:100%;width:100%}
