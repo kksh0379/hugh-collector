@@ -31,8 +31,15 @@
         <label>부양가족 (본인 포함)<input id="calc-salary-family" type="number" inputmode="numeric" min="1" value="1"></label>
         <label>월 비과세 (식대 등, 원)<input id="calc-salary-nontax" type="number" inputmode="numeric" min="0" value="200000"></label>
       </div>
+      <div class="calc-grid">
+        <label>협상 제안 연봉 (만원)<input id="calc-salary-offer" type="number" min="0" inputmode="numeric" placeholder="예: 5500"></label>
+        <label>목표 월 실수령액 (만원)<input id="calc-salary-target" type="number" min="0" inputmode="numeric" placeholder="예: 350"></label>
+      </div>
       <div class="calc-out" id="calc-salary-out" aria-live="polite"></div>
-      <p class="finance-muted calc-note">참고용 근사치 — 소득세는 간이세액표·공제 상황에 따라 달라집니다.<br>4대보험료는 2025년 요율 기준이며, 정확한 금액은 <a href="https://www.nts.go.kr/" target="_blank" rel="noopener noreferrer">홈택스 ↗</a>에서 확인하세요.</p>
+      <div class="calc-out" id="calc-salary-compare" aria-live="polite"></div>
+      <div class="calc-out" id="calc-salary-target-out" aria-live="polite"></div>
+      <div id="calc-salary-tax-brackets" class="calc-tax-brackets" aria-live="polite"></div>
+      <p class="finance-muted calc-note">참고용 근사치 — 소득세는 간이세액표·공제 상황에 따라 달라집니다.<br>4대보험은 2026년 근로자 부담 요율을 적용한 추정치로, 상·하한 및 개인별 공제·연말정산 결과에 따라 다릅니다. 정확한 금액은 <a href="https://www.nts.go.kr/" target="_blank" rel="noopener noreferrer">홈택스 ↗</a>에서 확인하세요.</p>
     </section>
 
     <section class="finance-card calc-card" aria-labelledby="calc-save-title"><span class="finance-eyebrow">저축</span><h2 id="calc-save-title">예·적금 이자 (세후)</h2>
