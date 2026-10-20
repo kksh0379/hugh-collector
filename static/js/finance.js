@@ -291,33 +291,78 @@
     for(const [lim,rate,ded] of t){ if(b<=lim) return Math.max(0,b*rate-ded); }
     return 0;
   }
-  function calcSalary(){
-    const out=$('calc-salary-out'); if(!out) return;
-    const annual=(num('calc-salary-annual')||0)*10000;
-    if(annual<=0){ out.innerHTML=''; return; }
-    const family=Math.max(1, Math.floor(num('calc-salary-family'))||1);
-    const monthly=annual/12;
-    const nontax=Math.min(Math.max(0,num('calc-salary-nontax')), monthly);
-    const taxable=Math.max(0, monthly-nontax);
-    // 4대보험(근로자 부담, 2025 요율)
-    const pension=taxable*0.045, health=taxable*0.03545, care=health*0.1295, employ=taxable*0.009;
+  const TAX_BRACKETS=[
+    [14000000,0.06,0,'1,400만원 이하'],
+    [50000000,0.15,1260000,'1,400만~5,000만원'],
+    [88000000,0.24,5760000,'5,000만~8,800만원'],
+    [150000000,0.35,15440000,'8,800만~1억5,000만원'],
+    [300000000,0.38,19940000,'1억5,000만~3억원'],
+    [500000000,0.40,25940000,'3억~5억원'],
+    [1000000000,0.42,35940000,'5억~10억원'],
+    [Infinity,0.45,65940000,'10억원 초과']
+  ];
+  function salaryEstimate(annual,family,nontaxMonthly){
+    const monthly=annual/12, nontax=Math.min(Math.max(0,nontaxMonthly),monthly);
+    const taxable=Math.max(0,monthly-nontax), gross=taxable*12;
+    // 2026 근로자 부담 요율, 국민연금 2026.7~2027.6 상한(659만원) 근사 적용.
+    const pension=Math.min(taxable,6590000)*0.0475;
+    const health=taxable*0.03595, care=health*0.1314, employ=taxable*0.009;
     const insurance=pension+health+care+employ;
-    // 소득세(근사 — 연 산출세액 ÷ 12)
-    const gross=taxable*12;
-    const base=Math.max(0, gross-earnedDeduction(gross) - 1500000*family - pension*12);
+    const base=Math.max(0,gross-earnedDeduction(gross)-1500000*family-pension*12);
+    const bracket=TAX_BRACKETS.find(row=>base<=row[0])||TAX_BRACKETS[TAX_BRACKETS.length-1];
     const calc=progressiveTax(base);
-    let credit=calc<=1300000 ? calc*0.55 : 715000+(calc-1300000)*0.30;
-    let cap; if(gross<=33000000) cap=740000; else if(gross<=70000000) cap=Math.max(660000,740000-(gross-33000000)*0.008); else cap=Math.max(500000,660000-(gross-70000000)*0.5);
+    let credit=calc<=1300000?calc*0.55:715000+(calc-1300000)*0.30;
+    let cap;if(gross<=33000000)cap=740000;else if(gross<=70000000)cap=Math.max(660000,740000-(gross-33000000)*0.008);else cap=Math.max(500000,660000-(gross-70000000)*0.5);
     credit=Math.min(credit,cap);
-    const incomeTax=Math.max(0,calc-credit)/12, localTax=incomeTax*0.1;
-    const take=monthly-insurance-incomeTax-localTax;
+    const incomeTax=Math.max(0,calc-credit)/12,localTax=incomeTax*0.1;
+    return {annual,monthly,taxable,base,bracket,insurance,incomeTax,localTax,take:monthly-insurance-incomeTax-localTax};
+  }
+  function calcSalary(){
+    const out=$('calc-salary-out'),compare=$('calc-salary-compare'),targetOut=$('calc-salary-target-out'),bands=$('calc-salary-tax-brackets');
+    if(!out)return;
+    const annual=Math.max(0,num('calc-salary-annual'))*10000;
+    if(!annual||!Number.isFinite(annual)){out.innerHTML='';if(compare)compare.innerHTML='';if(targetOut)targetOut.innerHTML='';if(bands)bands.innerHTML='';return;}
+    const family=Math.max(1,Math.floor(num('calc-salary-family'))||1);
+    const nontax=Math.max(0,num('calc-salary-nontax'));
+    const current=salaryEstimate(annual,family,nontax);
     out.innerHTML=dlHtml([
-      ['월 실수령액', won(take)+' (약 '+man(take)+')', true],
-      ['월 급여 (세전)', won(monthly)],
-      ['4대보험', '−'+won(insurance)],
-      ['소득세+지방세', '−'+won(incomeTax+localTax)],
-      ['연 실수령 (대략)', won(take*12)],
+      ['월 실수령액 (추정)',won(current.take)+' (약 '+man(current.take)+')',true],
+      ['월 급여 (세전)',won(current.monthly)],
+      ['4대보험 근로자 부담', '−'+won(current.insurance)],
+      ['소득세+지방소득세', '−'+won(current.incomeTax+current.localTax)],
+      ['연 실수령 (추정)',won(current.take*12)],
+      ['추정 과세표준',won(current.base)],
+      ['적용 최고구간 세율',Math.round(current.bracket[1]*100)+'%']
     ]);
+    if(bands)bands.innerHTML='<h3>소득세 과세표준 구간</h3><p class="finance-muted">연봉이 아니라 각종 소득공제 후 과세표준에 적용됩니다. 초과분에만 높은 세율이 적용돼요.</p><div class="finance-table-wrap"><table><thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead><tbody>'+TAX_BRACKETS.map(row=>'<tr'+(row===current.bracket?' class="calc-tax-current"':'')+'><td>'+esc(row[3])+(row===current.bracket?' · 현재':'')+'</td><td>'+Math.round(row[1]*100)+'%</td><td>'+ (row[2]?won(row[2]):'—')+'</td></tr>').join('')+'</tbody></table></div>';
+    const offerInput=$('calc-salary-offer'),offer=offerInput&&offerInput.value!==''?Number(offerInput.value)*10000:0;
+    if(compare){
+      if(offer>0&&Number.isFinite(offer)){
+        const proposed=salaryEstimate(offer,family,nontax),difference=proposed.take-current.take;
+        compare.innerHTML='<h3>연봉 협상 비교</h3>'+dlHtml([
+          ['제안 연봉',won(offer),true],
+          ['제안 월 실수령액 (추정)',won(proposed.take)],
+          ['연봉 증감', (offer>=annual?'+':'−')+won(Math.abs(offer-annual))],
+          ['월 실수령 증감', (difference>=0?'+':'−')+won(Math.abs(difference)),true],
+          ['연 실수령 증감', (difference>=0?'+':'−')+won(Math.abs(difference*12))],
+          ['제안 과세표준 세율',Math.round(proposed.bracket[1]*100)+'%']
+        ])+'<p class="finance-muted calc-note">제안 연봉의 증가분 전체에 높은 세율이 적용되는 것은 아닙니다.</p>';
+      }else compare.innerHTML='';
+    }
+    const targetInput=$('calc-salary-target'),target=targetInput&&targetInput.value!==''?Number(targetInput.value)*10000:0;
+    if(targetOut){
+      if(target>0&&Number.isFinite(target)){
+        let lo=0,hi=Math.max(annual,10000000);
+        while(salaryEstimate(hi,family,nontax).take<target&&hi<10000000000)hi*=2;
+        for(let i=0;i<52;i++){const mid=(lo+hi)/2;if(salaryEstimate(mid,family,nontax).take>=target)hi=mid;else lo=mid;}
+        const needed=Math.ceil(hi/10000)*10000;
+        targetOut.innerHTML='<h3>목표 실수령액 역산</h3>'+dlHtml([
+          ['목표 월 실수령액',won(target),true],
+          ['필요한 세전 연봉 (추정)',won(needed)],
+          ['현재 연봉 대비', (needed>=annual?'+':'−')+won(Math.abs(needed-annual))]
+        ]);
+      }else targetOut.innerHTML='';
+    }
   }
   function calcSave(){
     const out=$('calc-save-out'); if(!out) return;
@@ -356,7 +401,7 @@
       out.innerHTML=dlHtml([['첫 달 상환액', won(first), true],['마지막 달', won(last)],['총 이자', won(totInt)],['총 상환액', won(P+totInt)]]);
     }
   }
-  ['calc-salary-annual','calc-salary-family','calc-salary-nontax'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcSalary);});
+  ['calc-salary-annual','calc-salary-family','calc-salary-nontax','calc-salary-offer','calc-salary-target'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcSalary);});
   ['calc-save-amount','calc-save-rate','calc-save-months'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcSave);});
   ['calc-save-type','calc-save-comp'].forEach(id=>{const el=$(id); if(el)el.addEventListener('change',calcSave);});
   ['calc-loan-amount','calc-loan-rate','calc-loan-months'].forEach(id=>{const el=$(id); if(el)el.addEventListener('input',calcLoan);});
