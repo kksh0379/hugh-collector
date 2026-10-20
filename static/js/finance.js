@@ -250,6 +250,31 @@
   const dlHtml=rows=>`<dl>${rows.map(([l,v,hl])=>`<dt>${esc(l)}</dt><dd${hl?' class="calc-hl"':''}>${esc(v)}</dd>`).join('')}</dl>`;
   const num=id=>{ const el=$(id); return el?Number(el.value):0; };
 
+  // 월급/시급 양방향 환산: 입력된 세전 급여를 월 근로시간으로 나누거나 곱한다.
+  function calcHourly(){
+    const out=$('calc-hourly-out'), mode=$('calc-hourly-mode');
+    const amountInput=$('calc-hourly-amount'), hoursInput=$('calc-hourly-hours');
+    if(!out||!mode||!amountInput||!hoursInput) return;
+    const label=$('calc-hourly-amount-label');
+    if(label) label.textContent=mode.value==='hourly'?'시급 (세전, 원)':'월급 (세전, 원)';
+    amountInput.placeholder=mode.value==='hourly'?'예: 15000':'예: 3000000';
+    const amount=Number(amountInput.value), hours=Number(hoursInput.value);
+    if(!amountInput.value||!Number.isFinite(amount)||amount<0||!Number.isFinite(hours)||hours<=0||hours>744){
+      out.innerHTML=hoursInput.value&&(!Number.isFinite(hours)||hours<=0||hours>744)?'<p class="finance-muted">월 환산 근로시간은 0보다 크고 744시간 이하여야 합니다.</p>':'';
+      return;
+    }
+    const monthly=mode.value==='hourly'?amount*hours:amount;
+    const hourly=mode.value==='hourly'?amount:amount/hours;
+    out.innerHTML=dlHtml([
+      [mode.value==='hourly'?'월급 (세전)':'시급 (세전)',won(mode.value==='hourly'?monthly:hourly),true],
+      [mode.value==='hourly'?'입력 시급':'입력 월급',won(amount)],
+      ['월 환산 근로시간',hours.toLocaleString('ko-KR')+'시간'],
+      [mode.value==='hourly'?'환산 시급':'환산 월급',won(mode.value==='hourly'?hourly:monthly)]
+    ]);
+  }
+  ['calc-hourly-amount','calc-hourly-hours'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',calcHourly);});
+  {const el=$('calc-hourly-mode');if(el)el.addEventListener('change',calcHourly);}
+
   // 근로소득공제(2025)
   function earnedDeduction(g){
     let d;
