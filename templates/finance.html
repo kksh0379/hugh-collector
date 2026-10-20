@@ -13,6 +13,18 @@
   </div>
 
   <div class="fin-panel" data-panel="calc" role="tabpanel" hidden>
+    <section class="finance-card calc-card" aria-labelledby="calc-hourly-title">
+      <span class="finance-eyebrow">급여</span><h2 id="calc-hourly-title">시급 계산기</h2>
+      <p class="finance-muted">월급(세전)과 시급을 서로 환산해요. 월 근로시간은 기본 209시간입니다.</p>
+      <div class="calc-grid">
+        <label>계산 방향<select id="calc-hourly-mode"><option value="monthly">월급 → 시급</option><option value="hourly">시급 → 월급</option></select></label>
+        <label>월 환산 근로시간 (시간)<input id="calc-hourly-hours" type="number" inputmode="decimal" min="0.01" max="744" step="0.5" value="209"></label>
+        <label class="calc-full"><span id="calc-hourly-amount-label">월급 (세전, 원)</span><input id="calc-hourly-amount" type="number" inputmode="numeric" min="0" placeholder="예: 3000000"></label>
+      </div>
+      <div class="calc-out" id="calc-hourly-out" aria-live="polite"></div>
+      <p class="finance-muted calc-note">209시간은 주 40시간 근무·주휴시간을 포함하는 일반적인 월 환산 기준입니다. 실제 소정근로시간, 임금 구성 및 주휴수당 적용에 따라 달라질 수 있어요. 이 계산은 세전 단순 환산으로 법정 통상시급이나 최저임금 충족 여부를 판정하지 않습니다.</p>
+    </section>
+
     <section class="finance-card calc-card" aria-labelledby="calc-salary-title"><span class="finance-eyebrow">급여</span><h2 id="calc-salary-title">연봉 실수령액</h2>
       <div class="calc-grid">
         <label class="calc-full">연봉 (만원)<input id="calc-salary-annual" type="number" inputmode="numeric" min="0" placeholder="예: 4000"></label>
