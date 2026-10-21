@@ -36,6 +36,32 @@ app.register_blueprint(reader_bp)
 app.register_blueprint(finance_bp)
 app.register_blueprint(video_library_bp)
 
+# 관리자 전용 메일 발송 연결 테스트. 임의 수신자 입력은 허용하지 않는다.
+from collector import mailer
+
+@app.get("/api/admin/mail/status")
+def admin_mail_status():
+    if not session.get("admin"):
+        return jsonify({"error": "관리자 로그인이 필요합니다."}), 403
+    return jsonify(mailer.status())
+
+@app.post("/api/admin/mail/test")
+def admin_mail_test():
+    if not session.get("admin"):
+        return jsonify({"error": "관리자 로그인이 필요합니다."}), 403
+    # 타 사이트 폼 요청이나 교차 출처 호출로 관리자 세션을 악용하지 못하게 한다.
+    origin = request.headers.get("Origin", "")
+    if origin and origin.rstrip("/") != request.host_url.rstrip("/"):
+        return jsonify({"error": "잘못된 요청 출처입니다."}), 403
+    try:
+        return jsonify(mailer.send_test())
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 503
+    except (RuntimeError, OSError) as exc:
+        app.logger.warning("Admin mail test failed: %s", type(exc).__name__)
+        return jsonify({"error": str(exc) if isinstance(exc, RuntimeError) else "메일 발송 연결에 실패했습니다."}), 502
+
+
 
 @app.before_request
 def _start_request_timer():
