@@ -57,6 +57,10 @@ def admin_mail_test():
         return jsonify(mailer.send_test())
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 503
+    except mailer.MailProviderError as exc:
+        app.logger.warning("Admin mail test failed: %s", exc)
+        return jsonify({"error": str(exc), "provider_code": exc.provider_code,
+                        "provider_status": exc.http_status}), 502
     except (RuntimeError, OSError) as exc:
         app.logger.warning("Admin mail test failed: %s", type(exc).__name__)
         return jsonify({"error": str(exc) if isinstance(exc, RuntimeError) else "메일 발송 연결에 실패했습니다."}), 502

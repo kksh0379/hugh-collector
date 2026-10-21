@@ -9,6 +9,56 @@ from html import escape
 
 _EMAIL = re.compile(r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$")
 
+# Only known codes and locally authored summaries may leave this module.
+# Provider messages can echo addresses, credentials, or arbitrary HTML.
+_ERROR_HINTS = {
+    "validation_error": "Resend 요청 검증에 실패했습니다. 발신 도메인과 수신자 조건을 확인하세요.",
+    "missing_api_key": "Resend API 키가 누락되었습니다.",
+    "restricted_api_key": "Resend API 키의 활성 상태, 발송 권한 및 허용 도메인을 확인하세요.",
+    "invalid_permission": "Resend API 키의 발송 권한 및 허용 도메인을 확인하세요.",
+    "suspended_api_key": "Resend API 키가 정지되었습니다. Resend에서 상태를 확인하세요.",
+    "rate_limit_exceeded": "Resend 요청 한도를 초과했습니다. 잠시 후 다시 시도하세요.",
+    "daily_quota_exceeded": "Resend 일일 발송 한도를 초과했습니다.",
+    "monthly_quota_exceeded": "Resend 월간 발송 한도를 초과했습니다.",
+    "application_error": "Resend 내부 오류입니다. 잠시 후 다시 시도하세요.",
+    "service_unavailable": "Resend 서비스를 일시적으로 사용할 수 없습니다.",
+}
+
+
+class MailProviderError(RuntimeError):
+    """Safe for administrator responses and logs; never contains raw bodies."""
+
+    def __init__(self, http_status, provider_code, hint):
+        self.http_status = http_status
+        self.provider_code = provider_code
+        super().__init__(f"메일 공급자 요청 실패 (HTTP {http_status}, {provider_code}): {hint}")
+
+
+def _provider_error(exc):
+    code, hint = "unknown_error", "Resend 상세 오류를 확인할 수 없습니다. 관리자에게 문의하세요."
+    try:
+        raw = exc.read(8193)
+        payload = json.loads(raw) if len(raw) <= 8192 else None
+        if isinstance(payload, dict):
+            name, message = payload.get("name"), payload.get("message")
+            if isinstance(name, str) and name in _ERROR_HINTS:
+                code, hint = name, _ERROR_HINTS[name]
+                if name == "validation_error" and isinstance(message, str):
+                    message = message.lower()
+                    if "only send testing emails to your own email address" in message:
+                        hint = ("onboarding@resend.dev 테스트 발신은 Resend 계정 이메일로만 보낼 수 있습니다. "
+                                "현재 수신자가 계정 이메일과 같은지 확인하세요. 다른 수신자에게 보내려면 "
+                                "Resend에서 소유 도메인을 인증하고 해당 도메인의 MAIL_FROM을 설정하세요.")
+                    elif "domain is not verified" in message.replace("`", ""):
+                        hint = "MAIL_FROM의 도메인이 Resend에서 인증되지 않았습니다. 도메인 인증 상태를 확인하세요."
+                    elif "api key is invalid" in message:
+                        hint = "Resend API 키가 유효하지 않습니다. 키의 활성 상태와 Render 등록값을 확인하세요."
+    except (OSError, ValueError, UnicodeError):
+        pass
+    finally:
+        exc.close()
+    return MailProviderError(exc.code, code, hint)
+
 
 def recipients():
     raw = os.getenv("MAIL_RECIPIENTS", "")
@@ -23,6 +73,10 @@ def status():
         "sender_configured": bool(os.getenv("MAIL_FROM")),
         "recipient_count": len(dest),
         "enabled_daily": os.getenv("MAIL_DAILY_ENABLED", "").lower() == "true",
+        "test_sender": os.getenv("MAIL_FROM", "").strip().lower() == "onboarding@resend.dev",
+        "sender_notice": ("Resend 테스트 발신 주소는 Resend 계정 이메일로만 발송할 수 있습니다. "
+                          "다른 수신자는 인증된 소유 도메인의 발신 주소가 필요합니다.")
+                         if os.getenv("MAIL_FROM", "").strip().lower() == "onboarding@resend.dev" else "",
     }
 
 
@@ -63,5 +117,4 @@ def send_test():
             result = json.load(response)
             return {"accepted": True, "provider_id": result.get("id"), "recipient_count": len(dest)}
     except urllib.error.HTTPError as exc:
-        # Never return provider body or credentials; administrator sees only status.
-        raise RuntimeError("메일 공급자 요청 실패 (HTTP %s)" % exc.code) from None
+        raise _provider_error(exc) from None
