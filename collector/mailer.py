@@ -1,9 +1,12 @@
 """Transactional mail transport for HScope. No credentials in source control."""
+import base64
 import json
 import os
 import re
 import urllib.error
 import urllib.request
+import urllib.parse
+from email.message import EmailMessage
 from datetime import datetime, timezone
 from html import escape
 
@@ -67,9 +70,13 @@ def recipients():
 
 def status():
     dest = recipients()
+    provider = os.getenv("MAIL_PROVIDER", "resend").strip().lower()
+    credentials = (all(os.getenv(k, "").strip() for k in
+                       ("GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN"))
+                   if provider == "gmail" else bool(os.getenv("RESEND_API_KEY")))
     return {
-        "provider": "resend",
-        "configured": bool(os.getenv("RESEND_API_KEY") and os.getenv("MAIL_FROM") and dest),
+        "provider": provider,
+        "configured": bool(provider in ("gmail", "resend") and credentials and os.getenv("MAIL_FROM") and dest),
         "sender_configured": bool(os.getenv("MAIL_FROM")),
         "recipient_count": len(dest),
         "enabled_daily": os.getenv("MAIL_DAILY_ENABLED", "").lower() == "true",
@@ -96,6 +103,74 @@ def render_test():
 
 
 def send_test():
+    provider = os.getenv("MAIL_PROVIDER", "resend").strip().lower()
+    if provider == "gmail":
+        return _send_gmail_test()
+    if provider != "resend":
+        raise ValueError("MAIL_PROVIDER는 gmail 또는 resend로 설정하세요.")
+    return _send_resend_test()
+
+
+def _gmail_request(url, data, headers, stage):
+    req = urllib.request.Request(url, data=data, method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            result = json.load(response)
+        if not isinstance(result, dict):
+            raise ValueError("invalid response")
+        return result
+    except urllib.error.HTTPError as exc:
+        # Google error bodies may contain credentials. Never expose or log them.
+        status_code = exc.code
+        exc.close()
+        hints = {
+            "oauth": "Gmail 연결 인증을 갱신할 수 없습니다. OAuth 클라이언트와 refresh token을 확인하거나 다시 연결하세요.",
+            "send": "Gmail 발송이 거부되었습니다. Gmail API 활성화, gmail.send 권한, 발신 계정과 발송 한도를 확인하세요.",
+        }
+        raise MailProviderError(status_code, "gmail_" + stage + "_error", hints[stage]) from None
+    except (ValueError, UnicodeError):
+        raise RuntimeError("Gmail 응답을 확인할 수 없습니다. 발송 기록을 확인한 후 다시 시도하세요.") from None
+
+
+def _send_gmail_test():
+    sender = os.getenv("MAIL_FROM", "").strip()
+    dest = recipients()
+    names = ("GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REFRESH_TOKEN")
+    if not all(os.getenv(k, "").strip() for k in names) or not sender or not dest:
+        raise ValueError("Gmail 연결 설정이 필요합니다: GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, MAIL_FROM, MAIL_RECIPIENTS")
+    if not _EMAIL.fullmatch(sender) or any(not _EMAIL.fullmatch(x) for x in dest):
+        raise ValueError("발신 또는 수신 이메일 형식이 올바르지 않습니다.")
+    if len(dest) > 5:
+        raise ValueError("테스트 수신자는 최대 5명까지 지정할 수 있습니다.")
+    token_data = urllib.parse.urlencode({
+        "client_id": os.environ["GMAIL_CLIENT_ID"].strip(),
+        "client_secret": os.environ["GMAIL_CLIENT_SECRET"].strip(),
+        "refresh_token": os.environ["GMAIL_REFRESH_TOKEN"].strip(),
+        "grant_type": "refresh_token",
+    }).encode()
+    token = _gmail_request("https://oauth2.googleapis.com/token", token_data,
+                          {"Content-Type": "application/x-www-form-urlencoded"}, "oauth")
+    access_token = token.get("access_token")
+    if not isinstance(access_token, str) or not access_token:
+        raise RuntimeError("Gmail 연결 인증을 갱신할 수 없습니다. 계정을 다시 연결하세요.")
+    subject, plaintext, html = render_test()
+    message = EmailMessage()
+    message["From"] = sender
+    message["To"] = ", ".join(dest)
+    message["Subject"] = subject
+    message.set_content(plaintext)
+    message.add_alternative(html, subtype="html")
+    raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
+    # Address the selected mailbox explicitly: a token for another user must fail.
+    url = "https://gmail.googleapis.com/gmail/v1/users/" + urllib.parse.quote(sender, safe="") + "/messages/send"
+    result = _gmail_request(url, json.dumps({"raw": raw}).encode(),
+                           {"Content-Type": "application/json", "Authorization": "Bearer " + access_token}, "send")
+    if not isinstance(result.get("id"), str) or not result["id"]:
+        raise RuntimeError("Gmail 발송 접수를 확인할 수 없습니다. 보낸편지함을 확인한 후 다시 시도하세요.")
+    return {"accepted": True, "provider_id": result["id"], "recipient_count": len(dest)}
+
+
+def _send_resend_test():
     api_key = os.getenv("RESEND_API_KEY", "")
     sender = os.getenv("MAIL_FROM", "").strip()
     dest = recipients()
