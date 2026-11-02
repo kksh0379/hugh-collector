@@ -3,6 +3,7 @@ from . import ai_provider
 
 import hashlib
 import json
+import logging
 import os
 import threading
 import time
@@ -12,6 +13,7 @@ _jobs = OrderedDict()
 _lock = threading.Lock()
 _slots = threading.BoundedSemaphore(2)
 _model = None
+_log = logging.getLogger(__name__)
 
 
 def _normalize_summary(data):
@@ -59,6 +61,15 @@ def _generate(title, text, excerpt=False):
                        'JSON 객체 {"points":["문장", "문장"],"highlights":[["첫 문장의 핵심 구절"],["둘째 문장의 핵심 구절"]]}만 출력한다.',
              "messages": [{"role": "user", "content": json.dumps({"title": title, "article_text": text}, ensure_ascii=False)}]},
                              timeout=(5, 25))
+    if response.status_code == 404:
+        # The configured model may have been retired while the key is still valid.
+        alternate = analysis._pick_model(analysis.list_models(key))
+        if alternate and alternate != _model:
+            _log.warning("Reader summary model unavailable; retrying available model")
+            _model = alternate
+            return _generate(title, text, excerpt)
+    if response.status_code >= 400:
+        _log.warning("Reader summary provider rejected request: HTTP %s", response.status_code)
     response.raise_for_status()
     data = analysis._extract_json(analysis._text_from_response(response.json()))
     result = _normalize_summary(data)
@@ -107,8 +118,21 @@ def article_summary(article):
                           "body_notice": "본문은 아래에서 읽을 수 있어요.",
                           "billing_url": ai_provider.BILLING_URL}
             else:
-                result = {"status": "unavailable", "notice": "지금은 AI 요약을 만들지 못했어요. 본문은 아래에서 읽을 수 있어요."}
-            ttl = 60
+                response = getattr(error, "response", None)
+                http_code = getattr(response, "status_code", None)
+                _log.warning("Reader summary failed: %s, HTTP %s", type(error).__name__, http_code or "n/a")
+                if http_code == 401:
+                    notice = "AI 요약 인증에 실패했어요. 관리자에게 Anthropic API 키 확인을 요청해 주세요."
+                elif http_code == 404:
+                    notice = "AI 요약 모델을 사용할 수 없어요. 관리자에게 모델 설정 확인을 요청해 주세요."
+                elif http_code == 429:
+                    notice = "AI 요약 요청이 일시적으로 제한됐어요. 잠시 후 다시 시도해 주세요."
+                elif isinstance(error, (ValueError, TypeError)):
+                    notice = "AI가 요약을 정상적으로 작성하지 못했어요. 다시 시도해 주세요."
+                else:
+                    notice = "지금은 AI 요약을 만들지 못했어요. 잠시 후 다시 시도해 주세요."
+                result = {"status": "unavailable", "notice": notice, "body_notice": "본문은 아래에서 읽을 수 있어요."}
+            ttl = 30
         finally:
             _slots.release()
         with _lock:
