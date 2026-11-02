@@ -2866,6 +2866,13 @@ async function loadReport(id) {
         const rs = st.result || {};
         if (rs.error) { msg.style.color = "#dc2626"; msg.textContent = "분석 실패: " + rs.error;
           if (window.HScopeCreditHelp?.isCreditNotice(rs.error)) window.HScopeCreditHelp.render(msg,msg.textContent);
+          else if (/AI 키가 유효하지|invalid x-api-key|authentication_error|AI 키가 설정되지/.test(rs.error)) {
+            msg.textContent = "AI 연결 인증 실패 · " + rs.error + " 관리자에게 API 키 확인을 요청해 주세요.";
+            if (window.alert && !window.__hscopeAiAuthAlerted) {
+              window.__hscopeAiAuthAlerted = true;
+              window.alert("AI 분석이 중단됐어요. 토큰 부족이 아니라 Anthropic API 키 인증 오류(HTTP 401)입니다. 관리자 도구의 API 키 설정을 확인해 주세요.");
+            }
+          }
         }
         else if (rs.ok) { msg.style.color = "#16a34a"; msg.textContent = "분석 완료"; const el = document.getElementById("report-body"); if (el) delete el.dataset.loaded; loadReport(); }
       }
