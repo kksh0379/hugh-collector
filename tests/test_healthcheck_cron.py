@@ -26,6 +26,7 @@ class CronAlertPolicyTests(unittest.TestCase):
     def test_interrupted_or_unclassified_run_still_alerts(self):
         self.assertEqual(exit_code(self.report('interrupted')), 1)
         self.assertEqual(exit_code({'status': 'failed'}), 1)
+        self.assertEqual(exit_code(self.report('failed')), 1)
         self.assertEqual(exit_code({'status': 'running'}), 1)
 
     def test_success_and_warnings_do_not_alert(self):
