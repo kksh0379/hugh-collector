@@ -28,6 +28,6 @@ test('random order stays stable when re-rendering and never mutates stored rows'
 });
 test('removed restaurant photo scraping stays disabled',()=>{
  const app=fs.readFileSync('app.py','utf8');
- assert.doesNotMatch(app,/\\@app\\.post\\(['\"]\\/api\\/lunch\\/images/);
- assert.doesNotMatch(source,/HScopeLunchGallery\\?\\.mount\\(list\\)/);
+ assert.ok(!app.includes('/api/lunch/images'));
+ assert.ok(!source.includes('HScopeLunchGallery?.mount(list)'));
 });
