@@ -78,7 +78,7 @@ class QueueTests(unittest.TestCase):
         scope['_enrich_news_images'](section='biz')
         self.assertEqual(marked, ['no-image'])
 
-    def test_requeues_only_missing_biz_images_and_preserves_content(self):
+    def test_requeues_missing_images_and_short_articles_while_preserving_content(self):
         conn = sqlite3.connect(':memory:'); conn.row_factory = sqlite3.Row
         self.addCleanup(conn.close)
         conn.execute('CREATE TABLE news (id INTEGER, url TEXT, source_url TEXT, content TEXT, image_url TEXT, section TEXT, published_at TEXT, enrich_checked_at TEXT)')
@@ -91,7 +91,7 @@ class QueueTests(unittest.TestCase):
         scope = functions('collector/db.py', {'reset_missing_news_image_attempts', 'news_needs_enrich'},
                           dict(get_conn=get_conn, _q=lambda s:s, datetime=datetime, timedelta=timedelta, timezone=timezone))
         scope['reset_missing_news_image_attempts']('biz')
-        self.assertEqual([r['url'] for r in scope['news_needs_enrich'](section='biz')], ['latest'])
+        self.assertEqual([r['url'] for r in scope['news_needs_enrich'](section='biz')], ['latest', 'photo'])
         rows = list(conn.execute('SELECT * FROM news ORDER BY id'))
         self.assertIsNone(rows[0]['enrich_checked_at'])
         self.assertEqual(rows[0]['content'], 'keep')
