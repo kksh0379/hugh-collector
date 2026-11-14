@@ -1,0 +1,37 @@
+name: Refresh function specification
+on:
+  push:
+    branches:
+      - claude/quirky-euler-agfmp
+    paths:
+      - 'scripts/build_function_spec.py'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install generator dependency
+        run: python -m pip install beautifulsoup4
+      - name: Generate from current screen controls
+        run: python scripts/build_function_spec.py
+      - name: Commit refreshed documentation
+        run: |
+          git add static/docs/function-spec.html static/docs/function-spec.md static/docs/function-spec-coverage.json
+          if git diff --cached --quiet; then
+            echo "Specification already matches current templates."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs(ia): regenerate specification from current UI elements"
+          git push
