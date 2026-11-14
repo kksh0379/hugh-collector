@@ -2,7 +2,7 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from flask import Flask, jsonify, request, session
+from flask import Flask, jsonify, request, session, g
 from collector.identity import canonical_user, display_name, public_author
 
 
@@ -14,9 +14,10 @@ class DisplayNamesTests(unittest.TestCase):
         self.rows = [{'username': 'test1', 'comment': '기존 후기'}, {'username': 'tester1', 'comment': '별칭 후기'}, {'username': '관리자', 'comment': '기존 관리자 후기'}]
         db = SimpleNamespace(lunch_list_reviews=lambda rid: self.rows,
                              lunch_add_review=lambda *args: self.writes.append(args), lunch_add_visit=lambda *args: None)
-        scope = dict(app=self.app, jsonify=jsonify, request=request, session=session,
+        accounts = SimpleNamespace(authenticate=lambda username, pw: {'version': 1, 'display_name': '김테스터'} if username == 'test1' and pw == '1234' else None)
+        scope = dict(app=self.app, jsonify=jsonify, request=request, session=session, g=g, accounts=accounts,
                      canonical_user=canonical_user, display_name=display_name, public_author=public_author,
-                     TEST_USERS={'test1': '1234'}, ADMIN_PW='test-admin-password', db=db,
+                     ADMIN_PW='test-admin-password', db=db,
                      _safe_list=lambda fn, **kw: jsonify(fn()), _ensure_db=lambda **kw: True,
                      _invalidate_lunch_cache=lambda: None)
         names = {'_admin_ok', '_current_user', '_cur_user', 'me', 'login', 'logout', 'lunch_reviews', 'lunch_review'}
