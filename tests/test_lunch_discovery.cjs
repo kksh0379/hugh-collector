@@ -26,18 +26,8 @@ test('random order stays stable when re-rendering and never mutates stored rows'
  ctx.LUNCH.sort='distance'; assert.deepEqual(Array.from(ctx.filtered(),r=>r.id),[1,2]);
  ctx.LUNCH.sort='rating'; assert.deepEqual(Array.from(ctx.filtered(),r=>r.id),[2,1]);
 });
-const {photoUrls,safeUrl}=require('../static/js/lunch-gallery.js');
-test('gallery only renders verified safe photos, with deduplication and a three-photo cap',()=>{
- const data={status:'verified',verification:'business_name_address',source_url:'https://example.com/store',images:['https://example.com/a.jpg','javascript:alert(1)','https://example.com/a.jpg','https://example.com/b.jpg','https://example.com/c.jpg','https://example.com/d.jpg']};
- assert.equal(photoUrls(data).length,3);
- assert.equal(photoUrls({...data,status:'pending'}).length,0);
- assert.equal(photoUrls({...data,verification:'guess'}).length,0);
- assert.equal(photoUrls({...data,source_url:'javascript:alert(1)'}).length,0);
- assert.equal(safeUrl('https://user:password@example.com/'),'');
-});
-test('gallery overflow stays within the card and uses horizontal snapping, not automatic scrolling',()=>{
- const css=fs.readFileSync('static/css/style.css','utf8');
- assert.match(css,/\.lunch-card\{min-width:0;overflow:hidden\}/);
- assert.match(css,/\.lunch-photo-rail\{[^}]*overflow-x:auto[^}]*scroll-snap-type:x mandatory/);
- assert.match(source,/HScopeLunchGallery\?\.mount\(list\)/);
+test('removed restaurant photo scraping stays disabled',()=>{
+ const app=fs.readFileSync('app.py','utf8');
+ assert.doesNotMatch(app,/\\@app\\.post\\(['\"]\\/api\\/lunch\\/images/);
+ assert.doesNotMatch(source,/HScopeLunchGallery\\?\\.mount\\(list\\)/);
 });
