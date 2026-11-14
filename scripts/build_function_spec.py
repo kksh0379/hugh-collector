@@ -438,6 +438,7 @@ def details(t,file):
 def add(service,screen,zone,group,name,kind,detail,source):
  rows.append({'id':f'IA-{len(rows)+1:04d}','d1':service,'d2':screen,'d3':zone,'d4':group,'d5':name,'type':kind,'description':detail[0],'input':detail[1],'result':detail[2],'exception':detail[3],'permission':detail[4],'storage':detail[5],'source':source+(' · '+detail[6] if detail[6] else '')})
 coverage=[]
+missing_controls=[]
 for file in FILES:
  soup=BeautifulSoup((ROOT/'templates'/f'{file}.html').read_text(),'html.parser')
  for i,t in enumerate(soup.select('button,input:not([type=hidden]),select,textarea,a,summary'),1):
@@ -455,7 +456,11 @@ for file in FILES:
   if group.startswith('panel-'):group='분류·목록·수집'
   if group.startswith('view-'):group='화면 탐색'
   if group in MODALS:group='대화상자 조작'
-  detail=details(t,file)
+  try:
+   detail=details(t,file)
+  except ValueError as error:
+   missing_controls.append(f'{file} · {t.get("id") or t.get("name") or t.name} · {str(error)[:160]}')
+   continue
   if any('admin-only' in p.get('class',[]) for p in [t,*t.parents] if hasattr(p,'get')) or screen.startswith('관리자') or screen=='수집 상태':detail[4]='관리자'
   if 'loggedout-only' in t.get('class',[]):detail[4]='비로그인 방문자'
   if 'loggedin-only' in t.get('class',[]):detail[4]='로그인 사용자·관리자'
@@ -467,6 +472,9 @@ for file in FILES:
    for opt in t.find_all('option'):
     d=detail.copy();d[0]='선택값 '+opt.get_text(' ',strip=True)+'을 해당 선택목록에 적용한다. '+detail[0];d[1]='value='+opt.get('value','')
     add(rows[-1]['d1'],screen,zone,group,'옵션: '+opt.get_text(' ',strip=True),'선택 옵션',d,f'templates/{file}.html · {selector}')
+
+if missing_controls:
+ raise ValueError('Unreviewed controls:\\n' + '\\n'.join(missing_controls))
 
 for name,desc in [
  ('주가 새로고침 버튼','엔씨 주가 카드의 새로고침 버튼으로 별도 /api/finance/stock 조회를 다시 요청한다. 경제지표·브리핑 전체를 다시 분석하지 않는다.'),
