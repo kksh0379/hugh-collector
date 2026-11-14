@@ -6,6 +6,23 @@ import requests
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
+def exit_code(report):
+    """Only page operators for verified service/probe failures or an incomplete run.
+
+    Regression-test failures remain visible in the stored report and cron logs,
+    but must not be conflated with a production outage by Render's job alerts.
+    """
+    if report.get('status') in ('running', 'interrupted'):
+        return 1
+    counts = report.get('summary_counts') or {}
+    if not counts:
+        # Do not silently accept unclassified, possibly truncated results.
+        return 1
+    if counts.get('service_failure', 0) or counts.get('probe_error', 0):
+        return 1
+    return 0
+
+
 def main():
     origin=os.environ.get('HEALTHCHECK_ORIGIN','https://hscope.onrender.com').rstrip('/')
     key=Ed25519PrivateKey.from_private_bytes(bytes.fromhex(os.environ['HEALTHCHECK_SIGNING_KEY']))
@@ -34,7 +51,10 @@ def main():
         if state['status']!='running':
             print(json.dumps({'status':state.get('assessment_status',state['status']),'duration_ms':state['duration_ms'],
                 'counts':state.get('summary_counts',state.get('counts',{})),'id':run_id},ensure_ascii=False),flush=True)
-            return 1 if state['status'] in ('failed','interrupted') else 0
+            code = exit_code(state)
+            if not code and state.get('assessment_status') == 'needs_review':
+                print('Health check needs review: regression/test failures saved; no confirmed service failure.', flush=True)
+            return code
         time.sleep(10)
     raise RuntimeError('Health check exceeded 25-minute execution limit')
 
