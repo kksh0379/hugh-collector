@@ -103,8 +103,10 @@ class DatabasePerformanceTests(unittest.TestCase):
         for p in self.patches:
             p.start()
         db.lunch_seed_locations([{"name": "지역 A"}, {"name": "지역 B"}])
-        db.lunch_upsert_restaurants(1, [{"place_id": "a", "name": "식당 A"}, {"place_id": "b", "name": "식당 B"}])
-        db.lunch_upsert_restaurants(2, [{"place_id": "c", "name": "다른 지역"}])
+        db.lunch_set_location_coords(1, 37.58, 127.0)
+        db.lunch_set_location_coords(2, 37.60, 127.0)
+        db.lunch_upsert_restaurants(1, [{"place_id": "a", "name": "식당 A", "lat": 37.58, "lng": 127.0}, {"place_id": "b", "name": "식당 B", "lat": 37.58, "lng": 127.0}])
+        db.lunch_upsert_restaurants(2, [{"place_id": "c", "name": "다른 지역", "lat": 37.60, "lng": 127.0}])
         self.client = web.app.test_client()
 
     def tearDown(self):
@@ -206,7 +208,8 @@ class DatabasePerformanceTests(unittest.TestCase):
         self.client.get("/api/lunch/restaurants?loc=1")
         with self.client.session_transaction() as session:
             session["user"] = "tester"
-        self.assertEqual(self.client.post("/api/lunch/review", json={"rid": rid, "rating": 5}).status_code, 200)
+        with patch.object(web.accounts, "get_account", return_value={"version": 1, "display_name": "tester"}):
+            self.assertEqual(self.client.post("/api/lunch/review", json={"rid": rid, "rating": 5}).status_code, 200)
         rows = self.client.get("/api/lunch/restaurants?loc=1").json["restaurants"]
         self.assertEqual(next(r for r in rows if r["id"] == rid)["avg_rating"], 5)
 
