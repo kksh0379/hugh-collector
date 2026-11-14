@@ -81,12 +81,12 @@ class NearbyTests(unittest.TestCase):
         self.assertTrue(data['ok']);self.assertEqual(data['pick']['id'],rid)
         data=self.client.post('/api/lunch/recommend',json={'loc_id':1,'radius':1340,'candidate_ids':[]}).get_json()
         self.assertFalse(data['ok'])
-    def test_image_endpoint_is_bounded_and_uses_existing_restaurant_ids(self):
-        with patch.object(web.lunch_images,'lookup',return_value={str(self.rid):{'status':'unverified'}}) as lookup:
-            for body in [[],{'ids':[]},{'ids':[True]},{'ids':['1']},{'ids':list(range(1,14))}]:
-                self.assertEqual(self.client.post('/api/lunch/images',json=body).status_code,400)
-            self.assertEqual(self.client.post('/api/lunch/images',json={'ids':[self.rid,self.rid]}).status_code,200)
-            lookup.assert_called_once_with([self.rid])
+    def test_removed_image_endpoint_is_not_available(self):
+        # Restaurant image downloads were removed by product decision.
+        self.assertEqual(
+            self.client.post('/api/lunch/images', json={'ids': [self.rid]}).status_code,
+            404,
+        )
     def test_worker_failure_does_not_save_coverage_or_change_existing(self):
         before=db.lunch_get_restaurant(self.rid)
         web._GPS_JOBS['test']={'running':True}
