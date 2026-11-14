@@ -132,7 +132,7 @@ class HistoryBootstrapTests(unittest.TestCase):
         meta={'biz_history_recovery_v373': 'complete' if complete else '', 'biz_history_attempt_v373': str(attempted)}
         ctx={'os':os, 'time':SimpleNamespace(time=lambda:10000), '_ensure_db':lambda **kw:True,
              'google_news':google_news, '_JOBS':{'biz':{'running':busy}},
-             'db':SimpleNamespace(get_meta=lambda k,d=None:meta.get(k,d),set_meta=lambda k,v:meta.update({k:v})),
+             'db':SimpleNamespace(get_meta=lambda k,d=None:meta.get(k,d),set_meta=lambda k,v:meta.update({k:v}),reset_missing_news_image_attempts=lambda section:None),
              '_start_job':lambda group,**kw:calls.append((group,kw)) or True,
              '_enrich_news_images':lambda **kw:None}
         with patch.dict(os.environ,{'ENABLE_SCHEDULER':'1'}):function('_bootstrap_biz_images',ctx)()
