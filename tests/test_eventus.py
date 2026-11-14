@@ -48,7 +48,9 @@ class EventusTests(unittest.TestCase):
         self.assertIsNotNone(eventus.parse(row(event_system_type='online', area_detail='', full_address=''), TODAY))
 
     def test_pagination_repeated_rows_and_exclusion_before_storage(self):
-        response = Mock(); response.json.return_value = {'results':[row(), row('AI 특강', id='23456')], 'meta':{'page':{'total_pages':3}}}
+        start = (dt.datetime.now(eventus.KST) + dt.timedelta(days=10)).replace(hour=10, minute=0, second=0, microsecond=0)
+        valid = {'start_date': start.isoformat(), 'close_date': (start + dt.timedelta(hours=5)).isoformat()}
+        response = Mock(); response.json.return_value = {'results':[row(**valid), row('AI 특강', id='23456', **valid)], 'meta':{'page':{'total_pages':3}}}
         session = Mock(); session.post.return_value = response
         session.__enter__ = Mock(return_value=session); session.__exit__ = Mock(return_value=False)
         with patch.object(eventus.requests, 'Session', return_value=session), patch.object(eventus.time, 'sleep'):
