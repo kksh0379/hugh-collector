@@ -9,7 +9,7 @@ function setup(saved='list') {
  const modes=['schedule','curation'].map(emode=>button({emode})),views=['list','album','calendar'].map(eview=>button({eview}));
  [...modes,...views].forEach(b=>b.classList.owner=b);
  const picker={hidden:true};let active='event',renders=0;
- const c=vm.createContext({localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},document:{body:{classList:{toggle:(k,v)=>v?classes.add(k):classes.delete(k)}},getElementById:()=>picker,querySelectorAll:s=>s.includes('mode')?modes:views},activeTab:()=>active,renderTab:()=>renders++});
+ const c=vm.createContext({localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},document:{body:{classList:{toggle:(k,v)=>v?classes.add(k):classes.delete(k)}},getElementById:()=>picker,querySelectorAll:s=>s.includes('mode')?modes:views},activeTab:()=>active,renderTab:()=>renders++,scrapViewMode:'album'});
  vm.runInContext(src.slice(src.indexOf('function applyViewClasses'),src.indexOf('function setView'))+src.slice(src.indexOf('let eventView ='),src.indexOf('let eventCalYM'))+src.slice(src.indexOf('function syncEventViewControls'),src.indexOf('// ----------------------------- 상태 확인')),c);
  return {c,storage,classes,modes,views,picker,setActive:v=>active=v,renders:()=>renders};
 }
