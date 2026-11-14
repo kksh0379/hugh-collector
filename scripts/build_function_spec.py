@@ -28,6 +28,20 @@ define('healthcheck-refresh','현재 선택한 점검 기록의 최신 진행 �
 define('healthcheck-history','최근 30회 점검 기록을 선택하여 결과·시작·종료 시각·소요 시간을 조회한다.',access='관리자',store='조회만',api='GET /api/admin/healthchecks?id=실행ID')
 define('healthcheck-problems','정상 결과를 숨기고 주의·서비스 점검 실패·테스트 검증 실패·실행 예외·환경 오류·점검 도구 오류·미점검 결과만 표시한다.',access='관리자',store='화면 필터')
 define('healthcheck-close','기능 점검 결과 팝업을 닫는다. 진행 중 백그라운드 점검은 계속된다.',access='관리자',store='화면 상태')
+
+define('admin-controls-toggle','관리자 도구 영역을 펼치거나 접어 관리 버튼의 노출을 변경한다.',access='관리자',store='화면 펼침 상태')
+define('ai-usage-btn','관리자 전용 토큰 사용량·예상 비용·잔액 보정 창을 연다. 상세 이용 기록을 조회한다.',access='관리자',store='조회·관리자 입력 잔액',api='GET/POST /api/admin/ai-usage')
+define('token-billing-btn','Claude Console의 API 크레딧 결제 화면을 새 탭에서 연다. 누르는 것만으로 결제하지 않는다.',access='관리자',store='외부 사이트 이동',api='https://platform.claude.com/settings/billing')
+define('mail-test-btn','서버의 발송 설정 상태를 확인한 뒤 사용자 확인을 받고 관리자 전용 테스트 메일을 보낸다.',access='관리자',store='테스트 메일 발송 결과',api='GET /api/admin/mail/status · POST /api/admin/mail/test')
+define('lunch-sort','현재 조건의 맛집을 랜덤 추천순·가까운순·평점순으로 재정렬한다. 저장된 식당 자체는 변경하지 않는다.',store='현재 정렬 상태')
+define('reader-summary-button','기사 원문 또는 수집 정보에 대한 AI 핵심 요약을 사용자 요청 시 생성·표시한다. 요청 중에는 중복 클릭을 막는다.',store='서버 요약 캐시',api='GET /api/reader-summary')
+define('calc-hourly-mode','월급에서 시급으로 또는 시급에서 월급으로 환산하는 계산 방향을 선택한다.',store='화면 계산 상태')
+define('calc-hourly-hours','시급 환산에 사용할 월 근로시간을 입력한다. 기본 209시간이며 사용자가 변경할 수 있다.',store='화면 계산 상태')
+define('calc-hourly-amount','시급 환산 대상인 세전 월급 또는 시급 금액을 입력한다.',store='화면 계산 상태')
+define('calc-salary-offer','현재 연봉과 비교할 제안 연봉을 입력해 세후 예상액 차이를 계산한다.',store='화면 계산 상태')
+define('calc-salary-target','목표 월 실수령액을 입력해 필요한 세전 연봉을 역산한다.',store='화면 계산 상태')
+define('service-notice-hide-today','이용 전 안내 팝업에서 오늘 하루 보지 않기를 선택한다. 확인 시 한국시간 오늘 날짜를 저장하고 다음 날 다시 표시할 수 있다.',store='브라우저 localStorage hscopeNoticeHiddenDay')
+
 for key,desc in {
  'features-btn':'일반 사용자와 방문자에게 보일 탭·기능의 표시 설정 팝업을 연다. 관리자는 숨긴 항목도 볼 수 있다.',
  'notes-btn':'관리자 패치내역 팝업에서 날짜별 버전과 변경 사항을 조회한다. 개발자 노트 본문은 이 팝업에서 제공하지 않는다.',
@@ -398,6 +412,7 @@ def details(t,file):
    'data-sort':'보안뉴스를 게시일 최신순 또는 저장된 중요도순으로 정렬한다.',
    'data-emode':'달력 아이콘·일정(기본)/AI 아이콘·큐레이션 화면으로 전환한다. 일정 보기 설정을 유지하며 전환 자체로 AI API를 호출하지 않는다.',
    'data-eview':'행사 일반 일정을 리스트/앨범/캘린더로 바꾼다. eventScheduleView로 뉴스 보기와 독립 저장한다.',
+   'data-scrap-view':'스크랩 페이지의 리스트 또는 이미지 없는 앨범형 보기를 전환하고 선호를 저장한다.',
    'data-kind':'재단 분기/보안 월간 리포트 유형을 선택해 해당 스냅샷 목록을 읽는다.',
    'data-role':'일반 사용자/관리자 로그인 유형을 전환하고 해당 입력 필드·기본 계정 안내를 표시한다.',
    'data-log':'관리자 수집 로그/접속 로그 목록을 선택해 읽는다.',
@@ -410,7 +425,7 @@ def details(t,file):
   }.get(k)
   if desc:
    perm='관리자' if k in ['data-feat','data-log'] else '방문자·로그인 사용자·관리자'
-   store='DB 설정' if k=='data-feat' else '브라우저 보기 설정' if k in ['data-view','data-eview'] else '화면 상태'
+   store='DB 설정' if k=='data-feat' else '브라우저 보기 설정' if k in ['data-view','data-eview','data-scrap-view'] else '화면 상태'
    return [desc,f'{k}={v}'+('; 잠긴 항목은 변경 불가' if t.has_attr('disabled') else ''),'선택 상태·자료/설정 표시 갱신','자료 없음·미지원 기능은 해당 영역에서 안내',perm,store,'POST /api/features' if k=='data-feat' else '']
  if t.name=='a':
   href=t.get('href','')
