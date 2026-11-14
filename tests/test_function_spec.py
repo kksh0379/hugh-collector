@@ -19,6 +19,13 @@ class FunctionSpecTests(unittest.TestCase):
    for el in controls:
     if el.get('id'):self.assertTrue(any(c['selector']=='#'+el['id'] for c in refs),el['id'])
    self.assertEqual(len(ids),len(refs),file)
+ def test_recent_control_changes_have_reviewed_specifications(self):
+  selectors={row['selector'] for row in self.manifest['template_controls']}
+  for selector in ('#admin-controls-toggle','#ai-usage-btn','#mail-test-btn','#lunch-sort','#reader-summary-button',
+                   '#calc-hourly-mode','#calc-hourly-hours','#calc-hourly-amount','#calc-salary-offer','#calc-salary-target',
+                   '#service-notice-hide-today'):
+   self.assertIn(selector,selectors)
+  self.assertEqual(self.manifest['version'],'3.192')
  def test_rows_are_unique_complete_and_rendered_in_both_formats(self):
   rows=self.manifest['rows'];md=(ROOT/'static/docs/function-spec.md').read_text()
   rendered=self.soup.select('#spec-table tbody tr')
