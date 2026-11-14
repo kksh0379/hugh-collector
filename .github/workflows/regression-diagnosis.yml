@@ -1,0 +1,58 @@
+name: Hscope regression diagnosis
+on:
+  push:
+    branches:
+      - claude/quirky-euler-agfmp
+    paths:
+      - 'tests/**'
+      - 'collector/**'
+      - 'scripts/healthcheck_suite.py'
+      - '.github/workflows/regression-diagnosis.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run isolated regression tests (no credentials)
+        env:
+          ENABLE_SCHEDULER: '0'
+          AUTO_BACKFILL: '0'
+          ENABLE_DB_PREWARM: '0'
+          HEALTHCHECK_DISABLE: '1'
+        shell: bash
+        run: |
+          python scripts/healthcheck_suite.py /tmp/hscope-regression.json || true
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/hscope-regression.json')
+          if not p.exists():
+              print('Regression suite did not produce results')
+          else:
+              data=json.loads(p.read_text())
+              results=data.get('results',[])
+              problems=[r for r in results if r.get('status')=='failed']
+              print(f'REGRESSION_TOTAL={len(results)} FAILED={len(problems)} COMPLETE={data.get("done")}')
+              for r in problems:
+                  print(json.dumps({k:r.get(k) for k in ('group','name','status','category','detail')},ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hscope-regression-report
+          path: /tmp/hscope-regression.json
+          if-no-files-found: warn
