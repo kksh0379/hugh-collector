@@ -72,7 +72,7 @@ class ImageQueueTests(unittest.TestCase):
     def test_old_schema_migrates_without_losing_news(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(db, 'DB_PATH', directory + '/test.db'), patch.object(db, '_PG', False):
             with db.get_conn() as conn:
-                conn.execute(db._DDL[0].replace(' enrich_checked_at TEXT,', ''))
+                conn.execute(next(stmt for stmt in db._DDL if stmt.startswith('CREATE TABLE IF NOT EXISTS news ')).replace(' enrich_checked_at TEXT,', ''))
                 conn.execute("INSERT INTO news (url, title, section) VALUES ('saved', 'preserve me', 'biz')")
             db.init_db()
             with db.get_conn() as conn:
