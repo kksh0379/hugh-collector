@@ -20,6 +20,11 @@ def exit_code(report):
         return 1
     if counts.get('service_failure', 0) or counts.get('probe_error', 0):
         return 1
+    if report.get('status') == 'failed' and not any(
+        counts.get(name, 0) for name in ('test_failure', 'test_error', 'test_environment')
+    ):
+        # Unknown failed state: be conservative rather than silently suppressing it.
+        return 1
     return 0
 
 
