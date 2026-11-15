@@ -604,10 +604,36 @@ GAME_CATEGORIES = {
 
 
 def crawl_game(max_workers=24, max_items=0, progress=None, known_urls=None, days=None):
-    """게임 뉴스 수집. 냥정보와 동일하게 검색어가 곧 조건이라 키워드 필터는 끈다."""
-    return crawl(max_workers=max_workers, max_items=max_items, progress=progress,
-                 known_urls=known_urls, days=days,
-                 categories=GAME_CATEGORIES, keyword_filter=False)
+    """Google News discovery + direct game-editorial RSS; never delete saved data on RSS failure."""
+    from . import game_feeds
+    progress = progress or (lambda message: None)
+    known_urls = known_urls or set()
+    # A publisher's current feed fills Google News indexing gaps. Keep an independent
+    # source so an RSS outage never blocks the general search collector.
+    direct, feed_warnings = game_feeds.collect(days=days or 30)
+    try:
+        google = crawl(max_workers=max_workers, max_items=max_items, progress=progress,
+                       known_urls=known_urls, days=days,
+                       categories=GAME_CATEGORIES, keyword_filter=False)
+    except RuntimeError:
+        if not direct:
+            raise
+        google = CollectionItems((), complete=False, warnings=("구글 뉴스 검색에 연결하지 못해 매체 RSS만 확보했어요.",))
+    result = list(google)
+    seen_urls = {item.get("url") for item in result} | known_urls
+    seen_paths = {urlsplit(url).path.rstrip("/") for url in seen_urls if url and "ruliweb.com" in urlsplit(url).netloc}
+    added = 0
+    for item in direct:
+        url = item["url"]
+        if url in seen_urls or urlsplit(url).path.rstrip("/") in seen_paths:
+            continue
+        result.append(item)
+        seen_urls.add(url)
+        seen_paths.add(urlsplit(url).path.rstrip("/"))
+        added += 1
+    progress(f"게임 전문 매체 RSS 신규 {added}건 · 전체 수집 {len(result)}건")
+    return CollectionItems(result, complete=google.complete and not feed_warnings,
+                           warnings=[*google.warnings, *feed_warnings])
 
 
 # ---- 업계동향: (A) 업계 키워드 OR (B) 지정 기관명. 제목에 제외어 있으면 버림 ----
