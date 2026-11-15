@@ -1328,7 +1328,7 @@ function bizBadge(it) {
 function renderBizCombined(el, list) {
   const newDate = computeNewDate(list);
   renderInfinite(el, list,
-    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab, newDate, hideImage: true }),
+    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab, newDate, hideImage: item._src !== "video" }),
     "표시할 소식이 아직 없어요.");
 }
 function publicationTime(value) {
