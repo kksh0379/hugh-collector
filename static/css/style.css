@@ -1786,3 +1786,18 @@ html.pre-hide-social #biz-cats label:has([data-cat="영상"]) { display: none !i
 /* v3.194: retrieve historical news only when requested from the end of a lightweight initial feed. */
 .feed-more-row { display:flex; justify-content:center; list-style:none; padding:18px 12px 24px; }
 .feed-more-row .btn-collect { width:auto; min-width:180px; min-height:40px; border-radius:12px; }
+
+/* v3.197: nonprofit-trends feed uses one consistent text-first card layout.
+   Scope to the combined feed; other news and event thumbnails are untouched. */
+#list-biz .card-no-media .card-main { display:block; min-width:0; }
+#list-biz .card-no-media .card-body { width:100%; min-width:0; }
+@media (min-width:768px) {
+  body:not(.view-list) #list-biz .card-no-media .card-main {
+    display:block;
+    grid-template-columns:none;
+  }
+  body:not(.view-list) #list-biz .card-no-media .card-body {
+    grid-column:auto;
+    grid-row:auto;
+  }
+}
