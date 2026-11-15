@@ -1605,8 +1605,10 @@ async function loadEvent() {
   if (calendar && !calendar.children.length) HScopeSkeleton.render(calendar,"event");
   try {
     const res = await fetchData("/api/events");
-    setTabData("event", el, await res.json(), renderEvents);
-    TAB_DATA.event.prefilter = filterEventsByCategory;
+    const previous = TAB_DATA.event;
+    TAB_DATA.event = {el, items: await res.json(), render: renderEvents,
+      query: previous?.query || "", prefilter: filterEventsByCategory, fullLoaded: true};
+    // Set the event filter before rendering: avoid building 1,000 cards twice.
     renderTab("event");
   } catch (e) {
     emptyState(el, "불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -1657,10 +1659,9 @@ function renderEventAlbum(list) {
       + `<div class="empty-hint">관리자가 '수집 실행'을 누르면 국내 행사가 모여요.</div></li>`;
     return;
   }
-  el.innerHTML = "";
-  const frag = document.createDocumentFragment();
-  list.forEach((s) => frag.appendChild(eventAlbumCard(s)));
-  el.appendChild(frag);
+  // Render in small chunks, matching news cards. Building every event card
+  // synchronously caused long main-thread stalls on mobile.
+  renderInfinite(el, list, (s) => eventAlbumCard(s), "표시할 행사가 아직 없어요.");
 }
 const CAL_COLORS = ["#2d6cdf", "#16a34a", "#dc2626", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#4b5563"];
 function _mdRange(s) {  // 09.28 ~ 30 형태
