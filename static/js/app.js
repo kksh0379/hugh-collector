@@ -802,6 +802,7 @@ function renderInfinite(el, units, makeNode, emptyMsg) {
   sentinel.className = "scroll-sentinel";
   el.appendChild(sentinel);
   function more(count = CHUNK) {
+    if (i >= units.length) return;
     const frag = document.createDocumentFragment();
     for (let n = 0; n < count && i < units.length; n++, i++) frag.appendChild(makeNode(units[i]));
     el.insertBefore(frag, sentinel);
