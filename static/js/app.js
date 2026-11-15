@@ -793,20 +793,54 @@ document.addEventListener("click", (e) => {
 function renderInfinite(el, units, makeNode, emptyMsg) {
   el.innerHTML = "";
   if (!units.length) { emptyState(el, emptyMsg); return; }
-  const CHUNK = 20;   // 한 번에 20개씩 렌더(무한 스크롤)
+  const CHUNK = 20;
+  const tab = (el.id || "").replace(/^list-/, "");
+  const restoreCount = window.__hscopeExpandedFeedTab === tab ? 100 : CHUNK;
+  if (restoreCount !== CHUNK) window.__hscopeExpandedFeedTab = null;
   let i = 0;
   const sentinel = document.createElement("li");
   sentinel.className = "scroll-sentinel";
   el.appendChild(sentinel);
-  function more() {
+  function more(count = CHUNK) {
     const frag = document.createDocumentFragment();
-    for (let n = 0; n < CHUNK && i < units.length; n++, i++) frag.appendChild(makeNode(units[i]));
+    for (let n = 0; n < count && i < units.length; n++, i++) frag.appendChild(makeNode(units[i]));
     el.insertBefore(frag, sentinel);
-    if (i >= units.length) { obs.disconnect(); sentinel.remove(); }
+    if (i >= units.length) {
+      obs.disconnect();
+      sentinel.remove();
+      const d = TAB_DATA[tab];
+      // Preserve access to older news: only request the full archive if the
+      // reader reaches the end of the first, small batch and asks for more.
+      if (d && !d.fullLoaded && !d.query && d.items.length >= 100
+          && (d.endpoint || typeof d.fullLoad === "function")) {
+        const item = document.createElement("li");
+        item.className = "feed-more-row";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-collect";
+        button.textContent = "이전 기사 더보기";
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          button.textContent = "이전 기사 불러오는 중…";
+          const y = window.scrollY;
+          await ensureFullData(tab);
+          if (d.fullLoaded) {
+            window.__hscopeExpandedFeedTab = tab;
+            renderTab(tab);
+            requestAnimationFrame(() => window.scrollTo(0, y));
+          } else {
+            button.disabled = false;
+            button.textContent = "이전 기사 더보기 · 다시 시도";
+          }
+        });
+        item.appendChild(button);
+        el.appendChild(item);
+      }
+    }
   }
   const obs = new IntersectionObserver((ents) => { if (ents[0].isIntersecting) more(); }, { rootMargin: "300px" });
   obs.observe(sentinel);
-  more();
+  more(restoreCount);
 }
 
 // ----------------------------- 카드 렌더링 -----------------------------
