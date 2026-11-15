@@ -1550,7 +1550,7 @@ def _invalidate_read_cache():
     _PUBLIC_READS.invalidate()
 
 
-def _safe_list(fetch, ttl=_READ_TTL):
+def _safe_list(fetch, ttl=_READ_TTL, wait=0.75):
     # Ignore cache-busting/unknown parameters; only actual query filters form keys.
     names = (("kind", "id") if request.path.startswith("/api/report/") else
              ("rid",) if request.path == "/api/lunch/reviews" else
@@ -1565,7 +1565,7 @@ def _safe_list(fetch, ttl=_READ_TTL):
         return fetch()
 
     # 첫 요청이 거의 항상 pending([])으로 떨어지지 않도록 대기시간을 늘림(백그라운드 로딩을 기다렸다 반환).
-    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=0.75)
+    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=wait)
     response = jsonify(data if data is not None else [])
     response.headers["Cache-Control"] = "no-store"
     if data is None:
@@ -1621,7 +1621,8 @@ def get_secnews():
 
 @app.get("/api/events")
 def get_events():
-    return _safe_list(lambda: db.list_events())
+    # Cache slow-changing schedules and avoid repetitive cold pending requests.
+    return _safe_list(lambda: db.list_events(), ttl=180, wait=1.8)
 
 
 @app.post("/api/events/recommend")
