@@ -625,6 +625,8 @@ document.querySelectorAll(".tab").forEach((tab) => {
     if (typeof syncSearchInput === "function") syncSearchInput();
     if (typeof updateCount === "function") updateCount(tab.dataset.tab);
     if (tab.dataset.tab === "report" && typeof loadReport === "function") loadReport();
+    // The requested news tab fetches on first visit; hidden tabs never compete for initial bandwidth.
+    if (tab.dataset.tab !== "report") loadTabOnDemand(tab.dataset.tab);
     if (tab.dataset.tab === "event") { syncEventViewControls(); renderTab("event"); }
     else applyViewClasses(newsViewMode);
   });
@@ -4053,15 +4055,25 @@ function lunchLocationLabel(location) {
 })();
 
 // ----------------------------- 초기 로드 -----------------------------
+// Only the selected news tab is requested at startup. Other tabs load on first visit.
+// In-flight promises are shared to avoid duplicate requests during fast tab switching.
+const TAB_LOADERS = {cat:loadCat, game:loadGame, news:loadNews, biz:loadBiz,
+  security:loadSecurity, event:loadEvent, boards:loadBoards, social:loadSocial};
+const TAB_LOADING = new Map();
+function loadTabOnDemand(tab) {
+  if (TAB_DATA[tab]) return Promise.resolve();
+  if (!TAB_LOADERS[tab]) return Promise.resolve();
+  if (!TAB_LOADING.has(tab)) {
+    const request = Promise.resolve().then(() => TAB_LOADERS[tab]())
+      .finally(() => TAB_LOADING.delete(tab));
+    TAB_LOADING.set(tab, request);
+  }
+  return TAB_LOADING.get(tab);
+}
 // 표시 설정은 로그인 상태 확인(initAuth) 후 적용 → 관리자 판정 전 잠깐 숨는 깜빡임 방지.
 initAuth().then(loadFeatures).catch(loadFeatures);
 loadMeta();
-loadCat();
-loadGame();
-loadNews();
-loadBiz();   // 동향 뉴스 + 재단게시판 + 재단영상 통합 로드
-loadSecurity();
-loadEvent();
+loadTabOnDemand(activeTab());
 resumeCrawls();  // 진행 중이던 수집이 있으면 폴링 재개(화면 껐다 켜도 이어짐)
 
 // Pull refresh updates the visible view without navigating or recreating the document.
