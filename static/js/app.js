@@ -4034,8 +4034,8 @@ function lunchLocationLabel(location) {
 
   wire();
   renderLocBar();
-  // Prepare labels while the user is browsing news, before the food tab is opened.
-  loadLocations();
+  // Delay restaurant DB reads until the food page is visited.
+  // onShowLunch() will load the same locations without competing with the first news paint.
   window.onShowLunch = function () {
     LUNCH.inited = true;
     renderLocBar(); resolveHistoryAddresses();
