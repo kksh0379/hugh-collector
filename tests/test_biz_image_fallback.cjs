@@ -45,3 +45,10 @@ test('combined nonprofit feed keeps thumbnails only for videos',()=>{
   assert.match(source,/opts\.hideImage\s*\?\s*""\s*:\s*newsThumb/);
   assert.match(source,/card-no-media/);
 });
+
+test('text-only cards drop reserved desktop image column, while video cards keep media grid',()=>{
+  const css=fs.readFileSync('static/css/style.css','utf8');
+  assert.match(css,/#list-biz \.card-no-media \.card-main\s*\{\s*display:block/);
+  assert.match(css,/#list-biz \.card-video \.card-main/);
+  assert.match(source,/item\._src === "video" \? " card-video"/);
+});
