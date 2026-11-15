@@ -129,7 +129,7 @@ class VenueTests(unittest.TestCase):
         scope['_start_worker_jobs'](); scope['_start_worker_jobs']()
         scheduler.assert_called_once()
         self.assertEqual(thread.call_count, 6)
-        self.assertEqual([call.kwargs['target'] for call in thread.call_args_list], targets)
+        scheduled = [next(cell.cell_contents for cell in call.kwargs['target'].__closure__\n                          if isinstance(cell.cell_contents, Mock))\n                     for call in thread.call_args_list]\n        self.assertEqual(scheduled, targets)
 
 
 if __name__ == '__main__':
