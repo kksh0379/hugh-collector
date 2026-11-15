@@ -38,3 +38,10 @@ test('missing image remains an honest no-image placeholder',()=>{
   assert.match(html,/is-no-image/);
   assert.match(html,/\/static\/no-image.svg/);
 });
+
+test('combined nonprofit feed keeps thumbnails only for videos',()=>{
+  const renderSection=source.slice(source.indexOf('function renderBizCombined('),source.indexOf('function publicationTime('));
+  assert.match(renderSection,/hideImage:\s*item\._src\s*!==\s*"video"/);
+  assert.match(source,/opts\.hideImage\s*\?\s*""\s*:\s*newsThumb/);
+  assert.match(source,/card-no-media/);
+});
