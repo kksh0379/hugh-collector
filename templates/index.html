@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <script src="{{ url_for('static', filename='js/pwa-layout.js', v='3.135') }}"></script>
+  <script src="{{ url_for('static', filename='js/pwa-layout.js', v=asset_ver) }}"></script>
   <title>휴 스코프</title>
   <meta name="description" content="재단·업계 뉴스와 재단 게시판·소셜 채널을 한 곳에서 모아보는 통합 스코프." />
   <meta name="theme-color" content="#ffffff" />
-  <script src="{{ url_for('static', filename='js/theme.js', v='3.145') }}"></script>
+  <script src="{{ url_for('static', filename='js/theme.js', v=asset_ver) }}"></script>
 
   <!-- 링크 미리보기(카톡·슬랙·트위터 등) Open Graph -->
   {% set og_base = 'https://' + request.host %}
@@ -33,7 +33,7 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png', v='145') }}" />
   <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest', v='3.135') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=asset_ver ~ "-cats-v3.135-features") }}" />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/share.css', v='3.135') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/share.css', v=asset_ver) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/accounts.css', v=asset_ver) }}">
   <link rel="preload" as="image" fetchpriority="high" media="(prefers-reduced-motion: no-preference)" href="{{ url_for('static', filename='cats-loading-smooth-v2.28.webp') }}" />
   <!-- 표시 설정(온오프) 첫 페인트 전 적용 → 새로고침 시 숨긴 항목이 깜빡이지 않게(FOUC 방지).
@@ -50,18 +50,18 @@
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/events-ui.css', v=asset_ver ~ '-mobile-v3.135') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/finance.css', v=asset_ver ~ '-salary-v1') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/healthchecks.css', v='20261009-2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/healthchecks.css', v=asset_ver) }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/videos.css', v=asset_ver ~ '-v3.135') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/reader.css', v=asset_ver ~ "-cats-v3.135") }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v='3.38') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v='3.135') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/copy-layout.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app-shell.css', v=asset_ver) }}">
 <style>body.is-admin .collection-admin.admin-only { display: block !important; }</style>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v='20261008-2') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/skeleton.css', v='3.135') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css', v='3.145') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/window-controls.css', v='3.151') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/scrap-motion.css', v='3.179') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/scrap-undo.css', v='3.172') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/mouse-scroll.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/skeleton.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/window-controls.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/scrap-motion.css', v=asset_ver) }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/scrap-undo.css', v=asset_ver) }}">
 </head>
 <body>
   <header class="app-header">
@@ -613,26 +613,26 @@
     </article>
   </dialog>
 
-  <script src="{{ url_for('static', filename='js/skeleton.js', v='3.135') }}"></script>
-  <script src="{{ url_for('static', filename='js/credit-help.js', v='3.145') }}"></script>
+  <script src="{{ url_for('static', filename='js/skeleton.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/credit-help.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='js/events-ui.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/admin-controls.js', v='3.148') }}"></script>
-  <script src="{{ url_for('static', filename='js/scrap-motion.js', v='3.179') }}"></script>
-  <script src="{{ url_for('static', filename='js/scrap-undo.js', v='3.168') }}"></script>
+  <script src="{{ url_for('static', filename='js/admin-controls.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/scrap-motion.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/scrap-undo.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='js/app.js', v=asset_ver ~ "-ai-auth-v3.189") }}"></script>
-  <script src="{{ url_for('static', filename='js/pwa-install.js', v='3.135') }}"></script>
-  <script src="{{ url_for('static', filename='js/share.js', v='3.135') }}"></script>
-  <script src="{{ url_for('static', filename='js/reader.js', v='3.190') }}"></script>
+  <script src="{{ url_for('static', filename='js/pwa-install.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/share.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/reader.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='js/finance.js', v=asset_ver ~ '-salary-negotiation-v1') }}"></script>
-  <script src="{{ url_for('static', filename='vendor/hls-1.5.17.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/video-timeline.js', v='3.135') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/hls-1.5.17.min.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/video-timeline.js', v=asset_ver) }}"></script>
   <script src="{{ url_for('static', filename='js/videos.js', v=asset_ver ~ '-v3.137') }}"></script>
   <script src="{{ url_for('static', filename='js/accounts.js', v=asset_ver) }}"></script>
-  <script src="{{ url_for('static', filename='js/healthchecks.js', v='20261009-2') }}"></script>
+  <script src="{{ url_for('static', filename='js/healthchecks.js', v=asset_ver) }}"></script>
   {% include 'service_notice.html' %}
-  <script src="{{ url_for('static', filename='js/mouse-scroll.js', v='20261008-2') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/ai-usage.css', v='3.148') }}">
-<script src="{{ url_for('static', filename='js/ai-usage.js', v='3.148') }}"></script>
-  <script src="{{ url_for('static', filename='js/mail-test.js', v='1') }}"></script>
+  <script src="{{ url_for('static', filename='js/mouse-scroll.js', v=asset_ver) }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai-usage.css', v=asset_ver) }}">
+<script src="{{ url_for('static', filename='js/ai-usage.js', v=asset_ver) }}"></script>
+  <script src="{{ url_for('static', filename='js/mail-test.js', v=asset_ver) }}"></script>
 </body>
 </html>
