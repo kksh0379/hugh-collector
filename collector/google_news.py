@@ -594,6 +594,7 @@ def crawl_cat(max_workers=24, max_items=0, progress=None, known_urls=None, days=
 
 # ---- 게임 뉴스: 냥정보와 동일 방식(검색어=조건). 카테고리별 구글 불리언 쿼리 ----
 GAME_CATEGORIES = {
+    "게임 뉴스": [],  # 전문 매체 RSS 전용 분류 (구글 검색 요청 없음)
     "신작·출시": ["(게임 OR 신작) (출시 OR 발매 OR 론칭 OR \"정식 출시\" OR 오픈)"],
     "업데이트·패치": ["게임 (업데이트 OR 패치 OR 시즌 OR 밸런스 OR \"신규 콘텐츠\")"],
     "e스포츠": ["(e스포츠 OR 이스포츠 OR LCK OR 롤드컵 OR 프로게이머 OR \"게임 대회\")"],
