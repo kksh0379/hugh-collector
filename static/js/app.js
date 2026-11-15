@@ -862,16 +862,16 @@ function renderCard(item, opts) {
   // 요약이 있으면 표시, 없고 이미지도 없으면 '요약 없음', 이미지만 있으면 요약 줄 생략
   const summaryHtml = item.content
     ? `<p class="card-summary">${escapeHtml(item.content)}</p>`
-    : (item.image_url ? "" : `<p class="card-summary">요약 없음</p>`);
+    : ((item.image_url && !opts.hideImage) ? "" : `<p class="card-summary">요약 없음</p>`);
   const li = document.createElement("li");
   // 통합 피드(비영리재단 동향)에서 게시판·영상은 넓은 미디어 카드로(데스크톱). _src로 구분.
   const srcCls = item._src === "board" ? " card-board" : item._src === "video" ? " card-video" : "";
-  li.className = "card card-news" + srcCls + readClass(key);
+  li.className = "card card-news" + srcCls + (opts.hideImage ? " card-no-media" : "") + readClass(key);
   li.dataset.key = key;
   li.innerHTML = `
     ${scrapBtnHtml(key)}
     <div class="card-main">
-      ${newsThumb(item, !srcCls)}
+      ${opts.hideImage ? "" : newsThumb(item, !srcCls)}
       <div class="card-body">
         <h3 class="card-title">${socialBadgeHtml(link)}${newBadgeHtml(item.published_at, opts.newDate ?? NEWS_NEW_DATE)}${titleHtml}</h3>
         <div class="card-meta">${meta.join(" · ")}</div>
@@ -1328,7 +1328,7 @@ function bizBadge(it) {
 function renderBizCombined(el, list) {
   const newDate = computeNewDate(list);
   renderInfinite(el, list,
-    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab, newDate }),
+    (item) => renderCard(item, { badge: bizBadge(item), tab: item._tab, newDate, hideImage: true }),
     "표시할 소식이 아직 없어요.");
 }
 function publicationTime(value) {
