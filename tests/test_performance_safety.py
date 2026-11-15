@@ -48,14 +48,14 @@ class PerformanceSafetyTests(unittest.TestCase):
         args = connection.execute.call_args.args
         self.assertEqual(args[1][-1], 100)
 
-    def test_biz_initial_feed_keeps_more_existing_photo_rows(self):
+    def test_biz_initial_feed_remains_fast_without_thumbnails(self):
         from unittest.mock import MagicMock
         connection = MagicMock()
         connection.execute.return_value.fetchall.return_value = []
         with patch.object(db, 'get_conn') as conn:
             conn.return_value.__enter__.return_value = connection
             self.assertEqual(db.list_news(section='biz', months=3), [])
-        self.assertEqual(connection.execute.call_args.args[1][-1], 250)
+        self.assertEqual(connection.execute.call_args.args[1][-1], 100)
 
     def test_pool_returns_connection_after_success(self):
         pool, conn = Mock(), Mock()
