@@ -28,7 +28,7 @@ class PerformanceSafetyTests(unittest.TestCase):
         with web.app.test_request_context('/api/news?category=all'):
             key_full = web.request.path + repr(tuple((k, web.request.args.get(k, 'all')) for k in ('category','months')))
         self.assertNotEqual(key_first, key_full)
-        self.assertIn('("months", "3")', key_first)
+        self.assertIn("('months', '3')", key_first)
 
     def test_pool_returns_connection_after_success(self):
         pool, conn = Mock(), Mock()
