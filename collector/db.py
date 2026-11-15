@@ -813,7 +813,7 @@ def list_news(limit=5000, category=None, section="nc", months=None):
     날짜 비교 대신 개수로 제한(발행일 형식/누락과 무관하게 안전) — 검색 시 전체를 받아 수행한다."""
     cond, cargs = _section_cond(section)
     if months:
-        limit = min(limit, 800)   # 초기엔 최신 800건만(≈ 최근 몇 개월), 검색은 전체
+        limit = min(limit, 100)   # 처음에는 최신 100건만 받고 검색 시 전체(최대 5000) 로드
     with get_conn() as conn:
         if category and category != "all":
             rows = conn.execute(
