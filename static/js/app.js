@@ -1399,6 +1399,14 @@ async function loadBiz() {
 
 // Shared thumbnail fallback for missing URLs and failed image loads.
 function thumbnailFallback(image) {
+  // News publishers sometimes reject server-side hotlink requests but allow a
+  // browser request. Try the stored source once before the no-image placeholder.
+  const fallback = image.dataset.originalSrc;
+  if (fallback && image.dataset.directAttempted !== "1" && /^https:\/\//i.test(fallback)) {
+    image.dataset.directAttempted = "1";
+    image.src = fallback;
+    return;
+  }
   image.onerror = null;
   image.closest("[data-thumbnail]")?.classList.add("is-no-image");
   image.alt = "이미지 없음";
@@ -1407,7 +1415,8 @@ function thumbnailFallback(image) {
 function newsThumb(rep, proxy, containerClass = "card-thumb") {
   const image = typeof rep?.image_url === "string" ? rep.image_url.trim() : "";
   const src = image ? (proxy ? "/api/img?u=" + encodeURIComponent(image) : image) : "/static/no-image.svg";
-  return `<div class="${escapeHtml(containerClass)}${image ? "" : " is-no-image"}" data-thumbnail><img class="thumb-img" loading="lazy" src="${escapeHtml(src)}" alt="${image ? "" : "이미지 없음"}" onerror="thumbnailFallback(this)"></div>`;
+  const original = proxy && /^https:\/\//i.test(image) ? ` data-original-src="${escapeHtml(image)}"` : "";
+  return `<div class="${escapeHtml(containerClass)}${image ? "" : " is-no-image"}" data-thumbnail><img class="thumb-img" loading="lazy" src="${escapeHtml(src)}"${original} alt="${image ? "" : "이미지 없음"}" onerror="thumbnailFallback(this)"></div>`;
 }
 
 // 보안뉴스 AI 후처리(태깅·중요도·시사점) → 카드에 얹을 HTML. ai 필드 없으면 "".
