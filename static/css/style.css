@@ -1782,3 +1782,7 @@ html.pre-hide-social #biz-cats label:has([data-cat="영상"]) { display: none !i
  #view-food .lunch-filter-controls #lunch-sort { width:99px; font-size:11px; }
  #view-food .lunch-filter-controls .result-count { font-size:10px; }
 }
+
+/* v3.194: retrieve historical news only when requested from the end of a lightweight initial feed. */
+.feed-more-row { display:flex; justify-content:center; list-style:none; padding:18px 12px 24px; }
+.feed-more-row .btn-collect { width:auto; min-width:180px; min-height:40px; border-radius:12px; }
