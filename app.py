@@ -83,6 +83,11 @@ def _start_request_timer():
 def _record_request_timing(response):
     elapsed = (time.perf_counter() - g.request_started) * 1000
     response.headers.add("Server-Timing", f"app;dur={elapsed:.2f}")
+    if request.path.startswith("/static/") and request.args.get("v"):
+        response.cache_control.no_cache = None
+        response.cache_control.public = True
+        response.cache_control.max_age = 3600
+
     if elapsed >= 1200 and request.path.startswith("/api/"):
         # Log route only; never expose search terms, credentials or URL query parameters.
         app.logger.warning("slow_api route=%s status=%s duration_ms=%.0f",
