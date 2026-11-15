@@ -15,6 +15,8 @@ import math
 import re
 import sqlite3
 import time
+import threading
+import logging
 from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone
 
@@ -92,9 +94,59 @@ def diagnose():
     return info
 
 
+# Small, lazily opened pool: no pre-fork threads and no startup DB dependency.
+# Old deployments had pool acquisition problems, so a temporary direct-connect
+# fallback remains available when the pool is unhealthy.
+_pool = None
+_pool_pid = None
+_pool_lock = threading.Lock()
+_pool_disabled_until = 0.0
+_POOL_ON = os.environ.get("DB_POOL_ENABLED", "1") == "1"
+
+
+def _borrow_pooled():
+    global _pool, _pool_pid, _pool_disabled_until
+    if not _PG or not _POOL_ON or time.monotonic() < _pool_disabled_until:
+        return None
+    pid = os.getpid()
+    with _pool_lock:
+        if _pool is None or _pool_pid != pid:
+            try:
+                from psycopg_pool import ConnectionPool
+                _pool = ConnectionPool(
+                    conninfo=_CONNINFO, kwargs=_CONN_KW, min_size=0, max_size=4,
+                    timeout=2, max_idle=90, open=True, name="hscope-readwrite"
+                )
+                _pool_pid = pid
+            except Exception as exc:
+                logging.getLogger(__name__).warning("Database pool startup failed: %s", type(exc).__name__)
+                _pool_disabled_until = time.monotonic() + 120
+                return None
+        pool = _pool
+    try:
+        return pool, pool.getconn(timeout=2)
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Database pool unavailable; direct fallback: %s", type(exc).__name__)
+        _pool_disabled_until = time.monotonic() + 120
+        return None
+
+
 @contextmanager
 def get_conn():
     if _PG:
+        borrowed = _borrow_pooled()
+        if borrowed is not None:
+            pool, conn = borrowed
+            try:
+                yield conn
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+            finally:
+                pool.putconn(conn)
+            return
+        # Pool is unavailable: preserve the existing direct-connect behavior.
         # 요청마다 직접 접속. Neon cold start로 첫 연결이 실패할 수 있어 몇 번 재시도
         # (그 사이 Neon이 깨어난다). 성공 시 commit, 오류 시 rollback, 항상 close.
         conn, last = None, None
