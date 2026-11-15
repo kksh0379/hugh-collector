@@ -83,6 +83,10 @@ def _start_request_timer():
 def _record_request_timing(response):
     elapsed = (time.perf_counter() - g.request_started) * 1000
     response.headers.add("Server-Timing", f"app;dur={elapsed:.2f}")
+    if elapsed >= 1200 and request.path.startswith("/api/"):
+        # Log route only; never expose search terms, credentials or URL query parameters.
+        app.logger.warning("slow_api route=%s status=%s duration_ms=%.0f",
+                           request.path, response.status_code, elapsed)
     return response
 
 # 초안 단계: 브라우저가 옛 JS/CSS를 캐시해 혼란을 주지 않도록 정적파일 캐시를 끈다.
@@ -2737,8 +2741,17 @@ def _start_worker_jobs():
             return
         _worker_jobs_pid = pid
         _start_scheduler()
-        for target in (_auto_backfill, _bootstrap_venue_schedules, _bootstrap_eventus, _bootstrap_event_images, _bootstrap_biz_images, _db_keepalive):
-            threading.Thread(target=target, daemon=True).start()
+        # Do not compete with the first page load. Space background repairs out so
+        # separate crawlers do not simultaneously warm Neon and saturate Free CPU.
+        def launch_after(seconds, target):
+            def run():
+                time.sleep(seconds)
+                target()
+            threading.Thread(target=run, daemon=True).start()
+        for delay, target in ((20, _auto_backfill), (35, _bootstrap_venue_schedules),
+                              (55, _bootstrap_eventus), (75, _bootstrap_event_images),
+                              (95, _bootstrap_biz_images), (120, _db_keepalive)):
+            launch_after(delay, target)
 
 
 @app.route('/api/admin/ai-usage', methods=['GET', 'POST'])
