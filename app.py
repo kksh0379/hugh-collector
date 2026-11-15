@@ -1546,7 +1546,7 @@ def _safe_list(fetch, ttl=_READ_TTL):
     names = (("kind", "id") if request.path.startswith("/api/report/") else
              ("rid",) if request.path == "/api/lunch/reviews" else
              ("service",) if request.path == "/api/boards" else
-             ("channel",) if request.path == "/api/social" else ("category",))
+             ("channel",) if request.path == "/api/social" else ("category", "months"))
     filters = tuple((key, request.args.get(key, "all")) for key in names)
     key = request.path + repr(filters)
 
@@ -1556,7 +1556,7 @@ def _safe_list(fetch, ttl=_READ_TTL):
         return fetch()
 
     # 첫 요청이 거의 항상 pending([])으로 떨어지지 않도록 대기시간을 늘림(백그라운드 로딩을 기다렸다 반환).
-    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=3.0)
+    data = _PUBLIC_READS.get(key, load, ttl=ttl, wait=0.75)
     response = jsonify(data if data is not None else [])
     response.headers["Cache-Control"] = "no-store"
     if data is None:
