@@ -30,6 +30,24 @@ class PerformanceSafetyTests(unittest.TestCase):
         self.assertNotEqual(key_first, key_full)
         self.assertIn("('months', '3')", key_first)
 
+    def test_versioned_static_assets_are_browser_cacheable(self):
+        with patch.object(web, '_start_worker_jobs'), patch.object(web, '_start_read_prewarm'):
+            response = web.app.test_client().get('/static/js/app.js?v=test-version')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('max-age=3600', response.headers.get('Cache-Control', ''))
+        self.assertIn('public', response.headers.get('Cache-Control', ''))
+        self.assertNotIn('no-cache', response.headers.get('Cache-Control', ''))
+
+    def test_initial_news_query_is_bounded(self):
+        from unittest.mock import MagicMock
+        connection = MagicMock()
+        connection.execute.return_value.fetchall.return_value = []
+        with patch.object(db, 'get_conn') as conn:
+            conn.return_value.__enter__.return_value = connection
+            self.assertEqual(db.list_news(months=3), [])
+        args = connection.execute.call_args.args
+        self.assertEqual(args[1][-1], 100)
+
     def test_pool_returns_connection_after_success(self):
         pool, conn = Mock(), Mock()
         with patch.object(db, '_PG', True), patch.object(db, '_borrow_pooled', return_value=(pool, conn)):
