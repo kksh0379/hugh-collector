@@ -6,6 +6,9 @@ on:
     paths:
       - 'tests/**'
       - 'collector/**'
+      - 'app.py'
+      - 'static/js/app.js'
+      - 'templates/index.html'
       - 'scripts/healthcheck_suite.py'
       - '.github/workflows/regression-diagnosis.yml'
   workflow_dispatch:
@@ -41,7 +44,7 @@ jobs:
           from pathlib import Path
           p=Path('/tmp/hscope-regression.json')
           if not p.exists():
-              print('Regression suite did not produce results')
+              raise SystemExit('Regression suite did not produce results')
           else:
               data=json.loads(p.read_text())
               results=data.get('results',[])
@@ -49,6 +52,8 @@ jobs:
               print(f'REGRESSION_TOTAL={len(results)} FAILED={len(problems)} COMPLETE={data.get("done")}')
               for r in problems:
                   print(json.dumps({k:r.get(k) for k in ('group','name','status','category','detail')},ensure_ascii=False))
+              if problems or not data.get('done'):
+                  raise SystemExit(1)
           PY
       - name: Print focused JavaScript failure details
         if: always()
