@@ -36,22 +36,47 @@ def _same(left, right):
 
 
 def merge_events(items):
+    """Merge equivalent schedules without scanning all previous articles per row.
+
+    A URL match takes priority; otherwise candidates share normalized title and
+    start date. Candidate indices are kept in insertion order to preserve the
+    previous first-match and source-preference behavior.
+    """
     out = []
+    by_url = {}
+    by_title_date = {}
+
+    def add(index, row):
+        url = _url(row.get('source_url') or row.get('url'))
+        if url:
+            by_url.setdefault(url, set()).add(index)
+        start = row.get('start_date')
+        title = _title(row.get('title'))
+        if start and title:
+            by_title_date.setdefault((start, title), set()).add(index)
+
     for source in items:
         row = dict(source)
-        for index, old in enumerate(out):
-            if not _same(old, row):
-                continue
-            # Original schedule beats extracted news; retain richer missing fields.
-            if old.get('source') in ('', '뉴스', None) and row.get('source') not in ('', '뉴스', None):
-                preferred, other = row, old
-            else:
-                preferred, other = old, row
-            out[index] = dict(preferred)
-            for field in ('content', 'image_url', 'venue', 'region', 'end_date', 'author'):
-                if not out[index].get(field) and other.get(field):
-                    out[index][field] = other[field]
-            break
-        else:
+        url = _url(row.get('source_url') or row.get('url'))
+        start = row.get('start_date')
+        title = _title(row.get('title'))
+        candidates = set(by_url.get(url, ())) if url else set()
+        if start and title:
+            candidates.update(by_title_date.get((start, title), ()))
+        match = next((i for i in sorted(candidates) if _same(out[i], row)), None)
+        if match is None:
             out.append(row)
+            add(len(out) - 1, row)
+            continue
+        old = out[match]
+        if old.get('source') in ('', '뉴스', None) and row.get('source') not in ('', '뉴스', None):
+            preferred, other = row, old
+        else:
+            preferred, other = old, row
+        merged = dict(preferred)
+        for field in ('content', 'image_url', 'venue', 'region', 'end_date', 'author'):
+            if not merged.get(field) and other.get(field):
+                merged[field] = other[field]
+        out[match] = merged
+        add(match, merged)
     return out
