@@ -329,9 +329,22 @@ def read_article(item):
     try:
         target = url
         try:
-            if urlsplit(url).hostname == "news.google.com":
-                from collector.google_news import _decode_google_url
-                target = _decode_google_url(url) or url
+            from collector.google_news import _decode_google_url, _publisher_url
+            # Google News RSS URLs are wrappers, not publisher articles.
+            # Try the stored canonical source first; resolve both URL fields if needed.
+            for candidate in (item.get("source_url"), item.get("url")):
+                if not candidate:
+                    continue
+                if _publisher_url(candidate):
+                    target = candidate
+                    break
+                if (urlsplit(candidate).hostname or "").lower() == "news.google.com":
+                    resolved = _decode_google_url(candidate)
+                    if resolved and _publisher_url(resolved):
+                        target = resolved
+                        break
+            if not _publisher_url(target):
+                raise ReaderUnavailable("Google News publisher URL unresolved")
             # Every alternative still passes public-IP and redirect validation.
             body = None
             for candidate in article_targets(target):
@@ -347,7 +360,7 @@ def read_article(item):
                 raise ReaderUnavailable("No complete publisher article")
         except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
             body = None
-            if os.getenv("READER_JS_FALLBACK"):     # JS 렌더링 외부 리더(선택, env로 활성화)
+            if os.getenv("READER_JS_FALLBACK") and _publisher_url(target):  # only publisher pages
                 try:
                     body = {"mode": "article", "paragraphs": fetch_via_jina(target), "url": target}
                 except Exception:
