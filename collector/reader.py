@@ -213,7 +213,7 @@ def extract_paragraphs(html):
             visit(json.loads(script.string or script.get_text()))
         except (ValueError, TypeError, RecursionError):
             continue
-    for node in soup.select("script,style,iframe,nav,header,footer,aside,form,button,
+    for node in soup.select("script,style,iframe,nav,header,footer,aside,form,button,"
                             "noscript,svg,figure,[hidden],[aria-hidden=true],"
                             ".ad,.ads,.advertisement,.banner,.share,.sns,.related,.comments,.copyright"):
         node.decompose()
