@@ -9,6 +9,7 @@ import threading
 import time
 from collections import OrderedDict
 from urllib.parse import urljoin, urlsplit
+import json
 
 from bs4 import BeautifulSoup
 from flask import Blueprint, jsonify, request
@@ -194,7 +195,25 @@ def extract_paragraphs(html):
             raise ReaderUnavailable("Restricted article")
     if soup.select_one('[class*="paywall"], [id*="paywall"], [class*="subscription-wall"]'):
         raise ReaderUnavailable("Restricted article")
-    for node in soup.select("script,style,iframe,nav,header,footer,aside,form,button,"
+    structured = []
+    for script in soup.select('script[type="application/ld+json"]'):
+        try:
+            def visit(value):
+                if isinstance(value, list):
+                    for part in value: visit(part)
+                elif isinstance(value, dict):
+                    types = value.get("@type", [])
+                    types = [types] if isinstance(types, str) else types
+                    if any(t in ("NewsArticle", "Article", "ReportageNewsArticle") for t in types):
+                        body = value.get("articleBody")
+                        if isinstance(body, str) and len(body.strip()) >= 240:
+                            structured.append(body)
+                    for key in ("@graph", "mainEntity"):
+                        if key in value: visit(value[key])
+            visit(json.loads(script.string or script.get_text()))
+        except (ValueError, TypeError, RecursionError):
+            continue
+    for node in soup.select("script,style,iframe,nav,header,footer,aside,form,button,
                             "noscript,svg,figure,[hidden],[aria-hidden=true],"
                             ".ad,.ads,.advertisement,.banner,.share,.sns,.related,.comments,.copyright"):
         node.decompose()
@@ -205,11 +224,13 @@ def extract_paragraphs(html):
                  "#article-view-content-div, #newsEndContents, #news_body_area, #news_body_id,"
                  "#article_txt, #articleText, #artText, #news_content, #article_content,"
                  ".article_content, .article-text, .news_body, .news-body, .news_text,"
+                 ".article_view_content, .article_txt, #article_content, #textBody,"
                  ".view_cont, .view_con, .article_view, .articleView,"
                  # 정부·공공기관 표준 CMS(재정경제부 등) 게시글 본문 컨테이너.
                  ".bbs_content, .board_con, .board_cont, .cont_view, .view_area, .view_body,"
                  "#viewContents, #bbsView, .bd_viewcont, .cont_body, .dbData, .cont",
                  "article", "main")
+    best = None
     for selector in selectors:
         candidates = []
         for node in soup.select(selector):
@@ -228,10 +249,17 @@ def extract_paragraphs(html):
             if length >= 180 and link_length < length * .5:
                 candidates.append((length, paragraphs))
         if candidates:
-            paragraphs = max(candidates, key=lambda c: c[0])[1]
-            if sum(map(len, paragraphs)) > 100000:
-                raise ReaderUnavailable("Article too large")
-            return paragraphs
+            candidate = max(candidates, key=lambda c: c[0])
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+    if structured:
+        candidate = max(structured, key=len)
+        if best is None or len(candidate) > best[0]:
+            best = (len(candidate), [p.strip() for p in re.split(r"\\n+", candidate) if p.strip()])
+    if best:
+        if best[0] > 100000:
+            raise ReaderUnavailable("Article too large")
+        return best[1]
     raise ReaderUnavailable("No article body")
 
 
@@ -298,6 +326,8 @@ def read_article(item):
                 target = _decode_google_url(url) or url
             # Resolved destinations still pass the same pinned public-IP checks.
             paragraphs = extract_paragraphs(fetch_html(target))
+            if sum(map(len, paragraphs)) < 240:
+                raise ReaderUnavailable("Article too short")
             if looks_like_error_page(paragraphs):   # 사이트가 오류/안내 페이지를 준 경우
                 raise ReaderUnavailable("Error/landing page")
             body = {"mode": "article", "paragraphs": paragraphs, "url": target}
