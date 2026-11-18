@@ -8,7 +8,7 @@ import ssl
 import threading
 import time
 from collections import OrderedDict
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 import json
 
 from bs4 import BeautifulSoup
@@ -306,6 +306,14 @@ def fetch_via_jina(url):
     return paragraphs[:400]
 
 
+def article_targets(url):
+    """Try canonical publisher pages when AMP endpoints omit article text."""
+    yield url
+    parsed = urlsplit(url)
+    if (parsed.hostname or "").lower() in ("mt.co.kr", "www.mt.co.kr") and parsed.path.startswith("/amp/"):
+        yield urlunsplit((parsed.scheme, parsed.netloc, parsed.path[4:], parsed.query, ""))
+
+
 def read_article(item):
     url = item.get("source_url") or item["url"]
     result = {"title": item.get("title") or "제목 없음", "url": url,
@@ -324,13 +332,19 @@ def read_article(item):
             if urlsplit(url).hostname == "news.google.com":
                 from collector.google_news import _decode_google_url
                 target = _decode_google_url(url) or url
-            # Resolved destinations still pass the same pinned public-IP checks.
-            paragraphs = extract_paragraphs(fetch_html(target))
-            if sum(map(len, paragraphs)) < 240:
-                raise ReaderUnavailable("Article too short")
-            if looks_like_error_page(paragraphs):   # 사이트가 오류/안내 페이지를 준 경우
-                raise ReaderUnavailable("Error/landing page")
-            body = {"mode": "article", "paragraphs": paragraphs, "url": target}
+            # Every alternative still passes public-IP and redirect validation.
+            body = None
+            for candidate in article_targets(target):
+                try:
+                    paragraphs = extract_paragraphs(fetch_html(candidate))
+                    if sum(map(len, paragraphs)) < 240 or looks_like_error_page(paragraphs):
+                        continue
+                    body = {"mode": "article", "paragraphs": paragraphs, "url": candidate}
+                    break
+                except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
+                    continue
+            if body is None:
+                raise ReaderUnavailable("No complete publisher article")
         except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
             body = None
             if os.getenv("READER_JS_FALLBACK"):     # JS 렌더링 외부 리더(선택, env로 활성화)
@@ -363,8 +377,14 @@ def fallback(item):
                 buffer = ""
         if buffer.strip():
             paragraphs.append(buffer.strip())
-    return {"mode": "excerpt", "paragraphs": paragraphs or ([text] if text else []),
-            "notice": "원문 사이트의 본문을 자동으로 불러오지 못해 수집된 내용을 표시합니다. 첨부파일·전체 내용은 원문에서 확인해 주세요."}
+    title = re.sub(r"\s+", " ", item.get("title") or "").strip()
+    normalized = re.sub(r"\s+", " ", text).strip()
+    if not normalized or (title and normalized.startswith(title) and len(normalized) <= len(title) + 45):
+        paragraphs = []
+    return {"mode": "excerpt", "paragraphs": paragraphs,
+            "notice": ("원문 본문을 불러오지 못했습니다. 원문 사이트에서 확인해 주세요."
+                       if not paragraphs else
+                       "원문 본문을 불러오지 못해 수집된 요약만 표시합니다. 전체 내용은 원문에서 확인해 주세요.")}
 
 
 @bp.get("/api/reader")
