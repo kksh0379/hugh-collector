@@ -348,6 +348,12 @@ def _restore_verified_news_sources(conn):
              'https://news.google.com/rss/articles/CBMi0wFBVV95cUxQZk1ELUFfS09fdDVvVGxCdGlRbTRZNkF2RWtSU1pQVDBmQjBXdkhJekotU2lsUTkwX05tZFpva2ZZTlhnR2plQkRkaUVlWGx2U2RxTFVBN1FkZEhkSDFoc2FuVFlyZUpnTW9Pc2FDSTA5cExZM0RGdlJLNDItRDBGU2E0cUFGekE3dkZzc3NPbmtFV1RXcVV0MGpWc0t4MWktSFVwR2xFQTFxUHhqdGRpMlJzdVBoNnpfeDZRbTl2OHJRNVNDdERvYVRuWVBBNElvUC1F?oc=5'),
             ('https://www.job-post.co.kr/news/articleView.html?idxno=239502',
              'https://news.google.com/rss/articles/CBMibkFVX3lxTE8xZWlrMWxyTTFoMjRqR3hCcVRVc2lfdlo4b1lPelNhUlFvOUNnQ2FfUmt0ZVR3VFJOanZBaXJJTGFCR2hYUlN1ZmZ0RjNreFkyUXEtUlI3TXlkRXdkRUU1RzlFOE5tejRKa1AtcTFB0gFyQVVfeXFMT3pabDNNdG84ZzhtS3BPdHRuRms5a2pWaV9VOHoteVZsaFJtTXZ0Nk8zWWY0VHZaUnJobGl4NUgzUXFVVjNIUnNoMmZiaWY0ZnJDMi1KXzV6R2xFaTdDRlFNNkJjNTBSWXVERDgxSUI5enpB?oc=5'),
+            ('https://www.vegannews.co.kr/news/article.html?no=407096',
+             'https://news.google.com/rss/articles/CBMiZkFVX3lxTFBPQkU2UVBBcnZ4dmo3WmNOT2pudFoyMTBwRkgzSEt2SXBsQ2pXU01Vc0h5eDFEbGNkQndnaW5OR3ZGTk9ieXBqUGpVVUZjTFN2LUpzTDQwblVWWWI5LVIxNUI1U29yUQ?oc=5'),
+            ('https://m.gamemeca.com/view.php?gid=1783686',
+             'https://news.google.com/rss/articles/CBMiWEFVX3lxTFB4LTdaU25qWW9tcms0bU9HaExTS2NxeTB6NHJOVnZZSUZaa2Z2WV9GNFFZbDFoaVM5d3RoZjJoLVphRUd0dzRBMms4eWNCUlBBWHQtUlF5M2HSAVtBVV95cUxPc0hhRFpmTmN3TW1kd2U0QlpJdzNhdkotQnJwX09oMkd4VUlkUmxJakVGSG4ybVptVmNfTm1POEVBUHg0dktnSk9xMEp2STRhbk5Xc1VvZ2R1RkRF?oc=5'),
+            ('https://www.dailysmart.co.kr/news/articleView.html?idxno=132737',
+             'https://news.google.com/rss/articles/CBMicEFVX3lxTE1SUkc1emptWkQ4dFVKaWdjcVh2UnpCMEtqNHp3dXctM05ZZ0ZvYnlqbU9WX2FfdTh2TS15ZERTMEkxWlV6Qndoc2ZkMmt5LUEtUWdfTnRlVkx3ODRmQVA3Uk96UUt0SWNpMFdzZ0hxMUk?oc=5'),
         ),
     )
 
