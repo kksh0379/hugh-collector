@@ -354,6 +354,7 @@ def read_article(item):
                         target = resolved
                         break
             if not _publisher_url(target):
+                print("[reader] unresolved publisher URL; host=%s" % (urlsplit(url).hostname,), flush=True)
                 raise ReaderUnavailable("Google News publisher URL unresolved")
             # Every alternative still passes public-IP and redirect validation.
             body = None
@@ -368,10 +369,14 @@ def read_article(item):
                         if len(content) >= 240:
                             paragraphs = [p.strip() for p in content.splitlines() if p.strip()] or [content]
                     if sum(map(len, paragraphs)) < 240 or looks_like_error_page(paragraphs):
+                        print("[reader] insufficient article body; host=%s length=%d" %
+                              (urlsplit(candidate).hostname, sum(map(len, paragraphs))), flush=True)
                         continue
                     body = {"mode": "article", "paragraphs": paragraphs, "url": candidate}
                     break
-                except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
+                except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError) as exc:
+                    print("[reader] publisher fetch/extract failure; host=%s type=%s" %
+                          (urlsplit(candidate).hostname, type(exc).__name__), flush=True)
                     continue
             if body is None:
                 raise ReaderUnavailable("No complete publisher article")
