@@ -327,6 +327,30 @@ def init_db():
 
         for stmt in perf_indexes:
             conn.execute(stmt)
+        _restore_verified_news_sources(conn)
+
+
+def _restore_verified_news_sources(conn):
+    """Restore publisher URLs from Google RSS links verified in November 2026."""
+    conn.cursor().executemany(
+        _q("UPDATE news SET source_url=? WHERE url=? "
+           "AND (source_url IS NULL OR source_url='' OR source_url=url)"),
+        (
+            ('https://www.munhwa.com/article/11632650',
+             'https://news.google.com/rss/articles/CBMiUEFVX3lxTE51SWpkUWwzdDFvWFJpYXpEMG1qRm9MNzhmVHRocGgweVEtM3JBeGd2c2NGYWJtbjF6MkRBU29BVzg3RVdGQnV2ejhmRGFsYjRq?oc=5'),
+            ('https://www.munhwa.com/article/11632651',
+             'https://news.google.com/rss/articles/CBMiUEFVX3lxTFBfYW1jcUlOWmVjV202TWJrVVNMUnFkc01lS1lneFRvNUpoRjJ3eU1NQmM1blFwU0R2MFpmZ2hRQ21MRmVJaFpwODcxVFQ0SWp6?oc=5'),
+            ('https://www.m-i.kr/news/articleView.html?idxno=2020933',
+             'https://news.google.com/rss/articles/CBMiZEFVX3lxTE1YejB1elpwUC1OVDI2THdGbUsxWWhPdnJHbEJMNU9VcVR1RVl5ckJwSXpGbjlWd3NQNDMxUGZfZC11UE1BZ2VyeDk4NXJCcUlXWlkzSlRXT1E5aUZveTNIRVpZMUE?oc=5'),
+            ('https://www.dongbuknews.com/news/articleView.html?idxno=7445',
+             'https://news.google.com/rss/articles/CBMibEFVX3lxTE0tRGVaNllhNU4tMjFFRzZRdFZnSWJ6b1hCUmdWdU5Ta293OEhaWUJBTXo0NDdZNTZoTGgydW1OamtENS1UaWxUTDFvV1VmbU5sZzNVVloxOVctY2ZzQW9ENTdHMXduUTA5czkxaA?oc=5'),
+            ('https://www.indexbox.io/ko/blog/unscented-cat-food-market-forecast-to-2035-growth-driven-by-pet-humanization-and-health-conscious-owners/',
+             'https://news.google.com/rss/articles/CBMi0wFBVV95cUxQZk1ELUFfS09fdDVvVGxCdGlRbTRZNkF2RWtSU1pQVDBmQjBXdkhJekotU2lsUTkwX05tZFpva2ZZTlhnR2plQkRkaUVlWGx2U2RxTFVBN1FkZEhkSDFoc2FuVFlyZUpnTW9Pc2FDSTA5cExZM0RGdlJLNDItRDBGU2E0cUFGekE3dkZzc3NPbmtFV1RXcVV0MGpWc0t4MWktSFVwR2xFQTFxUHhqdGRpMlJzdVBoNnpfeDZRbTl2OHJRNVNDdERvYVRuWVBBNElvUC1F?oc=5'),
+            ('https://www.job-post.co.kr/news/articleView.html?idxno=239502',
+             'https://news.google.com/rss/articles/CBMibkFVX3lxTE8xZWlrMWxyTTFoMjRqR3hCcVRVc2lfdlo4b1lPelNhUlFvOUNnQ2FfUmt0ZVR3VFJOanZBaXJJTGFCR2hYUlN1ZmZ0RjNreFkyUXEtUlI3TXlkRXdkRUU1RzlFOE5tejRKa1AtcTFB0gFyQVVfeXFMT3pabDNNdG84ZzhtS3BPdHRuRms5a2pWaV9VOHoteVZsaFJtTXZ0Nk8zWWY0VHZaUnJobGl4NUgzUXFVVjNIUnNoMmZiaWY0ZnJDMi1KXzV6R2xFaTdDRlFNNkJjNTBSWXVERDgxSUI5enpB?oc=5'),
+        ),
+    )
+
 
 def set_meta(key, value):
     with get_conn() as conn:

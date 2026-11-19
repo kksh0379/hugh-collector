@@ -118,6 +118,20 @@ class ReaderTests(unittest.TestCase):
         self.assertEqual(first["paragraphs"], ["저장된 요약"])
         self.assertEqual(second["mode"], "article")
 
+    def test_verified_source_repair_only_fills_missing_urls(self):
+        wrapper = "https://news.google.com/rss/articles/CBMiUEFVX3lxTE51SWpkUWwzdDFvWFJpYXpEMG1qRm9MNzhmVHRocGgweVEtM3JBeGd2c2NGYWJtbjF6MkRBU29BVzg3RVdGQnV2ejhmRGFsYjRq?oc=5"
+        expected = "https://www.munhwa.com/article/11632650"
+        with db.get_conn() as conn:
+            conn.execute("INSERT INTO news (url, title, content) VALUES (?, ?, ?)",
+                         (wrapper, "기사", "저장된 요약"))
+        db.init_db()
+        self.assertEqual(db.reader_item(wrapper)["source_url"], expected)
+        self.assertEqual(db.reader_item(wrapper)["content"], "저장된 요약")
+        with db.get_conn() as conn:
+            conn.execute("UPDATE news SET source_url=? WHERE url=?", ("https://publisher.example/current", wrapper))
+        db.init_db()
+        self.assertEqual(db.reader_item(wrapper)["source_url"], "https://publisher.example/current")
+
     def test_short_structured_article_preserves_paragraphs(self):
         import json
         paragraphs = ["첫 번째 기사 문단입니다. " * 5, "두 번째 기사 문단입니다. " * 5]
