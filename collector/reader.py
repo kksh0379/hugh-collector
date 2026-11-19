@@ -206,7 +206,7 @@ def extract_paragraphs(html):
                     types = [types] if isinstance(types, str) else types
                     if any(t in ("NewsArticle", "Article", "ReportageNewsArticle") for t in types):
                         body = value.get("articleBody")
-                        if isinstance(body, str) and len(body.strip()) >= 240:
+                        if isinstance(body, str) and len(body.strip()) >= 120:
                             structured.append(body)
                     for key in ("@graph", "mainEntity"):
                         if key in value: visit(value[key])
@@ -218,7 +218,7 @@ def extract_paragraphs(html):
                             ".ad,.ads,.advertisement,.banner,.share,.sns,.related,.comments,.copyright"):
         node.decompose()
     # Prefer explicit article bodies over surrounding layouts, menus and sidebars.
-    selectors = ("#dic_area, #articeBody, #articleBody, #article-body, #newsct_article,"
+    selectors = ("#dic_area, #articeBody, #articleBody, #article-body, #articleBodyContents, #newsct_article,"
                  "[itemprop=articleBody], .article-body, .article_body, .article-view-content-div,"
                  ".view_content, .board_view, .post-content, .content_view,"
                  "#article-view-content-div, #newsEndContents, #news_body_area, #news_body_id,"
@@ -238,7 +238,7 @@ def extract_paragraphs(html):
                 br.replace_with("\n")
             blocks = node.select("p, h2, h3, blockquote, li")
             # Some publishers use only div + br for article paragraphs.
-            if sum(len(b.get_text(strip=True)) for b in blocks) < 180:
+            if sum(len(b.get_text(strip=True)) for b in blocks) < 120:
                 lines = node.get_text("\n", strip=True).splitlines()
             else:
                 lines = [b.get_text(" ", strip=True) for b in blocks if not b.find_parent(["blockquote", "li"])]
@@ -246,16 +246,16 @@ def extract_paragraphs(html):
             paragraphs = [p for p in paragraphs if p]
             length = sum(map(len, paragraphs))
             link_length = sum(len(a.get_text(strip=True)) for a in node.select("a"))
-            if length >= 180 and link_length < length * .5:
+            if length >= 120 and link_length < length * .5:
                 candidates.append((length, paragraphs))
         if candidates:
             candidate = max(candidates, key=lambda c: c[0])
-            if best is None or candidate[0] > best[0]:
-                best = candidate
+            best = candidate
+            break
     if structured:
         candidate = max(structured, key=len)
         if best is None or len(candidate) > best[0]:
-            best = (len(candidate), [p.strip() for p in re.split(r"\\n+", candidate) if p.strip()])
+            best = (len(candidate), [p.strip() for p in candidate.splitlines() if p.strip()])
     if best:
         if best[0] > 100000:
             raise ReaderUnavailable("Article too large")
@@ -362,13 +362,7 @@ def read_article(item):
                 try:
                     html = fetch_html(candidate)
                     paragraphs = extract_paragraphs(html)
-                    if sum(map(len, paragraphs)) < 240:
-                        from collector.extractor import extract_article
-                        extracted = extract_article(BeautifulSoup(html, 'lxml'), candidate)
-                        content = extracted.get('content') or ''
-                        if len(content) >= 240:
-                            paragraphs = [p.strip() for p in content.splitlines() if p.strip()] or [content]
-                    if sum(map(len, paragraphs)) < 240 or looks_like_error_page(paragraphs):
+                    if looks_like_error_page(paragraphs):
                         print("[reader] insufficient article body; host=%s length=%d" %
                               (urlsplit(candidate).hostname, sum(map(len, paragraphs))), flush=True)
                         continue
@@ -388,12 +382,13 @@ def read_article(item):
                 except Exception:
                     body = None
             if body is None:
-                body = fallback(item)
-        with _lock:
-            _cache[url] = (time.monotonic() + (600 if body["mode"] == "article" else 60), body)
-            _cache.move_to_end(url)
-            while len(_cache) > 64:
-                _cache.popitem(last=False)
+                body = dict(fallback(item), url=target)
+        if body["mode"] == "article":
+            with _lock:
+                _cache[url] = (time.monotonic() + 600, body)
+                _cache.move_to_end(url)
+                while len(_cache) > 64:
+                    _cache.popitem(last=False)
         return dict(result, **body)
     finally:
         _slots.release()

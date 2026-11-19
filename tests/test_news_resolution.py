@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -29,13 +29,13 @@ class ResolutionTests(unittest.TestCase):
         class HTTPError(Exception):
             def __init__(self, response): self.response = response
         signature = SimpleNamespace(get=lambda name: {'data-n-a-sg': 'sig', 'data-n-a-ts': '42'}[name])
-        get = Mock(return_value=SimpleNamespace(text='signature', url='https://news.google.com/rss/articles/token'))
+        get = Mock(return_value=SimpleNamespace(text='signature', status_code=200, url='https://news.google.com/rss/articles/token'))
         fetcher = SimpleNamespace(get=get, post=Mock(return_value=SimpleNamespace(text=payload or json.dumps([
             ['di', 1], ['wrb.fr', 'Fbv4je', json.dumps(['garturlres', 'https://paper.example/story'])]
         ], indent=2))))
-        scope = dict(json=json, re=re, base64=base64, urlsplit=urlsplit, time=time,
+        scope = dict(json=json, re=re, base64=base64, urlsplit=urlsplit, urljoin=urljoin, time=time,
                      requests=SimpleNamespace(HTTPError=HTTPError), fetcher=fetcher,
-                     BeautifulSoup=lambda *a: SimpleNamespace(select_one=lambda *a: signature),
+                     BeautifulSoup=lambda *a: SimpleNamespace(select_one=lambda *a: signature, select=lambda *a: []),
                      NEWS_TIMEOUT=10, BATCH_URL='https://news.google.com/rpc',
                      _DECODE_LOCK=threading.Lock(), _DECODE_NEXT=0, _DECODE_RETRY_AT=0)
         return functions('collector/google_news.py', {'_decode_google_url', '_decode_via_batchexecute', '_decode_rpc', '_publisher_url'}, scope)
@@ -44,6 +44,35 @@ class ResolutionTests(unittest.TestCase):
         scope = self.scope()
         self.assertEqual(scope['_decode_rpc']('token'), 'https://paper.example/story')
         self.assertEqual(scope['fetcher'].get.call_args.args[0], 'https://news.google.com/rss/articles/token')
+
+    def test_resolves_publisher_redirect_without_following_it(self):
+        scope = self.scope()
+        fetcher = scope['fetcher']
+        fetcher.get.return_value = SimpleNamespace(
+            status_code=302, headers={'Location': 'https://paper.example/story'})
+        self.assertEqual(scope['_decode_google_url']('https://news.google.com/rss/articles/token?oc=5'),
+                         'https://paper.example/story')
+        self.assertEqual(fetcher.get.call_count, 1)
+        self.assertFalse(fetcher.get.call_args.kwargs['allow_redirects'])
+        fetcher.post.assert_not_called()
+
+    def test_follows_google_read_redirect_before_signed_lookup(self):
+        scope = self.scope()
+        fetcher = scope['fetcher']
+        signature_page = fetcher.get.return_value
+        fetcher.get.side_effect = [
+            SimpleNamespace(status_code=302, headers={'Location': '/read/token?oc=5'}),
+            signature_page,
+        ]
+        result = scope['_decode_google_url']('https://news.google.com/rss/articles/token?oc=5')
+        self.assertEqual(result, 'https://paper.example/story')
+        self.assertEqual(fetcher.get.call_args.args[0], 'https://news.google.com/read/token?oc=5')
+        fetcher.post.assert_called_once()
+
+    def test_untrusted_wrapper_host_is_ignored(self):
+        scope = self.scope()
+        self.assertIsNone(scope['_decode_google_url']('https://example.org/news.google.com/rss/articles/token'))
+        scope['fetcher'].get.assert_not_called()
 
     def test_length_prefixed_rpc(self):
         body = json.dumps([['wrb.fr', 'Fbv4je', json.dumps(['garturlres', 'https://paper.example/2'])]])

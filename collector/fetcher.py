@@ -121,7 +121,7 @@ def _response_encoding(resp):
 
 
 
-def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=True):
+def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=True, allow_redirects=True):
     last_err = None
     to = timeout or TIMEOUT
     merged = dict(DEFAULT_HEADERS)
@@ -133,7 +133,8 @@ def get(url, params=None, headers=None, retries=1, timeout=None, raise_status=Tr
         for verify in (True, False):
             try:
                 resp = requests.get(
-                    url, params=params, headers=merged, timeout=to, verify=verify, stream=True
+                    url, params=params, headers=merged, timeout=to, verify=verify, stream=True,
+                    allow_redirects=allow_redirects
                 )
                 try:
                     if raise_status: resp.raise_for_status()

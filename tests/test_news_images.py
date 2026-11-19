@@ -35,7 +35,7 @@ class ImageExtractionTests(unittest.TestCase):
         self.assertIsNone(image('<nav><img src="/news.jpg"></nav><main>text only</main>'))
 
     def test_google_signature_nested_node(self):
-        page = SimpleNamespace(text='<c-wiz><div>menu</div><section><div data-n-a-sg="sig" data-n-a-ts="42"></div></section></c-wiz>')
+        page = SimpleNamespace(status_code=200, text='<c-wiz><div>menu</div><section><div data-n-a-sg="sig" data-n-a-ts="42"></div></section></c-wiz>')
         result = SimpleNamespace(text=json.dumps([['wrb.fr', 'Fbv4je', json.dumps(['garturlres', 'https://paper.example/story'])]]))
         with patch.object(google_news.fetcher, 'get', return_value=page), patch.object(google_news.fetcher, 'post', return_value=result):
             self.assertEqual(google_news._decode_via_batchexecute('token'), 'https://paper.example/story')
