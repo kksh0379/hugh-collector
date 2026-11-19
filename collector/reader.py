@@ -224,7 +224,7 @@ def extract_paragraphs(html):
                  "#article-view-content-div, #newsEndContents, #news_body_area, #news_body_id,"
                  "#article_txt, #articleText, #artText, #news_content, #article_content,"
                  ".article_content, .article-text, .news_body, .news-body, .news_text,"
-                 ".article_view_content, .article_txt, #article_content, #textBody,"
+                 ".article_view_content, .article_txt, #article_content, #textBody, .article_contents, .article-content, .view_text, .view_txt,"
                  ".view_cont, .view_con, .article_view, .articleView,"
                  # 정부·공공기관 표준 CMS(재정경제부 등) 게시글 본문 컨테이너.
                  ".bbs_content, .board_con, .board_cont, .cont_view, .view_area, .view_body,"
@@ -359,7 +359,14 @@ def read_article(item):
             body = None
             for candidate in article_targets(target):
                 try:
-                    paragraphs = extract_paragraphs(fetch_html(candidate))
+                    html = fetch_html(candidate)
+                    paragraphs = extract_paragraphs(html)
+                    if sum(map(len, paragraphs)) < 240:
+                        from collector.extractor import extract_article
+                        extracted = extract_article(BeautifulSoup(html, 'lxml'), candidate)
+                        content = extracted.get('content') or ''
+                        if len(content) >= 240:
+                            paragraphs = [p.strip() for p in content.splitlines() if p.strip()] or [content]
                     if sum(map(len, paragraphs)) < 240 or looks_like_error_page(paragraphs):
                         continue
                     body = {"mode": "article", "paragraphs": paragraphs, "url": candidate}
