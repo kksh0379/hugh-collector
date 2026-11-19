@@ -309,9 +309,19 @@ def fetch_via_jina(url):
 def article_targets(url):
     """Try canonical publisher pages when AMP endpoints omit article text."""
     yield url
+    desktop = gamemeca_desktop(url)
+    if desktop:
+        yield desktop
     parsed = urlsplit(url)
     if (parsed.hostname or "").lower() in ("mt.co.kr", "www.mt.co.kr") and parsed.path.startswith("/amp/"):
         yield urlunsplit((parsed.scheme, parsed.netloc, parsed.path[4:], parsed.query, ""))
+
+
+def gamemeca_desktop(url):
+    parsed = urlsplit(url)
+    if (parsed.hostname or "").lower() == "m.gamemeca.com" and parsed.path == "/view.php":
+        return urlunsplit((parsed.scheme, "www.gamemeca.com", parsed.path, parsed.query, ""))
+    return None
 
 
 def read_article(item):
