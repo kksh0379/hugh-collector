@@ -211,6 +211,20 @@ def _decode_google_url(url):
         pass
 
     # 2) 신형 포맷: batchexecute API로 복원
+    # Prefer the publisher redirect or canonical URL before the signed RPC.
+    try:
+        response = fetcher.get(url, retries=0, timeout=NEWS_TIMEOUT)
+        direct = _publisher_url(getattr(response, 'url', ''))
+        if direct:
+            return direct
+        soup = BeautifulSoup(response.text, 'lxml')
+        canonical = soup.select_one('link[rel="canonical"], meta[property="og:url"]')
+        if canonical:
+            direct = _publisher_url(canonical.get('href') or canonical.get('content'))
+            if direct:
+                return direct
+    except (requests.RequestException, ValueError, TypeError):
+        pass
     return _decode_via_batchexecute(token)
 
 
