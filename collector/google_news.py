@@ -18,6 +18,7 @@ import json
 import re
 import time
 import threading
+import unicodedata
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -342,6 +343,52 @@ def _decode_rpc(token, article_url=None):
         except (ValueError, TypeError):
             continue
     return None
+
+
+def _news_search_key(value):
+    normalized = unicodedata.normalize("NFKC", value or "").casefold()
+    return "".join(char for char in normalized if char.isalnum())
+
+
+def search_publisher_url(item):
+    """Use an exact headline and publisher match when the RSS wrapper cannot be decoded."""
+    title = item.get("title") or ""
+    author = item.get("author") or ""
+    title_key = _news_search_key(title)
+    author_key = _news_search_key(author)
+    if len(title_key) < 12 or not author_key:
+        return None
+    query = " ".join(re.findall(r"[^\W_]+", title)[:7])
+    try:
+        page = fetcher.get("https://search.daum.net/search",
+                           params={"w": "news", "q": query},
+                           headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/130.0 Safari/537.36"},
+                           retries=0, timeout=4, allow_redirects=False)
+        soup = BeautifulSoup(page.content, "lxml")
+        links = set()
+        for row in soup.select(".list_news > li"):
+            headline = row.select_one("a.tit_main[href]")
+            publisher = row.select_one(".item-writer .txt_info")
+            if (headline and publisher and _news_search_key(headline.get_text()) == title_key
+                    and _news_search_key(publisher.get_text()) == author_key):
+                links.add(headline["href"])
+        if len(links) != 1:
+            return None
+        target = links.pop()
+        parts = urlsplit(target)
+        if parts.hostname == "cp.news.search.daum.net" and re.fullmatch(r"/p/\d+", parts.path):
+            page = fetcher.get("https://cp.news.search.daum.net" + parts.path,
+                               retries=0, timeout=4, allow_redirects=False)
+            if page.status_code not in (301, 302, 303, 307, 308):
+                return None
+            target = page.headers.get("Location") or ""
+            parts = urlsplit(target)
+        if not parts.hostname or any(parts.hostname == host or parts.hostname.endswith("." + host)
+                                     for host in ("daum.net", "kakao.com")):
+            return None
+        return _publisher_url(target)
+    except (requests.RequestException, ValueError):
+        return None
 
 
 def _summary_from_article(entry):

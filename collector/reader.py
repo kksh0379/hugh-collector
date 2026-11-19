@@ -339,10 +339,10 @@ def read_article(item):
     try:
         target = url
         try:
-            from collector.google_news import _decode_google_url, _publisher_url
+            from collector.google_news import _decode_google_url, _publisher_url, search_publisher_url
             # Google News RSS URLs are wrappers, not publisher articles.
             # Try the stored canonical source first; resolve both URL fields if needed.
-            for candidate in (item.get("source_url"), item.get("url")):
+            for candidate in dict.fromkeys((item.get("source_url"), item.get("url"))):
                 if not candidate:
                     continue
                 if _publisher_url(candidate):
@@ -353,6 +353,10 @@ def read_article(item):
                     if resolved and _publisher_url(resolved):
                         target = resolved
                         break
+            if not _publisher_url(target) and urlsplit(item["url"]).hostname == "news.google.com":
+                target = search_publisher_url(item) or url
+                if target != url:
+                    print("[reader] publisher recovered via news search; host=%s" % urlsplit(target).hostname, flush=True)
             if not _publisher_url(target):
                 print("[reader] unresolved publisher URL; host=%s" % (urlsplit(url).hostname,), flush=True)
                 raise ReaderUnavailable("Google News publisher URL unresolved")
@@ -384,6 +388,11 @@ def read_article(item):
             if body is None:
                 body = dict(fallback(item), url=target)
         if body["mode"] == "article":
+            if not _publisher_url(item.get("source_url")) and urlsplit(item["url"]).hostname == "news.google.com":
+                try:
+                    db.remember_news_source(item["url"], body["url"])
+                except Exception as exc:
+                    print("[reader] source persistence failure; type=%s" % type(exc).__name__, flush=True)
             with _lock:
                 _cache[url] = (time.monotonic() + 600, body)
                 _cache.move_to_end(url)

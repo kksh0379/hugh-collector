@@ -118,19 +118,31 @@ class ReaderTests(unittest.TestCase):
         self.assertEqual(first["paragraphs"], ["저장된 요약"])
         self.assertEqual(second["mode"], "article")
 
-    def test_verified_source_repair_only_fills_missing_urls(self):
-        wrapper = "https://news.google.com/rss/articles/CBMiUEFVX3lxTE51SWpkUWwzdDFvWFJpYXpEMG1qRm9MNzhmVHRocGgweVEtM3JBeGd2c2NGYWJtbjF6MkRBU29BVzg3RVdGQnV2ejhmRGFsYjRq?oc=5"
-        expected = "https://www.munhwa.com/article/11632650"
+    def test_google_fallback_matches_publisher_and_persists_article(self):
+        from types import SimpleNamespace
+        from collector import google_news
+        wrapper = "https://news.google.com/rss/articles/previously-unseen"
+        title = "아직 저장되지 않은 새 기사 원문 자동 복구"
+        original = "https://publisher.example/new-story"
+        markup = f"""<ul class="list_news">
+          <li><a class="item-writer"><span class="txt_info">다른 매체</span></a>
+              <a class="tit_main" href="https://wrong.example/">{title}</a></li>
+          <li><a class="item-writer"><span class="txt_info">예시 뉴스</span></a>
+              <a class="tit_main" href="https://cp.news.search.daum.net/p/42">{title}</a></li>
+        </ul>"""
         with db.get_conn() as conn:
-            conn.execute("INSERT INTO news (url, title, content) VALUES (?, ?, ?)",
-                         (wrapper, "기사", "저장된 요약"))
-        db.init_db()
-        self.assertEqual(db.reader_item(wrapper)["source_url"], expected)
-        self.assertEqual(db.reader_item(wrapper)["content"], "저장된 요약")
-        with db.get_conn() as conn:
-            conn.execute("UPDATE news SET source_url=? WHERE url=?", ("https://publisher.example/current", wrapper))
-        db.init_db()
-        self.assertEqual(db.reader_item(wrapper)["source_url"], "https://publisher.example/current")
+            conn.execute("INSERT INTO news (url, title, author) VALUES (?, ?, ?)",
+                         (wrapper, title, "예시뉴스"))
+        with patch.object(google_news, "_decode_google_url", return_value=None), patch.object(
+            google_news.fetcher, "get", side_effect=[
+                SimpleNamespace(content=markup.encode()),
+                SimpleNamespace(status_code=302, headers={"Location": original}),
+            ]
+        ), patch.object(reader, "fetch_html", return_value=HTML) as fetch:
+            article = self.client.get("/api/reader", query_string={"url": wrapper}).get_json()
+        self.assertEqual(article["mode"], "article")
+        fetch.assert_called_once_with(original)
+        self.assertEqual(db.reader_item(wrapper)["source_url"], original)
 
     def test_short_structured_article_preserves_paragraphs(self):
         import json
