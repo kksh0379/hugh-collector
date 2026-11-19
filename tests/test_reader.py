@@ -102,12 +102,37 @@ class ReaderTests(unittest.TestCase):
             self.assertEqual(data["url"], "https://publisher.example/story")
             fetch.assert_called_once_with("https://publisher.example/story")
 
+    def test_resolved_original_survives_failure_and_retry(self):
+        wrapper = "https://news.google.com/rss/articles/test"
+        original = "https://publisher.example/story"
+        with db.get_conn() as conn:
+            conn.execute("INSERT INTO news (url, title, content) VALUES (?, ?, ?)",
+                         (wrapper, "기사", "저장된 요약"))
+        with patch("collector.google_news._decode_google_url", return_value=original), patch.object(
+            reader, "fetch_html", side_effect=[TimeoutError, HTML]
+        ):
+            first = self.client.get("/api/reader", query_string={"url": wrapper}).get_json()
+            second = self.client.get("/api/reader", query_string={"url": wrapper}).get_json()
+        self.assertEqual(first["mode"], "excerpt")
+        self.assertEqual(first["url"], original)
+        self.assertEqual(first["paragraphs"], ["저장된 요약"])
+        self.assertEqual(second["mode"], "article")
+
+    def test_short_structured_article_preserves_paragraphs(self):
+        import json
+        paragraphs = ["첫 번째 기사 문단입니다. " * 5, "두 번째 기사 문단입니다. " * 5]
+        data = json.dumps({"@type": "NewsArticle", "articleBody": "\n".join(paragraphs)})
+        with patch.object(reader, "fetch_html", return_value=f'<script type="application/ld+json">{data}</script>'):
+            article = reader.read_article({"url": "https://publisher.example/short"})
+        self.assertEqual(article["mode"], "article")
+        self.assertEqual(article["paragraphs"], [part.strip() for part in paragraphs])
+
     def test_timeout_returns_labelled_excerpt(self):
         with patch.object(reader, "fetch_html", side_effect=TimeoutError):
             data = self.client.get('/api/reader?url=https://publisher.example/story/1').get_json()
             self.assertEqual(data["mode"], "excerpt")
             self.assertEqual(data["paragraphs"], ["저장된 요약"])
-            self.assertIn("수집된 내용", data["notice"])
+            self.assertIn("수집된 요약", data["notice"])
 
     def test_rejects_redirect_to_internal_network(self):
         class RedirectConnection:

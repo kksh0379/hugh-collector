@@ -75,8 +75,11 @@ test('opening fetches only body; manual clicks deduplicate and reopening resets 
   }};
   vm.runInNewContext(source,context);
   const dialog=nodes.get('reader-view'),button=nodes.get('reader-summary-button');
-  function open(url){const link={href:url,isConnected:true,closest:()=>null,focus(){}};events.click({target:{closest:()=>link},button:0,preventDefault(){}});}
-  open('https://example.com/1');await new Promise(setImmediate);
+  function open(url, readerUrl){const link={href:url,dataset:{readerUrl},isConnected:true,closest:()=>null,focus(){}};events.click({target:{closest:()=>link},button:0,preventDefault(){}});}
+  const storedUrl = 'https://news.google.com/rss/articles/token?oc=5';
+  open('https://example.com/1',storedUrl);await new Promise(setImmediate);
+  assert.equal(requests[0], '/api/reader?url=' + encodeURIComponent(storedUrl));
+  assert.equal(nodes.get('reader-source').href, 'https://example.com/1');
   assert.equal(requests.length,1);assert.equal(button.disabled,false);assert.equal(nodes.get('reader-status').hidden,true);
   const first=button.click();button.click();assert.equal(requests.length,2);assert.equal(button.disabled,true);
   pending.shift()({ok:true,json:async()=>({status:'ready',points:['수동 요약']})});await first;assert.equal(button.hidden,true);

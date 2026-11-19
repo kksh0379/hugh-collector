@@ -22,7 +22,7 @@ import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 from collections import Counter
 
 from bs4 import BeautifulSoup
@@ -195,7 +195,13 @@ def _decode_google_url(url):
        (signature/timestamp와 함께) 질의해 원문 URL을 받아온다.
     실패하면 None을 돌려주고, 호출측은 RSS 요약으로 폴백한다.
     """
-    m = re.search(r"news\.google\.com/(?:rss/)?(?:articles|read)/([A-Za-z0-9_\-]+)", url or "")
+    try:
+        parts = urlsplit(url or "")
+        if parts.scheme not in ("http", "https") or parts.netloc.lower() != "news.google.com":
+            return None
+    except ValueError:
+        return None
+    m = re.fullmatch(r"/(?:rss/)?(?:articles|read)/([A-Za-z0-9_-]+)", parts.path)
     if not m:
         return None
     token = m.group(1)
@@ -205,30 +211,15 @@ def _decode_google_url(url):
     try:
         text = base64.urlsafe_b64decode(padded).decode("latin-1", "ignore")
         m2 = re.search(r"https?://[^\x00-\x20\x7f-\xff\"'<>\\]+", text)
-        if m2 and "google.com" not in m2.group(0):
+        if m2 and _publisher_url(m2.group(0)):
             return m2.group(0)
     except Exception:  # noqa: BLE001
         pass
 
-    # 2) 신형 포맷: batchexecute API로 복원
-    # Prefer the publisher redirect or canonical URL before the signed RPC.
-    try:
-        response = fetcher.get(url, retries=0, timeout=NEWS_TIMEOUT)
-        direct = _publisher_url(getattr(response, 'url', ''))
-        if direct:
-            return direct
-        soup = BeautifulSoup(response.text, 'lxml')
-        canonical = soup.select_one('link[rel="canonical"], meta[property="og:url"]')
-        if canonical:
-            direct = _publisher_url(canonical.get('href') or canonical.get('content'))
-            if direct:
-                return direct
-    except (requests.RequestException, ValueError, TypeError):
-        pass
-    return _decode_via_batchexecute(token)
+    return _decode_via_batchexecute(token, url)
 
 
-def _decode_via_batchexecute(token):
+def _decode_via_batchexecute(token, article_url=None):
     """구글 뉴스 신형 기사 토큰을 원문 URL로 복원한다.
     기사 페이지에서 서명(data-n-a-sg)/타임스탬프(data-n-a-ts)를 읽어
     내부 RPC(Fbv4je/garturlreq)를 호출한다."""
@@ -239,7 +230,7 @@ def _decode_via_batchexecute(token):
             return None
         time.sleep(max(0, _DECODE_NEXT - time.monotonic()))
         try:
-            return _decode_rpc(token)
+            return _decode_rpc(token, article_url)
         except requests.HTTPError as error:
             response = error.response
             status = response.status_code if response is not None else 0
@@ -268,23 +259,56 @@ def _publisher_url(value):
     try:
         parts = urlsplit(value)
         host = parts.hostname or ""
-        if parts.scheme in ("http", "https") and host and not (host == "google.com" or host.endswith(".google.com")):
+        if (parts.scheme in ("http", "https") and host and not parts.username
+                and not parts.password and parts.port in (None, 80, 443)
+                and not (host.rstrip(".") == "google.com" or host.rstrip(".").endswith(".google.com"))):
             return value
     except ValueError:
         pass
     return None
 
 
-def _decode_rpc(token):
-    # /articles redirects non-browser clients away from the signature page.
-    page = fetcher.get(f"https://news.google.com/rss/articles/{token}",
-                       params={"hl": "ko", "gl": "KR", "ceid": "KR:ko"},
-                       retries=0, timeout=NEWS_TIMEOUT)
-    direct = _publisher_url(getattr(page, "url", ""))
-    if direct:
-        return direct
-    div = BeautifulSoup(page.text, "lxml").select_one("[data-n-a-sg][data-n-a-ts]")
-    if not div:
+def _decode_rpc(token, article_url=None):
+    # Resolve on Google only. A publisher redirect is a target for the caller.
+    rss_url = f"https://news.google.com/rss/articles/{token}"
+    read_url = f"https://news.google.com/read/{token}"
+    pending = [article_url or rss_url, read_url]
+    seen = set()
+    for _ in range(4):
+        if not pending:
+            return None
+        url = pending.pop(0)
+        if url in seen:
+            continue
+        seen.add(url)
+        try:
+            params = None if urlsplit(url).query else {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
+            page = fetcher.get(url, params=params, retries=0, timeout=NEWS_TIMEOUT,
+                               allow_redirects=False)
+        except requests.HTTPError as error:
+            if error.response is not None and error.response.status_code == 404:
+                continue
+            raise
+        if page.status_code in (301, 302, 303, 307, 308):
+            location = page.headers.get("Location")
+            target = urljoin(url, location) if location else ""
+            direct = _publisher_url(target)
+            if direct:
+                return direct
+            parts = urlsplit(target)
+            if (parts.scheme == "https" and parts.netloc == "news.google.com"
+                    and parts.path in (f"/rss/articles/{token}", f"/articles/{token}", f"/read/{token}")):
+                pending.insert(0, target)
+            continue
+        soup = BeautifulSoup(page.text, "lxml")
+        for canonical in soup.select('link[rel="canonical"], meta[property="og:url"]'):
+            direct = _publisher_url(canonical.get("href") or canonical.get("content"))
+            if direct:
+                return direct
+        div = soup.select_one("[data-n-a-sg][data-n-a-ts]")
+        if div:
+            break
+    else:
         return None
     sig, ts = div.get("data-n-a-sg"), div.get("data-n-a-ts")
     if not (sig and ts):
@@ -327,10 +351,10 @@ def _summary_from_article(entry):
     page_soup = None
     try:
         real = _decode_google_url(entry.get("url", ""))
-        if not real and time.time() < _DECODE_RETRY_AT:
+        if not real:
             entry["content"] = entry.get("snippet") or ""
             return entry
-        resp = fetcher.get(real or entry["url"], retries=0, timeout=NEWS_TIMEOUT)  # 리다이렉트 따라감
+        resp = fetcher.get(real, retries=0, timeout=NEWS_TIMEOUT)  # 리다이렉트 따라감
         final = resp.url or ""
         if _publisher_url(final):
             # 저장 키(url)는 RSS의 '구글 링크'로 고정(증분 수집이 되게).
@@ -370,7 +394,7 @@ def _enrich_one(row):
         final = resp.url or ""
         if not _publisher_url(final):
             return {"_image_status": "구글 안내 페이지"}
-        if final and not row.get("source_url"):
+        if final and final != row.get("source_url"):
             out["source_url"] = final
         soup = BeautifulSoup(resp.text, "lxml")
         img = extractor.extract_image(soup, final)

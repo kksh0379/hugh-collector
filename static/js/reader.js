@@ -44,10 +44,10 @@
       if (!response.ok) throw new Error(data.error || "본문을 불러오지 못했습니다.");
       title.textContent = data.title;
       meta.textContent = [data.author, data.published_at].filter(Boolean).join(" · ");
-      source.href = safeUrl(data.url) || url;
+      source.href = safeUrl(data.url) || trigger.href;
       status.textContent = data.mode === "excerpt" ? data.notice : "";
       status.hidden = !status.textContent;
-      summaryButton.disabled = false;
+      summaryButton.disabled = !data.paragraphs.length;
       retry.hidden = data.mode !== "excerpt";
       body.replaceChildren();
       for (const text of data.paragraphs) {
@@ -178,7 +178,8 @@
     if (!url) { event.preventDefault(); return; }
     event.preventDefault();
     trigger = link;
-    activeUrl = url;
+    const readerUrl = link.dataset?.readerUrl;
+    activeUrl = safeUrl(readerUrl) ? readerUrl : url;
     title.textContent = link.closest(".card, .finance-news-item")?.querySelector(".card-title, h3")?.textContent || "본문 읽기";
     meta.textContent = new URL(url).hostname;
     source.href = url;
@@ -186,7 +187,7 @@
     document.body.style.overflow = "hidden";
     dialog.showModal();
     dialog.scrollTop = 0;
-    load(url);
+    load(activeUrl);
   });
   document.getElementById("reader-close").addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
