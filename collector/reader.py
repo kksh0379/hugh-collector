@@ -339,7 +339,9 @@ def read_article(item):
     try:
         target = url
         try:
-            from collector.google_news import _decode_google_url, _publisher_url, search_publisher_url
+            from collector.google_news import (
+                _decode_google_url, _news_search_key, _publisher_url, search_publisher_index, search_publisher_url,
+            )
             # Google News RSS URLs are wrappers, not publisher articles.
             # Try the stored canonical source first; resolve both URL fields if needed.
             for candidate in dict.fromkeys((item.get("source_url"), item.get("url"))):
@@ -353,10 +355,26 @@ def read_article(item):
                     if resolved and _publisher_url(resolved):
                         target = resolved
                         break
+            indexed_html = None
             if not _publisher_url(target) and urlsplit(item["url"]).hostname == "news.google.com":
-                target = search_publisher_url(item) or url
+                indexed = search_publisher_index(item)
+                if indexed:
+                    try:
+                        html = fetch_html(indexed)
+                        page = BeautifulSoup(html, "lxml")
+                        meta = page.select_one('meta[property="og:title"]')
+                        heading = page.select_one("h1")
+                        titles = [meta.get("content") if meta else None,
+                                  heading.get_text() if heading else None]
+                        if _news_search_key(item.get("title")) in map(_news_search_key, titles):
+                            indexed_html = html
+                    except (ReaderUnavailable, OSError, http.client.HTTPException, UnicodeError, LookupError):
+                        pass
+                target = indexed if indexed_html is not None else search_publisher_url(item) or url
                 if target != url:
-                    print("[reader] publisher recovered via news search; host=%s" % urlsplit(target).hostname, flush=True)
+                    print("[reader] publisher recovered via %s; host=%s" %
+                          ("publisher index" if indexed_html is not None else "news search",
+                           urlsplit(target).hostname), flush=True)
             if not _publisher_url(target):
                 print("[reader] unresolved publisher URL; host=%s" % (urlsplit(url).hostname,), flush=True)
                 raise ReaderUnavailable("Google News publisher URL unresolved")
@@ -364,7 +382,7 @@ def read_article(item):
             body = None
             for candidate in article_targets(target):
                 try:
-                    html = fetch_html(candidate)
+                    html = indexed_html if candidate == target and indexed_html is not None else fetch_html(candidate)
                     paragraphs = extract_paragraphs(html)
                     if looks_like_error_page(paragraphs):
                         print("[reader] insufficient article body; host=%s length=%d" %
