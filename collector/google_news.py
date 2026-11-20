@@ -21,8 +21,9 @@ import threading
 import unicodedata
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from html import unescape
 from urllib.parse import urljoin, urlsplit
 from collections import Counter
 
@@ -346,7 +347,7 @@ def _decode_rpc(token, article_url=None):
 
 
 def _news_search_key(value):
-    normalized = unicodedata.normalize("NFKC", value or "").casefold()
+    normalized = unicodedata.normalize("NFKC", unescape(value or "")).casefold()
     return "".join(char for char in normalized if char.isalnum())
 
 
@@ -387,6 +388,62 @@ def search_publisher_url(item):
                                      for host in ("daum.net", "kakao.com")):
             return None
         return _publisher_url(target)
+    except (requests.RequestException, ValueError):
+        return None
+
+
+# These are publisher indexes. Article URLs are discovered at request time.
+_PUBLISHER_INDEXES = {
+    "축산정보뉴스": ("https://www.liveinfo.kr/news/search_result.html", "search",
+                  "ul.art_list a[href] b", "www.liveinfo.kr"),
+    "전자신문": ("https://search.etnews.com/etnews/search.html", "kwd",
+             ".text strong a[href]", "www.etnews.com"),
+    "반딧불뉴스": ("https://www.bandinews.kr/sitemap.xml", None, None, "www.bandinews.kr"),
+    "팸타임스 FAM Times": ("https://www.famtimes.co.kr/ko/sitemap.xml", None, None, "www.famtimes.co.kr"),
+}
+
+
+def search_publisher_index(item):
+    """Look up a headline in its publisher's own public search page or sitemap."""
+    config = _PUBLISHER_INDEXES.get(item.get("author"))
+    title = item.get("title") or ""
+    title_key = _news_search_key(title)
+    if not config or len(title_key) < 12:
+        return None
+    index, parameter, selector, host = config
+    try:
+        words = re.findall(r"[^\W_]+", title)
+        params = {parameter: " ".join(words[:1 if parameter == "search" else 4])} if parameter else None
+        page = fetcher.get(index, params=params, retries=0, timeout=4, allow_redirects=False)
+        if page.status_code != 200:
+            return None
+        links = set()
+        if parameter:
+            soup = BeautifulSoup(page.content, "lxml")
+            for node in soup.select(selector):
+                if _news_search_key(node.get_text()) == title_key:
+                    anchor = node if node.name == "a" else node.find_parent("a")
+                    if anchor:
+                        links.add(urljoin(index, anchor["href"]))
+        else:
+            published = (item.get("published_at") or "").replace(" ", "T")[:16]
+            soup = BeautifulSoup(page.content, "xml")
+            for entry in soup.find_all("url"):
+                loc = entry.find("loc", recursive=False)
+                headline = entry.find("title")
+                if not loc:
+                    continue
+                if headline:
+                    if _news_search_key(headline.get_text()) == title_key:
+                        links.add(loc.get_text(strip=True))
+                elif published and host == "www.famtimes.co.kr":
+                    modified = entry.find("lastmod")
+                    if modified:
+                        stamp = datetime.fromisoformat(modified.get_text(strip=True))
+                        if stamp.tzinfo and stamp.astimezone(timezone.utc).isoformat()[:16] == published:
+                            links.add(loc.get_text(strip=True))
+        links = {link for link in links if _publisher_url(link) and urlsplit(link).hostname == host}
+        return links.pop() if len(links) == 1 else None
     except (requests.RequestException, ValueError):
         return None
 

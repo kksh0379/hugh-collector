@@ -144,6 +144,30 @@ class ReaderTests(unittest.TestCase):
         fetch.assert_called_once_with(original)
         self.assertEqual(db.reader_item(wrapper)["source_url"], original)
 
+    def test_publisher_index_checks_real_headline_when_google_is_unavailable(self):
+        from types import SimpleNamespace
+        from collector import google_news
+
+        wrapper = "https://news.google.com/rss/articles/unresolved-publisher-story"
+        title = "검색 결과보다 원문 기사 제목을 직접 확인합니다"
+        original = "https://www.famtimes.co.kr/news/articleView.html?idxno=9"
+        sitemap = f"""<urlset><url><loc>{original}</loc>
+            <lastmod>2026-11-20T14:03:39+09:00</lastmod></url></urlset>"""
+        item = {"url": wrapper, "title": title, "author": "팸타임스 FAM Times",
+                "published_at": "2026-11-20T05:03"}
+        with patch.object(google_news, "_decode_google_url", return_value=None), patch.object(
+            google_news.fetcher, "get", return_value=SimpleNamespace(status_code=200, content=sitemap.encode())
+        ), patch.object(google_news, "search_publisher_url", return_value=None), patch.object(
+            reader, "fetch_html", side_effect=[HTML, f"<h1>{title}</h1>{HTML}"]
+        ) as fetch:
+            wrong = reader.read_article(item)
+            correct = reader.read_article(item)
+        self.assertEqual(wrong["mode"], "excerpt")
+        self.assertEqual(wrong["url"], wrapper)
+        self.assertEqual(correct["mode"], "article")
+        self.assertEqual(correct["url"], original)
+        self.assertEqual(fetch.call_count, 2)
+
     def test_short_structured_article_preserves_paragraphs(self):
         import json
         paragraphs = ["첫 번째 기사 문단입니다. " * 5, "두 번째 기사 문단입니다. " * 5]
