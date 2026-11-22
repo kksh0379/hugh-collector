@@ -262,7 +262,7 @@ def extract_paragraphs(html):
             paragraphs = [p for p in paragraphs if len(p) >= 20]
             length = sum(map(len, paragraphs))
             links = sum(len(link.get_text(" ", strip=True)) for link in node.select("a"))
-            if len(paragraphs) >= 2 and length >= 120 and links < length * .5:
+            if len(paragraphs) >= 2 and length >= 120:
                 if best is None or length > best[0]:
                     best = (length, paragraphs)
     if structured:
