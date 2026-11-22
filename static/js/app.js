@@ -856,10 +856,13 @@ function readerSnippetSuspect(value, title = "") {
     /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
 }
 function readerTitleOnly(value, title, publisher = "") {
+  // RSS descriptions may be the headline with slightly different punctuation,
+  // quotation marks, clipped endings or a trailing publisher name.
   const normalize = text => String(text || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:nbsp|amp|quot|#39);/gi, " ")
-    .replace(/[\s\p{P}\p{S}]+/gu, "").toLowerCase();
+    .replace(/[\s\p{P}\p{S}]+/gu, "")
+    .toLowerCase();
   const heading = normalize(title);
   let snippet = normalize(value);
   if (!snippet) return true;
@@ -867,13 +870,31 @@ function readerTitleOnly(value, title, publisher = "") {
   const source = normalize(publisher);
   if (source && snippet.endsWith(source)) snippet = snippet.slice(0, -source.length);
   if (snippet === heading) return true;
-  // Headlines may be clipped independently by RSS and by the feed title field.
-  let common = 0;
-  while (common < Math.min(heading.length, snippet.length) && heading[common] === snippet[common]) common++;
-  const shorter = Math.min(heading.length, snippet.length);
-  const remainder = snippet.slice(common);
-  return common >= 12 && common / shorter >= 0.75 &&
-    (remainder.length <= 32 || (source && remainder.endsWith(source) && remainder.length <= source.length + 32));
+
+  // A genuine excerpt is longer than a headline. Never discard an article
+  // body simply because it begins with a similar headline.
+  if (snippet.length > heading.length + 30 || snippet.length > 150) return false;
+  const minLength = Math.min(heading.length, snippet.length);
+  const maxLength = Math.max(heading.length, snippet.length);
+  if (minLength < 12 || minLength / maxLength < 0.65) return false;
+  if (heading.includes(snippet) || snippet.includes(heading)) return true;
+
+  // Bounded Levenshtein distance tolerates small edits *anywhere*, unlike
+  // the old common-prefix-only comparison.
+  const maxEdits = Math.max(3, Math.floor(maxLength * 0.22));
+  let previous = Array.from({length: snippet.length + 1}, (_, i) => i);
+  for (let i = 1; i <= heading.length; i++) {
+    const current = [i];
+    let rowMin = current[0];
+    for (let j = 1; j <= snippet.length; j++) {
+      const cost = heading[i - 1] === snippet[j - 1] ? 0 : 1;
+      current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost);
+      rowMin = Math.min(rowMin, current[j]);
+    }
+    if (rowMin > maxEdits) return false;
+    previous = current;
+  }
+  return previous[snippet.length] <= maxEdits;
 }
 function readerSuspectAttr(value, title) {
   return readerSnippetSuspect(value, title) ? ' data-reader-suspect="1"' : "";
