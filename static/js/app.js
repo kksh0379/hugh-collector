@@ -855,12 +855,27 @@ function readerSnippetSuspect(value, title = "") {
     (heading && plain.startsWith(heading) && plain.length < heading.length + 65) ||
     /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
 }
-function readerTitleOnly(value, title) {
-  const normalize = text => String(text || "").replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|quot|#39);/gi, " ").replace(/[\s\p{P}\p{S}]+/gu, "").toLowerCase();
+function readerTitleOnly(value, title, publisher = "") {
+  // Google News RSS often stores headline + publisher as the entire "description".
+  // Compare meaningful headline overlap even when the title and snippet truncate differently.
+  const normalize = text => String(text || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&(?:nbsp|amp|quot|#39);/gi, " ")
+    .replace(/[\\s\\p{P}\\p{S}]+/gu, "")
+    .toLowerCase();
   const snippet = normalize(value), heading = normalize(title);
   if (!snippet) return true;
   if (!heading) return false;
-  return snippet === heading || (snippet.startsWith(heading) && snippet.length - heading.length <= 12);
+  const publisherName = normalize(publisher);
+  const content = publisherName && snippet.endsWith(publisherName)
+    ? snippet.slice(0, -publisherName.length) : snippet;
+  if (content === heading || (content.startsWith(heading) && content.length - heading.length <= 12)) return true;
+  const limit = Math.min(content.length, heading.length);
+  let common = 0;
+  while (common < limit && content[common] === heading[common]) common++;
+  // Only treat a substantial near-identical headline as a duplicated summary.
+  return common >= 24 && common / Math.max(content.length, heading.length) >= 0.72 &&
+    Math.abs(content.length - heading.length) <= 28;
 }
 function readerSuspectAttr(value, title) {
   return readerSnippetSuspect(value, title) ? ' data-reader-suspect="1"' : "";
@@ -874,7 +889,7 @@ function renderCard(item, opts) {
   meta.push(escapeHtml(fmtDate(item.published_at)));
   if (item.author) meta.push(escapeHtml(item.author));
 
-  const titleOnly = !opensOriginalSource(tab) && readerTitleOnly(item.content, item.title);
+  const titleOnly = !opensOriginalSource(tab) && readerTitleOnly(item.content, item.title, item.author);
   const t = escapeHtml(item.title || "(제목 없음)");
   const titleHtml = link
     ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${t}</a>` : t;
@@ -2479,7 +2494,7 @@ function scrapCardNode(s) {
   if (s.author) meta.push(escapeHtml(s.author));
   const link = s.link || s.url;
   const isFood = s.tab === "food";
-  const titleOnly = !isFood && !opensOriginalSource(s.tab) && readerTitleOnly(s.content, s.title);
+  const titleOnly = !isFood && !opensOriginalSource(s.tab) && readerTitleOnly(s.content, s.title, s.author);
   const readerAttrs = ["news", "cat", "biz"].includes(s.tab) && s.url
     ? `data-reader data-reader-url="${escapeHtml(s.url)}"${readerSuspectAttr(s.content, s.title)}` : `data-reader${readerSuspectAttr(s.content, s.title)}`;
   const t = escapeHtml(s.title || "(제목 없음)");
