@@ -69,9 +69,92 @@
     } catch (_) {}
     refreshAvailability();
   }
-  const availabilityObserver = new MutationObserver(() => refreshAvailability());
+  // Title-only RSS entries are ambiguous: probe the real reader endpoint in the
+  // background. A successful extraction supplies the missing feed excerpt.
+  const probeKey = "hscope-reader-preview-v1";
+  let previews = {};
+  try { previews = JSON.parse(localStorage.getItem(probeKey) || "{}") || {}; } catch (_) {}
+  const probeSeen = new Set();
+  let probeActive = 0, probeCount = 0;
+  const probeQueue = [];
+  const probeLimit = 12;
+  function applyPreview(card, url, record) {
+    if (!card.isConnected || !record) return;
+    if (record.mode === "article" && record.preview) {
+      let summary = card.querySelector(".card-summary");
+      if (!summary) {
+        summary = document.createElement("p");
+        summary.className = "card-summary";
+        card.querySelector(".card-actions")?.before(summary);
+      }
+      if (summary && summary.textContent !== record.preview) summary.textContent = record.preview;
+      card.classList.remove("card-title-only");
+      card.querySelectorAll(".card-title a, .read-action").forEach(link => {
+        if (link.hasAttribute("data-reader-unavailable")) link.removeAttribute("data-reader-unavailable");
+        link.setAttribute("data-reader", "");
+        link.dataset.readerUrl = url;
+        if (link.classList.contains("read-action") && link.textContent !== "본문 읽기 ↗")
+          link.textContent = "본문 읽기 ↗";
+      });
+    } else if (record.mode === "excerpt") {
+      card.classList.add("card-title-only");
+      card.querySelector(".card-summary")?.remove();
+      card.querySelectorAll(".card-title a, .read-action").forEach(link => {
+        link.removeAttribute("data-reader");
+        link.setAttribute("data-reader-unavailable", "");
+        if (link.classList.contains("read-action") && link.textContent !== "원문 보기 ↗")
+          link.textContent = "원문 보기 ↗";
+      });
+    }
+  }
+  function runProbes() {
+    while (probeActive < 2 && probeQueue.length) {
+      const {url, card} = probeQueue.shift();
+      probeActive++;
+      fetch("/api/reader?url=" + encodeURIComponent(url))
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (!data || !["article", "excerpt"].includes(data.mode)) return;
+          const preview = data.mode === "article"
+            ? (data.paragraphs || []).join(" ").replace(/\\s+/g, " ").trim().slice(0, 320)
+            : "";
+          const record = {mode:data.mode, preview, at:Date.now()};
+          previews[url] = record;
+          try {
+            previews = Object.fromEntries(Object.entries(previews).filter(([,v]) =>
+              v && Date.now() - v.at < availabilityTtl).slice(-300));
+            localStorage.setItem(probeKey, JSON.stringify(previews));
+          } catch (_) {}
+          rememberAvailability(url, data.mode);
+          document.querySelectorAll("[data-reader-probe-url]").forEach(node => {
+            if (node.dataset.readerProbeUrl === url) applyPreview(node, url, record);
+          });
+          applyPreview(card, url, record);
+        })
+        .catch(() => {})
+        .finally(() => { probeActive--; runProbes(); });
+    }
+  }
+  function scanProbes() {
+    document.querySelectorAll(".card-title-only[data-reader-probe-url]").forEach(card => {
+      const url = safeUrl(card.dataset.readerProbeUrl);
+      if (!url) return;
+      const stored = previews[url];
+      if (stored && Date.now() - stored.at < availabilityTtl) {
+        applyPreview(card, url, stored);
+        return;
+      }
+      if (probeSeen.has(url) || probeCount >= probeLimit) return;
+      probeSeen.add(url);
+      probeCount++;
+      probeQueue.push({url, card});
+    });
+    runProbes();
+  }
+  const availabilityObserver = new MutationObserver(() => { refreshAvailability(); scanProbes(); });
   availabilityObserver.observe(document.body, {childList:true,subtree:true});
   refreshAvailability();
+  scanProbes();
 
   async function load(url) {
     if (controller) controller.abort();
