@@ -250,8 +250,8 @@ def extract_paragraphs(html):
                 candidates.append((length, paragraphs))
         if candidates:
             candidate = max(candidates, key=lambda c: c[0])
-            best = candidate
-            break
+            if best is None or candidate[0] > best[0]:
+                best = candidate
     if structured:
         candidate = max(structured, key=len)
         if best is None or len(candidate) > best[0]:
