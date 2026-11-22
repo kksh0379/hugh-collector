@@ -856,7 +856,7 @@ function readerSnippetSuspect(value, title = "") {
     /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
 }
 function readerTitleOnly(value, title) {
-  const normalize = text => String(text || "").replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|quot|#39);/gi, " ").replace(/[\\s\\p{P}\\p{S}]+/gu, "").toLowerCase();
+  const normalize = text => String(text || "").replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|quot|#39);/gi, " ").replace(/[\s\p{P}\p{S}]+/gu, "").toLowerCase();
   const snippet = normalize(value), heading = normalize(title);
   if (!snippet) return true;
   if (!heading) return false;
@@ -896,7 +896,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>` : ""}
+          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>` : ""}
           ${shareBtnHtml(link)}
         </div>
       </div>
@@ -2493,7 +2493,7 @@ function scrapCardNode(s) {
     <div class="card-main"><div class="card-body">
       <h3 class="card-title">${newBadgeHtml(s.date)}${titleHtml}</h3>
       <div class="card-meta">${meta.join(" · ")}</div>
-      ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
+      ${s.content && !titleOnly ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
         ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${opensOriginalSource(s.tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>`) : ""}
