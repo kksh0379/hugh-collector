@@ -257,7 +257,7 @@ def extract_paragraphs(html):
     if best is None:
         for node in soup.select("section, div, body"):
             blocks = node.find_all(["p", "h2", "h3", "blockquote"], recursive=True)
-            paragraphs = [re.sub(r"\\s+", " ", b.get_text(" ", strip=True)).strip()
+            paragraphs = [re.sub(r"\s+", " ", b.get_text(" ", strip=True)).strip()
                           for b in blocks if not b.find_parent(["a", "nav", "aside"])]
             paragraphs = [p for p in paragraphs if len(p) >= 20]
             length = sum(map(len, paragraphs))
@@ -265,6 +265,17 @@ def extract_paragraphs(html):
             if len(paragraphs) >= 2 and length >= 120:
                 if best is None or length > best[0]:
                     best = (length, paragraphs)
+    # Short reports: only accept short content inside a clearly identified
+    # article container, never an arbitrary body or navigation element.
+    if best is None:
+        for node in soup.select("article, [itemprop=articleBody], #dic_area, #articleBody, #article-body, .article-body, .article_content"):
+            paragraphs = [re.sub(r"\s+", " ", p.get_text(" ", strip=True)).strip()
+                          for p in node.select("p") if not p.find_parent("a")]
+            paragraphs = [p for p in paragraphs if p]
+            length = sum(map(len, paragraphs))
+            if 20 <= length < 120 and not node.select("a"):
+                best = (length, paragraphs)
+                break
     if structured:
         candidate = max(structured, key=len)
         if best is None or len(candidate) > best[0]:
