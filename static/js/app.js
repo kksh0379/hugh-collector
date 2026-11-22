@@ -921,7 +921,7 @@ function renderCard(item, opts) {
   const srcCls = item._src === "board" ? " card-board" : item._src === "video" ? " card-video" : "";
   li.className = "card card-news" + (titleOnly ? " card-title-only" : "") + srcCls + (opts.hideImage ? " card-no-media" : "") + readClass(key);
   li.dataset.key = key;
-  if (titleOnly && item.url) li.dataset.readerProbeUrl = item.url;
+  if (!opensOriginalSource(tab) && item.url) li.dataset.readerProbeUrl = item.url;
   li.innerHTML = `
     ${scrapBtnHtml(key)}
     <div class="card-main">
@@ -2524,8 +2524,8 @@ function scrapCardNode(s) {
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
   if (titleOnly) {
     li.classList.add("card-title-only");
-    if (s.url) li.dataset.readerProbeUrl = s.url;
   }
+  if (!isFood && !opensOriginalSource(s.tab) && s.url) li.dataset.readerProbeUrl = s.url;
   li.innerHTML = `
     ${scrapBtnHtml(s.key)}
     <div class="card-main"><div class="card-body">
