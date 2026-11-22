@@ -847,6 +847,17 @@ function renderInfinite(el, units, makeNode, emptyMsg) {
 // ----------------------------- 카드 렌더링 -----------------------------
 // Foundation posts and videos open directly at their original source.
 function opensOriginalSource(tab) { return tab === "boards" || tab === "social"; }
+// Short or truncated RSS snippets are a signal, not proof that the publisher body is unavailable.
+function readerSnippetSuspect(value, title = "") {
+  const plain = String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const heading = String(title || "").replace(/\s+/g, " ").trim();
+  return !plain || plain.length < 85 ||
+    (heading && plain.startsWith(heading) && plain.length < heading.length + 65) ||
+    /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
+}
+function readerSuspectAttr(value, title) {
+  return readerSnippetSuspect(value, title) ? ' data-reader-suspect="1"' : "";
+}
 function renderCard(item, opts) {
   const tab = opts.tab || "";
   const link = tab === "boards" ? (item.source_url || item.url) : item.url;
@@ -858,7 +869,7 @@ function renderCard(item, opts) {
 
   const t = escapeHtml(item.title || "(제목 없음)");
   const titleHtml = link
-    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : "data-reader"}>${t}</a>` : t;
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${t}</a>` : t;
   // 요약이 있으면 표시, 없고 이미지도 없으면 '요약 없음', 이미지만 있으면 요약 줄 생략
   const summaryHtml = item.content
     ? `<p class="card-summary">${escapeHtml(item.content)}</p>`
@@ -877,7 +888,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : "data-reader"}>${opensOriginalSource(tab) ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
+          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
           ${shareBtnHtml(link)}
         </div>
       </div>
