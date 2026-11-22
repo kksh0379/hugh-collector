@@ -428,6 +428,12 @@ body.is-loggedin .loggedout-only { display: none !important; }
   font-weight: 700;
   line-height: 1.4;
   margin: 0 0 6px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.8em;
+  overflow-wrap: anywhere;
 }
 .card-meta {
   font-size: 12px;
@@ -461,11 +467,13 @@ body.is-loggedin .loggedout-only { display: none !important; }
   color: #374151;
   line-height: 1.55;
   margin: 0;
-  /* 요약을 6줄로 고정해 본문을 더 보여준다 */
+  /* 카드 요약은 최대 4줄로 통일한다. */
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 6.2em;
+  overflow-wrap: anywhere;
 }
 
 /* 보안뉴스 AI 후처리: 중요도 배지 · 태그 · 시사점 */
@@ -603,6 +611,8 @@ body.view-list .card-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-height: 0;
+  display: block;
 }
 .card-actions { margin-top: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .card-actions a, .card-actions button {
