@@ -91,8 +91,8 @@
       card.classList.remove("card-title-only");
       card.querySelectorAll(".card-title a, .read-action").forEach(link => {
         if (link.hasAttribute("data-reader-unavailable")) link.removeAttribute("data-reader-unavailable");
-        link.setAttribute("data-reader", "");
-        link.dataset.readerUrl = url;
+        if (!link.hasAttribute("data-reader")) link.setAttribute("data-reader", "");
+        if (link.dataset.readerUrl !== url) link.dataset.readerUrl = url;
         if (link.classList.contains("read-action") && link.textContent !== "본문 읽기 ↗")
           link.textContent = "본문 읽기 ↗";
       });
@@ -101,7 +101,7 @@
       card.querySelector(".card-summary")?.remove();
       card.querySelectorAll(".card-title a, .read-action").forEach(link => {
         link.removeAttribute("data-reader");
-        link.setAttribute("data-reader-unavailable", "");
+        if (!link.hasAttribute("data-reader-unavailable")) link.setAttribute("data-reader-unavailable", "");
         if (link.classList.contains("read-action") && link.textContent !== "원문 보기 ↗")
           link.textContent = "원문 보기 ↗";
       });
@@ -116,7 +116,7 @@
         .then(data => {
           if (!data || !["article", "excerpt"].includes(data.mode)) return;
           const preview = data.mode === "article"
-            ? (data.paragraphs || []).join(" ").replace(/\\s+/g, " ").trim().slice(0, 320)
+            ? (data.paragraphs || []).join(" ").replace(/\s+/g, " ").trim().slice(0, 320)
             : "";
           const record = {mode:data.mode, preview, at:Date.now()};
           previews[url] = record;
