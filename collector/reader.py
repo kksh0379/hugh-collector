@@ -215,7 +215,7 @@ def extract_paragraphs(html):
             continue
     # Some JS-rendered publishers embed the full story in application/json
     # hydration state even though the initial DOM contains no article text.
-    for script in soup.select('script[type="application/json"], script#__NEXT_DATA__'):
+    for script in soup.select('script[type="application/json"], script#__NEXT_DATA__, script#__NUXT_DATA__, script#__nuxt_data'):
         try:
             payload = json.loads(script.string or script.get_text())
             def find_embedded(value, depth=0):
@@ -223,7 +223,7 @@ def extract_paragraphs(html):
                     return
                 if isinstance(value, dict):
                     for key, item in value.items():
-                        if key in ("articleBody", "articleText", "articleContent") and isinstance(item, str) and len(item.strip()) >= 120:
+                        if key in ("articleBody", "articleText", "articleContent", "bodyText", "fullText") and isinstance(item, str) and len(item.strip()) >= 120:
                             structured.append(item)
                         elif isinstance(item, (dict, list)):
                             find_embedded(item, depth + 1)
