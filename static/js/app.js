@@ -892,6 +892,7 @@ function renderCard(item, opts) {
   if (item.author) meta.push(escapeHtml(item.author));
 
   const titleOnly = !opensOriginalSource(tab) && readerTitleOnly(item.content, item.title, item.author);
+  const readerKey = escapeHtml(item.url || link || "");
   const t = escapeHtml(item.title || "(제목 없음)");
   const titleHtml = link
     ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${t}</a>` : t;
@@ -904,6 +905,7 @@ function renderCard(item, opts) {
   const srcCls = item._src === "board" ? " card-board" : item._src === "video" ? " card-video" : "";
   li.className = "card card-news" + (titleOnly ? " card-title-only" : "") + srcCls + (opts.hideImage ? " card-no-media" : "") + readClass(key);
   li.dataset.key = key;
+  if (titleOnly && item.url) li.dataset.readerProbeUrl = item.url;
   li.innerHTML = `
     ${scrapBtnHtml(key)}
     <div class="card-main">
@@ -2504,7 +2506,10 @@ function scrapCardNode(s) {
   const checks = GROUPS.length
     ? GROUPS.map((g) => `<label class="grp-check-item"><input type="checkbox" class="grp-check" data-key="${escapeHtml(s.key)}" data-gid="${g.id}"${(s.groups || []).includes(g.id) ? " checked" : ""}> ${escapeHtml(g.name)}</label>`).join("")
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
-  if (titleOnly) li.classList.add("card-title-only");
+  if (titleOnly) {
+    li.classList.add("card-title-only");
+    if (s.url) li.dataset.readerProbeUrl = s.url;
+  }
   li.innerHTML = `
     ${scrapBtnHtml(s.key)}
     <div class="card-main"><div class="card-body">
