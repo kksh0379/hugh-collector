@@ -99,7 +99,7 @@
       card.classList.add("card-title-only");
       card.querySelector(".card-summary")?.remove();
       card.querySelectorAll(".card-title a, .read-action").forEach(link => {
-        link.removeAttribute("data-reader");
+        if (link.hasAttribute("data-reader")) link.removeAttribute("data-reader");
         if (!link.hasAttribute("data-reader-unavailable")) link.setAttribute("data-reader-unavailable", "");
         if (link.classList.contains("read-action") && link.textContent !== "원문 보기 ↗")
           link.textContent = "원문 보기 ↗";
@@ -135,7 +135,7 @@
     }
   }
   function scanProbes() {
-    document.querySelectorAll(".card-title-only[data-reader-probe-url]").forEach(card => {
+    document.querySelectorAll("[data-reader-probe-url]").forEach(card => {
       const url = safeUrl(card.dataset.readerProbeUrl);
       if (!url) return;
       const stored = previews[url];
@@ -149,7 +149,7 @@
     });
     runProbes();
   }
-  // Only fetch visible title-only entries, rather than probing a fixed first-12 batch.
+  // Verify every visible reader-eligible article, not only title-only RSS entries.
   const probeObserver = typeof IntersectionObserver === "function"
     ? new IntersectionObserver(entries => {
         for (const entry of entries) {
@@ -163,7 +163,7 @@
         runProbes();
       }, {rootMargin:"500px 0px"}) : null;
   function observeProbes() {
-    document.querySelectorAll(".card-title-only[data-reader-probe-url]").forEach(card => {
+    document.querySelectorAll("[data-reader-probe-url]").forEach(card => {
       const url = safeUrl(card.dataset.readerProbeUrl);
       if (!url) return;
       const stored = previews[url];
