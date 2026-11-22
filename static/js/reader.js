@@ -50,8 +50,12 @@
           link.setAttribute("data-reader", "");
         }
         if (link.classList.contains("read-action")) {
-        if (link.textContent !== "본문 확인") link.textContent = "본문 확인";
-          link.title = "본문 추출 여부 미확인 · 처음 열 때 확인";
+          const suspect = link.hasAttribute("data-reader-suspect");
+          const label = suspect ? "추출 의심 · 확인" : "본문 확인";
+          if (link.textContent !== label) link.textContent = label;
+          link.title = suspect
+            ? "목록 요약이 짧거나 잘려 있습니다. 원문 본문 추출 여부는 아직 확인되지 않았습니다."
+            : "본문 추출 여부 미확인 · 처음 열 때 확인";
         }
       }
     });
