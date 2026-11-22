@@ -2472,7 +2472,7 @@ function scrapCardNode(s) {
   const link = s.link || s.url;
   const isFood = s.tab === "food";
   const readerAttrs = ["news", "cat", "biz"].includes(s.tab) && s.url
-    ? `data-reader data-reader-url="${escapeHtml(s.url)}"` : "data-reader";
+    ? `data-reader data-reader-url="${escapeHtml(s.url)}"${readerSuspectAttr(s.content, s.title)}` : `data-reader${readerSuspectAttr(s.content, s.title)}`;
   const t = escapeHtml(s.title || "(제목 없음)");
   const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${isFood || opensOriginalSource(s.tab) ? "" : readerAttrs}>${t}</a>` : t;
   const checks = GROUPS.length
