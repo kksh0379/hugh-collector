@@ -274,9 +274,12 @@ def _decode_rpc(token, article_url=None):
     # Resolve on Google only. A publisher redirect is a target for the caller.
     rss_url = f"https://news.google.com/rss/articles/{token}"
     read_url = f"https://news.google.com/read/{token}"
-    pending = [article_url or rss_url, read_url]
+    # Different Google News token generations expose their signature on
+    # different article routes; do not stop after checking only two.
+    article_page = f"https://news.google.com/articles/{token}"
+    pending = list(dict.fromkeys([article_url or rss_url, read_url, article_page, rss_url]))
     seen = set()
-    for _ in range(4):
+    for _ in range(8):
         if not pending:
             return None
         url = pending.pop(0)
