@@ -627,8 +627,8 @@ body.view-list .card-title {
 
 .card-actions .read-action {
   display: inline-flex; align-items: center; justify-content: center;
-  box-sizing: border-box; height: 36px; min-height: 36px; min-width: 116px;
-  padding: 7px 12px; border: 1px solid #a8bfe4; border-radius: var(--r-sm);
+  box-sizing: border-box; min-height: 32px; width: auto; min-width: 0;
+  padding: 6px 9px; border: 1px solid #a8bfe4; border-radius: var(--r-sm);
   background: #f3f7ff; color: var(--primary-dark); font-size: 13px; font-weight: 700;
   line-height: 1.2; text-decoration: none; white-space: nowrap;
 }
