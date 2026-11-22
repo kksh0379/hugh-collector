@@ -19,6 +19,50 @@
     } catch (_) { return null; }
   }
 
+  // Reader availability is evidence-based: never mark an untested article as readable.
+  // Persist confirmed outcomes for 24h so repeated visits avoid futile reader requests.
+  const availabilityKey = "hscope-reader-availability-v1";
+  const availabilityTtl = 24 * 60 * 60 * 1000;
+  let availability = {};
+  try { availability = JSON.parse(localStorage.getItem(availabilityKey) || "{}") || {}; } catch (_) {}
+  function availabilityFor(url) {
+    const record = availability[url];
+    return record && Date.now() - record.at < availabilityTtl ? record.mode : null;
+  }
+  function refreshAvailability(root = document) {
+    root.querySelectorAll?.('a[data-reader], a[data-reader-unavailable]').forEach(link => {
+      const url = safeUrl(link.dataset.readerUrl || link.getAttribute("href"));
+      if (!url) return;
+      const mode = availabilityFor(url);
+      if (mode === "excerpt") {
+        link.removeAttribute("data-reader");
+        link.setAttribute("data-reader-unavailable", "");
+        link.title = "본문 추출 실패 · 원문 사이트에서 보기";
+        if (link.classList.contains("read-action")) link.textContent = "원문 보기 ↗";
+      } else if (mode === "article") {
+        link.removeAttribute("data-reader-unavailable");
+        link.setAttribute("data-reader", "");
+        link.title = "본문 추출 확인";
+        if (link.classList.contains("read-action")) link.textContent = "본문 읽기";
+      } else if (link.classList.contains("read-action") && !link.hasAttribute("data-reader-unavailable")) {
+        link.textContent = "본문 확인";
+        link.title = "본문 추출 여부 미확인 · 처음 열 때 확인";
+      }
+    });
+  }
+  function rememberAvailability(url, mode) {
+    if (!["article", "excerpt"].includes(mode)) return;
+    availability[url] = {mode, at: Date.now()};
+    try {
+      availability = Object.fromEntries(Object.entries(availability).filter(([,v]) => v && Date.now() - v.at < availabilityTtl).slice(-500));
+      localStorage.setItem(availabilityKey, JSON.stringify(availability));
+    } catch (_) {}
+    refreshAvailability();
+  }
+  const availabilityObserver = new MutationObserver(() => refreshAvailability());
+  availabilityObserver.observe(document.body, {childList:true,subtree:true});
+  refreshAvailability();
+
   async function load(url) {
     if (controller) controller.abort();
     if (summaryController) summaryController.abort();
@@ -42,6 +86,7 @@
       const data = await response.json();
       if (current !== sequence || !dialog.open) return;
       if (!response.ok) throw new Error(data.error || "본문을 불러오지 못했습니다.");
+      rememberAvailability(url, data.mode);
       title.textContent = data.title;
       meta.textContent = [data.author, data.published_at].filter(Boolean).join(" · ");
       source.href = safeUrl(data.url) || trigger.href;
