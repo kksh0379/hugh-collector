@@ -856,28 +856,24 @@ function readerSnippetSuspect(value, title = "") {
     /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
 }
 function readerTitleOnly(value, title, publisher = "") {
-  // A feed description repeating the headline (sometimes followed by the publisher)
-  // is not article text. Do not demand exact punctuation or truncation matches.
   const normalize = text => String(text || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:nbsp|amp|quot|#39);/gi, " ")
-    .replace(/[\s\p{P}\p{S}]+/gu, "")
-    .toLowerCase();
-  const headline = normalize(title);
-  let summary = normalize(value);
-  if (!summary) return true;
-  if (!headline) return false;
+    .replace(/[\s\p{P}\p{S}]+/gu, "").toLowerCase();
+  const heading = normalize(title);
+  let snippet = normalize(value);
+  if (!snippet) return true;
+  if (!heading) return false;
   const source = normalize(publisher);
-  if (source && summary.endsWith(source)) summary = summary.slice(0, -source.length);
-  if (summary === headline) return true;
-  const commonLength = Math.min(headline.length, summary.length);
+  if (source && snippet.endsWith(source)) snippet = snippet.slice(0, -source.length);
+  if (snippet === heading) return true;
+  // Headlines may be clipped independently by RSS and by the feed title field.
   let common = 0;
-  while (common < commonLength && headline[common] === summary[common]) common++;
-  // Titles in feeds are often clipped differently than descriptions.
-  // A substantial matching headline with only a short trailing source is duplicate.
-  if (common >= 16 && common / Math.min(headline.length, summary.length) >= 0.8 &&
-      summary.length <= headline.length + Math.max(22, source.length + 8)) return true;
-  return false;
+  while (common < Math.min(heading.length, snippet.length) && heading[common] === snippet[common]) common++;
+  const shorter = Math.min(heading.length, snippet.length);
+  const remainder = snippet.slice(common);
+  return common >= 12 && common / shorter >= 0.75 &&
+    (remainder.length <= 32 || (source && remainder.endsWith(source) && remainder.length <= source.length + 32));
 }
 function readerSuspectAttr(value, title) {
   return readerSnippetSuspect(value, title) ? ' data-reader-suspect="1"' : "";
@@ -892,7 +888,6 @@ function renderCard(item, opts) {
   if (item.author) meta.push(escapeHtml(item.author));
 
   const titleOnly = !opensOriginalSource(tab) && readerTitleOnly(item.content, item.title, item.author);
-  const readerKey = escapeHtml(item.url || link || "");
   const t = escapeHtml(item.title || "(제목 없음)");
   const titleHtml = link
     ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${t}</a>` : t;
