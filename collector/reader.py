@@ -213,6 +213,26 @@ def extract_paragraphs(html):
             visit(json.loads(script.string or script.get_text()))
         except (ValueError, TypeError, RecursionError):
             continue
+    # Some JS-rendered publishers embed the full story in application/json
+    # hydration state even though the initial DOM contains no article text.
+    for script in soup.select('script[type="application/json"], script#__NEXT_DATA__'):
+        try:
+            payload = json.loads(script.string or script.get_text())
+            def find_embedded(value, depth=0):
+                if depth > 24:
+                    return
+                if isinstance(value, dict):
+                    for key, item in value.items():
+                        if key in ("articleBody", "articleText", "articleContent") and isinstance(item, str) and len(item.strip()) >= 120:
+                            structured.append(item)
+                        elif isinstance(item, (dict, list)):
+                            find_embedded(item, depth + 1)
+                elif isinstance(value, list):
+                    for item in value[:200]:
+                        find_embedded(item, depth + 1)
+            find_embedded(payload)
+        except (ValueError, TypeError, RecursionError):
+            continue
     for node in soup.select("script,style,iframe,nav,header,footer,aside,form,button,"
                             "noscript,svg,figure,[hidden],[aria-hidden=true],"
                             ".ad,.ads,.advertisement,.banner,.share,.sns,.related,.comments,.copyright"):
