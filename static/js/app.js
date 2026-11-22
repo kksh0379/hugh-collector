@@ -896,7 +896,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>` : ""}
+          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
           ${shareBtnHtml(link)}
         </div>
       </div>
@@ -2496,7 +2496,7 @@ function scrapCardNode(s) {
       ${s.content && !titleOnly ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
-        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${opensOriginalSource(s.tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>`) : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${opensOriginalSource(s.tab) || titleOnly ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
         ${shareBtnHtml(link)}
         <button class="grp-assign" type="button">${uiIcon("group")}그룹 지정</button>
       </div>
