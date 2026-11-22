@@ -45,6 +45,36 @@ class ReaderTests(unittest.TestCase):
                 html = f'<nav>{TEXT}</nav><div {marker}><p>{TEXT}</p></div>'
                 self.assertEqual(reader.extract_paragraphs(html), [TEXT.strip()])
 
+
+    def test_twenty_article_layout_regressions(self):
+        """Twenty synthetic publisher layouts must retain the final paragraph."""
+        lead = "기사의 시작 부분입니다. " * 20
+        ending = "기사의 마지막 문단도 반드시 표시됩니다. " * 20
+        markers = [
+            'id="dic_area"', 'id="articleBody"', 'id="article-body"',
+            'id="articleBodyContents"', 'id="newsct_article"',
+            'itemprop="articleBody"', 'class="article-body"',
+            'class="article_body"', 'class="view_content"',
+            'class="board_view"', 'class="post-content"',
+            'class="content_view"', 'id="newsEndContents"',
+            'id="news_body_area"', 'id="article_txt"',
+            'class="article_content"', 'class="news_body"',
+            'class="article-text"', 'class="view_cont"',
+            'class="bbs_content"',
+        ]
+        self.assertEqual(len(markers), 20)
+        for marker in markers:
+            with self.subTest(marker=marker):
+                html = (
+                    '<html><nav><a href="/">' + lead + '</a></nav>'
+                    '<div id="articleBody"><p>' + lead + '</p></div>'
+                    '<section ' + marker + '><p>' + lead + '</p><p>' + ending + '</p></section>'
+                    '</html>'
+                )
+                extracted = " ".join(reader.extract_paragraphs(html))
+                self.assertIn(ending.strip(), extracted)
+                self.assertGreaterEqual(len(extracted), len(lead + ending) - 5)
+
     def test_rejects_navigation_only(self):
         with self.assertRaises(reader.ReaderUnavailable):
             reader.extract_paragraphs('<main><a href="/">' + TEXT + '</a></main>')
