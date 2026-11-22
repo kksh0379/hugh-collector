@@ -855,6 +855,13 @@ function readerSnippetSuspect(value, title = "") {
     (heading && plain.startsWith(heading) && plain.length < heading.length + 65) ||
     /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
 }
+function readerTitleOnly(value, title) {
+  const normalize = text => String(text || "").replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|quot|#39);/gi, " ").replace(/[\\s\\p{P}\\p{S}]+/gu, "").toLowerCase();
+  const snippet = normalize(value), heading = normalize(title);
+  if (!snippet) return true;
+  if (!heading) return false;
+  return snippet === heading || (snippet.startsWith(heading) && snippet.length - heading.length <= 12);
+}
 function readerSuspectAttr(value, title) {
   return readerSnippetSuspect(value, title) ? ' data-reader-suspect="1"' : "";
 }
@@ -867,17 +874,18 @@ function renderCard(item, opts) {
   meta.push(escapeHtml(fmtDate(item.published_at)));
   if (item.author) meta.push(escapeHtml(item.author));
 
+  const titleOnly = !opensOriginalSource(tab) && readerTitleOnly(item.content, item.title);
   const t = escapeHtml(item.title || "(제목 없음)");
   const titleHtml = link
-    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${t}</a>` : t;
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${t}</a>` : t;
   // 요약이 있으면 표시, 없고 이미지도 없으면 '요약 없음', 이미지만 있으면 요약 줄 생략
-  const summaryHtml = item.content
+  const summaryHtml = titleOnly ? "" : item.content
     ? `<p class="card-summary">${escapeHtml(item.content)}</p>`
     : ((item.image_url && !opts.hideImage) ? "" : `<p class="card-summary">요약 없음</p>`);
   const li = document.createElement("li");
   // 통합 피드(비영리재단 동향)에서 게시판·영상은 넓은 미디어 카드로(데스크톱). _src로 구분.
   const srcCls = item._src === "board" ? " card-board" : item._src === "video" ? " card-video" : "";
-  li.className = "card card-news" + srcCls + (opts.hideImage ? " card-no-media" : "") + readClass(key);
+  li.className = "card card-news" + (titleOnly ? " card-title-only" : "") + srcCls + (opts.hideImage ? " card-no-media" : "") + readClass(key);
   li.dataset.key = key;
   li.innerHTML = `
     ${scrapBtnHtml(key)}
@@ -888,7 +896,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
+          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>` : ""}
           ${shareBtnHtml(link)}
         </div>
       </div>
@@ -1666,7 +1674,7 @@ function eventAlbumCard(s) {
       <div class="event-date">${uiIcon("calendar")} ${escapeHtml(eventDateBadge(s))} ${eventSrcBadge(s)}</div>
       <h3 class="card-title">${newBadgeHtml(s.published_at, NEWS_NEW_DATE)}${titleHtml}</h3>
       ${place ? `<div class="event-place">${uiIcon("pin")} ${escapeHtml(place)}</div>` : ""}
-      ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
+      ${s.content && !titleOnly ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="card-actions">${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" data-reader>본문 읽기</a>` : ""}${shareBtnHtml(link)}</div>
     </div>`;
   return li;
@@ -2471,13 +2479,15 @@ function scrapCardNode(s) {
   if (s.author) meta.push(escapeHtml(s.author));
   const link = s.link || s.url;
   const isFood = s.tab === "food";
+  const titleOnly = !isFood && !opensOriginalSource(s.tab) && readerTitleOnly(s.content, s.title);
   const readerAttrs = ["news", "cat", "biz"].includes(s.tab) && s.url
     ? `data-reader data-reader-url="${escapeHtml(s.url)}"${readerSuspectAttr(s.content, s.title)}` : `data-reader${readerSuspectAttr(s.content, s.title)}`;
   const t = escapeHtml(s.title || "(제목 없음)");
-  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${isFood || opensOriginalSource(s.tab) ? "" : readerAttrs}>${t}</a>` : t;
+  const titleHtml = link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" ${isFood || opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${t}</a>` : t;
   const checks = GROUPS.length
     ? GROUPS.map((g) => `<label class="grp-check-item"><input type="checkbox" class="grp-check" data-key="${escapeHtml(s.key)}" data-gid="${g.id}"${(s.groups || []).includes(g.id) ? " checked" : ""}> ${escapeHtml(g.name)}</label>`).join("")
     : `<span class="grp-empty">아직 그룹이 없어요.</span>`;
+  if (titleOnly) li.classList.add("card-title-only");
   li.innerHTML = `
     ${scrapBtnHtml(s.key)}
     <div class="card-main"><div class="card-body">
@@ -2486,7 +2496,7 @@ function scrapCardNode(s) {
       ${s.content ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
-        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) ? "" : readerAttrs}>${opensOriginalSource(s.tab) ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${opensOriginalSource(s.tab) || titleOnly ? "원문 보기 ↗" : "본문 확인"}</a>`) : ""}
         ${shareBtnHtml(link)}
         <button class="grp-assign" type="button">${uiIcon("group")}그룹 지정</button>
       </div>
