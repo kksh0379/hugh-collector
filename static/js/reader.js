@@ -43,7 +43,7 @@
         link.removeAttribute("data-reader-unavailable");
         link.setAttribute("data-reader", "");
         link.title = "본문 추출 확인";
-        if (link.classList.contains("read-action") && link.textContent !== "본문 읽기 ↗") link.textContent = "본문 읽기 ↗";
+        if (link.classList.contains("read-action") && link.textContent !== "📖 본문 읽기") link.textContent = "📖 본문 읽기";
       } else {
         if (link.hasAttribute("data-reader-unavailable")) {
           link.removeAttribute("data-reader-unavailable");
@@ -51,7 +51,7 @@
         }
         if (link.classList.contains("read-action")) {
           const suspect = link.hasAttribute("data-reader-suspect");
-          const label = "본문 읽기 ↗";
+          const label = "📖 본문 읽기";
           if (link.textContent !== label) link.textContent = label;
           link.title = suspect
             ? "수집 요약이 짧거나 잘려 있습니다. 본문을 열어 확인합니다."
@@ -92,8 +92,8 @@
         if (link.hasAttribute("data-reader-unavailable")) link.removeAttribute("data-reader-unavailable");
         if (!link.hasAttribute("data-reader")) link.setAttribute("data-reader", "");
         if (link.dataset.readerUrl !== url) link.dataset.readerUrl = url;
-        if (link.classList.contains("read-action") && link.textContent !== "본문 읽기 ↗")
-          link.textContent = "본문 읽기 ↗";
+        if (link.classList.contains("read-action") && link.textContent !== "📖 본문 읽기")
+          link.textContent = "📖 본문 읽기";
       });
     } else if (record.mode === "excerpt") {
       card.classList.add("card-title-only");
