@@ -252,6 +252,19 @@ def extract_paragraphs(html):
             candidate = max(candidates, key=lambda c: c[0])
             if best is None or candidate[0] > best[0]:
                 best = candidate
+    # Fallback for publishers with unrecognized body selectors. Only use a
+    # structurally plausible content block, never a navigation-only page.
+    if best is None:
+        for node in soup.select("section, div, body"):
+            blocks = node.find_all(["p", "h2", "h3", "blockquote"], recursive=True)
+            paragraphs = [re.sub(r"\\s+", " ", b.get_text(" ", strip=True)).strip()
+                          for b in blocks if not b.find_parent(["a", "nav", "aside"])]
+            paragraphs = [p for p in paragraphs if len(p) >= 20]
+            length = sum(map(len, paragraphs))
+            links = sum(len(link.get_text(" ", strip=True)) for link in node.select("a"))
+            if len(paragraphs) >= 2 and length >= 120 and links < length * .5:
+                if best is None or length > best[0]:
+                    best = (length, paragraphs)
     if structured:
         candidate = max(structured, key=len)
         if best is None or len(candidate) > best[0]:
