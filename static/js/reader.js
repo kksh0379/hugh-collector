@@ -126,18 +126,6 @@
             localStorage.setItem(probeKey, JSON.stringify(previews));
           } catch (_) {}
           rememberAvailability(url, data.mode);
-      if (data.mode === "article" && Array.isArray(data.paragraphs)) {
-        const preview = data.paragraphs.join(" ").replace(/\s+/g, " ").trim().slice(0, 320);
-        if (preview) {
-          const record = {mode:"article", preview, at:Date.now()};
-          previews[url] = record;
-          try { localStorage.setItem(probeKey, JSON.stringify(previews)); } catch (_) {}
-          document.querySelectorAll("[data-reader-probe-url]").forEach(card => {
-            if (card.dataset.readerProbeUrl === url) applyPreview(card, url, record);
-          });
-        }
-      }
-
           document.querySelectorAll("[data-reader-probe-url]").forEach(node => {
             if (node.dataset.readerProbeUrl === url) applyPreview(node, url, record);
           });
@@ -192,6 +180,19 @@
       if (current !== sequence || !dialog.open) return;
       if (!response.ok) throw new Error(data.error || "본문을 불러오지 못했습니다.");
       rememberAvailability(url, data.mode);
+      if (data.mode === "article" && Array.isArray(data.paragraphs)) {
+        const preview = data.paragraphs.join(" ").replace(/\s+/g, " ").trim().slice(0, 320);
+        if (preview) {
+          const record = {mode:"article", preview, at:Date.now()};
+          previews[url] = record;
+          try { localStorage.setItem(probeKey, JSON.stringify(previews)); } catch (_) {}
+          document.querySelectorAll("[data-reader-probe-url]").forEach(card => {
+            if (card.dataset.readerProbeUrl === url) applyPreview(card, url, record);
+          });
+        }
+      }
+
+
       title.textContent = data.title;
       meta.textContent = [data.author, data.published_at].filter(Boolean).join(" · ");
       source.href = safeUrl(data.url) || trigger.href;
