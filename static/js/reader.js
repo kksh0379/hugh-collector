@@ -75,9 +75,8 @@
   let previews = {};
   try { previews = JSON.parse(localStorage.getItem(probeKey) || "{}") || {}; } catch (_) {}
   const probeSeen = new Set();
-  let probeActive = 0, probeCount = 0;
+  let probeActive = 0;
   const probeQueue = [];
-  const probeLimit = 12;
   function applyPreview(card, url, record) {
     if (!card.isConnected || !record) return;
     if (record.mode === "article" && record.preview) {
@@ -144,17 +143,48 @@
         applyPreview(card, url, stored);
         return;
       }
-      if (probeSeen.has(url) || probeCount >= probeLimit) return;
+      if (probeSeen.has(url)) return;
       probeSeen.add(url);
-      probeCount++;
       probeQueue.push({url, card});
     });
     runProbes();
   }
-  const availabilityObserver = new MutationObserver(() => { refreshAvailability(); scanProbes(); });
+  // Only fetch visible title-only entries, rather than probing a fixed first-12 batch.
+  const probeObserver = typeof IntersectionObserver === "function"
+    ? new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          probeObserver.unobserve(entry.target);
+          const url = safeUrl(entry.target.dataset.readerProbeUrl);
+          if (!url || probeSeen.has(url)) continue;
+          probeSeen.add(url);
+          probeQueue.push({url, card:entry.target});
+        }
+        runProbes();
+      }, {rootMargin:"500px 0px"}) : null;
+  function observeProbes() {
+    document.querySelectorAll(".card-title-only[data-reader-probe-url]").forEach(card => {
+      const url = safeUrl(card.dataset.readerProbeUrl);
+      if (!url) return;
+      const stored = previews[url];
+      if (stored && Date.now() - stored.at < availabilityTtl) {
+        applyPreview(card, url, stored);
+        return;
+      }
+      if (probeObserver && !card.dataset.probeObserved) {
+        card.dataset.probeObserved = "1";
+        probeObserver.observe(card);
+      } else if (!probeObserver && !probeSeen.has(url)) {
+        probeSeen.add(url);
+        probeQueue.push({url,card});
+      }
+    });
+    runProbes();
+  }
+  const availabilityObserver = new MutationObserver(() => { refreshAvailability(); observeProbes(); });
   availabilityObserver.observe(document.body, {childList:true,subtree:true});
   refreshAvailability();
-  scanProbes();
+  observeProbes();
 
   async function load(url) {
     if (controller) controller.abort();
