@@ -856,26 +856,28 @@ function readerSnippetSuspect(value, title = "") {
     /(?:\.\.\.|…|더보기|계속 읽기|read more|continue reading)\s*$/i.test(plain);
 }
 function readerTitleOnly(value, title, publisher = "") {
-  // Google News RSS often stores headline + publisher as the entire "description".
-  // Compare meaningful headline overlap even when the title and snippet truncate differently.
+  // A feed description repeating the headline (sometimes followed by the publisher)
+  // is not article text. Do not demand exact punctuation or truncation matches.
   const normalize = text => String(text || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:nbsp|amp|quot|#39);/gi, " ")
     .replace(/[\s\p{P}\p{S}]+/gu, "")
     .toLowerCase();
-  const snippet = normalize(value), heading = normalize(title);
-  if (!snippet) return true;
-  if (!heading) return false;
-  const publisherName = normalize(publisher);
-  const content = publisherName && snippet.endsWith(publisherName)
-    ? snippet.slice(0, -publisherName.length) : snippet;
-  if (content === heading || (content.startsWith(heading) && content.length - heading.length <= 12)) return true;
-  const limit = Math.min(content.length, heading.length);
+  const headline = normalize(title);
+  let summary = normalize(value);
+  if (!summary) return true;
+  if (!headline) return false;
+  const source = normalize(publisher);
+  if (source && summary.endsWith(source)) summary = summary.slice(0, -source.length);
+  if (summary === headline) return true;
+  const commonLength = Math.min(headline.length, summary.length);
   let common = 0;
-  while (common < limit && content[common] === heading[common]) common++;
-  // Only treat a substantial near-identical headline as a duplicated summary.
-  return common >= 24 && common / Math.max(content.length, heading.length) >= 0.72 &&
-    Math.abs(content.length - heading.length) <= 28;
+  while (common < commonLength && headline[common] === summary[common]) common++;
+  // Titles in feeds are often clipped differently than descriptions.
+  // A substantial matching headline with only a short trailing source is duplicate.
+  if (common >= 16 && common / Math.min(headline.length, summary.length) >= 0.8 &&
+      summary.length <= headline.length + Math.max(22, source.length + 8)) return true;
+  return false;
 }
 function readerSuspectAttr(value, title) {
   return readerSnippetSuspect(value, title) ? ' data-reader-suspect="1"' : "";
@@ -911,7 +913,7 @@ function renderCard(item, opts) {
         <div class="card-meta">${meta.join(" · ")}</div>
         ${summaryHtml}
         <div class="card-actions">
-          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 읽기"}</a>` : ""}
+          ${link ? `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(tab) || titleOnly ? "" : `data-reader${readerSuspectAttr(item.content, item.title)}`}>${opensOriginalSource(tab) || titleOnly ? "원문 보기 ↗" : "본문 읽기 ↗"}</a>` : ""}
           ${shareBtnHtml(link)}
         </div>
       </div>
@@ -2511,7 +2513,7 @@ function scrapCardNode(s) {
       ${s.content && !titleOnly ? `<p class="card-summary">${escapeHtml(s.content)}</p>` : ""}
       <div class="grp-chips">${groupChipsHtml(s)}</div>
       <div class="card-actions${isFood ? " food-actions" : ""}">
-        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${opensOriginalSource(s.tab) || titleOnly ? "원문 보기 ↗" : "본문 읽기"}</a>`) : ""}
+        ${link ? (isFood ? kakaoLinkHtml(link) : `<a class="read-action" href="${escapeHtml(link)}" target="_blank" rel="noopener" ${opensOriginalSource(s.tab) || titleOnly ? "" : readerAttrs}>${opensOriginalSource(s.tab) || titleOnly ? "원문 보기 ↗" : "본문 읽기 ↗"}</a>`) : ""}
         ${shareBtnHtml(link)}
         <button class="grp-assign" type="button">${uiIcon("group")}그룹 지정</button>
       </div>
