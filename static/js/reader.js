@@ -38,15 +38,21 @@
         link.removeAttribute("data-reader");
         link.setAttribute("data-reader-unavailable", "");
         link.title = "본문 추출 실패 · 원문 사이트에서 보기";
-        if (link.classList.contains("read-action")) link.textContent = "원문 보기 ↗";
+        if (link.classList.contains("read-action") && link.textContent !== "원문 보기 ↗") link.textContent = "원문 보기 ↗";
       } else if (mode === "article") {
         link.removeAttribute("data-reader-unavailable");
         link.setAttribute("data-reader", "");
         link.title = "본문 추출 확인";
-        if (link.classList.contains("read-action")) link.textContent = "본문 읽기";
-      } else if (link.classList.contains("read-action") && !link.hasAttribute("data-reader-unavailable")) {
-        link.textContent = "본문 확인";
-        link.title = "본문 추출 여부 미확인 · 처음 열 때 확인";
+        if (link.classList.contains("read-action") && link.textContent !== "본문 읽기") link.textContent = "본문 읽기";
+      } else {
+        if (link.hasAttribute("data-reader-unavailable")) {
+          link.removeAttribute("data-reader-unavailable");
+          link.setAttribute("data-reader", "");
+        }
+        if (link.classList.contains("read-action")) {
+        if (link.textContent !== "본문 확인") link.textContent = "본문 확인";
+          link.title = "본문 추출 여부 미확인 · 처음 열 때 확인";
+        }
       }
     });
   }
