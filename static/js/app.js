@@ -861,7 +861,7 @@ function readerTitleOnly(value, title, publisher = "") {
   const normalize = text => String(text || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:nbsp|amp|quot|#39);/gi, " ")
-    .replace(/[\\s\\p{P}\\p{S}]+/gu, "")
+    .replace(/[\s\p{P}\p{S}]+/gu, "")
     .toLowerCase();
   const snippet = normalize(value), heading = normalize(title);
   if (!snippet) return true;
