@@ -213,6 +213,26 @@ def extract_paragraphs(html):
             visit(json.loads(script.string or script.get_text()))
         except (ValueError, TypeError, RecursionError):
             continue
+    # Some JS-rendered publishers embed the full story in application/json
+    # hydration state even though the initial DOM contains no article text.
+    for script in soup.select('script[type="application/json"], script#__NEXT_DATA__, script#__NUXT_DATA__, script#__nuxt_data'):
+        try:
+            payload = json.loads(script.string or script.get_text())
+            def find_embedded(value, depth=0):
+                if depth > 24:
+                    return
+                if isinstance(value, dict):
+                    for key, item in value.items():
+                        if key in ("articleBody", "articleText", "articleContent", "bodyText", "fullText") and isinstance(item, str) and len(item.strip()) >= 120:
+                            structured.append(item)
+                        elif isinstance(item, (dict, list)):
+                            find_embedded(item, depth + 1)
+                elif isinstance(value, list):
+                    for item in value[:200]:
+                        find_embedded(item, depth + 1)
+            find_embedded(payload)
+        except (ValueError, TypeError, RecursionError):
+            continue
     for node in soup.select("script,style,iframe,nav,header,footer,aside,form,button,"
                             "noscript,svg,figure,[hidden],[aria-hidden=true],"
                             ".ad,.ads,.advertisement,.banner,.share,.sns,.related,.comments,.copyright"):
@@ -252,6 +272,30 @@ def extract_paragraphs(html):
             candidate = max(candidates, key=lambda c: c[0])
             if best is None or candidate[0] > best[0]:
                 best = candidate
+    # Fallback for publishers with unrecognized body selectors. Only use a
+    # structurally plausible content block, never a navigation-only page.
+    if best is None:
+        for node in soup.select("section, div, body"):
+            blocks = node.find_all(["p", "h2", "h3", "blockquote"], recursive=True)
+            paragraphs = [re.sub(r"\s+", " ", b.get_text(" ", strip=True)).strip()
+                          for b in blocks if not b.find_parent(["a", "nav", "aside"])]
+            paragraphs = [p for p in paragraphs if len(p) >= 20]
+            length = sum(map(len, paragraphs))
+            links = sum(len(link.get_text(" ", strip=True)) for link in node.select("a"))
+            if len(paragraphs) >= 2 and length >= 120:
+                if best is None or length > best[0]:
+                    best = (length, paragraphs)
+    # Short reports: only accept short content inside a clearly identified
+    # article container, never an arbitrary body or navigation element.
+    if best is None:
+        for node in soup.select("article, [itemprop=articleBody], #dic_area, #articleBody, #article-body, .article-body, .article_content"):
+            paragraphs = [re.sub(r"\s+", " ", p.get_text(" ", strip=True)).strip()
+                          for p in node.select("p") if not p.find_parent("a")]
+            paragraphs = [p for p in paragraphs if p]
+            length = sum(map(len, paragraphs))
+            if 20 <= length < 120 and not node.select("a"):
+                best = (length, paragraphs)
+                break
     if structured:
         candidate = max(structured, key=len)
         if best is None or len(candidate) > best[0]:

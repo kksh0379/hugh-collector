@@ -75,6 +75,27 @@ class ReaderTests(unittest.TestCase):
                 self.assertIn(ending.strip(), extracted)
                 self.assertGreaterEqual(len(extracted), len(lead + ending) - 5)
 
+
+    def test_unknown_publisher_containers_recover_full_article(self):
+        lead = "기사 시작 부분에 대한 설명이 충분히 길게 이어집니다. " * 5
+        ending = "기사의 마지막 문단은 누락되어서는 안 됩니다. " * 5
+        for tag, attrs in (("div", 'class="unusual-story"'), ("section", ""),
+                           ("body", "")):
+            with self.subTest(tag=tag):
+                html = f'<{tag} {attrs}><p>{lead}</p><p>{ending}</p></{tag}>'
+                self.assertIn(ending.strip(), " ".join(reader.extract_paragraphs(html)))
+
+    def test_link_heavy_page_keeps_article_paragraphs(self):
+        lead = "기사 시작 부분에 대한 설명이 충분히 길게 이어집니다. " * 5
+        ending = "기사의 마지막 문단은 누락되어서는 안 됩니다. " * 5
+        html = (f'<section><a href="/related">{lead * 8}</a>'
+                f'<p>{lead}</p><p>{ending}</p></section>')
+        self.assertIn(ending.strip(), " ".join(reader.extract_paragraphs(html)))
+
+    def test_fallback_does_not_extract_navigation(self):
+        with self.assertRaises(reader.ReaderUnavailable):
+            reader.extract_paragraphs('<nav><a href="/">' + TEXT * 3 + '</a></nav>')
+
     def test_rejects_navigation_only(self):
         with self.assertRaises(reader.ReaderUnavailable):
             reader.extract_paragraphs('<main><a href="/">' + TEXT + '</a></main>')
