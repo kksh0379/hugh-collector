@@ -632,7 +632,11 @@ body.view-list .card-title {
   background: #f3f7ff; color: var(--primary-dark); font-size: 13px; font-weight: 700;
   line-height: 1.2; text-decoration: none; white-space: nowrap;
 }
+/* Headline-only feed entries must not reserve the normal 4-line excerpt slot. */
+.card-title-only .card-summary { display: none !important; min-height: 0 !important; }
 .card-title-only .card-actions { margin-top: 10px; }
+.card-title-only .card-body { min-height: 0; }
+.card-title-only .card-main { min-height: 0; }
 .card-actions .read-action:hover { background: #e8f0ff; border-color: var(--primary); }
 .card-actions .read-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .card-actions .read-action:active { background: #dce9ff; }
